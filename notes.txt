@@ -1,0 +1,27 @@
+# Clojure references
+- https://github.com/overtone/at-at
+- https://github.com/jarohen/chime (see it's testing part)
+- http://clojurequartz.info/articles/jobs.html
+- https://github.com/helins/timer.cljs
+
+# Server initialization
+- Create/Check queues set
+  Maintain state of whether queue has been SADDed to the set, to avoid duplicate calls to Redis
+-
+
+
+# Enqueue a job
+-  Data structure:
+     "goose:queues"        (Set of queues)
+     "goose:queue:default" (List of jobs)
+-  Schema:
+     retries: (an integer, can be 0 for no retries)
+     queue_name (necessary?)
+     args
+     job_id
+     namespace+class
+     created/updated/enqueued at
+-  Examples:
+     Sidekiq/Redis: "{\"retry\":true,\"queue\":\"default\",\"args\":[\"like a dog\",3],\"class\":\"PlainOldRuby\",\"jid\":\"53dc855f729093f339395f0e\",\"created_at\":1650900367.398494,\"enqueued_at\":1650900367.3986309}"
+     Celery/Redis:
+     Celery/RabbitMQ:
