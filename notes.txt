@@ -25,3 +25,21 @@
      Sidekiq/Redis: "{\"retry\":true,\"queue\":\"default\",\"args\":[\"like a dog\",3],\"class\":\"PlainOldRuby\",\"jid\":\"53dc855f729093f339395f0e\",\"created_at\":1650900367.398494,\"enqueued_at\":1650900367.3986309}"
      Celery/Redis:
      Celery/RabbitMQ:
+
+
+Interfaces:
+1. (async fn args), (worker queue)
+    -> require namespaces once (at runtime?)
+    -> async throws error for non-resolvable functions
+    ?? maintain state
+2. Initialize with set of functions/queues
+    -> using macros, attach metadata or annotations ???
+    -> define all functions in a single file
+3. Wrap async functions inside Job class/fn (like sidekiq, celery)
+4. Goose clojure protocol
+    -> Check component code
+    -> ? Clojure protocol
+
+-> goose functions' args should be eden, serializable
+-> in production, don't load all namespaces.
+    Only load the ones required.

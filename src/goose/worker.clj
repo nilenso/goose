@@ -10,3 +10,10 @@
                (symbol)
                (resolve))
            (#'clojure.core/spread (rest job)))))
+
+
+;(def job (r/wcar* (car/lpop "goose/queue:default")))
+(worker "goose/queue:default")
+;(worker "goose/queue:default-2")
+
+;
