@@ -12,8 +12,8 @@
 
 # Enqueue a job
 -  Data structure:
-     "goose:queues"        (Set of queues)
-     "goose:queue:default" (List of jobs)
+     "goose/queues"        (Set of queues)
+     "goose/queue:default" (List of jobs)
 -  Schema:
      retries: (an integer, can be 0 for no retries)
      queue_name (necessary?)

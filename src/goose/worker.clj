@@ -1,9 +1,12 @@
 (ns goose.worker
-  (:require [taoensso.carmine :as car :refer (wcar)]))
+  (:require
+    [goose.redis :as r]
+    [taoensso.carmine :as car]))
 
-(def server1-conn {:pool {} :spec {:uri "redis://localhost:6379/"}}) ; See `wcar` docstring for opts
-(defmacro wcar* [& body] `(car/wcar server1-conn ~@body))
-; connect to redis/rabbitmq.
-; pull from queue.
-; execute the function.
-(wcar* (car/ping))
+(defn worker
+  [queue]
+  (let [job (r/wcar* (car/lpop queue))]
+    (apply (-> (first job)
+               (symbol)
+               (resolve))
+           (#'clojure.core/spread (rest job)))))
