@@ -11,12 +11,10 @@
   (println (type (nth args 3)))
   (println (type (nth args 4)))
   (println (type (nth args 5))))
-(variable-args-fn 1 {:a "b"} [1 2 3] '(1 2 3) "2" 6.2)
 
 (defn fixed-args-fn
   [a b c]
   (+ a b c))
-(fixed-args-fn 1 2 3)
 
 (defn async
   "Enqueues a function for asynchronous execution from an independent worker."

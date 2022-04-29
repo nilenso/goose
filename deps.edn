@@ -1,4 +1,5 @@
 {:deps
  {com.taoensso/carmine {:mvn/version "3.1.0"}
   com.taoensso/nippy {:mvn/version "3.1.1"}
+  failjure/failjure {:mvn/version "2.2.0"}
   }}
