@@ -2,4 +2,6 @@
  {com.taoensso/carmine {:mvn/version "3.1.0"}
   com.taoensso/nippy {:mvn/version "3.1.1"}
   failjure/failjure {:mvn/version "2.2.0"}
+  metis/metis {:mvn/version "0.3.3"}
+  com.novemberain/validateur {:mvn/version "2.5.0"}
   }}
