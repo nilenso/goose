@@ -1,50 +1,28 @@
 (ns goose.client
   (:require
     [goose.redis :as r]
-    [taoensso.carmine :as car]
-    [clojure.edn :as edn]))
+    [goose.validations.client :refer [validate-async-params]]
+    [taoensso.carmine :as car]))
 
-(defn- validation-errors [name data]
-  {:errors {name data}})
+; This is public as worker also needs it. Will be moved to config ns soon.
+(def default-queue
+  "goose/queue:default")
 
-(defn- validate-resolvable-fn-symbol
-  "A function must be a qualified symbol."
-  [sym]
-  (when-not
-    (and (qualified-symbol? sym) (resolve sym))
-    (throw
-      (ex-info "Called with unresolvable function"
-               (validation-errors :unresolvable-fn sym)))))
+(def ^:private job-id
+  (str (random-uuid)))
 
-(defn- validate-args
-  "Returns true if args are edn-serializable.
-  BUG-FIX/Edge-cases:
-  - edn is serializing symbolized functions to a list.
-  - TODO: Modify args validation to have an exhaustive list.
-  - Refer Sidekiq best practices on job params."
-  [args]
-  (when-not
-    (= args (edn/read-string (str args)))
-    (throw
-      (ex-info "Called with unserializable args"
-               (validation-errors :unserializable-args args)))))
+(def ^:private epoch-time
+  (quot (System/currentTimeMillis) 1000))
 
-(defn- validate-retries
-  "Returns true if num is non-negative."
-  [num]
-  (when
-    (neg? num)
-    (throw
-      (ex-info "Called with negative retries"
-               (validation-errors :negative-retries num)))))
-
-(defn- validate-async-params
-  [resolvable-fn-symbol args retries]
-  (validate-resolvable-fn-symbol resolvable-fn-symbol)
-  (validate-args args)
-  (validate-retries retries))
-
-(def default-queue "goose/queue:default")
+(defn- enqueue [job]
+  (try
+    (r/wcar* (car/rpush default-queue job))
+    (catch Exception e
+      (throw
+        (ex-info
+          "Error enqueuing to redis"
+          {:errors {:redis-error (.getMessage e)}}))))
+  (:id job))
 
 (defn async
   "Enqueues a function for asynchronous execution from an independent worker.
@@ -60,7 +38,11 @@
                            :or   {args    nil
                                   retries 0}}]
   (validate-async-params resolvable-fn-symbol args retries)
-  ; serialize into a schema
-  ; push to redis
-  ; return job ID.
-  (r/wcar* (car/rpush default-queue [resolvable-fn-symbol args])))
+  (let
+    [id (job-id)
+     job {:id          id
+          :fn-sym      resolvable-fn-symbol
+          :args        args
+          :retries     retries
+          :enqueued-at (epoch-time)}]
+    (enqueue job)))
