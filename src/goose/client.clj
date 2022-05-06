@@ -1,22 +1,19 @@
 (ns goose.client
   (:require
+    [goose.config :as cfg]
     [goose.redis :as r]
     [goose.validations.client :refer [validate-async-params]]
     [taoensso.carmine :as car]))
 
-; This is public as worker also needs it. Will be moved to config ns soon.
-(def default-queue
-  "goose/queue:default")
-
-(def ^:private job-id
+(defn- job-id []
   (str (random-uuid)))
 
-(def ^:private epoch-time
+(defn- epoch-time []
   (quot (System/currentTimeMillis) 1000))
 
 (defn- enqueue [job]
   (try
-    (r/wcar* (car/rpush default-queue job))
+    (r/wcar* (car/rpush cfg/default-queue job))
     (catch Exception e
       (throw
         (ex-info
@@ -39,10 +36,12 @@
                                   retries 0}}]
   (validate-async-params resolvable-fn-symbol args retries)
   (let
-    [id (job-id)
-     job {:id          id
+    [job {:id          (job-id)
           :fn-sym      resolvable-fn-symbol
           :args        args
           :retries     retries
           :enqueued-at (epoch-time)}]
     (enqueue job)))
+
+(comment (enqueue 12)
+         (try (r/wcar* (car/rpush cfg/default-queue 12))))
