@@ -2,7 +2,7 @@
   (:require
     [clojure.edn :as edn]))
 
-(defn- validation-error [name data]
+(defn- wrap-error [name data]
   {:errors {name data}})
 
 (defn- fn-symbol-qualified?
@@ -34,19 +34,18 @@
 
 (defn validate-async-params
   [fn-sym args retries]
-  (let [validation-error
+  (when-let [validation-error
         (cond
           (fn-symbol-qualified? fn-sym)
-          ["Called with unqualified function" (validation-error :unqualified-fn fn-sym)]
+          ["Called with unqualified function" (wrap-error :unqualified-fn fn-sym)]
 
           (fn-symbol-resolvable? fn-sym)
-          ["Called with unresolvable function" (validation-error :unresolvable-fn fn-sym)]
+          ["Called with unresolvable function" (wrap-error :unresolvable-fn fn-sym)]
 
           (args-unserializable? args)
-          ["Called with unserializable args" (validation-error :unserializable-args args)]
+          ["Called with unserializable args" (wrap-error :unserializable-args args)]
 
           (retries-negative? retries)
-          ["Called with negative retries" (validation-error :negative-retries num)])]
+          ["Called with negative retries" (wrap-error :negative-retries num)])]
 
-    (when validation-error
-      (throw (apply ex-info validation-error)))))
+    (throw (apply ex-info validation-error))))

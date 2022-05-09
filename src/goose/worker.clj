@@ -13,23 +13,29 @@
     (map symbol s)))
 
 (defn- execute-job
-  [{:keys [id fn-sym args retries]}]
+  [{:keys [id fn-sym args]}]
   (let
-    [[ns f] (destructure-qualified-fn-sym fn-sym)]
-    (require ns)
+    [[namespace f] (destructure-qualified-fn-sym fn-sym)]
+    (require namespace)
     (apply
       (resolve f)
       args))
-  ; TODO: If you catch an exception, re-enqueue with decreased retries.
   (println "Executed job-id: " id))
 
+(defn- extract-job
+  [list-member]
+  (second list-member))
+
 (defn- dequeue []
-  (r/wcar* (car/blpop cfg/default-queue cfg/long-polling-timeout-sec)))
+  (->
+    cfg/default-queue
+    (car/blpop cfg/long-polling-timeout-sec)
+    (r/wcar*)
+    (extract-job)))
 
 (defn worker []
   (while true
     (println "Long-polling broker...")
-    (let
+    (when-let
       [job (dequeue)]
-      (when job
-        (execute-job (second job))))))
+      (execute-job job))))

@@ -42,6 +42,3 @@
           :retries     retries
           :enqueued-at (epoch-time)}]
     (enqueue job)))
-
-(comment (enqueue 12)
-         (try (r/wcar* (car/rpush cfg/default-queue 12))))
