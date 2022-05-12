@@ -2,6 +2,7 @@
   (:require
     [goose.config :as cfg]
     [goose.redis :as r]
+    [goose.utils :as u]
     [taoensso.carmine :as car]
     [clojure.string :as string]
     [com.climate.claypoole :as cp])
@@ -46,32 +47,19 @@
 (def ^:private thread-pool (atom nil))
 
 (defn- worker []
-  (try
-    (while
-      (not (cp/shutdown? @thread-pool))
-      (println "Long-polling broker...")
+  (while (not (cp/shutdown? @thread-pool))
+    (println "Long-polling broker...")
+    (u/log-on-exceptions
       (when-let
         [job (dequeue)]
-        (execute-job job)))
-    (catch Exception e
-      ; QQQ: how to print an exception with short stack trace?
-      (println (.toString e))))
+        (execute-job job))))
   (println "Stopped polling broker. Exiting gracefully."))
-
-; QQQ: how to wrap start threads in this?
-(defmacro log-on-exceptions
-  "Catch any Exception from the body and return nil."
-  [& body]
-  `(try
-     ~@body
-     (catch Exception e#
-       (println "exception caught"))))
 
 (defn start
   [parallelism]
   (def pool (cp/threadpool parallelism))
   (reset! thread-pool pool)
-  (for [i (range parallelism)]
+  (doseq [i (range parallelism)]
     (cp/future pool (worker))))
 
 (defn stop []

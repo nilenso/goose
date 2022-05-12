@@ -29,7 +29,7 @@
         #"Called with negative retries"
         (sut/async `placeholder-fn {:retries -1}))))
 
-  ; TODO: Uncomment test once redis URL is configurable.
+  ; TODO: Uncomment test once broker URL is configurable.
   (comment
     (testing "enqueues a job to redis"
       (is (uuid?
