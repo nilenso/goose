@@ -18,8 +18,7 @@
 
 (defn- execute-job
   [{:keys [id fn-sym args]}]
-  (let
-    [[namespace f] (destructure-qualified-fn-sym fn-sym)]
+  (let [[namespace f] (destructure-qualified-fn-sym fn-sym)]
     (require namespace)
     (apply
       (resolve f)

@@ -5,12 +5,12 @@
 (defn- wrap-error [name data]
   {:errors {name data}})
 
-(defn- fn-symbol-qualified?
+(defn- fn-symbol-unqualified?
   "Returns true if fn-symbol is unqualified."
   [sym]
   (not (qualified-symbol? sym)))
 
-(defn- fn-symbol-resolvable?
+(defn- fn-symbol-unresolvable?
   "Returns true if fn-symbol is unresolvable."
   [sym]
   (not (resolve sym)))
@@ -36,10 +36,10 @@
   [fn-sym args retries]
   (when-let [validation-error
         (cond
-          (fn-symbol-qualified? fn-sym)
+          (fn-symbol-unqualified? fn-sym)
           ["Called with unqualified function" (wrap-error :unqualified-fn fn-sym)]
 
-          (fn-symbol-resolvable? fn-sym)
+          (fn-symbol-unresolvable? fn-sym)
           ["Called with unresolvable function" (wrap-error :unresolvable-fn fn-sym)]
 
           (args-unserializable? args)
