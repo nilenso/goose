@@ -11,10 +11,9 @@
 (defn- epoch-time []
   (quot (System/currentTimeMillis) 1000))
 
-(defn- enqueue [opts job]
+(defn- enqueue [conn job]
   (try
-    ; TODO convert to threading macro.???
-    (r/wcar* (:redis-conn opts) (car/rpush cfg/default-queue job))
+    (r/wcar* conn (car/rpush cfg/default-queue job))
     (catch Exception e
       (throw
         (ex-info
@@ -32,15 +31,11 @@
   - Args must be edn-serializable
   - Retries must be non-negative
   edn: https://github.com/edn-format/edn"
-  [opts resolvable-fn-symbol & {:keys [args retries]
-                           :or   {args    nil
-                                  retries 0}}]
-  ; TODO: validate opts.
-  (validate-async-params resolvable-fn-symbol args retries)
-  (let
-    [job {:id          (job-id)
-          :fn-sym      resolvable-fn-symbol
-          :args        args
-          :retries     retries
-          :enqueued-at (epoch-time)}]
-    (enqueue opts job)))
+  ([opts resolvable-fn-symbol & args]
+   (validate-async-params opts resolvable-fn-symbol args)
+   (let [job {:id          (job-id)
+              :fn-sym      resolvable-fn-symbol
+              :args        args
+              :retries     (:retries opts)
+              :enqueued-at (epoch-time)}]
+     (enqueue (:redis-conn opts) job))))

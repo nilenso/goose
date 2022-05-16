@@ -31,7 +31,6 @@
 
 (defn- dequeue [conn timeout]
   (->>
-    ;(r/blpop (:long-polling-timeout-sec opts))
     (car/blpop cfg/default-queue timeout)
     (r/wcar* conn)
     (extract-job)))
@@ -49,6 +48,7 @@
         (execute-job job))))
   (println "Stopped polling broker. Exiting gracefully."))
 
+; TODO: Validate opts: parallelism, redis-conn,
 (defn start
   [opts]
   (let [pool (cp/threadpool (:parallelism opts))]

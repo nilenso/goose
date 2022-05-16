@@ -33,20 +33,19 @@
   (neg? num))
 
 (defn validate-async-params
-  [fn-sym args retries]
+  [opts fn-sym args]
   (when-let [validation-error
-        (cond
-          (fn-symbol-unqualified? fn-sym)
-          ["Called with unqualified function" (wrap-error :unqualified-fn fn-sym)]
+             (cond
+               (fn-symbol-unqualified? fn-sym)
+               ["Called with unqualified function" (wrap-error :unqualified-fn fn-sym)]
 
-          (fn-symbol-unresolvable? fn-sym)
-          ["Called with unresolvable function" (wrap-error :unresolvable-fn fn-sym)]
+               (fn-symbol-unresolvable? fn-sym)
+               ["Called with unresolvable function" (wrap-error :unresolvable-fn fn-sym)]
 
-          (args-unserializable? args)
-          ["Called with unserializable args" (wrap-error :unserializable-args args)]
+               (args-unserializable? args)
+               ["Called with unserializable args" (wrap-error :unserializable-args args)]
 
-          (retries-negative? retries)
-          ["Called with negative retries" (wrap-error :negative-retries num)])]
+               (retries-negative? (:retries opts))
+               ["Called with negative retries" (wrap-error :negative-retries num)])]
 
     (throw (apply ex-info validation-error))))
-
