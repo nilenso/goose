@@ -2,6 +2,7 @@
   (:require
     [goose.redis :as r]
     [goose.utils :as u]
+    [goose.validations.worker :refer [validate-worker-params]]
 
     [clojure.string :as string]
     [com.climate.claypoole :as cp]
@@ -48,20 +49,40 @@
         (execute-job job))))
   (println "Stopped polling broker. Exiting gracefully."))
 
-; TODO: Validate opts: parallelism, redis-conn,
+(defn worker-opts
+  "Configures options for worker."
+  [& {:keys [redis-url
+             redis-pool-opts
+             graceful-shutdown-time-sec
+             parallelism]
+      :or   {redis-url                  "redis://localhost:6379/"
+             redis-pool-opts            {}
+             graceful-shutdown-time-sec 30
+             parallelism                1}}]
+  {:redis-conn                 {:pool redis-pool-opts :spec {:uri redis-url}}
+   :graceful-shutdown-time-sec graceful-shutdown-time-sec
+   ; Long polling timeout is set to 30% of graceful shutdown time.
+   ; REASON: TODO: github-issue
+   :long-polling-timeout-sec   (quot graceful-shutdown-time-sec 3)
+   :parallelism                parallelism})
+
 (defn start
+  "Starts a threadpool for worker."
   [opts]
+  (validate-worker-params opts)
   (let [pool (cp/threadpool (:parallelism opts))]
     (reset! thread-pool pool)
     (doseq [i (range (:parallelism opts))]
       (cp/future pool (worker opts)))))
 
-; QQQ: since start/stop take different options,
-; lpop timeout & graceful shutdown time can be different.
-(defn stop [opts]
+(defn stop
+  "Gracefully shuts down the worker threadpool.
+  `stop` fn MUST be called with same opts as `start` fn."
+  [opts]
+  (validate-worker-params opts)
   ; Set state of thread-pool to SHUTDOWN.
   (cp/shutdown @thread-pool)
-  ; Execution proceeds immediately after all threads gracefully.
+  ; Wait until all threads exit gracefully.
   (.awaitTermination
     @thread-pool
     (:graceful-shutdown-time-sec opts)

@@ -1,5 +1,8 @@
 (ns goose.utils)
 
+(defn wrap-error [error data]
+  {:errors {error data}})
+
 (defmacro log-on-exceptions
   "Catch any Exception from the body and return nil."
   [& body]

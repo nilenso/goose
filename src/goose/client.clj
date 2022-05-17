@@ -21,6 +21,18 @@
           {:errors {:redis-error (.getMessage e)}}))))
   (:id job))
 
+(defn client-opts
+  [& {:keys [redis-url
+             redis-pool-opts
+             retries]
+      :or   {redis-url       "redis://localhost:6379"
+             redis-pool-opts {}
+             retries         0}}]
+  {:redis-conn
+   {:pool redis-pool-opts
+    :spec {:uri redis-url}}
+   :retries retries})
+
 (defn async
   "Enqueues a function for asynchronous execution from an independent worker.
   Usage:
@@ -39,3 +51,5 @@
               :retries     (:retries opts)
               :enqueued-at (epoch-time)}]
      (enqueue (:redis-conn opts) job))))
+
+
