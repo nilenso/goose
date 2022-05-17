@@ -1,5 +1,7 @@
-(ns goose.validations.common)
-
+(ns goose.validations.common
+  (:require
+    [goose.utils :as u]
+    [taoensso.carmine.connections :refer [IConnectionPool]]))
 
 (defn- redis-url-invalid?
   "Valid URL patterns:
@@ -19,18 +21,16 @@
     (or
       (= :none redis-pool-opts)
       (= clojure.lang.PersistentArrayMap (type redis-pool-opts))
-      (satisfies? taoensso.carmine.connections/IConnectionPool redis-pool-opts))))
+      (satisfies? IConnectionPool redis-pool-opts))))
 
 (defn validate-redis
   [opts]
   (when-let
     [validation-error
      (cond
-       (let [redis-url (get-in opts [:redis-conn :spec :uri])]
-         (common/redis-url-invalid? redis-url)
-         ["Invalid redis URL" (u/wrap-error :invalid-redis-url redis-url)])
+       (redis-url-invalid? (get-in opts [:redis-conn :spec :uri]))
+       ["Invalid redis URL" (u/wrap-error :invalid-redis-url (get-in opts [:redis-conn :spec :uri]))]
 
-       (let [redis-pool-opts (get-in opts [:redis-conn :pool])]
-         (common/redis-pool-opts-invalid? redis-pool-opts)
-         ["Invalid redis pool opts" (u/wrap-error :invalid-redis-pool-opts redis-pool-opts)]))]
+       (redis-pool-opts-invalid? (get-in opts [:redis-conn :pool]))
+       ["Invalid redis pool opts" (u/wrap-error :invalid-redis-pool-opts (get-in opts [:redis-conn :pool]))])]
     (throw (apply ex-info validation-error))))

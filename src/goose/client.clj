@@ -28,10 +28,10 @@
       :or   {redis-url       "redis://localhost:6379"
              redis-pool-opts {}
              retries         0}}]
-  {:redis-conn
-   {:pool redis-pool-opts
-    :spec {:uri redis-url}}
-   :retries retries})
+  (let [opts {:redis-conn (r/conn redis-url redis-pool-opts)
+                :retries    retries}]
+    (println "INFO: Goose client options:\n" opts)
+    opts))
 
 (defn async
   "Enqueues a function for asynchronous execution from an independent worker.
@@ -51,5 +51,3 @@
               :retries     (:retries opts)
               :enqueued-at (epoch-time)}]
      (enqueue (:redis-conn opts) job))))
-
-
