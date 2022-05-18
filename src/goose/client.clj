@@ -11,9 +11,9 @@
 (defn- epoch-time []
   (quot (System/currentTimeMillis) 1000))
 
-(defn- enqueue [job]
+(defn- enqueue [conn job]
   (try
-    (r/wcar* (car/rpush cfg/default-queue job))
+    (r/wcar* conn (car/rpush cfg/default-queue job))
     (catch Exception e
       (throw
         (ex-info
@@ -31,14 +31,24 @@
   - Args must be edn-serializable
   - Retries must be non-negative
   edn: https://github.com/edn-format/edn"
-  [resolvable-fn-symbol & {:keys [args retries]
-                           :or   {args    nil
-                                  retries 0}}]
-  (validate-async-params resolvable-fn-symbol args retries)
-  (let
-    [job {:id          (job-id)
-          :fn-sym      resolvable-fn-symbol
-          :args        args
-          :retries     retries
-          :enqueued-at (epoch-time)}]
-    (enqueue job)))
+  [{:keys [redis-url
+           redis-pool-opts
+           retries]
+    :or   {redis-url       cfg/default-redis-url
+           redis-pool-opts {}
+           retries         0}}
+   resolvable-fn-symbol
+   & args]
+  (validate-async-params
+    redis-url
+    redis-pool-opts
+    retries
+    resolvable-fn-symbol
+    args)
+  (let [redis-conn (r/conn redis-url redis-pool-opts)
+        job {:id          (job-id)
+             :fn-sym      resolvable-fn-symbol
+             :args        args
+             :retries     retries
+             :enqueued-at (epoch-time)}]
+    (enqueue redis-conn job)))

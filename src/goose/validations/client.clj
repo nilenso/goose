@@ -1,16 +1,15 @@
 (ns goose.validations.client
   (:require
+    [goose.utils :as u]
+    [goose.validations.common :refer [validate-redis]]
     [clojure.edn :as edn]))
 
-(defn- wrap-error [name data]
-  {:errors {name data}})
-
-(defn- fn-symbol-qualified?
+(defn- fn-symbol-unqualified?
   "Returns true if fn-symbol is unqualified."
   [sym]
   (not (qualified-symbol? sym)))
 
-(defn- fn-symbol-resolvable?
+(defn- fn-symbol-unresolvable?
   "Returns true if fn-symbol is unresolvable."
   [sym]
   (not (resolve sym)))
@@ -33,20 +32,20 @@
   (neg? num))
 
 (defn validate-async-params
-  [fn-sym args retries]
-  (when-let [validation-error
-        (cond
-          (fn-symbol-qualified? fn-sym)
-          ["Called with unqualified function" (wrap-error :unqualified-fn fn-sym)]
+  [redis-url redis-pool-opts retries fn-sym args]
+  (validate-redis redis-url redis-pool-opts)
+  (when-let
+    [validation-error
+     (cond
+       (retries-negative? retries)
+       ["Called with negative retries" (u/wrap-error :negative-retries retries)]
 
-          (fn-symbol-resolvable? fn-sym)
-          ["Called with unresolvable function" (wrap-error :unresolvable-fn fn-sym)]
+       (fn-symbol-unqualified? fn-sym)
+       ["Called with unqualified function" (u/wrap-error :unqualified-fn fn-sym)]
 
-          (args-unserializable? args)
-          ["Called with unserializable args" (wrap-error :unserializable-args args)]
+       (fn-symbol-unresolvable? fn-sym)
+       ["Called with unresolvable function" (u/wrap-error :unresolvable-fn fn-sym)]
 
-          (retries-negative? retries)
-          ["Called with negative retries" (wrap-error :negative-retries num)])]
-
+       (args-unserializable? args)
+       ["Called with unserializable args" (u/wrap-error :unserializable-args args)])]
     (throw (apply ex-info validation-error))))
-
