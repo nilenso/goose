@@ -21,18 +21,6 @@
           {:errors {:redis-error (.getMessage e)}}))))
   (:id job))
 
-(defn client-opts
-  [& {:keys [redis-url
-             redis-pool-opts
-             retries]
-      :or   {redis-url       "redis://localhost:6379"
-             redis-pool-opts {}
-             retries         0}}]
-  (let [opts {:redis-conn (r/conn redis-url redis-pool-opts)
-                :retries    retries}]
-    (println "INFO: Goose client options:\n" opts)
-    opts))
-
 (defn async
   "Enqueues a function for asynchronous execution from an independent worker.
   Usage:
@@ -43,11 +31,24 @@
   - Args must be edn-serializable
   - Retries must be non-negative
   edn: https://github.com/edn-format/edn"
-  ([opts resolvable-fn-symbol & args]
-   (validate-async-params opts resolvable-fn-symbol args)
-   (let [job {:id          (job-id)
-              :fn-sym      resolvable-fn-symbol
-              :args        args
-              :retries     (:retries opts)
-              :enqueued-at (epoch-time)}]
-     (enqueue (:redis-conn opts) job))))
+  [{:keys [redis-url
+           redis-pool-opts
+           retries]
+    :or   {redis-url       cfg/default-redis-url
+           redis-pool-opts {}
+           retries         0}}
+   resolvable-fn-symbol
+   & args]
+  (validate-async-params
+    redis-url
+    redis-pool-opts
+    retries
+    resolvable-fn-symbol
+    args)
+  (let [redis-conn (r/conn redis-url redis-pool-opts)
+        job {:id          (job-id)
+             :fn-sym      resolvable-fn-symbol
+             :args        args
+             :retries     retries
+             :enqueued-at (epoch-time)}]
+    (enqueue redis-conn job)))

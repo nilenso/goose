@@ -20,17 +20,17 @@
   (not
     (or
       (= :none redis-pool-opts)
-      (= clojure.lang.PersistentArrayMap (type redis-pool-opts))
+      (map? redis-pool-opts)
       (satisfies? IConnectionPool redis-pool-opts))))
 
 (defn validate-redis
-  [opts]
+  [redis-url redis-pool-opts]
   (when-let
     [validation-error
      (cond
-       (redis-url-invalid? (get-in opts [:redis-conn :spec :uri]))
-       ["Invalid redis URL" (u/wrap-error :invalid-redis-url (get-in opts [:redis-conn :spec :uri]))]
+       (redis-url-invalid? redis-url)
+       ["Invalid redis URL" (u/wrap-error :invalid-redis-url redis-url)]
 
-       (redis-pool-opts-invalid? (get-in opts [:redis-conn :pool]))
-       ["Invalid redis pool opts" (u/wrap-error :invalid-redis-pool-opts (get-in opts [:redis-conn :pool]))])]
+       (redis-pool-opts-invalid? redis-pool-opts)
+       ["Invalid redis pool opts" (u/wrap-error :invalid-redis-pool-opts redis-pool-opts)])]
     (throw (apply ex-info validation-error))))

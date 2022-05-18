@@ -32,8 +32,8 @@
   (neg? num))
 
 (defn validate-async-params
-  [opts fn-sym args]
-  (common/validate-redis opts)
+  [redis-url redis-pool-opts retries fn-sym args]
+  (common/validate-redis redis-url redis-pool-opts)
   (when-let
     [validation-error
      (cond
@@ -46,6 +46,6 @@
        (args-unserializable? args)
        ["Called with unserializable args" (u/wrap-error :unserializable-args args)]
 
-       (retries-negative? (:retries opts))
-       ["Called with negative retries" (u/wrap-error :negative-retries num)])]
+       (retries-negative? retries)
+       ["Called with negative retries" (u/wrap-error :negative-retries retries)])]
     (throw (apply ex-info validation-error))))

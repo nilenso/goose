@@ -3,24 +3,24 @@
     [goose.utils :as u]
     [goose.validations.common :as common]))
 
-(defn gaceful-shutdown-time-less-than-10s?
+(defn gaceful-shutdown-time-negative?
   [time]
-  (< time 10))
+  (neg? time))
 
 (defn- parallelism-less-than-1?
   [num]
   (< num 1))
 
 (defn validate-worker-params
-  [opts]
-  (common/validate-redis opts)
+  [redis-url redis-pool-opts graceful-shutdown-time-sec parallelism]
+  (common/validate-redis redis-url redis-pool-opts)
   (when-let
     [validation-error
      (cond
-       (parallelism-less-than-1? (:parallelism opts))
-       ["Parallelism cannot be less than 1" (u/wrap-error :parallelism-invalid (:parallelism opts))]
+       (parallelism-less-than-1? parallelism)
+       ["Parallelism cannot be less than 1" (u/wrap-error :parallelism-invalid parallelism)]
 
-       (gaceful-shutdown-time-less-than-10s? (:graceful-shutdown-time-sec opts))
-       ["Graceful shutdown time should be greater than 10s" (u/wrap-error :parallelism-invalid (:parallelism opts))])]
+       (gaceful-shutdown-time-negative? graceful-shutdown-time-sec)
+       ["Graceful shutdown time should be greater than 10s" (u/wrap-error :graceful-shutdown-time-sec-invalid parallelism)])]
     (throw (apply ex-info validation-error))))
 

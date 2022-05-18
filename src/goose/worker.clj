@@ -49,26 +49,6 @@
         (execute-job job))))
   (println "Stopped polling broker. Exiting gracefully."))
 
-(defn worker-opts
-  "Configures options for worker."
-  [& {:keys [redis-url
-             redis-pool-opts
-             graceful-shutdown-time-sec
-             parallelism]
-      :or   {redis-url                  "redis://localhost:6379"
-             redis-pool-opts            {}
-             graceful-shutdown-time-sec 30
-             parallelism                1}}]
-  (let [opts
-        {:redis-conn                 (r/conn redis-url redis-pool-opts)
-         :graceful-shutdown-time-sec graceful-shutdown-time-sec
-         ; Long polling timeout is set to 30% of graceful shutdown time.
-         ; REASON: TODO: github-issue
-         :long-polling-timeout-sec   (quot graceful-shutdown-time-sec 3)
-         :parallelism                parallelism}]
-    (println "INFO: Goose worker options:\n" opts)
-    opts))
-
 (defprotocol Shutdown
   (stop [_]))
 
@@ -89,11 +69,27 @@
 
 (defn start
   "Starts a threadpool for worker."
-  [opts]
-  (validate-worker-params opts)
-  (let [thread-pool (cp/threadpool (:parallelism opts))
-        internal-opts (assoc opts :thread-pool thread-pool)]
-    (doseq [i (range (:parallelism opts))]
-      (cp/future thread-pool (worker internal-opts)))
+  [{:keys [redis-url
+             redis-pool-opts
+             graceful-shutdown-time-sec
+             parallelism]
+      :or   {redis-url                  cfg/default-redis-url
+             redis-pool-opts            {}
+             graceful-shutdown-time-sec 30
+             parallelism                1}}]
+  (validate-worker-params
+    redis-url
+    redis-pool-opts
+    graceful-shutdown-time-sec
+    parallelism)
+  (let [thread-pool (cp/threadpool parallelism)
+        opts {:redis-conn                 (r/conn redis-url redis-pool-opts)
+              :thread-pool                thread-pool
+              :graceful-shutdown-time-sec graceful-shutdown-time-sec
+              ; Long polling timeout is set to 30% of graceful shutdown time.
+              ; REASON: TODO: github-issue
+              :long-polling-timeout-sec   (quot graceful-shutdown-time-sec 3)}]
+    (doseq [i (range parallelism)]
+      (cp/future thread-pool (worker opts)))
     (reify Shutdown
-      (stop [_] (internal-stop internal-opts)))))
+      (stop [_] (internal-stop opts)))))
