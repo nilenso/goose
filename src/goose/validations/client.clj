@@ -1,7 +1,7 @@
 (ns goose.validations.client
   (:require
     [goose.utils :as u]
-    [goose.validations.common :as common]
+    [goose.validations.common :refer [validate-redis]]
     [clojure.edn :as edn]))
 
 (defn- fn-symbol-unqualified?
@@ -33,10 +33,13 @@
 
 (defn validate-async-params
   [redis-url redis-pool-opts retries fn-sym args]
-  (common/validate-redis redis-url redis-pool-opts)
+  (validate-redis redis-url redis-pool-opts)
   (when-let
     [validation-error
      (cond
+       (retries-negative? retries)
+       ["Called with negative retries" (u/wrap-error :negative-retries retries)]
+
        (fn-symbol-unqualified? fn-sym)
        ["Called with unqualified function" (u/wrap-error :unqualified-fn fn-sym)]
 
@@ -44,8 +47,5 @@
        ["Called with unresolvable function" (u/wrap-error :unresolvable-fn fn-sym)]
 
        (args-unserializable? args)
-       ["Called with unserializable args" (u/wrap-error :unserializable-args args)]
-
-       (retries-negative? retries)
-       ["Called with negative retries" (u/wrap-error :negative-retries retries)])]
+       ["Called with unserializable args" (u/wrap-error :unserializable-args args)])]
     (throw (apply ex-info validation-error))))
