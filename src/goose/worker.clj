@@ -11,18 +11,17 @@
   (:import
     [java.util.concurrent TimeUnit]))
 
-(defn- destructure-qualified-fn-sym [fn-sym]
-  (as->
-    fn-sym s
-    (str s)
-    (str/split s #"/")
-    (map symbol s)))
+(defn- namespace-sym [fn-sym]
+  (-> fn-sym
+      (str)
+      (str/split #"/")
+      (first)
+      (symbol)))
 
 (defn- execute-job
   [{:keys [id fn-sym args]}]
-  (let [[namespace f] (destructure-qualified-fn-sym fn-sym)]
-    (require namespace)
-    (apply (resolve f) args))
+  (require (namespace-sym fn-sym))
+  (apply (resolve fn-sym) args)
   (println "Executed job-id:" id))
 
 (def ^:private unblocking-queue-prefix
@@ -31,74 +30,71 @@
 (defn- generate-unblocking-queue []
   (str unblocking-queue-prefix (random-uuid)))
 
-(defn- enqueue-to-unblocking-queue
-  [{:keys [redis-conn
-           unblocking-queue
-           graceful-shutdown-time-sec]}]
-  (r/wcar* redis-conn
-           (car/lpush unblocking-queue "dummy")
-           (car/expire unblocking-queue graceful-shutdown-time-sec)))
-
 (defn- extract-job
   [[queue list-member]]
   (when-not (str/starts-with? queue unblocking-queue-prefix)
     list-member))
 
-(defn- dequeue [conn unblocking-queue]
-  (->>
-    (car/blpop cfg/default-queue unblocking-queue cfg/long-polling-timeout-sec)
-    (r/wcar* conn)
-    (extract-job)))
+(defn- pop-job
+  [{:keys [redis-conn prefixed-queues unblocking-queue]}]
+  (let [queues-superset (conj prefixed-queues unblocking-queue)]
+    (extract-job (r/dequeue redis-conn queues-superset))))
 
 (defn- worker
-  [{:keys [thread-pool redis-conn unblocking-queue]}]
-  (while (not (cp/shutdown? thread-pool))
+  [opts]
+  (while (not (cp/shutdown? (:thread-pool opts)))
     (println "Long-polling broker...")
     (u/log-on-exceptions
-      (when-let [job (dequeue redis-conn unblocking-queue)]
+      (when-let [job (pop-job opts)]
         (execute-job job))))
-  (println "Stopped polling broker. Exiting gracefully."))
+  (println "Stopped polling broker. Exiting gracefully..."))
 
 (defprotocol Shutdown
   (stop [_]))
 
 (defn- internal-stop
   "Gracefully shuts down the worker threadpool."
-  [opts]
-  (let [thread-pool (:thread-pool opts)]
-    ; Set state of thread-pool to SHUTDOWN.
-    (cp/shutdown thread-pool)
-    ; REASON: TODO
-    (enqueue-to-unblocking-queue opts)
-    ; Wait until all threads exit gracefully.
-    (.awaitTermination
-      thread-pool
-      (:graceful-shutdown-time-sec opts)
-      TimeUnit/SECONDS)
-    ; Set state of thread-pool to STOP.
-    ; Send InterruptedException to close threads.
-    (cp/shutdown! thread-pool)))
+  [{:keys [thread-pool redis-conn
+           unblocking-queue graceful-shutdown-time-sec]}]
+  ; Set state of thread-pool to SHUTDOWN.
+  (cp/shutdown thread-pool)
+  ; REASON: https://github.com/nilenso/goose/issues/14
+  (r/enqueue-with-expiry
+    redis-conn unblocking-queue "dummy" graceful-shutdown-time-sec)
+  ; Wait until all threads exit gracefully.
+  (.awaitTermination
+    thread-pool
+    graceful-shutdown-time-sec
+    TimeUnit/SECONDS)
+  ; Set state of thread-pool to STOP.
+  ; Send InterruptedException to close threads.
+  (cp/shutdown! thread-pool))
 
 (defn start
   "Starts a threadpool for worker."
   [{:keys [redis-url
            redis-pool-opts
+           queues
            graceful-shutdown-time-sec
            parallelism]
     :or   {redis-url                  cfg/default-redis-url
            redis-pool-opts            {}
+           queues                     [cfg/default-queue]
            graceful-shutdown-time-sec 30
            parallelism                1}}]
   (validate-worker-params
     redis-url
     redis-pool-opts
+    queues
     graceful-shutdown-time-sec
     parallelism)
   (let [thread-pool (cp/threadpool parallelism)
         opts {:redis-conn                 (r/conn redis-url redis-pool-opts)
               :thread-pool                thread-pool
               :graceful-shutdown-time-sec graceful-shutdown-time-sec
-              ; REASON: TODO: github-issue
+              :prefixed-queues            (map #(str cfg/queue-prefix %) queues)
+              ; Reason for having a utility unblocking queue:
+              ; https://github.com/nilenso/goose/issues/14
               :unblocking-queue           (generate-unblocking-queue)}]
     (doseq [i (range parallelism)]
       (cp/future thread-pool (worker opts)))

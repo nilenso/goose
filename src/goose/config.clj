@@ -6,5 +6,8 @@
 (def long-polling-timeout-sec
   (* 5 60))
 
+(def queue-prefix
+  "goose/queue:")
+
 (def default-queue
-  "goose/queue:default")
+  "default")
