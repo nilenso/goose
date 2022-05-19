@@ -1,7 +1,8 @@
 (ns goose.validations.worker
   (:require
     [goose.utils :as u]
-    [goose.validations.common :refer [validate-redis]]))
+    [goose.validations.common :refer [validate-redis]]
+    [goose.validations.queue :refer [queues-invalid?]]))
 
 (defn gaceful-shutdown-time-sec-negative?
   [time]
@@ -12,11 +13,15 @@
   (< num 1))
 
 (defn validate-worker-params
-  [redis-url redis-pool-opts graceful-shutdown-time-sec parallelism]
+  [redis-url redis-pool-opts queues
+   graceful-shutdown-time-sec parallelism]
   (validate-redis redis-url redis-pool-opts)
   (when-let
     [validation-error
      (cond
+       (queues-invalid? queues)
+       ["Invalid queues" (u/wrap-error :queues-invalid queues)]
+
        (parallelism-less-than-1? parallelism)
        ["Parallelism cannot be less than 1" (u/wrap-error :parallelism-invalid parallelism)]
 
