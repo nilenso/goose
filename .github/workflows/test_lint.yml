@@ -11,8 +11,8 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
-          distribution: "microsoft"
-          java-version: "17"
+          distribution: microsoft
+          java-version: 17
       - name: Setup Clojure
         uses: DeLaGuardo/setup-clojure@master
         with:
