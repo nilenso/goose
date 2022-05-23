@@ -2,7 +2,7 @@
   (:require
     [goose.config :as cfg]
     [goose.utils :as u]
-    [taoensso.carmine :as car :refer (wcar)]))
+    [taoensso.carmine :as car]))
 
 (defn conn
   [url pool-opts]
@@ -22,7 +22,7 @@
     (wcar* conn (car/rpush list element))
     (catch Exception e
       (throw
-        (apply ex-info (u/wrap-error "Error enqueuing to redis" {:redis-error (.getMessage e)}))))))
+        (ex-info "Error enqueuing to redis" (u/wrap-error :redis-error (.getMessage e)))))))
 
 (defn enqueue-with-expiry [conn list element expiry-sec]
   (enqueue conn list element)

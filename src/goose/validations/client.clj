@@ -25,7 +25,10 @@
   ; Get full list from here: https://github.com/ptaoussanis/nippy
   ; if map/hash-set, recursion.
   [args]
-  (not (= args (edn/read-string (str args)))))
+  (try
+    (not (= args (edn/read-string (str args))))
+    (catch Exception _
+      true)))
 
 (defn- retries-negative?
   "Returns true if retries are negative."

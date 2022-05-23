@@ -1,0 +1,33 @@
+name: test-lint
+
+on: [ push ]
+
+jobs:
+  test-lint:
+    runs-on: ubuntu-latest
+    container: clojure:openjdk-17-tools-deps-1.11.0.1100-bullseye
+    services:
+      redis:
+        image: redis
+        # Health checks will wait until redis has started.
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run tests
+        run: clj -X:test
+        env:
+          GOOSE_REDIS_HOST: redis
+          GOOSE_REDIS_PORT: 6379
+      - name: Install clj-kondo
+        run: |
+          curl -sLO https://raw.githubusercontent.com/borkdude/clj-kondo/master/script/install-clj-kondo
+          chmod +x install-clj-kondo
+          ./install-clj-kondo
+      - name: Lint src
+        run: clj-kondo --lint src/
+      - name: Lint test
+        run: clj-kondo --lint test/

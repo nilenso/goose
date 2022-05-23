@@ -2,8 +2,7 @@
   (:require
     [goose.config :as cfg]
     [goose.redis :as r]
-    [goose.validations.client :refer [validate-async-params]]
-    [taoensso.carmine :as car]))
+    [goose.validations.client :refer [validate-async-params]]))
 
 (defn- job-id []
   (str (random-uuid)))

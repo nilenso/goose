@@ -1,6 +1,8 @@
 {:deps
- {com.taoensso/carmine      {:mvn/version "3.1.0"}
-  org.clj-commons/claypoole {:mvn/version "1.2.2"}}
+ {org.clojure/clojure       {:mvn/version "1.11.0"}
+  com.taoensso/carmine      {:mvn/version "3.1.0"}
+  org.clj-commons/claypoole {:mvn/version "1.2.2"}
+  org.clojure/tools.logging {:mvn/version "1.2.4"}}
 
  :aliases
  {:test {:extra-paths ["test"]
