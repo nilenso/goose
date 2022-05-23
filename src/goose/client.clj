@@ -2,10 +2,12 @@
   (:require
     [goose.config :as cfg]
     [goose.redis :as r]
-    [goose.validations.client :refer [validate-async-params]]))
+    [goose.validations.client :refer [validate-async-params]])
+  (:import
+    [java.util UUID]))
 
 (defn- job-id []
-  (str (random-uuid)))
+  (str (UUID/randomUUID)))
 
 (defn- epoch-time []
   (quot (System/currentTimeMillis) 1000))
