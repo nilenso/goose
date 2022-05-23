@@ -1,4 +1,6 @@
-(ns goose.utils)
+(ns goose.utils
+  (:require
+    [clojure.tools.logging :as log]))
 
 (defn wrap-error [error data]
   {:errors {error data}})
@@ -9,8 +11,8 @@
   `(try
      ~@body
      (catch Exception e#
-       (println (.toString e#))
-       (println "Exception occurred at:"
+       (log/error (.toString e#))
+       (log/error "Exception occurred at:"
                 (-> e#
                     (Throwable->map)
                     (get :via)

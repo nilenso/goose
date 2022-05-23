@@ -6,8 +6,8 @@
     [goose.validations.worker :refer [validate-worker-params]]
 
     [clojure.string :as str]
-    [com.climate.claypoole :as cp]
-    [taoensso.carmine :as car])
+    [clojure.tools.logging :as log]
+    [com.climate.claypoole :as cp])
   (:import
     [java.util.concurrent TimeUnit]))
 
@@ -22,7 +22,7 @@
   [{:keys [id fn-sym args]}]
   (require (namespace-sym fn-sym))
   (apply (resolve fn-sym) args)
-  (println "Executed job-id:" id))
+  (log/debug "Executed job-id:" id))
 
 (def ^:private unblocking-queue-prefix
   "goose/unblocking-queue:")
@@ -43,11 +43,11 @@
 (defn- worker
   [opts]
   (while (not (cp/shutdown? (:thread-pool opts)))
-    (println "Long-polling broker...")
+    (log/info "Long-polling broker...")
     (u/log-on-exceptions
       (when-let [job (pop-job opts)]
         (execute-job job))))
-  (println "Stopped polling broker. Exiting gracefully..."))
+  (log/info "Stopped polling broker. Exiting gracefully..."))
 
 (defprotocol Shutdown
   (stop [_]))
