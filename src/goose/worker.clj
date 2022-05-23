@@ -9,8 +9,7 @@
     [clojure.tools.logging :as log]
     [com.climate.claypoole :as cp])
   (:import
-    [java.util.concurrent TimeUnit]
-    [java.util UUID]))
+    [java.util.concurrent TimeUnit]))
 
 (defn- namespace-sym [fn-sym]
   (-> fn-sym
@@ -29,7 +28,7 @@
   "goose/unblocking-queue:")
 
 (defn- generate-unblocking-queue []
-  (str unblocking-queue-prefix (UUID/randomUUID)))
+  (str unblocking-queue-prefix (random-uuid)))
 
 (defn- extract-job
   [[queue list-member]]

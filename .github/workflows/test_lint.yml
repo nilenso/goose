@@ -25,7 +25,7 @@ jobs:
       - name: Setup Clojure
         uses: DeLaGuardo/setup-clojure@master
         with:
-          tools-deps: '1.10.1.754'
+          tools-deps: '1.11.1.1113'
       - name: Run tests (core)
         run: clojure -X:test
         env:
