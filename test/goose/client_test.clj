@@ -1,6 +1,6 @@
 (ns goose.client-test
   (:require
-    [clojure.test :refer :all]
+    [clojure.test :refer [deftest is testing]]
     [goose.client :as sut]
     [goose.config :as cfg]))
 

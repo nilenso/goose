@@ -1,8 +1,9 @@
 (ns goose.worker-test
   (:require
-    [clojure.test :refer :all]
+    [goose.config :as cfg]
     [goose.worker :as sut]
-    [goose.config :as cfg]))
+
+    [clojure.test :refer [deftest is testing]]))
 
 (deftest start-stop-test
   (testing "redis URL is valid"
@@ -31,7 +32,7 @@
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
         #"Invalid queues"
-        (sut/start {:queues '((str (cfg/queue-prefix "test")))}))))
+        (sut/start {:queues [(str cfg/queue-prefix "test")]}))))
 
   (testing "parallelism is positive"
     (is

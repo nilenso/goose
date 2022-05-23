@@ -1,0 +1,30 @@
+name: test-lint
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: test-lint
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: "microsoft"
+          java-version: "17"
+      - name: Setup Clojure
+        uses: DeLaGuardo/setup-clojure@master
+        with:
+          tools-deps: '1.10.1.754'
+      - name: Run tests (core)
+        run: clj -X:test
+      - name: Install clj-kondo
+        run: |
+          curl -sLO https://raw.githubusercontent.com/borkdude/clj-kondo/master/script/install-clj-kondo
+          chmod +x install-clj-kondo
+          sudo ./install-clj-kondo
+      - name: Lint src
+        run: clj-kondo --lint src/
+      - name: Lint test
+        run: clj-kondo --lint test/

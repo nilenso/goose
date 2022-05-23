@@ -96,7 +96,7 @@
               ; Reason for having a utility unblocking queue:
               ; https://github.com/nilenso/goose/issues/14
               :unblocking-queue           (generate-unblocking-queue)}]
-    (doseq [i (range parallelism)]
+    (doseq [_ (range parallelism)]
       (cp/future thread-pool (worker opts)))
     (reify Shutdown
       (stop [_] (internal-stop opts)))))

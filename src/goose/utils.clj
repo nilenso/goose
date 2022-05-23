@@ -11,10 +11,4 @@
   `(try
      ~@body
      (catch Exception e#
-       (log/error (.toString e#))
-       (log/error "Exception occurred at:"
-                (-> e#
-                    (Throwable->map)
-                    (get :via)
-                    (first)
-                    (get :at))))))
+       (log/error e# "Exception occurred"))))

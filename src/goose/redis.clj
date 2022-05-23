@@ -2,7 +2,7 @@
   (:require
     [goose.config :as cfg]
     [goose.utils :as u]
-    [taoensso.carmine :as car :refer (wcar)]))
+    [taoensso.carmine :as car]))
 
 (defn conn
   [url pool-opts]
