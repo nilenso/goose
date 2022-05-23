@@ -5,7 +5,7 @@ on: [ push ]
 jobs:
   test-lint:
     runs-on: ubuntu-latest
-    container: clojure:openjdk-8-tools-deps-1.11.1.1113-bullseye
+    container: clojure:openjdk-17-tools-deps-1.11.0.1100-bullseye
     services:
       redis:
         image: redis
