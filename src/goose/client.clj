@@ -22,7 +22,7 @@
   edn: https://github.com/edn-format/edn"
   [{:keys [redis-url redis-pool-opts
            queue retries]
-    :or   {redis-url       cfg/default-redis-url
+    :or   {redis-url       cfg/redis-url
            redis-pool-opts {}
            queue           cfg/default-queue
            retries         0}}
