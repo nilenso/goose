@@ -22,7 +22,7 @@
     (wcar* conn (car/rpush list element))
     (catch Exception e
       (throw
-        (apply ex-info (u/wrap-error "Error enqueuing to redis" {:redis-error (.getMessage e)}))))))
+        (ex-info "" (u/wrap-error "Error enqueuing to redis" {:redis-error (.getMessage e)}))))))
 
 (defn enqueue-with-expiry [conn list element expiry-sec]
   (enqueue conn list element)

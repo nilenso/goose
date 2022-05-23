@@ -1,9 +1,7 @@
 (ns goose.config)
 
-(def redis-url
-  (let [host (or (System/getenv "REDIS_HOST") "localhost")
-        port (or (System/getenv "REDIS_PORT") "6379")]
-    (str "redis://" host ":" port)))
+(def default-redis-url
+  "redis://localhost:6379")
 
 (def long-polling-timeout-sec
   (* 5 60))

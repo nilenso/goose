@@ -78,7 +78,7 @@
            queues
            graceful-shutdown-time-sec
            parallelism]
-    :or   {redis-url                  cfg/redis-url
+    :or   {redis-url                  cfg/default-redis-url
            redis-pool-opts            {}
            queues                     [cfg/default-queue]
            graceful-shutdown-time-sec 30

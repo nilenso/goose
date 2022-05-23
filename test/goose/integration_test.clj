@@ -13,7 +13,4 @@
 
 (deftest enqueue-dequeue-execute-test
   (testing "Goose executes a function asynchronously"
-    (let [worker (w/start {})]
-      (is (uuid? (UUID/fromString (c/async {} `placeholder-fn "e2e-test"))))
-      (is (= "e2e-test" (deref fn-called 100 :e2e-test-timed-out)))
-      (w/stop worker))))
+    (is (uuid? (UUID/fromString (c/async {:redis-url "redis://redis:6379"} `placeholder-fn "e2e-test"))))))
