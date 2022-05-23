@@ -1,15 +1,15 @@
 name: test-lint
 
-on: [push]
+on: [ push ]
 
 jobs:
-  container-job:
+  test-lint:
     runs-on: ubuntu-latest
     container: clojure:openjdk-8-tools-deps-1.11.1.1113-bullseye
     services:
-      # Reference: https://docs.github.com/en/actions/using-containerized-services/creating-redis-service-containers
       redis:
         image: redis
+        # Health checks will wait until redis has started.
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
@@ -18,11 +18,11 @@ jobs:
     name: test-lint
     steps:
       - uses: actions/checkout@v3
-      - name: Run tests (core)
+      - name: Run tests
         run: clojure -X:test
         env:
-          REDIS_HOST: redis
-          REDIS_PORT: 6379
+          GOOSE_REDIS_HOST: redis
+          GOOSE_REDIS_PORT: 6379
       - name: Install clj-kondo
         run: |
           curl -sLO https://raw.githubusercontent.com/borkdude/clj-kondo/master/script/install-clj-kondo
