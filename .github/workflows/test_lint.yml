@@ -27,7 +27,7 @@ jobs:
         run: |
           curl -sLO https://raw.githubusercontent.com/borkdude/clj-kondo/master/script/install-clj-kondo
           chmod +x install-clj-kondo
-          sudo ./install-clj-kondo
+          ./install-clj-kondo
       - name: Lint src
         run: clj-kondo --lint src/
       - name: Lint test
