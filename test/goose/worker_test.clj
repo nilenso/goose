@@ -20,19 +20,12 @@
         #"Invalid redis pool opts"
         (sut/start {:redis-pool-opts :invalid-pool}))))
 
-  (testing "queues are valid"
-    (is
-      (thrown-with-msg?
-        clojure.lang.ExceptionInfo
-        #"Invalid queues"
-        (sut/start {:queues "invalid queue"}))))
-
   (testing "queues aren't prefixed"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"Invalid queues"
-        (sut/start {:queues [(str cfg/queue-prefix "test")]}))))
+        #"Invalid queue"
+        (sut/start {:queue (str cfg/queue-prefix "test")}))))
 
   (testing "thread-count is positive"
     (is

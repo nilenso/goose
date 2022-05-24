@@ -39,21 +39,21 @@
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"Called with invalid queue"
+        #"Invalid queue"
         (sut/async {:queue (str cfg/queue-prefix "test")} `placeholder-fn))))
 
   (testing "queue is a string"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"Called with invalid queue"
+        #"Invalid queue"
         (sut/async {:queue :non-string-queue} `placeholder-fn))))
 
   (testing "queue length is below 1000"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"Called with invalid queue"
+        #"Invalid queue"
         (sut/async {:queue (str (range 300))} `placeholder-fn))))
 
   (testing "retries are positive"

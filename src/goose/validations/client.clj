@@ -2,7 +2,7 @@
   (:require
     [goose.utils :as u]
     [goose.validations.redis :refer [validate-redis]]
-    [goose.validations.queue :refer [queue-invalid?]]
+    [goose.validations.queue :refer [validate-queue]]
     [clojure.edn :as edn]))
 
 (defn- fn-symbol-unqualified?
@@ -38,12 +38,10 @@
 (defn validate-async-params
   [redis-url redis-pool-opts queue retries fn-sym args]
   (validate-redis redis-url redis-pool-opts)
+  (validate-queue queue)
   (when-let
     [validation-error
      (cond
-       (queue-invalid? queue)
-       ["Called with invalid queue" (u/wrap-error :invalid-queue queue)]
-
        (retries-negative? retries)
        ["Called with negative retries" (u/wrap-error :negative-retries retries)]
 

@@ -56,7 +56,7 @@ Getting Started
 
 (def goose-worker-opts
   {:redis-url                  "redis://username:password@my.redis:6379"
-   :queues                     '("my-queue")
+   :queue                      '("my-queue")
    :threads                    5
    :graceful-shutdown-time-sec 60})
 

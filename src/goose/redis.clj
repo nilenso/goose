@@ -11,7 +11,7 @@
 (defmacro wcar* [conn & body] `(car/wcar ~conn ~@body))
 
 (defn dequeue [conn lists]
-  ; Convert lists to vector because timeout should be last arg to blpop.
+  ; Convert list to vector to ensure timeout is last arg to blpop.
   (let [blpop-args (conj (vec lists) cfg/long-polling-timeout-sec)]
     (->> blpop-args
          (apply car/blpop)

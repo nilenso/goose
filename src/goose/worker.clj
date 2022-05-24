@@ -36,9 +36,9 @@
     list-member))
 
 (defn- pop-job
-  [{:keys [redis-conn prefixed-queues unblocking-queue]}]
-  (let [queues-superset (conj prefixed-queues unblocking-queue)]
-    (extract-job (r/dequeue redis-conn queues-superset))))
+  [{:keys [redis-conn prefixed-queue unblocking-queue]}]
+  (let [queues [prefixed-queue unblocking-queue]]
+    (extract-job (r/dequeue redis-conn queues))))
 
 (defn- worker
   [opts]
@@ -74,25 +74,25 @@
   "Starts a threadpool for worker."
   [{:keys [redis-url
            redis-pool-opts
-           queues
+           queue
            graceful-shutdown-time-sec
            threads]
     :or   {redis-url                  cfg/default-redis-url
            redis-pool-opts            {}
-           queues                     [cfg/default-queue]
+           queue                      cfg/default-queue
            graceful-shutdown-time-sec 30
            threads                    1}}]
   (validate-worker-params
     redis-url
     redis-pool-opts
-    queues
+    queue
     graceful-shutdown-time-sec
     threads)
   (let [thread-pool (cp/threadpool threads)
         opts {:redis-conn                 (r/conn redis-url redis-pool-opts)
               :thread-pool                thread-pool
               :graceful-shutdown-time-sec graceful-shutdown-time-sec
-              :prefixed-queues            (map #(str cfg/queue-prefix %) queues)
+              :prefixed-queue             (str cfg/queue-prefix queue)
               ; Reason for having a utility unblocking queue:
               ; https://github.com/nilenso/goose/issues/14
               :unblocking-queue           (generate-unblocking-queue)}]
