@@ -34,23 +34,23 @@
         #"Invalid queues"
         (sut/start {:queues [(str cfg/queue-prefix "test")]}))))
 
-  (testing "parallelism is positive"
+  (testing "thread-count is positive"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"Parallelism isn't a positive integer"
-        (sut/start {:parallelism 0}))))
+        #"Thread count isn't a positive integer"
+        (sut/start {:threads 0}))))
 
   (testing "Graceful shutdown time is positive"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"Invalid graceful shutdown time"
+        #"Graceful shutdown time isn't a positive integer"
         (sut/start {:graceful-shutdown-time-sec -1}))))
 
   (testing "Graceful shutdown time is an integer"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"Invalid graceful shutdown time"
+        #"Graceful shutdown time isn't a positive integer"
         (sut/start {:graceful-shutdown-time-sec 1.1})))))

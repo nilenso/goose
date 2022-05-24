@@ -1,7 +1,7 @@
 (ns goose.validations.worker
   (:require
     [goose.utils :as u]
-    [goose.validations.common :refer [validate-redis]]
+    [goose.validations.redis :refer [validate-redis]]
     [goose.validations.queue :refer [queues-invalid?]]))
 
 (defn gaceful-shutdown-time-sec-valid?
@@ -10,13 +10,13 @@
     (not (int? time))
     (neg? time)))
 
-(defn- parallelism-less-than-1?
+(defn- threads-less-than-1?
   [num]
   (not (pos-int? num)))
 
 (defn validate-worker-params
   [redis-url redis-pool-opts queues
-   graceful-shutdown-time-sec parallelism]
+   graceful-shutdown-time-sec threads]
   (validate-redis redis-url redis-pool-opts)
   (when-let
     [validation-error
@@ -24,9 +24,9 @@
        (queues-invalid? queues)
        ["Invalid queues" (u/wrap-error :queues-invalid queues)]
 
-       (parallelism-less-than-1? parallelism)
-       ["Parallelism isn't a positive integer" (u/wrap-error :parallelism-invalid parallelism)]
+       (threads-less-than-1? threads)
+       ["Thread count isn't a positive integer" (u/wrap-error :threads-invalid threads)]
 
        (gaceful-shutdown-time-sec-valid? graceful-shutdown-time-sec)
-       ["Invalid graceful shutdown time" (u/wrap-error :graceful-shutdown-time-sec-invalid graceful-shutdown-time-sec)])]
+       ["Graceful shutdown time isn't a positive integer" (u/wrap-error :graceful-shutdown-time-sec-invalid graceful-shutdown-time-sec)])]
     (throw (apply ex-info validation-error))))

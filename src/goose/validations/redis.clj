@@ -1,4 +1,4 @@
-(ns goose.validations.common
+(ns goose.validations.redis
   (:require
     [goose.utils :as u]
     [taoensso.carmine.connections :refer [IConnectionPool]]))

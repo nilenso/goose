@@ -76,19 +76,19 @@
            redis-pool-opts
            queues
            graceful-shutdown-time-sec
-           parallelism]
+           threads]
     :or   {redis-url                  cfg/default-redis-url
            redis-pool-opts            {}
            queues                     [cfg/default-queue]
            graceful-shutdown-time-sec 30
-           parallelism                1}}]
+           threads                    1}}]
   (validate-worker-params
     redis-url
     redis-pool-opts
     queues
     graceful-shutdown-time-sec
-    parallelism)
-  (let [thread-pool (cp/threadpool parallelism)
+    threads)
+  (let [thread-pool (cp/threadpool threads)
         opts {:redis-conn                 (r/conn redis-url redis-pool-opts)
               :thread-pool                thread-pool
               :graceful-shutdown-time-sec graceful-shutdown-time-sec
@@ -96,7 +96,7 @@
               ; Reason for having a utility unblocking queue:
               ; https://github.com/nilenso/goose/issues/14
               :unblocking-queue           (generate-unblocking-queue)}]
-    (doseq [_ (range parallelism)]
+    (doseq [_ (range threads)]
       (cp/future thread-pool (worker opts)))
     (reify Shutdown
       (stop [_] (internal-stop opts)))))

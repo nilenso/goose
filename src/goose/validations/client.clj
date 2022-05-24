@@ -1,7 +1,7 @@
 (ns goose.validations.client
   (:require
     [goose.utils :as u]
-    [goose.validations.common :refer [validate-redis]]
+    [goose.validations.redis :refer [validate-redis]]
     [goose.validations.queue :refer [queue-invalid?]]
     [clojure.edn :as edn]))
 
