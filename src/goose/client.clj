@@ -10,6 +10,12 @@
 (defn- epoch-time []
   (quot (System/currentTimeMillis) 1000))
 
+(def default-opts
+  {:redis-url       cfg/default-redis-url
+   :redis-pool-opts {}
+   :queue           cfg/default-queue
+   :retries         0})
+
 (defn async
   "Enqueues a function for asynchronous execution from an independent worker.
   Usage:
@@ -21,11 +27,7 @@
   - Retries must be non-negative
   edn: https://github.com/edn-format/edn"
   [{:keys [redis-url redis-pool-opts
-           queue retries]
-    :or   {redis-url       cfg/default-redis-url
-           redis-pool-opts {}
-           queue           cfg/default-queue
-           retries         0}}
+           queue retries]}
    resolvable-fn-symbol
    & args]
   (validate-async-params

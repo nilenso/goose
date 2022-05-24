@@ -16,5 +16,5 @@
 
 (defn validate-queue
   [queue]
-  (if (queue-invalid? queue)
+  (when (queue-invalid? queue)
     (throw (ex-info "Invalid queue" (u/wrap-error :queues-invalid queue)))))

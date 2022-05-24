@@ -70,24 +70,20 @@
   ; Send InterruptedException to close threads.
   (cp/shutdown! thread-pool))
 
+(def default-opts
+  {:redis-url                  cfg/default-redis-url
+   :redis-pool-opts            {}
+   :queue                      cfg/default-queue
+   :graceful-shutdown-time-sec 30
+   :threads                    1})
+
 (defn start
   "Starts a threadpool for worker."
-  [{:keys [redis-url
-           redis-pool-opts
-           queue
-           graceful-shutdown-time-sec
-           threads]
-    :or   {redis-url                  cfg/default-redis-url
-           redis-pool-opts            {}
-           queue                      cfg/default-queue
-           graceful-shutdown-time-sec 30
-           threads                    1}}]
+  [{:keys [redis-url redis-pool-opts queue
+           graceful-shutdown-time-sec threads]}]
   (validate-worker-params
-    redis-url
-    redis-pool-opts
-    queue
-    graceful-shutdown-time-sec
-    threads)
+    redis-url redis-pool-opts queue
+    graceful-shutdown-time-sec threads)
   (let [thread-pool (cp/threadpool threads)
         opts {:redis-conn                 (r/conn redis-url redis-pool-opts)
               :thread-pool                thread-pool
