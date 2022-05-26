@@ -24,7 +24,7 @@
   (let [delay (schedule-time schedule)]
     (cond
       delay
-      [(str cfg/queue-prefix cfg/scheduled-queue) delay]
+      [(str cfg/queue-prefix cfg/schedule-queue) delay]
 
       :else
       [(str cfg/queue-prefix queue)])))

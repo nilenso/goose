@@ -16,6 +16,7 @@
 
 (defn validate-worker-params
   [redis-url redis-pool-opts queue
+   scheduled-jobs-polling-interval-sec
    graceful-shutdown-time-sec threads]
   (validate-redis redis-url redis-pool-opts)
   (validate-queue queue)

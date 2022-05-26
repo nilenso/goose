@@ -12,8 +12,11 @@
 (def default-queue
   "default")
 
-(def scheduled-queue
+(def schedule-queue
   "scheduled-jobs")
 
 (def protected-queues
-  [scheduled-queue])
+  [schedule-queue])
+
+(def scheduled-jobs-pop-limit
+  50)

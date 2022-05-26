@@ -62,7 +62,7 @@
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
         #"Invalid queue"
-        (sut/async (assoc c/default-opts :queue cfg/scheduled-queue) `placeholder-fn))))
+        (sut/async (assoc c/default-opts :queue cfg/schedule-queue) `placeholder-fn))))
 
   (testing "retries are positive"
     (is
