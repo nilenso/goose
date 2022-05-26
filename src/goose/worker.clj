@@ -101,7 +101,7 @@
   (cp/shutdown! thread-pool))
 
 (def default-opts
-  {:threads                             3
+  {:threads                             1
    :redis-url                           cfg/default-redis-url
    :redis-pool-opts                     {}
    :queue                               cfg/default-queue

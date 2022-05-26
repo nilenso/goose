@@ -3,6 +3,7 @@
     [goose.utils :as u]
     [goose.validations.redis :refer [validate-redis]]
     [goose.validations.queue :refer [validate-queue]]
+    [goose.validations.scheduler :refer [validate-schedule]]
     [clojure.edn :as edn]))
 
 (defn- fn-symbol-unqualified?
@@ -40,10 +41,10 @@
    queue schedule retries fn-sym args]
   (validate-redis redis-url redis-pool-opts)
   (validate-queue queue)
+  (validate-schedule schedule)
   (when-let
     [validation-error
      (cond
-       ; TODO: validate schedule - date instance?, positive int, mutually exclusive.
        (retries-negative? retries)
        ["Called with negative retries" (u/wrap-error :negative-retries retries)]
 

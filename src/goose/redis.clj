@@ -26,11 +26,11 @@
   (enqueue-back conn list element)
   (wcar* conn (car/expire list expiry-sec)))
 
-(defn enqueue-sorted-set [conn set time element]
-  (wcar* conn (car/zadd set time element)))
+(defn enqueue-sorted-set [conn sorted-set time element]
+  (wcar* conn (car/zadd sorted-set time element)))
 
-(defn scheduled-jobs-due-now [conn set]
-  (wcar* conn (car/zrangebyscore set "-inf" (.getTime (java.util.Date.)) "limit" 0 cfg/scheduled-jobs-pop-limit)))
+(defn scheduled-jobs-due-now [conn sorted-set]
+  (wcar* conn (car/zrangebyscore sorted-set "-inf" (.getTime (java.util.Date.)) "limit" 0 cfg/scheduled-jobs-pop-limit)))
 
 (defn enqueue-due-jobs-to-front [conn sorted-set queue-jobs-map]
   (car/atomic
