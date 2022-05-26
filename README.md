@@ -23,51 +23,7 @@ Getting Started
 
 ### Client
 
-```clojure
-(ns my-server
-  (:require
-    [goose.client :as c]))
-
-(defn my-background-fn [arg1 arg2]
-  (println "called with" arg1 arg2))
-
-; Use default config.
-(c/async c/default-opts `my-background-fn "foo" :bar)
-
-; Modify few client configs.
-(def custom-client-opts
-  (assoc c/default-opts 
-    :redis-url "redis://username:password@my.redis:6379"
-    :queue "my-queue"))
-
-(c/async custom-client-opts `my-background-fn "foo" :bar)
-
-```
-
 ### Worker
-
-```clojure
-(ns my-worker
-  (:require
-    [goose.worker :as w]))
-
-; Use default config.
-(let [worker (w/start w/default-opts)]
-  ; ... listen for SIGINT to shutdown gracefully
-  (stop worker))
-
-; Modify all worker configs.
-(def custom-worker-opts
-  {:redis-url                  "redis://username:password@my.redis:6379"
-   :redis-pool-opts            {}
-   :queue                      "my-queue"
-   :threads                    5
-   :graceful-shutdown-time-sec 60})
-
-(let [configured-worker (w/start custom-worker-opts)]
-  ; ... listen for SIGINT to shutdown gracefully
-  (stop configured-worker))
-```
 
 Configuration options
 ---------
