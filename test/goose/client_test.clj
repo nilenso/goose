@@ -57,6 +57,13 @@
         #"Invalid queue"
         (sut/async (assoc c/default-opts :queue (str (range 300))) `placeholder-fn))))
 
+  (testing "queue isn't a protected keyword"
+    (is
+      (thrown-with-msg?
+        clojure.lang.ExceptionInfo
+        #"Invalid queue"
+        (sut/async (assoc c/default-opts :queue cfg/scheduled-queue) `placeholder-fn))))
+
   (testing "retries are positive"
     (is
       (thrown-with-msg?

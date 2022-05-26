@@ -17,13 +17,16 @@
          (apply car/blpop)
          (wcar* conn))))
 
-(defn enqueue [conn list element]
-  (try
-    (wcar* conn (car/rpush list element))
-    (catch Exception e
-      (throw
-        (ex-info "Error enqueuing to redis" (u/wrap-error :redis-error (.getMessage e)))))))
+(defn enqueue-back [conn list element]
+  (wcar* conn (car/rpush list element)))
+
+(defn enqueue-front [conn list element]
+  (wcar* conn (car/lpush list element)))
 
 (defn enqueue-with-expiry [conn list element expiry-sec]
-  (enqueue conn list element)
+  (enqueue-back conn list element)
   (wcar* conn (car/expire list expiry-sec)))
+
+(defn enqueue-sorted-set [conn set time element]
+  (wcar* conn (car/zadd set time element)))
+

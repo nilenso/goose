@@ -36,12 +36,14 @@
   (neg? num))
 
 (defn validate-async-params
-  [redis-url redis-pool-opts queue retries fn-sym args]
+  [redis-url redis-pool-opts
+   queue schedule retries fn-sym args]
   (validate-redis redis-url redis-pool-opts)
   (validate-queue queue)
   (when-let
     [validation-error
      (cond
+       ; TODO: validate schedule - date instance?, positive int, mutually exclusive.
        (retries-negative? retries)
        ["Called with negative retries" (u/wrap-error :negative-retries retries)]
 

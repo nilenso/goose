@@ -11,3 +11,9 @@
 
 (def default-queue
   "default")
+
+(def scheduled-queue
+  "scheduled-jobs")
+
+(def protected-queues
+  [scheduled-queue])

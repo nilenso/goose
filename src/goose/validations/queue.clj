@@ -12,9 +12,10 @@
   (or
     (not (string? queue))
     (str/starts-with? queue cfg/queue-prefix)
-    (< 1000 (count queue))))
+    (< 1000 (count queue))
+    (.contains cfg/protected-queues queue)))
 
 (defn validate-queue
   [queue]
-  (when (queue-invalid? queue)
+  (when (and queue (queue-invalid? queue))
     (throw (ex-info "Invalid queue" (u/wrap-error :queues-invalid queue)))))
