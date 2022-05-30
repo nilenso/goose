@@ -31,7 +31,7 @@
      (r/enqueue-front conn queue job)
      (r/enqueue-sorted-set conn queue time job))))
 
-(def schedule-opts
+(def ^:private schedule-opts
   "perform-at & perform-in-sec opts are mutually exclusive."
   {:perform-at     nil
    :perform-in-sec nil})

@@ -29,7 +29,7 @@
     :redis-url redis-url
     :queue "test"
     :graceful-shutdown-time-sec 1
-    :scheduled-jobs-polling-interval-sec 1))
+    :scheduler-polling-interval-sec 1))
 
 (deftest enqueue-dequeue-execute-test
   (testing "Goose executes a function asynchronously"

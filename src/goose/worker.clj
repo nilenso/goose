@@ -57,17 +57,15 @@
   (log/info "Stopped worker. Exiting gracefully..."))
 
 (defn- scheduler
-  [{:keys [thread-pool redis-conn
-           scheduled-jobs-polling-interval-sec]}]
-  (while-pool thread-pool
+  [{:keys [thread-pool redis-conn schedule-queue
+           scheduler-polling-interval-sec]}]
+  (while-pool
+    thread-pool
     (log/info "Polling Scheduled Jobs...")
     (u/log-on-exceptions
-      (let [schedule-queue (str d/queue-prefix d/schedule-queue)
-            jobs (r/scheduled-jobs-due-now redis-conn schedule-queue)
-            grouped-jobs (group-by :queue jobs)]
-        (if (empty? jobs)
-          (Thread/sleep (* 1000 scheduled-jobs-polling-interval-sec))
-          (r/enqueue-due-jobs-to-front redis-conn schedule-queue grouped-jobs)))))
+      (if-let [jobs (r/scheduled-jobs-due-now redis-conn schedule-queue)]
+        (r/enqueue-due-jobs-to-front redis-conn schedule-queue jobs)
+        (Thread/sleep (* 1000 scheduler-polling-interval-sec)))))
   (log/info "Stopped scheduler. Exiting gracefully..."))
 
 (defprotocol Shutdown
@@ -96,32 +94,34 @@
   (cp/shutdown! thread-pool))
 
 (def default-opts
-  {:threads                             1
-   :redis-url                           d/default-redis-url
-   :redis-pool-opts                     {}
-   :queue                               d/default-queue
-   :scheduled-jobs-polling-interval-sec 5
-   :graceful-shutdown-time-sec          30})
+  {:threads                        1
+   :redis-url                      d/default-redis-url
+   :redis-pool-opts                {}
+   :queue                          d/default-queue
+   :scheduler-polling-interval-sec 5
+   :graceful-shutdown-time-sec     30})
 
 (defn start
   "Starts a threadpool for worker."
   [{:keys [threads redis-url redis-pool-opts
-           queue scheduled-jobs-polling-interval-sec
+           queue scheduler-polling-interval-sec
            graceful-shutdown-time-sec]}]
   (validate-worker-params
     redis-url redis-pool-opts queue
-    scheduled-jobs-polling-interval-sec
+    scheduler-polling-interval-sec
     graceful-shutdown-time-sec threads)
-  (let [thread-pool (cp/threadpool (+ 1 threads)) ; An extra thread to poll for scheduled jobs.
-        opts {:thread-pool                         thread-pool
-              :redis-conn                          (r/conn redis-url redis-pool-opts)
-              :prefixed-queue                      (str d/queue-prefix queue)
-              ; Reason for having a utility unblocking queue:
-              ; https://github.com/nilenso/goose/issues/14
-              :unblocking-queue                    (generate-unblocking-queue)
-              :graceful-shutdown-time-sec          graceful-shutdown-time-sec
-              :scheduled-jobs-polling-interval-sec scheduled-jobs-polling-interval-sec}]
-    (dotimes [_s threads]
+  (let [thread-pool (cp/threadpool (+ 1 threads)) ; An extra thread to poll scheduled jobs.
+        opts {:thread-pool                    thread-pool
+              :redis-conn                     (r/conn redis-url redis-pool-opts)
+
+              :prefixed-queue                 (str d/queue-prefix queue)
+              :schedule-queue                 (str d/queue-prefix d/schedule-queue)
+              ; REASON: https://github.com/nilenso/goose/issues/14
+              :unblocking-queue               (generate-unblocking-queue)
+
+              :graceful-shutdown-time-sec     graceful-shutdown-time-sec
+              :scheduler-polling-interval-sec scheduler-polling-interval-sec}]
+    (dotimes [_ threads]
       (cp/future thread-pool (worker opts)))
     (cp/future thread-pool (scheduler opts))
     (reify Shutdown

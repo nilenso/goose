@@ -24,33 +24,33 @@
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"Invalid queue"
+        #"Queue shouldn't be prefixed"
         (sut/start (assoc sut/default-opts :queue (str d/queue-prefix "test"))))))
 
   (testing "thread-count is positive"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"Thread count isn't a positive integer"
+        #"Thread count should be a positive integer"
         (sut/start (assoc sut/default-opts :threads 0)))))
 
   (testing "Graceful shutdown time is positive"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"Graceful shutdown time isn't a positive integer"
+        #"Graceful shutdown should be a positive integer"
         (sut/start (assoc sut/default-opts :graceful-shutdown-time-sec -1)))))
 
   (testing "Graceful shutdown time is an integer"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"Graceful shutdown time isn't a positive integer"
+        #"Graceful shutdown should be a positive integer"
         (sut/start (assoc sut/default-opts :graceful-shutdown-time-sec 1.1)))))
 
-  (testing "Scheduled jobs polling interval is a positive integer"
+  (testing "Scheduler polling interval is a positive integer"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"Scheduled jobs polling interval isn't a positive integer"
-        (sut/start (assoc sut/default-opts :scheduled-jobs-polling-interval-sec -1.2))))))
+        #"Scheduler polling interval should be a positive integer"
+        (sut/start (assoc sut/default-opts :scheduler-polling-interval-sec -1.2))))))

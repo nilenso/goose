@@ -35,19 +35,19 @@
   (let [min "-inf"
         limit "limit"
         offset 0]
-    (wcar*
-      conn
-      (car/zrangebyscore
-        sorted-set min (u/epoch-time)
-        limit offset d/scheduled-jobs-pop-limit))))
+    (not-empty
+      (wcar*
+        conn
+        (car/zrangebyscore
+          sorted-set min (u/epoch-time)
+          limit offset d/scheduled-jobs-pop-limit)))))
 
-(defn enqueue-due-jobs-to-front [conn sorted-set queue-jobs-map]
-  (let [cas-attempts 100
-        scheduled-jobs (flatten (vals queue-jobs-map))]
+(defn enqueue-due-jobs-to-front [conn sorted-set jobs]
+  (let [cas-attempts 100]
     (car/atomic
       conn cas-attempts
       (car/multi)
-      (apply car/zrem sorted-set scheduled-jobs)
-      (doseq [[queue jobs] queue-jobs-map]
+      (apply car/zrem sorted-set jobs)
+      (doseq [[queue jobs] (group-by :queue jobs)]
         (let [prefixed-queue (str d/queue-prefix queue)]
           (apply car/lpush prefixed-queue jobs))))))

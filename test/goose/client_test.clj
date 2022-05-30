@@ -16,53 +16,47 @@
         #"Invalid redis URL"
         (sut/async (assoc sut/default-opts :redis-url "redis://invalid-url") 'placeholder-fn))))
 
-  (testing "redis conn pool opt is valid"
-    (is
-      (thrown-with-msg?
-        clojure.lang.ExceptionInfo
-        #"Invalid redis pool opts"
-        (sut/async (assoc sut/default-opts :redis-pool-opts :invalid-pool) 'placeholder-fn))))
-
   (testing "function symbol is qualified"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"Called with unqualified function"
+        #"Function symbol should be Qualified"
         (sut/async sut/default-opts 'placeholder-fn))))
 
   (testing "function is resolvable"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"Called with unresolvable function"
+        #"Function symbol should be Resolvable"
         (sut/async sut/default-opts `bar))))
 
-  (testing "queue is not prefixed"
-    (is
-      (thrown-with-msg?
-        clojure.lang.ExceptionInfo
-        #"Invalid queue"
-        (sut/async (assoc sut/default-opts :queue (str d/queue-prefix "olttwa")) `placeholder-fn))))
 
   (testing "queue is a string"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"Invalid queue"
+        #"Queue should be a string"
         (sut/async (assoc sut/default-opts :queue :non-string-queue) `placeholder-fn))))
 
   (testing "queue length is below 1000"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"Invalid queue"
+        #"Queue length should be less than 1000"
         (sut/async (assoc sut/default-opts :queue (str (range 300))) `placeholder-fn))))
+
+  (testing "queue is not prefixed"
+    (is
+      (thrown-with-msg?
+        clojure.lang.ExceptionInfo
+        #"Queue shouldn't be prefixed"
+        (sut/async (assoc sut/default-opts :queue (str d/queue-prefix "olttwa")) `placeholder-fn))))
 
   (testing "queue isn't a protected keyword"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"Invalid queue"
+        #"Protected queue names shouldn't be used"
         (sut/async (assoc sut/default-opts :queue d/schedule-queue) `placeholder-fn))))
 
   (testing "perform-at and perform-in-sec are mutually exclusive"
@@ -86,16 +80,23 @@
         #":perform-at isn't an instance of date object"
         (sut/async (assoc sut/default-opts :schedule {:perform-at "27-May-2022"}) `placeholder-fn))))
 
-  (testing "retries are positive"
+  (testing "retry count is positive"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"Called with negative retries"
+        #"Retry count shouldn't be negative"
         (sut/async (assoc sut/default-opts :retries -1) `placeholder-fn))))
+
+  (testing "retry count is an integer"
+    (is
+      (thrown-with-msg?
+        clojure.lang.ExceptionInfo
+        #"Retry count should be an integer"
+        (sut/async (assoc sut/default-opts :retries 1.1) `placeholder-fn))))
 
   (testing "args are serializable"
     (is
       (thrown-with-msg?
         java.lang.RuntimeException
-        #"Called with unserializable args"
+        #"Args should be Serializable"
         (sut/async sut/default-opts `placeholder-fn #(fn []))))))
