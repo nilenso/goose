@@ -1,4 +1,4 @@
-(ns goose.config)
+(ns goose.defaults)
 
 (def default-redis-url
   "redis://localhost:6379")

@@ -12,7 +12,7 @@
   (when date
     (not (instance? java.util.Date date))))
 
-(defn- mutually-inexclusive?
+(defn- mutually-inclusive?
   [x y]
   (and x y))
 
@@ -21,7 +21,7 @@
   (when-let
     [validation-error
      (cond
-       (mutually-inexclusive? perform-at perform-in-sec)
+       (mutually-inclusive? perform-at perform-in-sec)
        [":perform-at & :perform-in-sec are mutually exclusive options" (u/wrap-error :invalid-schedule "conflicting inputs")]
 
        (perform-in-sec-invalid? perform-in-sec)

@@ -1,39 +1,33 @@
 (ns goose.client
   (:require
-    [goose.config :as cfg]
+    [goose.defaults :as d]
     [goose.redis :as r]
+    [goose.utils :as u]
     [goose.validations.client :refer [validate-async-params]]))
 
 (defn- job-id []
   (str (random-uuid)))
 
-(defn- epoch-time []
-  (quot (System/currentTimeMillis) 1000))
-
 (defn- schedule-time
   [{:keys [perform-at perform-in-sec]}]
   (cond
     perform-at
-    (.getTime perform-at)
+    (u/epoch-time perform-at)
 
     perform-in-sec
-    (+ (* 1000 perform-in-sec) (.getTime (java.util.Date.)))))
+    (+ perform-in-sec (u/epoch-time))))
 
 (defn- route-job
   [queue schedule]
-  (let [delay (schedule-time schedule)]
-    (cond
-      delay
-      [(str cfg/queue-prefix cfg/schedule-queue) delay]
-
-      :else
-      [(str cfg/queue-prefix queue)])))
+  (if-let [delay (schedule-time schedule)]
+    [(str d/queue-prefix d/schedule-queue) delay]
+    [(str d/queue-prefix queue)]))
 
 (defn- push-job
   ([conn job queue]
    (r/enqueue-back conn queue job))
   ([conn job queue time]
-   (if (< time (epoch-time))
+   (if (< time (u/epoch-time))
      (r/enqueue-front conn queue job)
      (r/enqueue-sorted-set conn queue time job))))
 
@@ -43,9 +37,9 @@
    :perform-in-sec nil})
 
 (def default-opts
-  {:redis-url       cfg/default-redis-url
+  {:redis-url       d/default-redis-url
    :redis-pool-opts {}
-   :queue           cfg/default-queue
+   :queue           d/default-queue
    :schedule        schedule-opts
    :retries         0})
 
@@ -73,7 +67,7 @@
              :fn-sym      resolvable-fn-symbol
              :args        args
              :retries     retries
-             :enqueued-at (epoch-time)}
+             :enqueued-at (u/epoch-time)}
         queue-opts (route-job queue schedule)
         push-job-params (concat [redis-conn job] queue-opts)]
     (apply push-job push-job-params)

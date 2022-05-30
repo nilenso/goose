@@ -1,6 +1,6 @@
 (ns goose.validations.queue
   (:require
-    [goose.config :as cfg]
+    [goose.defaults :as d]
     [goose.utils :as u]
     [clojure.string :as str]))
 
@@ -11,9 +11,9 @@
   [queue]
   (or
     (not (string? queue))
-    (str/starts-with? queue cfg/queue-prefix)
+    (str/starts-with? queue d/queue-prefix)
     (< 1000 (count queue))
-    (.contains cfg/protected-queues queue)))
+    (clojure.string/includes? d/protected-queues queue)))
 
 (defn validate-queue
   [queue]

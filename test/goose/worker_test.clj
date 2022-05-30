@@ -1,6 +1,6 @@
 (ns goose.worker-test
   (:require
-    [goose.config :as cfg]
+    [goose.defaults :as d]
     [goose.worker :as sut]
 
     [clojure.test :refer [deftest is testing]]))
@@ -25,7 +25,7 @@
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
         #"Invalid queue"
-        (sut/start (assoc sut/default-opts :queue (str cfg/queue-prefix "test"))))))
+        (sut/start (assoc sut/default-opts :queue (str d/queue-prefix "test"))))))
 
   (testing "thread-count is positive"
     (is

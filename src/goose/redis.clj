@@ -1,6 +1,8 @@
 (ns goose.redis
   (:require
-    [goose.config :as cfg]
+    [goose.defaults :as d]
+    [goose.utils :as u]
+
     [taoensso.carmine :as car]))
 
 (defn conn
@@ -11,7 +13,7 @@
 
 (defn dequeue [conn lists]
   ; Convert list to vector to ensure timeout is last arg to blpop.
-  (let [blpop-args (conj (vec lists) cfg/long-polling-timeout-sec)]
+  (let [blpop-args (conj (vec lists) d/long-polling-timeout-sec)]
     (->> blpop-args
          (apply car/blpop)
          (wcar* conn))))
@@ -30,14 +32,22 @@
   (wcar* conn (car/zadd sorted-set time element)))
 
 (defn scheduled-jobs-due-now [conn sorted-set]
-  (wcar* conn (car/zrangebyscore sorted-set "-inf" (.getTime (java.util.Date.)) "limit" 0 cfg/scheduled-jobs-pop-limit)))
+  (let [min "-inf"
+        limit "limit"
+        offset 0]
+    (wcar*
+      conn
+      (car/zrangebyscore
+        sorted-set min (u/epoch-time)
+        limit offset d/scheduled-jobs-pop-limit))))
 
 (defn enqueue-due-jobs-to-front [conn sorted-set queue-jobs-map]
-  (car/atomic
-    conn 100
-    (let [scheduled-jobs (flatten (vals queue-jobs-map))]
+  (let [cas-attempts 100
+        scheduled-jobs (flatten (vals queue-jobs-map))]
+    (car/atomic
+      conn cas-attempts
       (car/multi)
-      (apply car/zrem (concat [sorted-set] scheduled-jobs))
+      (apply car/zrem sorted-set scheduled-jobs)
       (doseq [[queue jobs] queue-jobs-map]
-        (let [prefixed-queue (str cfg/queue-prefix queue)]
-          (apply car/lpush (concat [prefixed-queue] jobs)))))))
+        (let [prefixed-queue (str d/queue-prefix queue)]
+          (apply car/lpush prefixed-queue jobs))))))

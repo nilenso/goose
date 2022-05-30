@@ -2,7 +2,7 @@
   (:require
     [clojure.test :refer [deftest is testing]]
     [goose.client :as sut]
-    [goose.config :as cfg])
+    [goose.defaults :as d])
   (:import
     [java.util Date]))
 
@@ -42,7 +42,7 @@
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
         #"Invalid queue"
-        (sut/async (assoc sut/default-opts :queue (str cfg/queue-prefix "olttwa")) `placeholder-fn))))
+        (sut/async (assoc sut/default-opts :queue (str d/queue-prefix "olttwa")) `placeholder-fn))))
 
   (testing "queue is a string"
     (is
@@ -63,7 +63,7 @@
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
         #"Invalid queue"
-        (sut/async (assoc sut/default-opts :queue cfg/schedule-queue) `placeholder-fn))))
+        (sut/async (assoc sut/default-opts :queue d/schedule-queue) `placeholder-fn))))
 
   (testing "perform-at and perform-in-sec are mutually exclusive"
     (is
