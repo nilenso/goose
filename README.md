@@ -6,7 +6,10 @@ Simple, Scalable background processing library for Clojure.
 Features
 ---------
 
+*[Simplicity is Complicated.](https://youtu.be/rFejpH_tAHM)* We've strived to make Goose as simple, transparent & functional as possible.
+
 - A *simple*, *functional* interface
+- Flexible - *open* for extension, **closed** for modification
 - Lean library, using latest Clojure tooling
 - Configurable, with *sane defaults*
 - Parallel execution using Java thread-pools
@@ -20,47 +23,7 @@ Getting Started
 
 ### Client
 
-```clojure
-(ns my-application
-  (:require
-    [goose.client :as c]))
-
-(defn my-background-fn [arg1 arg2]
-  (println "called with" arg1 arg2))
-
-; Use default config.
-(c/async nil `my-background-fn "foo" :bar)
-
-(def goose-client-opts
-  {:redis-url "redis://username:password@my.redis:6379"
-   :queue "my-queue"})
-
-(c/async goose-client-opts `my-background-fn "foo" :bar)
-
-```
-
 ### Worker
-
-```clojure
-(ns my-application-worker
-  (:require
-    [goose.worker :as w]))
-
-; Use default config.
-(let [worker (w/start nil)]
-  ; ... listen for SIGINT to shutdown gracefully
-  (stop worker))
-
-(def goose-worker-opts
-  {:redis-url "redis://username:password@my.redis:6379"
-   :queues '("my-queue")
-   :parallelism 5
-   :graceful-shutdown-time-sec 60})
-
-(let [configured-worker (w/start goose-worker-opts)]
-  ; ... listen for SIGINT to shutdown gracefully
-  (stop configured-worker))
-```
 
 Configuration options
 ---------
@@ -68,16 +31,16 @@ Configuration options
 | Option | For? | Default Value | Description |
 | --- | --- | --- | --- |
 | `:redis-url` | Both | `redis://localhost:6379` | URL for Redis. Valid URL is: `redis://username:password@hostname:0-65353` |
-| `:queue` | Client | `default` | Queue in redis which will be enqueued |
-| `:queues` | Worker | `["default"]` | Queues for worker to read from |
-| `:parallelism` | Worker | 1 | Number of threads running in parallel |
+| `:queue` | Both | `default` | Queue in redis which will be enqueued |
+| `:retries` | Client | `21` | Number of times a job should be retried with exponential backoff, before marking it as dead |
+| `:threads` | Worker | 1 | Number of threads in the threadpool |
 
-**Note: Config options are yet to be completed**
+**TODO: Fill in all config options before open sourcing.**
 
 Why the name "Goose"?
 ---------
 
-![goose-logo](https://upload.wikimedia.org/wikipedia/commons/3/31/Goose_Up_Close.jpg)
+![goose-logo](link-to-goose-logo)
 
 **Note: Insert a *Clojury* logo here**
 

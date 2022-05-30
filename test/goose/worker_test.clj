@@ -1,6 +1,6 @@
 (ns goose.worker-test
   (:require
-    [goose.config :as cfg]
+    [goose.defaults :as d]
     [goose.worker :as sut]
 
     [clojure.test :refer [deftest is testing]]))
@@ -11,46 +11,46 @@
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
         #"Invalid redis URL"
-        (sut/start {:redis-url "redis://invalid-url"}))))
+        (sut/start (assoc sut/default-opts :redis-url "redis://invalid-url")))))
 
   (testing "redis conn pool opt is valid"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
         #"Invalid redis pool opts"
-        (sut/start {:redis-pool-opts :invalid-pool}))))
-
-  (testing "queues are valid"
-    (is
-      (thrown-with-msg?
-        clojure.lang.ExceptionInfo
-        #"Invalid queues"
-        (sut/start {:queues "invalid queue"}))))
+        (sut/start (assoc sut/default-opts :redis-pool-opts :invalid-pool)))))
 
   (testing "queues aren't prefixed"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"Invalid queues"
-        (sut/start {:queues [(str cfg/queue-prefix "test")]}))))
+        #"Queue shouldn't be prefixed"
+        (sut/start (assoc sut/default-opts :queue (str d/queue-prefix "test"))))))
 
-  (testing "parallelism is positive"
+  (testing "thread-count is positive"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"Parallelism isn't a positive integer"
-        (sut/start {:parallelism 0}))))
+        #"Thread count should be a positive integer"
+        (sut/start (assoc sut/default-opts :threads 0)))))
 
   (testing "Graceful shutdown time is positive"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"Invalid graceful shutdown time"
-        (sut/start {:graceful-shutdown-time-sec -1}))))
+        #"Graceful shutdown should be a positive integer"
+        (sut/start (assoc sut/default-opts :graceful-shutdown-time-sec -1)))))
 
   (testing "Graceful shutdown time is an integer"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"Invalid graceful shutdown time"
-        (sut/start {:graceful-shutdown-time-sec 1.1})))))
+        #"Graceful shutdown should be a positive integer"
+        (sut/start (assoc sut/default-opts :graceful-shutdown-time-sec 1.1)))))
+
+  (testing "Scheduler polling interval is a positive integer"
+    (is
+      (thrown-with-msg?
+        clojure.lang.ExceptionInfo
+        #"Scheduler polling interval should be a positive integer"
+        (sut/start (assoc sut/default-opts :scheduler-polling-interval-sec -1.2))))))

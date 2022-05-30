@@ -1,7 +1,8 @@
 (ns goose.redis
   (:require
-    [goose.config :as cfg]
+    [goose.defaults :as d]
     [goose.utils :as u]
+
     [taoensso.carmine :as car]))
 
 (defn conn
@@ -11,19 +12,42 @@
 (defmacro wcar* [conn & body] `(car/wcar ~conn ~@body))
 
 (defn dequeue [conn lists]
-  ; Convert lists to vector because timeout should be last arg to blpop.
-  (let [blpop-args (conj (vec lists) cfg/long-polling-timeout-sec)]
+  ; Convert list to vector to ensure timeout is last arg to blpop.
+  (let [blpop-args (conj (vec lists) d/long-polling-timeout-sec)]
     (->> blpop-args
          (apply car/blpop)
          (wcar* conn))))
 
-(defn enqueue [conn list element]
-  (try
-    (wcar* conn (car/rpush list element))
-    (catch Exception e
-      (throw
-        (ex-info "Error enqueuing to redis" (u/wrap-error :redis-error (.getMessage e)))))))
+(defn enqueue-back [conn list element]
+  (wcar* conn (car/rpush list element)))
+
+(defn enqueue-front [conn list element]
+  (wcar* conn (car/lpush list element)))
 
 (defn enqueue-with-expiry [conn list element expiry-sec]
-  (enqueue conn list element)
+  (enqueue-back conn list element)
   (wcar* conn (car/expire list expiry-sec)))
+
+(defn enqueue-sorted-set [conn sorted-set time element]
+  (wcar* conn (car/zadd sorted-set time element)))
+
+(defn scheduled-jobs-due-now [conn sorted-set]
+  (let [min "-inf"
+        limit "limit"
+        offset 0]
+    (not-empty
+      (wcar*
+        conn
+        (car/zrangebyscore
+          sorted-set min (u/epoch-time)
+          limit offset d/scheduled-jobs-pop-limit)))))
+
+(defn enqueue-due-jobs-to-front [conn sorted-set jobs]
+  (let [cas-attempts 100]
+    (car/atomic
+      conn cas-attempts
+      (car/multi)
+      (apply car/zrem sorted-set jobs)
+      (doseq [[queue jobs] (group-by :queue jobs)]
+        (let [prefixed-queue (str d/queue-prefix queue)]
+          (apply car/lpush prefixed-queue jobs))))))

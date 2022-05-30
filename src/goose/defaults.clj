@@ -1,4 +1,4 @@
-(ns goose.config)
+(ns goose.defaults)
 
 (def default-redis-url
   "redis://localhost:6379")
@@ -11,3 +11,12 @@
 
 (def default-queue
   "default")
+
+(def schedule-queue
+  "scheduled-jobs")
+
+(def protected-queues
+  [schedule-queue])
+
+(def scheduled-jobs-pop-limit
+  50)
