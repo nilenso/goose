@@ -28,8 +28,8 @@
   (enqueue-back conn list element)
   (wcar* conn (car/expire list expiry-sec)))
 
-(defn enqueue-sorted-set [conn sorted-set time element]
-  (wcar* conn (car/zadd sorted-set time element)))
+(defn enqueue-sorted-set [conn sorted-set run-at element]
+  (wcar* conn (car/zadd sorted-set run-at element)))
 
 (defn scheduled-jobs-due-now [conn sorted-set]
   (let [min "-inf"
@@ -39,7 +39,7 @@
       (wcar*
         conn
         (car/zrangebyscore
-          sorted-set min (u/epoch-time)
+          sorted-set min (u/epoch-time-ms)
           limit offset d/scheduled-jobs-pop-limit)))))
 
 (defn enqueue-due-jobs-to-front [conn sorted-set jobs]

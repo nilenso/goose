@@ -1,6 +1,7 @@
 (ns goose.utils
   (:require
-    [clojure.tools.logging :as log]))
+    [clojure.tools.logging :as log]
+    [com.climate.claypoole :as cp]))
 
 (defn wrap-error [error data]
   {:errors {error data}})
@@ -13,8 +14,13 @@
      (catch Exception e#
        (log/error e# "Exception occurred"))))
 
-(defn epoch-time
+(defn epoch-time-ms
   "Returns Unix epoch time for given date.
    If no date is given, returns epoch for current time."
-  ([] (epoch-time (java.util.Date.)))
+  ([] (epoch-time-ms (java.util.Date.)))
   ([date] (inst-ms date)))
+
+(defmacro while-pool
+  [pool & body]
+  `(while (not (cp/shutdown? ~pool))
+     ~@body))

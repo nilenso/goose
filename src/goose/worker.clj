@@ -2,6 +2,7 @@
   (:require
     [goose.defaults :as d]
     [goose.redis :as r]
+    [goose.scheduler :as scheduler]
     [goose.utils :as u]
     [goose.validations.worker :refer [validate-worker-params]]
 
@@ -40,33 +41,16 @@
   (let [queues [prefixed-queue unblocking-queue]]
     (extract-job (r/dequeue redis-conn queues))))
 
-(defmacro while-pool
-  [pool & body]
-  `(while (not (cp/shutdown? ~pool))
-     ~@body))
-
 (defn- worker
   [{:keys [thread-pool redis-conn
            prefixed-queue unblocking-queue]}]
-  (while-pool
+  (u/while-pool
     thread-pool
     (log/info "Long-Polling Redis...")
     (u/log-on-exceptions
       (when-let [job (pop-job redis-conn prefixed-queue unblocking-queue)]
         (execute-job job))))
   (log/info "Stopped worker. Exiting gracefully..."))
-
-(defn- scheduler
-  [{:keys [thread-pool redis-conn schedule-queue
-           scheduler-polling-interval-sec]}]
-  (while-pool
-    thread-pool
-    (log/info "Polling Scheduled Jobs...")
-    (u/log-on-exceptions
-      (if-let [jobs (r/scheduled-jobs-due-now redis-conn schedule-queue)]
-        (r/enqueue-due-jobs-to-front redis-conn schedule-queue jobs)
-        (Thread/sleep (* 1000 scheduler-polling-interval-sec)))))
-  (log/info "Stopped scheduler. Exiting gracefully..."))
 
 (defprotocol Shutdown
   (stop [_]))
@@ -123,6 +107,6 @@
               :scheduler-polling-interval-sec scheduler-polling-interval-sec}]
     (dotimes [_ threads]
       (cp/future thread-pool (worker opts)))
-    (cp/future thread-pool (scheduler opts))
+    (cp/future thread-pool (scheduler/run opts))
     (reify Shutdown
       (stop [_] (internal-stop opts)))))

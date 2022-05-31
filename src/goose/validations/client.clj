@@ -17,10 +17,10 @@
 
 (defn validate-async-params
   [redis-url redis-pool-opts
-   queue schedule retries fn-sym args]
+   queue schedule-opts retries fn-sym args]
   (validate-redis redis-url redis-pool-opts)
   (validate-queue queue)
-  (validate-schedule schedule)
+  (validate-schedule schedule-opts)
   (when-let
     [validation-error
      (cond

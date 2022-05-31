@@ -41,7 +41,7 @@
   (testing "Goose executes a scheduled function asynchronously"
     (c/async
       (assoc client-opts
-        :schedule {:perform-in-sec 1})
+        :schedule-opts {:perform-in-sec 1})
       `scheduled-fn "scheduling-test")
     (let [scheduler (w/start worker-opts)]
       (is (= "scheduling-test" (deref scheduled-fn-called 1100 :scheduler-test-timed-out)))

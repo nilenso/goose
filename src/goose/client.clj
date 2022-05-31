@@ -2,45 +2,32 @@
   (:require
     [goose.defaults :as d]
     [goose.redis :as r]
+    [goose.scheduler :as scheduler]
     [goose.utils :as u]
     [goose.validations.client :refer [validate-async-params]]))
 
 (defn- job-id []
   (str (random-uuid)))
 
-(defn- schedule-time
-  [{:keys [perform-at perform-in-sec]}]
-  (cond
-    perform-at
-    (u/epoch-time perform-at)
-
-    perform-in-sec
-    (+ perform-in-sec (u/epoch-time))))
-
 (defn- route-job
   [queue schedule]
-  (if-let [delay (schedule-time schedule)]
-    [(str d/queue-prefix d/schedule-queue) delay]
+  (if-let [run-at (scheduler/run-at schedule)]
+    [(str d/queue-prefix d/schedule-queue) run-at]
     [(str d/queue-prefix queue)]))
 
 (defn- push-job
   ([conn job queue]
    (r/enqueue-back conn queue job))
-  ([conn job queue time]
-   (if (< time (u/epoch-time))
+  ([conn job queue run-at]
+   (if (< run-at (u/epoch-time-ms))
      (r/enqueue-front conn queue job)
-     (r/enqueue-sorted-set conn queue time job))))
-
-(def ^:private schedule-opts
-  "perform-at & perform-in-sec opts are mutually exclusive."
-  {:perform-at     nil
-   :perform-in-sec nil})
+     (r/enqueue-sorted-set conn queue run-at job))))
 
 (def default-opts
   {:redis-url       d/default-redis-url
    :redis-pool-opts {}
    :queue           d/default-queue
-   :schedule        schedule-opts
+   :schedule-opts   scheduler/default-opts
    :retries         0})
 
 (defn async
@@ -54,12 +41,12 @@
   - Retries must be non-negative
   edn: https://github.com/edn-format/edn"
   [{:keys [redis-url redis-pool-opts
-           queue schedule retries]}
+           queue schedule-opts retries]}
    resolvable-fn-symbol
    & args]
   (validate-async-params
     redis-url redis-pool-opts
-    queue schedule retries
+    queue schedule-opts retries
     resolvable-fn-symbol args)
   (let [redis-conn (r/conn redis-url redis-pool-opts)
         job {:id          (job-id)
@@ -67,8 +54,8 @@
              :fn-sym      resolvable-fn-symbol
              :args        args
              :retries     retries
-             :enqueued-at (u/epoch-time)}
-        queue-opts (route-job queue schedule)
+             :enqueued-at (u/epoch-time-ms)}
+        queue-opts (route-job queue schedule-opts)
         push-job-params (concat [redis-conn job] queue-opts)]
     (apply push-job push-job-params)
     (:id job)))
