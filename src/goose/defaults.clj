@@ -5,5 +5,7 @@
 (def queue-prefix "goose/queue:")
 (def default-queue "default")
 (def schedule-queue "scheduled-jobs")
-(def protected-queues [schedule-queue])
+(def retry-queue "retry-jobs")
+(def dead-queue "dead-jobs")
+(def protected-queues [schedule-queue retry-queue dead-queue])
 (def scheduled-jobs-pop-limit 50)

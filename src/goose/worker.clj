@@ -2,6 +2,7 @@
   (:require
     [goose.defaults :as d]
     [goose.redis :as r]
+    [goose.retry :as retry]
     [goose.scheduler :as scheduler]
     [goose.utils :as u]
     [goose.validations.worker :refer [validate-worker-params]]
@@ -12,17 +13,12 @@
   (:import
     [java.util.concurrent TimeUnit]))
 
-(defn- namespace-sym [fn-sym]
-  (-> fn-sym
-      (str)
-      (str/split #"/")
-      (first)
-      (symbol)))
-
 (defn- execute-job
-  [{:keys [id fn-sym args]}]
-  (require (namespace-sym fn-sym))
-  (apply (resolve fn-sym) args)
+  [{:keys [id fn-sym args] :as job}]
+    (apply (u/require-resolve fn-sym) args)
+  (try
+    (catch Exception ex
+      (retry/failed-job "conn" job ex)))
   (log/debug "Executed job-id:" id))
 
 (def ^:private unblocking-queue-prefix

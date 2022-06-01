@@ -1,5 +1,6 @@
 (ns goose.utils
   (:require
+    [clojure.string :as str]
     [clojure.tools.logging :as log]
     [com.climate.claypoole :as cp]))
 
@@ -24,3 +25,13 @@
   [pool & body]
   `(while (not (cp/shutdown? ~pool))
      ~@body))
+
+(defn require-resolve
+  [fn-sym]
+  (-> fn-sym
+      (str)
+      (str/split #"/")
+      (first)
+      (symbol)
+      (require))
+  (resolve fn-sym))
