@@ -2,6 +2,7 @@
   (:require
     [goose.defaults :as d]
     [goose.redis :as r]
+    [goose.retry :as retry]
     [goose.scheduler :as scheduler]
     [goose.utils :as u]
     [goose.validations.client :refer [validate-async-params]]))
@@ -28,7 +29,7 @@
    :redis-pool-opts {}
    :queue           d/default-queue
    :schedule-opts   scheduler/default-opts
-   :retries         0})
+   :retry-opts      retry/default-opts})
 
 (defn async
   "Enqueues a function for asynchronous execution from an independent worker.
@@ -38,22 +39,21 @@
   Validations:
   - A function must be a resolvable & a fully qualified symbol
   - Args must be edn-serializable
-  - Retries must be non-negative
   edn: https://github.com/edn-format/edn"
   [{:keys [redis-url redis-pool-opts
-           queue schedule-opts retries]}
+           queue schedule-opts retry-opts]}
    resolvable-fn-symbol
    & args]
   (validate-async-params
     redis-url redis-pool-opts
-    queue schedule-opts retries
+    queue schedule-opts retry-opts
     resolvable-fn-symbol args)
   (let [redis-conn (r/conn redis-url redis-pool-opts)
         job {:id          (job-id)
              :queue       queue
              :fn-sym      resolvable-fn-symbol
              :args        args
-             :retries     retries
+             :retry-opts  retry-opts
              :enqueued-at (u/epoch-time-ms)}
         queue-opts (route-job queue schedule-opts)
         push-job-params (concat [redis-conn job] queue-opts)]

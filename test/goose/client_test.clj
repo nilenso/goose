@@ -64,35 +64,35 @@
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
         #":perform-at & :perform-in-sec are mutually exclusive options"
-        (sut/async (assoc sut/default-opts :schedule {:perform-at (Date.) :perform-in-sec 1}) `placeholder-fn))))
+        (sut/async (assoc sut/default-opts :schedule-opts {:perform-at (Date.) :perform-in-sec 1}) `placeholder-fn))))
 
   (testing ":perform-in-sec is a positive integer"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
         #":perform-in-sec isn't a positive integer"
-        (sut/async (assoc sut/default-opts :schedule {:perform-in-sec 0.2}) `placeholder-fn))))
+        (sut/async (assoc sut/default-opts :schedule-opts {:perform-in-sec 0.2}) `placeholder-fn))))
 
   (testing ":perform-at is an instance of date object"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
         #":perform-at isn't an instance of date object"
-        (sut/async (assoc sut/default-opts :schedule {:perform-at "27-May-2022"}) `placeholder-fn))))
+        (sut/async (assoc sut/default-opts :schedule-opts {:perform-at "27-May-2022"}) `placeholder-fn))))
 
   (testing "retry count is positive"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
         #"Retry count shouldn't be negative"
-        (sut/async (assoc sut/default-opts :retries -1) `placeholder-fn))))
+        (sut/async (assoc sut/default-opts :retry -1) `placeholder-fn))))
 
   (testing "retry count is an integer"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
         #"Retry count should be an integer"
-        (sut/async (assoc sut/default-opts :retries 1.1) `placeholder-fn))))
+        (sut/async (assoc sut/default-opts :retry 1.1) `placeholder-fn))))
 
   (testing "args are serializable"
     (is

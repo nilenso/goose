@@ -4,6 +4,7 @@
     [goose.validations.redis :refer [validate-redis]]
     [goose.validations.queue :refer [validate-queue]]
     [goose.validations.scheduler :refer [validate-schedule]]
+    [goose.validations.retry :refer [validate-retry]]
     [clojure.edn :as edn]))
 
 (defn- args-unserializable?
@@ -17,19 +18,14 @@
 
 (defn validate-async-params
   [redis-url redis-pool-opts
-   queue schedule-opts retries fn-sym args]
+   queue schedule-opts retry-opts fn-sym args]
   (validate-redis redis-url redis-pool-opts)
   (validate-queue queue)
   (validate-schedule schedule-opts)
+  (validate-retry retry-opts)
   (when-let
     [validation-error
      (cond
-       (neg? retries)
-       ["Retry count shouldn't be negative" (u/wrap-error :negative-retries retries)]
-
-       (not (int? retries))
-       ["Retry count should be an integer" (u/wrap-error :non-int-retries retries)]
-
        (not (qualified-symbol? fn-sym))
        ["Function symbol should be Qualified" (u/wrap-error :unqualified-fn fn-sym)]
 
