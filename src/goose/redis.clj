@@ -49,5 +49,4 @@
       (car/multi)
       (apply car/zrem sorted-set jobs)
       (doseq [[queue jobs] (group-by :queue jobs)]
-        (let [prefixed-queue (str d/queue-prefix queue)]
-          (apply car/lpush prefixed-queue jobs))))))
+        (apply car/lpush queue jobs)))))

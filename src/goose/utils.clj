@@ -2,7 +2,8 @@
   (:require
     [clojure.string :as str]
     [clojure.tools.logging :as log]
-    [com.climate.claypoole :as cp]))
+    [com.climate.claypoole :as cp]
+    [goose.defaults :as d]))
 
 (defn wrap-error [error data]
   {:errors {error data}})
@@ -35,3 +36,7 @@
       (symbol)
       (require))
   (resolve fn-sym))
+
+(defn prefix-queue
+  [queue]
+  (str d/queue-prefix queue))

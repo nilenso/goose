@@ -18,7 +18,7 @@
 
 (defn validate-async-params
   [redis-url redis-pool-opts
-   queue schedule-opts retry-opts fn-sym args]
+   queue schedule-opts retry-opts execute-fn-sym args]
   (validate-redis redis-url redis-pool-opts)
   (validate-queue queue)
   (validate-schedule schedule-opts)
@@ -26,11 +26,11 @@
   (when-let
     [validation-error
      (cond
-       (not (qualified-symbol? fn-sym))
-       ["Function symbol should be Qualified" (u/wrap-error :unqualified-fn fn-sym)]
+       (not (qualified-symbol? execute-fn-sym))
+       ["Function symbol should be Qualified" (u/wrap-error :unqualified-fn execute-fn-sym)]
 
-       (not (resolve fn-sym))
-       ["Function symbol should be Resolvable" (u/wrap-error :unresolvable-fn fn-sym)]
+       (not (resolve execute-fn-sym))
+       ["Function symbol should be Resolvable" (u/wrap-error :unresolvable-fn execute-fn-sym)]
 
        (args-unserializable? args)
        ["Args should be Serializable" (u/wrap-error :unserializable-args args)])]

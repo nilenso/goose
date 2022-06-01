@@ -14,11 +14,11 @@
     [java.util.concurrent TimeUnit]))
 
 (defn- execute-job
-  [{:keys [id fn-sym args] :as job}]
-    (apply (u/require-resolve fn-sym) args)
+  [redis-conn {:keys [id execute-fn-sym args] :as job}]
   (try
+    (apply (u/require-resolve execute-fn-sym) args)
     (catch Exception ex
-      (retry/failed-job "conn" job ex)))
+      (retry/failed-job redis-conn job ex)))
   (log/debug "Executed job-id:" id))
 
 (def ^:private unblocking-queue-prefix
@@ -45,7 +45,7 @@
     (log/info "Long-Polling Redis...")
     (u/log-on-exceptions
       (when-let [job (pop-job redis-conn prefixed-queue unblocking-queue)]
-        (execute-job job))))
+        (execute-job redis-conn job))))
   (log/info "Stopped worker. Exiting gracefully..."))
 
 (defprotocol Shutdown

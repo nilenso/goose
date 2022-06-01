@@ -48,7 +48,7 @@
         last-retried-at (:last-retried-at opts)]
     (u/log-on-exceptions
       ((u/require-resolve death-handler-fn-sym) job error))
-    (if-not skip-dead-queue
+    (when-not skip-dead-queue
       (r/enqueue-sorted-set redis-conn d/dead-queue last-retried-at job))))
 
 (defn failed-job
@@ -67,5 +67,5 @@
     (u/log-on-exceptions
       ((u/require-resolve error-handler-fn-sym) retry-job ex))
     (if (< retry-count max-retries)
-      (r/enqueue-sorted-set redis-conn d/retry-queue retry-at retry-job)
+      (r/enqueue-sorted-set redis-conn d/schedule-queue retry-at retry-job)
       (dead-job redis-conn job))))
