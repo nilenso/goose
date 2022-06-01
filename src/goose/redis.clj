@@ -42,11 +42,17 @@
           sorted-set min (u/epoch-time-ms)
           limit offset d/scheduled-jobs-pop-limit)))))
 
+(defn- appropriate-queue
+  [job]
+  (if (get-in job [:retry-opts :error])
+    (get-in job [:retry-opts :retry-queue])
+    (:queue job)))
+
 (defn enqueue-due-jobs-to-front [conn sorted-set jobs]
   (let [cas-attempts 100]
     (car/atomic
       conn cas-attempts
       (car/multi)
       (apply car/zrem sorted-set jobs)
-      (doseq [[queue jobs] (group-by :queue jobs)]
+      (doseq [[queue jobs] (group-by appropriate-queue jobs)]
         (apply car/lpush queue jobs)))))

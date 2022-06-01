@@ -34,4 +34,6 @@
     execute-fn-sym args)
   (let [redis-conn (r/conn redis-url redis-pool-opts)
         job (j/new opts execute-fn-sym args)]
-    (j/push redis-conn job)))
+    (if-let [time (scheduler/scheduled-time schedule-opts)]
+      (j/push redis-conn (scheduler/update-job-schedule job time))
+      (j/push redis-conn job))))

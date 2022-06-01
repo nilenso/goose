@@ -18,7 +18,7 @@
     (u/epoch-time-ms perform-at)
 
     perform-in-sec
-    (+ (* 1000 perform-in-sec) (u/epoch-time-ms))))
+    (u/add-sec perform-in-sec)))
 
 (defn- internal-opts
   [queue time]
@@ -29,12 +29,10 @@
      :queue    (u/prefix-queue d/schedule-queue)
      :run-at   time}))
 
-(defn update-job-if-scheduled
-  [job opts]
-  (if-let [time (scheduled-time opts)]
-    (assoc job
-      :internal-opts (internal-opts (:queue job) time))
-    job))
+(defn update-job-schedule
+  [job time]
+  (assoc job
+    :internal-opts (internal-opts (:queue job) time)))
 
 (defn run
   [{:keys [thread-pool redis-conn schedule-queue
