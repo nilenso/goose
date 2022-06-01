@@ -1,9 +1,10 @@
 (ns goose.utils
   (:require
+    [goose.defaults :as d]
+
     [clojure.string :as str]
     [clojure.tools.logging :as log]
-    [com.climate.claypoole :as cp]
-    [goose.defaults :as d]))
+    [com.climate.claypoole :as cp]))
 
 (defn wrap-error [error data]
   {:errors {error data}})
@@ -21,6 +22,11 @@
    If no date is given, returns epoch for current time."
   ([] (epoch-time-ms (java.util.Date.)))
   ([date] (inst-ms date)))
+
+(defn add-sec
+  ([sec] (add-sec sec (epoch-time-ms)))
+  ([sec epoch-time]
+   (+ (* 1000 sec) epoch-time)))
 
 (defmacro while-pool
   [pool & body]

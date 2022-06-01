@@ -29,7 +29,7 @@
      :queue    (u/prefix-queue d/schedule-queue)
      :run-at   time}))
 
-(defn update-if-scheduled
+(defn update-job-if-scheduled
   [job opts]
   (if-let [time (scheduled-time opts)]
     (assoc job

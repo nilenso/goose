@@ -1,6 +1,7 @@
 (ns goose.retry
   (:require
     [goose.defaults :as d]
+    [goose.job :as j]
     [goose.redis :as r]
     [goose.utils :as u]
 
@@ -17,7 +18,7 @@
 (defn default-retry-delay-sec
   [retry-count]
   ; TODO: fill this
-  (* 2 retry-count))
+  (+ (* 1 retry-count) 1))
 
 (def default-opts
   {:max-retries            0
@@ -39,33 +40,47 @@
       :retry-count 0
       :error ex)))
 
-(defn- dead-job
-  [redis-conn job]
-  (let [opts (:retry-opts job)
-        death-handler-fn-sym (:death-handler-fn-sym opts)
-        error (:error opts)
-        skip-dead-queue (:skip-dead-queue opts)
-        last-retried-at (:last-retried-at opts)]
-    (u/log-on-exceptions
-      ((u/require-resolve death-handler-fn-sym) job error))
+(defn- internal-opts
+  [queue time]
+  {:redis-fn goose.redis/enqueue-sorted-set
+   :queue    queue
+   :run-at   time})
+
+(defn- update-retry-job
+  [{{:keys [retry-count retry-delay-sec-fn-sym
+            error error-handler-fn-sym
+            retry-queue]} :retry-opts
+    :as                   job}]
+  (let [error-handler (u/require-resolve error-handler-fn-sym)
+        retry-delay-sec ((u/require-resolve retry-delay-sec-fn-sym) retry-count)
+        retry-at (u/add-sec retry-delay-sec)
+        queue (or retry-queue (u/prefix-queue d/schedule-queue))]
+    (u/log-on-exceptions (error-handler job error))
+    (assoc job
+      :internal-opts (internal-opts queue retry-at))))
+
+(defn- update-dead-job
+  [{{:keys [last-retried-at skip-dead-queue
+            error death-handler-fn-sym]} :retry-opts
+    :as                                  job}]
+  (let [death-handler (u/require-resolve death-handler-fn-sym)
+        queue (u/prefix-queue d/dead-queue)
+        dead-at (or last-retried-at (u/epoch-time-ms))]
+    (u/log-on-exceptions (death-handler job error))
     (when-not skip-dead-queue
-      (r/enqueue-sorted-set redis-conn d/dead-queue last-retried-at job))))
+      (assoc job
+        :internal-opts (internal-opts queue dead-at)))))
+
+(defn- update-job
+  [{{:keys [max-retries retry-count]} :retry-opts
+    :as                               job}]
+  (if (< retry-count max-retries)
+    (update-retry-job job)
+    (update-dead-job job)))
 
 (defn failed-job
   [redis-conn job ex]
-  (let [opts (:retry-opts job)
-        max-retries (:max-retries opts)
-        retry-delay-sec-fn-sym (:retry-delay-sec-fn-sym opts)
-        error-handler-fn-sym (:error-handler-fn-sym opts)
-
-        updated-opts (update-opts opts ex)
-        retry-job (assoc job :retry-opts updated-opts)
-
-        retry-count (:retry-count update-opts)
-        retry-delay-sec ((u/require-resolve retry-delay-sec-fn-sym) retry-count)
-        retry-at (+ (* 1000 retry-delay-sec) (u/epoch-time-ms))]
-    (u/log-on-exceptions
-      ((u/require-resolve error-handler-fn-sym) retry-job ex))
-    (if (< retry-count max-retries)
-      (r/enqueue-sorted-set redis-conn d/schedule-queue retry-at retry-job)
-      (dead-job redis-conn job))))
+  (let [opts (update-opts (:retry-opts job) ex)
+        retry-job (assoc job :retry-opts opts)
+        internal-job (update-job retry-job)]
+    (j/push redis-conn internal-job)))
