@@ -53,17 +53,25 @@
 
 (defn- internal-stop
   "Gracefully shuts down the worker threadpool."
-  [{:keys [thread-pool redis-conn
+  [{:keys [thread-pool internal-thread-pool redis-conn
            unblocking-queue graceful-shutdown-time-sec]}]
   ; Set state of thread-pool to SHUTDOWN.
   (log/warn "Shutting down thread-pool...")
   (cp/shutdown thread-pool)
+  (cp/shutdown internal-thread-pool)
 
   ; REASON: https://github.com/nilenso/goose/issues/14
   (r/enqueue-with-expiry
     redis-conn unblocking-queue "dummy" graceful-shutdown-time-sec)
 
   (log/warn "Awaiting all threads to terminate.")
+
+  ; Scheduler sleeps instead of blocking.
+  ; It needs to be interrupted to return immediately.
+  ; Give scheduler some grace time to enqueue due jobs to broker.
+  (.awaitTermination internal-thread-pool 100 TimeUnit/MILLISECONDS)
+  (cp/shutdown! internal-thread-pool)
+
   (.awaitTermination
     thread-pool
     graceful-shutdown-time-sec
@@ -90,8 +98,10 @@
     redis-url redis-pool-opts queue
     scheduler-polling-interval-sec
     graceful-shutdown-time-sec threads)
-  (let [thread-pool (cp/threadpool (+ 1 threads)) ; An extra thread to poll scheduled jobs.
+  (let [thread-pool (cp/threadpool threads)
+        internal-thread-pool (cp/threadpool 1)
         opts {:thread-pool                    thread-pool
+              :internal-thread-pool           internal-thread-pool
               :redis-conn                     (r/conn redis-url redis-pool-opts)
 
               :prefixed-queue                 (str d/queue-prefix queue)
@@ -103,6 +113,6 @@
               :scheduler-polling-interval-sec scheduler-polling-interval-sec}]
     (dotimes [_ threads]
       (cp/future thread-pool (worker opts)))
-    (cp/future thread-pool (scheduler/run opts))
+    (cp/future internal-thread-pool (scheduler/run opts))
     (reify Shutdown
       (stop [_] (internal-stop opts)))))
