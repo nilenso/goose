@@ -1,4 +1,4 @@
-(ns goose.worker-test
+(ns goose.validations.worker-test
   (:require
     [goose.worker :as sut]
 

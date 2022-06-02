@@ -46,3 +46,11 @@
 (defn prefix-queue
   [queue]
   (str d/queue-prefix queue))
+
+(defn arities
+  [fn-sym]
+  (->> fn-sym
+      (resolve)
+      (meta)
+      (:arglists)
+      (map count)))
