@@ -40,7 +40,8 @@
   (u/while-pool
     thread-pool
     (log/info "Polling scheduled jobs...")
-    (if-let [jobs (r/scheduled-jobs-due-now redis-conn schedule-queue)]
-      (r/enqueue-due-jobs-to-front redis-conn schedule-queue jobs)
-      (Thread/sleep (* 1000 scheduler-polling-interval-sec))))
+    (u/log-on-exceptions
+      (if-let [jobs (r/scheduled-jobs-due-now redis-conn schedule-queue)]
+        (r/enqueue-due-jobs-to-front redis-conn schedule-queue jobs)
+        (Thread/sleep (* 1000 scheduler-polling-interval-sec)))))
   (log/info "Stopped scheduler. Exiting gracefully..."))

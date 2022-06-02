@@ -89,3 +89,20 @@
 
       (is (= arg (deref succeeded-on-2nd-retry 1100 :2nd-retry-timed-out)))
       (w/stop retry-worker))))
+
+; ======= TEST: Retries exhausted ==========
+
+(def job-dead (promise))
+(defn test-death-handler [_ ex]
+  (deliver job-dead ex))
+(defn dead-fn []
+  (/ 1 0))
+(deftest dead-test
+  (testing "Goose marks a job as dead upon reaching max retries"
+    (let [retry-opts (assoc retry/default-opts
+                       :max-retries 0
+                       :death-handler-fn-sym `test-death-handler)
+          worker (w/start worker-opts)]
+      (c/async (assoc client-opts :retry-opts retry-opts) `dead-fn)
+      (is (= java.lang.ArithmeticException (type (deref job-dead 100 :death-handler-timed-out))))
+      (w/stop worker))))

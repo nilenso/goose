@@ -15,7 +15,8 @@
   `(try
      ~@body
      (catch Exception e#
-       (log/error e# "Exception occurred"))))
+       (when-not (= "sleep interrupted" (ex-message e#))
+         (log/error e# "Exception occurred")))))
 
 (defn epoch-time-ms
   "Returns Unix epoch time for given date.
