@@ -1,7 +1,7 @@
 (ns goose.job
   (:require
-    [goose.utils :as u]
-    [goose.redis :as r]))
+    [goose.redis :as r]
+    [goose.utils :as u]))
 
 (defn- internal-opts
   [queue]

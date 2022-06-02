@@ -17,11 +17,12 @@
 
 (defn default-retry-delay-sec
   [retry-count]
-  ; TODO: fill this
-  (+ (* 1 retry-count) 1))
+  (+ 20
+     (* (rand-int 20) (inc retry-count))
+     (reduce * (repeat 4 retry-count)))) ; retry-count^4
 
 (def default-opts
-  {:max-retries            0
+  {:max-retries            27
    :retry-delay-sec-fn-sym `default-retry-delay-sec
    :retry-queue            nil
    :error-handler-fn-sym   `default-error-handler

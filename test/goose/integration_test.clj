@@ -1,9 +1,14 @@
 (ns goose.integration-test
   (:require
-    [clojure.test :refer [deftest is testing]]
-    [goose.worker :as w]
     [goose.client :as c]
-    [goose.retry :as retry])
+    [goose.defaults :as d]
+    [goose.redis :as r]
+    [goose.retry :as retry]
+    [goose.utils :as u]
+    [goose.worker :as w]
+
+    [clojure.test :refer [deftest is testing use-fixtures]]
+    [taoensso.carmine :as car])
   (:import
     [java.util UUID]))
 
@@ -12,17 +17,39 @@
         port (or (System/getenv "GOOSE_REDIS_PORT") "6379")]
     (str "redis://" host ":" port)))
 
+(def queues
+  {:test "test"
+   :retry "test-retry"
+   :schedule d/schedule-queue
+   :dead d/dead-queue})
+
+(vals queues)
 (def client-opts
   (assoc c/default-opts
-    :queue "test"
+    :queue (:test queues)
     :redis-url redis-url))
 
 (def worker-opts
   (assoc w/default-opts
     :redis-url redis-url
-    :queue "test"
+    :queue (:test queues)
     :graceful-shutdown-time-sec 1
     :scheduler-polling-interval-sec 1))
+
+; ======= Setup & Teardown ==========
+
+(defn- clear-redis
+  [keys]
+  (let [redis-conn (r/conn redis-url {})]
+    (r/wcar* redis-conn (apply car/del keys))))
+
+(defn integration-test-fixture [f]
+  (let [prefixed-queues (map u/prefix-queue (vals queues))]
+    (clear-redis prefixed-queues)
+    (f)
+    (clear-redis prefixed-queues)))
+
+(use-fixtures :once integration-test-fixture)
 
 ; ======= TEST: Async execution ==========
 (def fn-called (promise))
@@ -48,7 +75,7 @@
           scheduler (w/start worker-opts)]
       (c/async (assoc client-opts :schedule-opts {:perform-in-sec 1})
                `scheduled-fn arg)
-      (is (= arg (deref scheduled-fn-called 1100 :scheduler-test-timed-out)))
+      (is (= arg (deref scheduled-fn-called 4100 :scheduler-test-timed-out)))
       (w/stop scheduler))))
 
 ; ======= TEST: Error handling ==========
@@ -72,22 +99,21 @@
 (deftest retry-test
   (testing "Goose retries an errorneous function"
     (let [arg "retry-test"
-          retry-queue "test-retry-queue"
           retry-opts (assoc retry/default-opts
                        :max-retries 2
                        :retry-delay-sec-fn-sym `immediate-retry
-                       :retry-queue retry-queue
+                       :retry-queue (:retry queues)
                        :error-handler-fn-sym `test-error-handler)
           worker (w/start worker-opts)
-          retry-worker (w/start (assoc worker-opts :queue retry-queue))]
+          retry-worker (w/start (assoc worker-opts :queue (:retry queues)))]
       (c/async (assoc client-opts :retry-opts retry-opts) `erroneous-fn arg)
 
       (is (= java.lang.ArithmeticException (type (deref failed-on-execute 100 :retry-execute-timed-out))))
       (w/stop worker)
 
-      (is (= clojure.lang.ExceptionInfo (type (deref failed-on-1st-retry 1100 :1st-retry-timed-out))))
+      (is (= clojure.lang.ExceptionInfo (type (deref failed-on-1st-retry 4100 :1st-retry-timed-out))))
 
-      (is (= arg (deref succeeded-on-2nd-retry 1100 :2nd-retry-timed-out)))
+      (is (= arg (deref succeeded-on-2nd-retry 4100 :2nd-retry-timed-out)))
       (w/stop retry-worker))))
 
 ; ======= TEST: Retries exhausted ==========

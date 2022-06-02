@@ -1,10 +1,10 @@
 (ns goose.scheduler
   (:require
+    [goose.defaults :as d]
     [goose.redis :as r]
     [goose.utils :as u]
 
-    [clojure.tools.logging :as log]
-    [goose.defaults :as d]))
+    [clojure.tools.logging :as log]))
 
 (def default-opts
   "perform-at & perform-in-sec opts are mutually exclusive."
@@ -43,5 +43,5 @@
     (u/log-on-exceptions
       (if-let [jobs (r/scheduled-jobs-due-now redis-conn schedule-queue)]
         (r/enqueue-due-jobs-to-front redis-conn schedule-queue jobs)
-        (Thread/sleep (* 1000 scheduler-polling-interval-sec)))))
+        (Thread/sleep (* 1000 (+ (rand-int 3) scheduler-polling-interval-sec))))))
   (log/info "Stopped scheduler. Exiting gracefully..."))
