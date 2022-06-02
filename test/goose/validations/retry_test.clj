@@ -5,7 +5,7 @@
 
     [clojure.test :refer [deftest is testing]]))
 
-(defn dummy-fn [x] "dummy")
+(defn dummy-fn [_] "dummy")
 
 (deftest validate-retry-test
   (testing "max retry count is positive"

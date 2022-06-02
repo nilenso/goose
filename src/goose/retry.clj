@@ -48,11 +48,10 @@
 
 (defn- update-retry-job
   [{{:keys [retry-count retry-delay-sec-fn-sym
-            error error-handler-fn-sym
-            retry-queue]} :retry-opts
-    :as                   job}]
+            error error-handler-fn-sym]} :retry-opts
+    :as                                  job}]
   (let [error-handler (u/require-resolve error-handler-fn-sym)
-        queue (or retry-queue (u/prefix-queue d/schedule-queue))
+        queue (u/prefix-queue d/schedule-queue)
         retry-delay-sec ((u/require-resolve retry-delay-sec-fn-sym) retry-count)
         retry-at (u/add-sec retry-delay-sec)]
     (u/log-on-exceptions (error-handler job error))
