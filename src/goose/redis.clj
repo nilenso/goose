@@ -28,8 +28,8 @@
   (enqueue-back conn list element)
   (wcar* conn (car/expire list expiry-sec)))
 
-(defn enqueue-sorted-set [conn sorted-set time element]
-  (wcar* conn (car/zadd sorted-set time element)))
+(defn enqueue-sorted-set [conn sorted-set score element]
+  (wcar* conn (car/zadd sorted-set score element)))
 
 (defn scheduled-jobs-due-now [conn sorted-set]
   (let [min "-inf"
@@ -39,8 +39,15 @@
       (wcar*
         conn
         (car/zrangebyscore
-          sorted-set min (u/epoch-time)
+          sorted-set min (u/epoch-time-ms)
           limit offset d/scheduled-jobs-pop-limit)))))
+
+(defn- appropriate-queue
+  [job]
+  (if (get-in job [:retry-opts :error])
+    (or (get-in job [:retry-opts :retry-queue])
+        (:queue job))
+    (:queue job)))
 
 (defn enqueue-due-jobs-to-front [conn sorted-set jobs]
   (let [cas-attempts 100]
@@ -48,6 +55,5 @@
       conn cas-attempts
       (car/multi)
       (apply car/zrem sorted-set jobs)
-      (doseq [[queue jobs] (group-by :queue jobs)]
-        (let [prefixed-queue (str d/queue-prefix queue)]
-          (apply car/lpush prefixed-queue jobs))))))
+      (doseq [[queue jobs] (group-by appropriate-queue jobs)]
+        (apply car/lpush queue jobs)))))

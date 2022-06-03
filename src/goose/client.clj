@@ -1,47 +1,18 @@
 (ns goose.client
   (:require
     [goose.defaults :as d]
+    [goose.job :as j]
     [goose.redis :as r]
-    [goose.utils :as u]
+    [goose.retry :as retry]
+    [goose.scheduler :as scheduler]
     [goose.validations.client :refer [validate-async-params]]))
-
-(defn- job-id []
-  (str (random-uuid)))
-
-(defn- schedule-time
-  [{:keys [perform-at perform-in-sec]}]
-  (cond
-    perform-at
-    (u/epoch-time perform-at)
-
-    perform-in-sec
-    (+ perform-in-sec (u/epoch-time))))
-
-(defn- route-job
-  [queue schedule]
-  (if-let [delay (schedule-time schedule)]
-    [(str d/queue-prefix d/schedule-queue) delay]
-    [(str d/queue-prefix queue)]))
-
-(defn- push-job
-  ([conn job queue]
-   (r/enqueue-back conn queue job))
-  ([conn job queue time]
-   (if (< time (u/epoch-time))
-     (r/enqueue-front conn queue job)
-     (r/enqueue-sorted-set conn queue time job))))
-
-(def ^:private schedule-opts
-  "perform-at & perform-in-sec opts are mutually exclusive."
-  {:perform-at     nil
-   :perform-in-sec nil})
 
 (def default-opts
   {:redis-url       d/default-redis-url
    :redis-pool-opts {}
    :queue           d/default-queue
-   :schedule        schedule-opts
-   :retries         0})
+   :schedule-opts   scheduler/default-opts
+   :retry-opts      retry/default-opts})
 
 (defn async
   "Enqueues a function for asynchronous execution from an independent worker.
@@ -51,24 +22,18 @@
   Validations:
   - A function must be a resolvable & a fully qualified symbol
   - Args must be edn-serializable
-  - Retries must be non-negative
   edn: https://github.com/edn-format/edn"
   [{:keys [redis-url redis-pool-opts
-           queue schedule retries]}
-   resolvable-fn-symbol
+           queue schedule-opts retry-opts]
+    :as   opts}
+   execute-fn-sym
    & args]
   (validate-async-params
     redis-url redis-pool-opts
-    queue schedule retries
-    resolvable-fn-symbol args)
+    queue schedule-opts retry-opts
+    execute-fn-sym args)
   (let [redis-conn (r/conn redis-url redis-pool-opts)
-        job {:id          (job-id)
-             :queue       queue
-             :fn-sym      resolvable-fn-symbol
-             :args        args
-             :retries     retries
-             :enqueued-at (u/epoch-time)}
-        queue-opts (route-job queue schedule)
-        push-job-params (concat [redis-conn job] queue-opts)]
-    (apply push-job push-job-params)
-    (:id job)))
+        job (j/new opts execute-fn-sym args)]
+    (if-let [time (scheduler/scheduled-time schedule-opts)]
+      (j/push redis-conn (scheduler/update-job-schedule job time))
+      (j/push redis-conn job))))

@@ -1,6 +1,10 @@
 (ns goose.utils
   (:require
-    [clojure.tools.logging :as log]))
+    [goose.defaults :as d]
+
+    [clojure.string :as str]
+    [clojure.tools.logging :as log]
+    [com.climate.claypoole :as cp]))
 
 (defn wrap-error [error data]
   {:errors {error data}})
@@ -11,10 +15,43 @@
   `(try
      ~@body
      (catch Exception e#
-       (log/error e# "Exception occurred"))))
+       (when-not (= "sleep interrupted" (ex-message e#))
+         (log/error e# "Exception occurred")))))
 
-(defn epoch-time
+(defn epoch-time-ms
   "Returns Unix epoch time for given date.
    If no date is given, returns epoch for current time."
-  ([] (epoch-time (java.util.Date.)))
+  ([] (epoch-time-ms (java.util.Date.)))
   ([date] (inst-ms date)))
+
+(defn add-sec
+  ([sec] (add-sec sec (epoch-time-ms)))
+  ([sec epoch-time]
+   (+ (* 1000 sec) epoch-time)))
+
+(defmacro while-pool
+  [pool & body]
+  `(while (not (cp/shutdown? ~pool))
+     ~@body))
+
+(defn require-resolve
+  [fn-sym]
+  (-> fn-sym
+      (str)
+      (str/split #"/")
+      (first)
+      (symbol)
+      (require))
+  (resolve fn-sym))
+
+(defn prefix-queue
+  [queue]
+  (str d/queue-prefix queue))
+
+(defn arities
+  [fn-sym]
+  (->> fn-sym
+      (resolve)
+      (meta)
+      (:arglists)
+      (map count)))

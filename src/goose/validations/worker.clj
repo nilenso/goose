@@ -7,7 +7,7 @@
 (defn validate-worker-params
   [redis-url redis-pool-opts queue
    scheduler-polling-interval-sec
-   graceful-shutdown-time-sec threads]
+   graceful-shutdown-sec threads]
   (validate-redis redis-url redis-pool-opts)
   (validate-queue queue)
   (when-let
@@ -16,8 +16,8 @@
        (not (pos-int? threads))
        ["Thread count should be a positive integer" (u/wrap-error :threads-invalid threads)]
 
-       (not (pos-int? graceful-shutdown-time-sec))
-       ["Graceful shutdown should be a positive integer" (u/wrap-error :graceful-shutdown-time-sec-invalid graceful-shutdown-time-sec)]
+       (not (pos-int? graceful-shutdown-sec))
+       ["Graceful shutdown should be a positive integer" (u/wrap-error :graceful-shutdown-sec-invalid graceful-shutdown-sec)]
 
        (not (pos-int? scheduler-polling-interval-sec))
        ["Scheduler polling interval should be a positive integer" (u/wrap-error :scheduler-polling-interval-sec-invalid scheduler-polling-interval-sec)])]

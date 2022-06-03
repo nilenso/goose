@@ -9,12 +9,12 @@ Features
 *[Simplicity is Complicated.](https://youtu.be/rFejpH_tAHM)* We've strived to make Goose as simple, transparent & functional as possible.
 
 - A *simple*, *functional* interface
-- Flexible - *open* for extension, **closed** for modification
-- Lean library, using latest Clojure tooling
-- Configurable, with *sane defaults*
-- Parallel execution using Java thread-pools
-- **Graceful shutdown**
-- Tested 🙂
+- *Reliable* - Code/Hardware/Network failure won't cause data loss
+- [Cloud-Native Architecture](link-to-architecture-decisions-dir)
+- Lean, Expressive, Transparent & Extensible
+- Plug-and-play, minimal setup & *sane defaults*
+- Concurrency & Parallelism using Java thread-pools
+- Unit & E2E Tests 🙂
 
 Getting Started
 ---------
