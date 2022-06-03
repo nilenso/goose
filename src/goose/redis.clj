@@ -45,7 +45,8 @@
 (defn- appropriate-queue
   [job]
   (if (get-in job [:retry-opts :error])
-    (get-in job [:retry-opts :retry-queue])
+    (or (get-in job [:retry-opts :retry-queue])
+        (:queue job))
     (:queue job)))
 
 (defn enqueue-due-jobs-to-front [conn sorted-set jobs]

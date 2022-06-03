@@ -24,14 +24,14 @@
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
         #"Graceful shutdown should be a positive integer"
-        (sut/start (assoc sut/default-opts :graceful-shutdown-time-sec -1)))))
+        (sut/start (assoc sut/default-opts :graceful-shutdown-sec -1)))))
 
   (testing "graceful shutdown time is an integer"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
         #"Graceful shutdown should be a positive integer"
-        (sut/start (assoc sut/default-opts :graceful-shutdown-time-sec 1.1)))))
+        (sut/start (assoc sut/default-opts :graceful-shutdown-sec 1.1)))))
 
   (testing "scheduler polling interval is positive"
     (is

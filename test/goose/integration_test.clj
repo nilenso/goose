@@ -18,12 +18,11 @@
     (str "redis://" host ":" port)))
 
 (def queues
-  {:test "test"
-   :retry "test-retry"
+  {:test     "test"
+   :retry    "test-retry"
    :schedule d/schedule-queue
-   :dead d/dead-queue})
+   :dead     d/dead-queue})
 
-(vals queues)
 (def client-opts
   (assoc c/default-opts
     :queue (:test queues)
@@ -33,7 +32,7 @@
   (assoc w/default-opts
     :redis-url redis-url
     :queue (:test queues)
-    :graceful-shutdown-time-sec 1
+    :graceful-shutdown-sec 1
     :scheduler-polling-interval-sec 1))
 
 ; ======= Setup & Teardown ==========
@@ -77,15 +76,14 @@
                `scheduled-fn arg)
       (is (= arg (deref scheduled-fn-called 4100 :scheduler-test-timed-out)))
       (w/stop scheduler))))
-
-; ======= TEST: Error handling ==========
+; ======= TEST: Error handling transient failure job using custom retry queue ==========
 (defn immediate-retry [_] 1)
 
 (def failed-on-execute (promise))
 (def failed-on-1st-retry (promise))
 (def succeeded-on-2nd-retry (promise))
 
-(defn test-error-handler [_ ex]
+(defn retry-test-error-handler [_ ex]
   (if (realized? failed-on-execute)
     (deliver failed-on-1st-retry ex)
     (deliver failed-on-execute ex)))
@@ -103,7 +101,7 @@
                        :max-retries 2
                        :retry-delay-sec-fn-sym `immediate-retry
                        :retry-queue (:retry queues)
-                       :error-handler-fn-sym `test-error-handler)
+                       :error-handler-fn-sym `retry-test-error-handler)
           worker (w/start worker-opts)
           retry-worker (w/start (assoc worker-opts :queue (:retry queues)))]
       (c/async (assoc client-opts :retry-opts retry-opts) `erroneous-fn arg)
@@ -116,19 +114,27 @@
       (is (= arg (deref succeeded-on-2nd-retry 4100 :2nd-retry-timed-out)))
       (w/stop retry-worker))))
 
-; ======= TEST: Retries exhausted ==========
-
+; ======= TEST: Error handling dead-job using job queue ==========
 (def job-dead (promise))
-(defn test-death-handler [_ ex]
+(defn dead-test-error-handler [_ _])
+(defn dead-test-death-handler [_ ex]
   (deliver job-dead ex))
+
+(def dead-job-run-count (atom 0))
 (defn dead-fn []
+  (swap! dead-job-run-count inc)
   (/ 1 0))
+
 (deftest dead-test
   (testing "Goose marks a job as dead upon reaching max retries"
     (let [retry-opts (assoc retry/default-opts
-                       :max-retries 0
-                       :death-handler-fn-sym `test-death-handler)
+                       :max-retries 1
+                       :retry-delay-sec-fn-sym `immediate-retry
+                       :error-handler-fn-sym `dead-test-error-handler
+                       :death-handler-fn-sym `dead-test-death-handler)
           worker (w/start worker-opts)]
       (c/async (assoc client-opts :retry-opts retry-opts) `dead-fn)
-      (is (= java.lang.ArithmeticException (type (deref job-dead 100 :death-handler-timed-out))))
+
+      (is (= java.lang.ArithmeticException (type (deref job-dead 4200 :death-handler-timed-out))))
+      (is (= 2 @dead-job-run-count))
       (w/stop worker))))
