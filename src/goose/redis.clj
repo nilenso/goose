@@ -11,6 +11,18 @@
 
 (defmacro wcar* [conn & body] `(car/wcar ~conn ~@body))
 
+(defn set-key-val [conn key value expire-sec]
+  (wcar* conn (car/set key value "EX" expire-sec)))
+
+(defn del-keys [conn keys]
+  (wcar* conn (apply car/del keys)))
+
+(defn add-to-set [conn set member]
+  (wcar* conn (car/sadd set member)))
+
+(defn del-from-set [conn set member]
+  (wcar* conn (car/srem set member)))
+
 (defn dequeue [conn lists]
   ; Convert list to vector to ensure timeout is last arg to blpop.
   (let [blpop-args (conj (vec lists) d/long-polling-timeout-sec)]
@@ -18,15 +30,15 @@
          (apply car/blpop)
          (wcar* conn))))
 
-(defn enqueue-back [conn list element]
-  (wcar* conn (car/rpush list element)))
+(defn enqueue-back
+  ([conn list element]
+   (wcar* conn (car/rpush list element)))
+  ([conn list element expiry-sec]
+   (enqueue-back conn list element)
+   (wcar* conn (car/expire list expiry-sec))))
 
 (defn enqueue-front [conn list element]
   (wcar* conn (car/lpush list element)))
-
-(defn enqueue-with-expiry [conn list element expiry-sec]
-  (enqueue-back conn list element)
-  (wcar* conn (car/expire list expiry-sec)))
 
 (defn enqueue-sorted-set [conn sorted-set score element]
   (wcar* conn (car/zadd sorted-set score element)))

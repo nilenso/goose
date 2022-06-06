@@ -7,8 +7,7 @@
     [goose.utils :as u]
     [goose.worker :as w]
 
-    [clojure.test :refer [deftest is testing use-fixtures]]
-    [taoensso.carmine :as car])
+    [clojure.test :refer [deftest is testing use-fixtures]])
   (:import
     [java.util UUID]))
 
@@ -40,7 +39,7 @@
 (defn- clear-redis
   [keys]
   (let [redis-conn (r/conn redis-url {})]
-    (r/wcar* redis-conn (apply car/del keys))))
+    (r/del-keys redis-conn keys)))
 
 (defn integration-test-fixture [f]
   (let [prefixed-queues (map u/prefix-queue (vals queues))]

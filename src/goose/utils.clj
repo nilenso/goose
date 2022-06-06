@@ -55,3 +55,6 @@
       (meta)
       (:arglists)
       (map count)))
+
+(defn host-name []
+  "TODO:vm-or-container-id")

@@ -1,6 +1,7 @@
 (ns goose.worker
   (:require
     [goose.defaults :as d]
+    [goose.heartbeat :as heartbeat]
     [goose.redis :as r]
     [goose.retry :as retry]
     [goose.scheduler :as scheduler]
@@ -23,9 +24,6 @@
 
 (def ^:private unblocking-queue-prefix
   "goose/unblocking-queue:")
-
-(defn- generate-unblocking-queue []
-  (str unblocking-queue-prefix (random-uuid)))
 
 (defn- extract-job
   [[queue list-member]]
@@ -53,7 +51,7 @@
 
 (defn- internal-stop
   "Gracefully shuts down the worker threadpool."
-  [{:keys [thread-pool internal-thread-pool redis-conn
+  [{:keys [id queue thread-pool internal-thread-pool redis-conn
            unblocking-queue graceful-shutdown-sec]}]
   ; Set state of thread-pool to SHUTDOWN.
   (log/warn "Shutting down thread-pool...")
@@ -65,10 +63,12 @@
   ; max(graceful-shutdown-sec, sleep time)
   (cp/shutdown! internal-thread-pool)
 
+  (heartbeat/stop id redis-conn queue)
+
   ; Worker threads need not be interrupted.
   ; Unblock redis call by sending dummy value to utility queue
   ; REASON: https://github.com/nilenso/goose/issues/14
-  (r/enqueue-with-expiry
+  (r/enqueue-back
     redis-conn unblocking-queue "dummy" graceful-shutdown-sec)
 
   ; Give jobs executing grace time to complete.
@@ -101,20 +101,28 @@
     scheduler-polling-interval-sec
     graceful-shutdown-sec threads)
   (let [thread-pool (cp/threadpool threads)
-        internal-thread-pool (cp/threadpool 1)
-        opts {:thread-pool                    thread-pool
+        internal-thread-pool (cp/threadpool 2)
+        random-str (subs (str (random-uuid)) 24 36) ; Take last 12 chars of UUID.
+        opts {:id                             (str queue ":" (u/host-name) ":" random-str)
+              :thread-pool                    thread-pool
               :internal-thread-pool           internal-thread-pool
               :redis-conn                     (r/conn redis-url redis-pool-opts)
 
+              :queue                          queue
               :prefixed-queue                 (str d/queue-prefix queue)
               :schedule-queue                 (str d/queue-prefix d/schedule-queue)
               ; REASON: https://github.com/nilenso/goose/issues/14
-              :unblocking-queue               (generate-unblocking-queue)
+              :unblocking-queue               (str unblocking-queue-prefix random-str)
 
               :graceful-shutdown-sec          graceful-shutdown-sec
               :scheduler-polling-interval-sec scheduler-polling-interval-sec}]
+    (heartbeat/start opts)
+    (cp/future internal-thread-pool (heartbeat/recur opts))
+
+    (cp/future internal-thread-pool (scheduler/run opts))
+
     (dotimes [_ threads]
       (cp/future thread-pool (worker opts)))
-    (cp/future internal-thread-pool (scheduler/run opts))
+
     (reify Shutdown
       (stop [_] (internal-stop opts)))))
