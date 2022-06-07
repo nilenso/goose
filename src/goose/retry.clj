@@ -45,23 +45,20 @@
 
 (defn- failed-job-dynamic-config
   [{{:keys [retry-count]} :dynamic-config
-    {:keys [retry-queue]} :retry-opts
-    :keys                 [queue]
-    :as                   job}
+    :keys                 [dynamic-config]}
    ex]
-  (let [dynamic-config (assoc (:dynamic-config job)
-                         :execution-queue (or retry-queue queue)
-                         :error ex)]
-    (if retry-count
-      ; Job has failed before.
-      (assoc dynamic-config
-        :last-retried-at (u/epoch-time-ms)
-        :retry-count (inc retry-count))
+  (if retry-count
+    ; Job has failed before.
+    (assoc dynamic-config
+      :error ex
+      :last-retried-at (u/epoch-time-ms)
+      :retry-count (inc retry-count))
 
-      ; Job has failed for the first time.
-      (assoc dynamic-config
-        :first-failed-at (u/epoch-time-ms)
-        :retry-count 0))))
+    ; Job has failed for the first time.
+    (assoc dynamic-config
+      :error ex
+      :first-failed-at (u/epoch-time-ms)
+      :retry-count 0)))
 
 (defn- set-failed-config
   [job ex]

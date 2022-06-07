@@ -19,23 +19,19 @@
     perform-in-sec
     (assoc opts :schedule (u/add-sec perform-in-sec))))
 
-(defn- set-schedule-config
-  [job schedule queue]
-  (-> job
-      (assoc :schedule schedule)
-      (assoc-in [:dynamic-config :execution-queue] queue)))
-
 (defn schedule-job
   [redis-conn schedule
    {:keys [queue] :as job}]
-  (let [scheduled-job (set-schedule-config job schedule queue)]
+  (let [scheduled-job (assoc job :schedule schedule)]
     (if (< schedule (u/epoch-time-ms))
       (r/enqueue-front redis-conn queue scheduled-job)
       (r/enqueue-sorted-set redis-conn schedule-queue schedule scheduled-job))))
 
 (defn- execution-queue
   [job]
-  (get-in job [:dynamic-config :execution-queue]))
+  (if (get-in job [:dynamic-config :error])
+    (or (get-in job [:retry-opts :retry-queue]) (:queue job))
+    (:queue job)))
 
 (defn run
   [{:keys [internal-thread-pool redis-conn
