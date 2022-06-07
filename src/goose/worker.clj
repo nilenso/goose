@@ -110,7 +110,6 @@
 
               :queue                          queue
               :prefixed-queue                 (str d/queue-prefix queue)
-              :schedule-queue                 (str d/queue-prefix d/schedule-queue)
               ; REASON: https://github.com/nilenso/goose/issues/14
               :unblocking-queue               (str unblocking-queue-prefix random-str)
 

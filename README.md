@@ -21,6 +21,8 @@ Getting Started
 
 **Note:** All configurations are optional. Goose defaults to values mentioned in Configuration Options.
 
+**GOOSE IS IN ALPHA. INTERFACE MIGHT CHANGE!!!**
+
 ### Client
 
 ### Worker

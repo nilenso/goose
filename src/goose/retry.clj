@@ -1,7 +1,6 @@
 (ns goose.retry
   (:require
     [goose.defaults :as d]
-    [goose.job :as j]
     [goose.redis :as r]
     [goose.utils :as u]
 
@@ -83,4 +82,4 @@
   (let [opts (update-opts (:retry-opts job) ex)
         retry-job (assoc job :retry-opts opts)
         internal-job (update-job retry-job)]
-    (j/push redis-conn internal-job)))
+    (println redis-conn internal-job)))

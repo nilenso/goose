@@ -6,23 +6,30 @@
 (defn placeholder-fn [])
 
 (deftest async-test
-  (testing "function symbol is qualified"
+  (testing "execute-fn-sym is qualified"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"Function symbol should be Qualified"
+        #"execute-fn-sym should be qualified"
         (sut/async sut/default-opts 'placeholder-fn))))
 
-  (testing "function is resolvable"
+  (testing "execute-fn-sym is resolvable"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"Function symbol should be Resolvable"
+        #"execute-fn-sym should be resolvable"
         (sut/async sut/default-opts `bar))))
 
   (testing "args are serializable"
     (is
       (thrown-with-msg?
         java.lang.RuntimeException
-        #"Args should be Serializable"
-        (sut/async sut/default-opts `placeholder-fn #(fn []))))))
+        #"args should be serializable"
+        (sut/async sut/default-opts `placeholder-fn #(fn [])))))
+
+  (testing "schedule is an epoch"
+    (is
+      (thrown-with-msg?
+        clojure.lang.ExceptionInfo
+        #":schedule should be an integer denoting epoch in milliseconds"
+        (sut/async (assoc sut/default-opts :schedule "non-int") `placeholder-fn)))))
