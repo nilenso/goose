@@ -6,6 +6,9 @@
 
     [clojure.tools.logging :as log]))
 
+(def retry-schedule-queue (u/prefix-queue d/schedule-queue))
+(def dead-queue (u/prefix-queue d/dead-queue))
+
 (defn default-error-handler
   [job ex]
   (log/error ex "Job execution failed." job))
@@ -28,58 +31,71 @@
    :skip-dead-queue        false
    :death-handler-fn-sym   `default-death-handler})
 
-(defn- update-opts
-  [opts ex]
-  (if (:first-failed-at opts)
-    (assoc opts
-      :last-retried-at (u/epoch-time-ms)
-      :retry-count (inc (:retry-count opts))
-      :error ex)
-    (assoc opts
-      :first-failed-at (u/epoch-time-ms)
-      :retry-count 0
-      :error ex)))
+(defn- prefix-retry-queue-if-present
+  [retry-opts]
+  (if-let [retry-queue (:retry-queue retry-opts)]
+    (assoc retry-opts :retry-queue (u/prefix-queue retry-queue))
+    retry-opts))
 
-(defn- internal-opts
-  [queue time]
-  {:redis-fn goose.redis/enqueue-sorted-set
-   :queue    queue
-   :run-at   time})
+(defn set-retry-opts
+  [opts retry-opts]
+  (let [prefixed-opts (prefix-retry-queue-if-present retry-opts)
+        merged-opts (merge default-opts prefixed-opts)]
+    (assoc opts :retry-opts merged-opts)))
 
-(defn- update-retry-job
-  [{{:keys [retry-count retry-delay-sec-fn-sym
-            error error-handler-fn-sym]} :retry-opts
-    :as                                  job}]
+(defn- failed-job-dynamic-config
+  [{{:keys [retry-count]} :dynamic-config
+    {:keys [retry-queue]} :retry-opts
+    :keys                 [queue]
+    :as                   job}
+   ex]
+  (let [dynamic-config (assoc (:dynamic-config job)
+                         :execution-queue (or retry-queue queue)
+                         :error ex)]
+    (if retry-count
+      ; Job has failed before.
+      (assoc dynamic-config
+        :last-retried-at (u/epoch-time-ms)
+        :retry-count (inc retry-count))
+
+      ; Job has failed for the first time.
+      (assoc dynamic-config
+        :first-failed-at (u/epoch-time-ms)
+        :retry-count 0))))
+
+(defn- set-failed-config
+  [job ex]
+  (assoc
+    job :dynamic-config
+        (failed-job-dynamic-config job ex)))
+
+(defn- retry-job
+  [redis-conn {{:keys [retry-delay-sec-fn-sym
+                       error-handler-fn-sym]} :retry-opts
+               {:keys [retry-count]}          :dynamic-config
+               :as                            job}
+   ex]
   (let [error-handler (u/require-resolve error-handler-fn-sym)
-        queue (u/prefix-queue d/schedule-queue)
         retry-delay-sec ((u/require-resolve retry-delay-sec-fn-sym) retry-count)
         retry-at (u/add-sec retry-delay-sec)]
-    (u/log-on-exceptions (error-handler job error))
-    (assoc job
-      :internal-opts (internal-opts queue retry-at))))
+    (u/log-on-exceptions (error-handler job ex))
+    (r/enqueue-sorted-set redis-conn retry-schedule-queue retry-at job)))
 
-(defn- update-dead-job
-  [{{:keys [last-retried-at skip-dead-queue
-            error death-handler-fn-sym]} :retry-opts
-    :as                                  job}]
+(defn- bury-job
+  [redis-conn {{:keys [last-retried-at skip-dead-queue
+                       death-handler-fn-sym]} :retry-opts
+               :as                                  job} ex]
   (let [death-handler (u/require-resolve death-handler-fn-sym)
-        queue (u/prefix-queue d/dead-queue)
         dead-at (or last-retried-at (u/epoch-time-ms))]
-    (u/log-on-exceptions (death-handler job error))
+    (u/log-on-exceptions (death-handler job ex))
     (when-not skip-dead-queue
-      (assoc job
-        :internal-opts (internal-opts queue dead-at)))))
+      (r/enqueue-sorted-set redis-conn dead-queue dead-at job))))
 
-(defn- update-job
-  [{{:keys [max-retries retry-count]} :retry-opts
-    :as                               job}]
-  (if (< retry-count max-retries)
-    (update-retry-job job)
-    (update-dead-job job)))
-
-(defn failed-job
+(defn handle-failure
   [redis-conn job ex]
-  (let [opts (update-opts (:retry-opts job) ex)
-        retry-job (assoc job :retry-opts opts)
-        internal-job (update-job retry-job)]
-    (println redis-conn internal-job)))
+  (let [failed-job (set-failed-config job ex)
+        retry-count (get-in failed-job [:dynamic-config :retry-count])
+        max-retries (get-in failed-job [:retry-opts :max-retries])]
+    (if (< retry-count max-retries)
+      (retry-job redis-conn failed-job ex)
+      (bury-job redis-conn failed-job ex))))

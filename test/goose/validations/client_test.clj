@@ -1,5 +1,6 @@
 (ns goose.validations.client-test
   (:require
+    [goose.defaults :as d]
     [clojure.test :refer [deftest is testing]]
     [goose.client :as sut]))
 
@@ -26,6 +27,13 @@
         java.lang.RuntimeException
         #"args should be serializable"
         (sut/async sut/default-opts `placeholder-fn #(fn [])))))
+
+  (testing "queue is unprefixed"
+    (is
+      (thrown-with-msg?
+        clojure.lang.ExceptionInfo
+        #":queue shouldn't be prefixed"
+        (sut/async (assoc sut/default-opts :queue (str d/queue-prefix "olttwa")) `placeholder-fn))))
 
   (testing "schedule is an epoch"
     (is

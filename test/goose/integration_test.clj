@@ -95,26 +95,26 @@
   (when-not (realized? failed-on-1st-retry)
     (throw (ex-info "error" {})))
   (deliver succeeded-on-2nd-retry arg))
-(comment
-  (deftest retry-test
-    (testing "Goose retries an errorneous function"
-      (let [arg "retry-test"
-            retry-opts (assoc retry/default-opts
-                         :max-retries 2
-                         :retry-delay-sec-fn-sym `immediate-retry
-                         :retry-queue (:retry queues)
-                         :error-handler-fn-sym `retry-test-error-handler)
-            worker (w/start worker-opts)
-            retry-worker (w/start (assoc worker-opts :queue (:retry queues)))]
-        (c/async (assoc client-opts :retry-opts retry-opts) `erroneous-fn arg)
+(deftest retry-test
+  (testing "Goose retries an errorneous function"
+    (let [arg "retry-test"
+          retry-test-client-opts (-> client-opts
+                                     (retry/set-retry-opts
+                                       {:max-retries            2
+                                        :retry-delay-sec-fn-sym `immediate-retry
+                                        :retry-queue            (:retry queues)
+                                        :error-handler-fn-sym   `retry-test-error-handler}))
+          worker (w/start worker-opts)
+          retry-worker (w/start (assoc worker-opts :queue (:retry queues)))]
+      (c/async retry-test-client-opts `erroneous-fn arg)
 
-        (is (= java.lang.ArithmeticException (type (deref failed-on-execute 100 :retry-execute-timed-out))))
-        (w/stop worker)
+      (is (= java.lang.ArithmeticException (type (deref failed-on-execute 100 :retry-execute-timed-out))))
+      (w/stop worker)
 
-        (is (= clojure.lang.ExceptionInfo (type (deref failed-on-1st-retry 4100 :1st-retry-timed-out))))
+      (is (= clojure.lang.ExceptionInfo (type (deref failed-on-1st-retry 4100 :1st-retry-timed-out))))
 
-        (is (= arg (deref succeeded-on-2nd-retry 4100 :2nd-retry-timed-out)))
-        (w/stop retry-worker)))))
+      (is (= arg (deref succeeded-on-2nd-retry 4100 :2nd-retry-timed-out)))
+      (w/stop retry-worker))))
 
 ; ======= TEST: Error handling dead-job using job queue ==========
 (def job-dead (promise))
@@ -127,17 +127,17 @@
   (swap! dead-job-run-count inc)
   (/ 1 0))
 
-(comment
-  (deftest dead-test
-    (testing "Goose marks a job as dead upon reaching max retries"
-      (let [retry-opts (assoc retry/default-opts
-                         :max-retries 1
-                         :retry-delay-sec-fn-sym `immediate-retry
-                         :error-handler-fn-sym `dead-test-error-handler
-                         :death-handler-fn-sym `dead-test-death-handler)
-            worker (w/start worker-opts)]
-        (c/async (assoc client-opts :retry-opts retry-opts) `dead-fn)
+(deftest dead-test
+  (testing "Goose marks a job as dead upon reaching max retries"
+    (let [dead-test-client-opts (-> client-opts
+                                    (retry/set-retry-opts
+                                      {:max-retries            1
+                                       :retry-delay-sec-fn-sym `immediate-retry
+                                       :error-handler-fn-sym   `dead-test-error-handler
+                                       :death-handler-fn-sym   `dead-test-death-handler}))
+          worker (w/start worker-opts)]
+      (c/async dead-test-client-opts `dead-fn)
 
-        (is (= java.lang.ArithmeticException (type (deref job-dead 4200 :death-handler-timed-out))))
-        (is (= 2 @dead-job-run-count))
-        (w/stop worker)))))
+      (is (= java.lang.ArithmeticException (type (deref job-dead 4200 :death-handler-timed-out))))
+      (is (= 2 @dead-job-run-count))
+      (w/stop worker))))

@@ -19,7 +19,7 @@
   (try
     (apply (u/require-resolve execute-fn-sym) args)
     (catch Exception ex
-      (retry/failed-job redis-conn job ex)))
+      (retry/handle-failure redis-conn job ex)))
   (log/debug "Executed job-id:" id))
 
 (def ^:private unblocking-queue-prefix
