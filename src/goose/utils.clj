@@ -56,5 +56,5 @@
       (:arglists)
       (map count)))
 
-(defn host-name []
-  "TODO:vm-or-container-id")
+(defn hostname []
+  (.getHostName (java.net.InetAddress/getLocalHost)))

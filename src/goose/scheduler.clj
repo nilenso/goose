@@ -3,21 +3,10 @@
     [goose.defaults :as d]
     [goose.redis :as r]
     [goose.utils :as u]
-    [goose.validations.scheduler :as v]
 
     [clojure.tools.logging :as log]))
 
 (def schedule-queue (u/prefix-queue d/schedule-queue))
-
-(defn set-schedule
-  [opts {:keys [perform-at perform-in-sec]}]
-  (v/validate-schedule perform-at perform-in-sec)
-  (cond
-    perform-at
-    (assoc opts :schedule (u/epoch-time-ms perform-at))
-
-    perform-in-sec
-    (assoc opts :schedule (u/add-sec perform-in-sec))))
 
 (defn schedule-job
   [redis-conn schedule

@@ -18,9 +18,9 @@
     (catch Exception _
       true)))
 
-(defn validate-async-params
+(defn enqueue-params
   [redis-url redis-pool-opts
-   queue schedule retry-opts execute-fn-sym args]
+   queue retry-opts execute-fn-sym args]
   (validate-redis redis-url redis-pool-opts)
   (validate-queue queue)
   (validate-retry-opts retry-opts)
@@ -37,8 +37,19 @@
        ["args should be serializable" (u/wrap-error :unserializable-args args)]
 
        (str/starts-with? queue d/queue-prefix)
-       [":queue shouldn't be prefixed" (u/wrap-error :prefixed-queue queue)]
-
-       (when schedule (not (int? schedule)))
-       [":schedule should be an integer denoting epoch in milliseconds" (u/wrap-error :schedule-invalid schedule)])]
+       [":queue shouldn't be prefixed" (u/wrap-error :prefixed-queue queue)])]
     (throw (apply ex-info validation-error))))
+
+(defn date-time
+  [date-time]
+  (when (not (instance? java.util.Date date-time))
+    (throw
+      (ex-info "date-time should be an instance of date object"
+               (u/wrap-error :date-time-invalid date-time)))))
+
+(defn seconds
+  [sec]
+  (when (not (int? sec))
+    (throw
+      (ex-info "seconds should be an integer"
+               (u/wrap-error :seconds-non-integer sec )))))

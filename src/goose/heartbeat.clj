@@ -4,16 +4,26 @@
     [goose.redis :as r]
     [goose.utils :as u]))
 
-(defn start
-  [{:keys [id redis-conn queue]}]
-  (r/add-to-set redis-conn (str d/process-prefix queue) id)
-  (r/set-key-val redis-conn (str d/heartbeat-prefix id) "alive" d/heartbeat-expire-sec))
+(defn process-set
+  [queue]
+  (str d/process-prefix queue))
 
-(defn recur
-  [{:keys [id redis-conn]}]
+(defn heartbeat-id
+  [id]
+  (str d/heartbeat-prefix id))
+
+(defn alive?
+  [redis-conn id]
+  (boolean (r/get-key redis-conn (heartbeat-id id))))
+
+(defn run
+  [{:keys [internal-thread-pool
+           id redis-conn queue]}]
+  (r/add-to-set redis-conn (process-set queue) id)
   (u/while-pool
-    (Thread/sleep (* 1000 15))
-    (r/set-key-val redis-conn (str d/heartbeat-prefix id) "alive" d/heartbeat-expire-sec)))
+    internal-thread-pool
+    (r/set-key-val redis-conn (heartbeat-id id) "alive" d/heartbeat-expire-sec)
+    (Thread/sleep (* 1000 15))))
 
 (defn stop
   [id redis-conn queue]

@@ -7,8 +7,7 @@
     [goose.utils :as u]
     [goose.worker :as w]
 
-    [clojure.test :refer [deftest is testing use-fixtures]]
-    [goose.scheduler :as scheduler])
+    [clojure.test :refer [deftest is testing use-fixtures]])
   (:import
     [java.util UUID]))
 
@@ -51,32 +50,45 @@
 (use-fixtures :once integration-test-fixture)
 
 ; ======= TEST: Async execution ==========
-(def fn-called (promise))
-(defn placeholder-fn [arg]
-  (deliver fn-called arg))
+(def perform-async-fn-executed (promise))
+(defn perform-async-fn [arg]
+  (deliver perform-async-fn-executed arg))
 
-(deftest enqueue-dequeue-execute-test
+(deftest perform-async-test
   (testing "Goose executes a function asynchronously"
     (let [arg "async-execute-test"
           worker (w/start worker-opts)]
-      (is (uuid? (UUID/fromString (c/async client-opts `placeholder-fn arg))))
-      (is (= arg (deref fn-called 100 :e2e-test-timed-out)))
+      (is (uuid? (UUID/fromString (c/perform-async client-opts `perform-async-fn arg))))
+      (is (= arg (deref perform-async-fn-executed 100 :e2e-test-timed-out)))
       (w/stop worker))))
 
-; ======= TEST: Scheduling ==========
-(def scheduled-fn-called (promise))
-(defn scheduled-fn [arg]
-  (deliver scheduled-fn-called arg))
+; ======= TEST: Relative Scheduling ==========
+(def perform-in-sec-fn-executed (promise))
+(defn perform-in-sec-fn [arg]
+  (deliver perform-in-sec-fn-executed arg))
 
-(deftest scheduler-test
-  (testing "Goose executes a scheduled function asynchronously"
+(deftest perform-in-sec-test
+  (testing "Goose executes a function scheduled in future"
     (let [arg "scheduling-test"
-          scheduled-opts (-> client-opts
-                             (scheduler/set-schedule {:perform-in-sec 1}))
+          _ (c/perform-in-sec client-opts 1 `perform-in-sec-fn arg)
           scheduler (w/start worker-opts)]
-      (c/async scheduled-opts `scheduled-fn arg)
-      (is (= arg (deref scheduled-fn-called 4100 :scheduler-test-timed-out)))
+      (is (= arg (deref perform-in-sec-fn-executed 4100 :scheduler-test-timed-out)))
       (w/stop scheduler))))
+
+; ======= TEST: Absolute Scheduling (in-past) ==========
+(def perform-at-fn-executed (promise))
+(defn perform-at-fn [arg]
+  (deliver perform-at-fn-executed arg))
+
+(deftest perform-at-test
+  (testing "Goose executes a function scheduled in past"
+    (let [arg "scheduling-test"
+          _ (c/perform-at client-opts (java.util.Date.) `perform-at-fn arg)
+          scheduler (w/start worker-opts)]
+      (is (= arg (deref perform-at-fn-executed 100 :scheduler-test-timed-out)))
+      (w/stop scheduler))))
+
+
 ; ======= TEST: Error handling transient failure job using custom retry queue ==========
 (defn immediate-retry [_] 1)
 
@@ -106,7 +118,7 @@
                                         :error-handler-fn-sym   `retry-test-error-handler}))
           worker (w/start worker-opts)
           retry-worker (w/start (assoc worker-opts :queue (:retry queues)))]
-      (c/async retry-test-client-opts `erroneous-fn arg)
+      (c/perform-async retry-test-client-opts `erroneous-fn arg)
 
       (is (= java.lang.ArithmeticException (type (deref failed-on-execute 100 :retry-execute-timed-out))))
       (w/stop worker)
@@ -136,7 +148,7 @@
                                        :error-handler-fn-sym   `dead-test-error-handler
                                        :death-handler-fn-sym   `dead-test-death-handler}))
           worker (w/start worker-opts)]
-      (c/async dead-test-client-opts `dead-fn)
+      (c/perform-async dead-test-client-opts `dead-fn)
 
       (is (= java.lang.ArithmeticException (type (deref job-dead 4200 :death-handler-timed-out))))
       (is (= 2 @dead-job-run-count))

@@ -15,6 +15,9 @@
 (defn set-key-val [conn key value expire-sec]
   (wcar* conn (car/set key value "EX" expire-sec)))
 
+(defn get-key [conn key]
+  (wcar* conn (car/get key)))
+
 (defn del-keys [conn keys]
   (wcar* conn (apply car/del keys)))
 
@@ -24,6 +27,9 @@
 
 (defn del-from-set [conn set member]
   (wcar* conn (car/srem set member)))
+
+(defn scan-set [conn set cursor count]
+  (wcar* conn (car/sscan set cursor "COUNT" count)))
 
 ; ============== Lists ===============
 (defn enqueue-back

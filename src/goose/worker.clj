@@ -3,6 +3,7 @@
     [goose.defaults :as d]
     [goose.executor :as executor]
     [goose.heartbeat :as heartbeat]
+    [goose.orphan-checker :as orphan-checker]
     [goose.redis :as r]
     [goose.scheduler :as scheduler]
     [goose.utils :as u]
@@ -62,9 +63,9 @@
     scheduler-polling-interval-sec
     graceful-shutdown-sec threads)
   (let [thread-pool (cp/threadpool threads)
-        internal-thread-pool (cp/threadpool 2)
+        internal-thread-pool (cp/threadpool 3)
         random-str (subs (str (random-uuid)) 24 36) ; Take last 12 chars of UUID.
-        id (str queue ":" (u/host-name) ":" random-str)
+        id (str queue ":" (u/hostname) ":" random-str)
         opts {:id                             id
               :thread-pool                    thread-pool
               :internal-thread-pool           internal-thread-pool
@@ -72,14 +73,14 @@
 
               :queue                          queue
               :prefixed-queue                 (u/prefix-queue queue)
-              :execution-queue                (str d/execution-queue-prefix id)
+              :execution-queue                (executor/execution-queue id)
 
               :graceful-shutdown-sec          graceful-shutdown-sec
               :scheduler-polling-interval-sec scheduler-polling-interval-sec}]
-    (heartbeat/start opts)
-    (cp/future internal-thread-pool (heartbeat/recur opts))
 
+    (cp/future internal-thread-pool (heartbeat/run opts))
     (cp/future internal-thread-pool (scheduler/run opts))
+    (cp/future internal-thread-pool (orphan-checker/run opts))
 
     (dotimes [_ threads]
       (cp/future thread-pool (executor/run opts)))
