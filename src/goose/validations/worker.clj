@@ -5,10 +5,10 @@
     [goose.validations.queue :refer [validate-queue]]))
 
 (defn validate-worker-params
-  [redis-url redis-pool-opts queue
-   scheduler-polling-interval-sec
-   graceful-shutdown-sec threads]
-  (validate-redis redis-url redis-pool-opts)
+  [broker-opts queue threads
+   graceful-shutdown-sec
+   scheduler-polling-interval-sec]
+  (validate-redis broker-opts)
   (validate-queue queue)
   (when-let
     [validation-error

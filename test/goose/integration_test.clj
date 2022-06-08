@@ -3,12 +3,10 @@
     [goose.client :as c]
     [goose.defaults :as d]
     [goose.redis :as r]
-    [goose.retry :as retry]
     [goose.utils :as u]
     [goose.worker :as w]
 
-    [clojure.test :refer [deftest is testing use-fixtures]]
-    [taoensso.carmine :as car])
+    [clojure.test :refer [deftest is testing use-fixtures]])
   (:import
     [java.util UUID]))
 
@@ -24,23 +22,22 @@
    :dead     d/dead-queue})
 
 (def client-opts
-  (assoc c/default-opts
-    :queue (:test queues)
-    :redis-url redis-url))
+  {:queue       (:test queues)
+   :broker-opts {:redis-url redis-url}})
 
 (def worker-opts
-  (assoc w/default-opts
-    :redis-url redis-url
-    :queue (:test queues)
-    :graceful-shutdown-sec 1
-    :scheduler-polling-interval-sec 1))
+  {:threads                        1
+   :broker-opts                    {:redis-url redis-url}
+   :queue                          (:test queues)
+   :graceful-shutdown-sec          1
+   :scheduler-polling-interval-sec 1})
 
 ; ======= Setup & Teardown ==========
 
 (defn- clear-redis
   [keys]
-  (let [redis-conn (r/conn redis-url {})]
-    (r/wcar* redis-conn (apply car/del keys))))
+  (let [redis-conn (r/conn {:redis-url redis-url})]
+    (r/del-keys redis-conn keys)))
 
 (defn integration-test-fixture [f]
   (let [prefixed-queues (map u/prefix-queue (vals queues))]
@@ -51,31 +48,45 @@
 (use-fixtures :once integration-test-fixture)
 
 ; ======= TEST: Async execution ==========
-(def fn-called (promise))
-(defn placeholder-fn [arg]
-  (deliver fn-called arg))
+(def perform-async-fn-executed (promise))
+(defn perform-async-fn [arg]
+  (deliver perform-async-fn-executed arg))
 
-(deftest enqueue-dequeue-execute-test
+(deftest perform-async-test
   (testing "Goose executes a function asynchronously"
     (let [arg "async-execute-test"
           worker (w/start worker-opts)]
-      (is (uuid? (UUID/fromString (c/async client-opts `placeholder-fn arg))))
-      (is (= arg (deref fn-called 100 :e2e-test-timed-out)))
+      (is (uuid? (UUID/fromString (c/perform-async client-opts `perform-async-fn arg))))
+      (is (= arg (deref perform-async-fn-executed 100 :e2e-test-timed-out)))
       (w/stop worker))))
 
-; ======= TEST: Scheduling ==========
-(def scheduled-fn-called (promise))
-(defn scheduled-fn [arg]
-  (deliver scheduled-fn-called arg))
+; ======= TEST: Relative Scheduling ==========
+(def perform-in-sec-fn-executed (promise))
+(defn perform-in-sec-fn [arg]
+  (deliver perform-in-sec-fn-executed arg))
 
-(deftest scheduler-test
-  (testing "Goose executes a scheduled function asynchronously"
+(deftest perform-in-sec-test
+  (testing "Goose executes a function scheduled in future"
     (let [arg "scheduling-test"
+          _ (c/perform-in-sec client-opts 1 `perform-in-sec-fn arg)
           scheduler (w/start worker-opts)]
-      (c/async (assoc client-opts :schedule-opts {:perform-in-sec 1})
-               `scheduled-fn arg)
-      (is (= arg (deref scheduled-fn-called 4100 :scheduler-test-timed-out)))
+      (is (= arg (deref perform-in-sec-fn-executed 4100 :scheduler-test-timed-out)))
       (w/stop scheduler))))
+
+; ======= TEST: Absolute Scheduling (in-past) ==========
+(def perform-at-fn-executed (promise))
+(defn perform-at-fn [arg]
+  (deliver perform-at-fn-executed arg))
+
+(deftest perform-at-test
+  (testing "Goose executes a function scheduled in past"
+    (let [arg "scheduling-test"
+          _ (c/perform-at client-opts (java.util.Date.) `perform-at-fn arg)
+          scheduler (w/start worker-opts)]
+      (is (= arg (deref perform-at-fn-executed 100 :scheduler-test-timed-out)))
+      (w/stop scheduler))))
+
+
 ; ======= TEST: Error handling transient failure job using custom retry queue ==========
 (defn immediate-retry [_] 1)
 
@@ -97,14 +108,13 @@
 (deftest retry-test
   (testing "Goose retries an errorneous function"
     (let [arg "retry-test"
-          retry-opts (assoc retry/default-opts
-                       :max-retries 2
-                       :retry-delay-sec-fn-sym `immediate-retry
-                       :retry-queue (:retry queues)
-                       :error-handler-fn-sym `retry-test-error-handler)
+          retry-opts {:max-retries            2
+                      :retry-delay-sec-fn-sym `immediate-retry
+                      :retry-queue            (:retry queues)
+                      :error-handler-fn-sym   `retry-test-error-handler}
           worker (w/start worker-opts)
           retry-worker (w/start (assoc worker-opts :queue (:retry queues)))]
-      (c/async (assoc client-opts :retry-opts retry-opts) `erroneous-fn arg)
+      (c/perform-async (assoc client-opts :retry-opts retry-opts) `erroneous-fn arg)
 
       (is (= java.lang.ArithmeticException (type (deref failed-on-execute 100 :retry-execute-timed-out))))
       (w/stop worker)
@@ -127,13 +137,12 @@
 
 (deftest dead-test
   (testing "Goose marks a job as dead upon reaching max retries"
-    (let [retry-opts (assoc retry/default-opts
-                       :max-retries 1
-                       :retry-delay-sec-fn-sym `immediate-retry
-                       :error-handler-fn-sym `dead-test-error-handler
-                       :death-handler-fn-sym `dead-test-death-handler)
+    (let [dead-job-opts {:max-retries            1
+                         :retry-delay-sec-fn-sym `immediate-retry
+                         :error-handler-fn-sym   `dead-test-error-handler
+                         :death-handler-fn-sym   `dead-test-death-handler}
           worker (w/start worker-opts)]
-      (c/async (assoc client-opts :retry-opts retry-opts) `dead-fn)
+      (c/perform-async (assoc client-opts :retry-opts dead-job-opts) `dead-fn)
 
       (is (= java.lang.ArithmeticException (type (deref job-dead 4200 :death-handler-timed-out))))
       (is (= 2 @dead-job-run-count))

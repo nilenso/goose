@@ -24,7 +24,7 @@
       (satisfies? IConnectionPool redis-pool-opts))))
 
 (defn validate-redis
-  [redis-url redis-pool-opts]
+  [{:keys [redis-url redis-pool-opts]}]
   (when-let
     [validation-error
      (cond

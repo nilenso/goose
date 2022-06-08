@@ -6,28 +6,49 @@
     [taoensso.carmine :as car]))
 
 (defn conn
-  [url pool-opts]
-  {:pool pool-opts :spec {:uri url}})
+  [{:keys [redis-url redis-pool-opts]}]
+  {:pool redis-pool-opts :spec {:uri redis-url}})
 
 (defmacro wcar* [conn & body] `(car/wcar ~conn ~@body))
 
-(defn dequeue [conn lists]
-  ; Convert list to vector to ensure timeout is last arg to blpop.
-  (let [blpop-args (conj (vec lists) d/long-polling-timeout-sec)]
-    (->> blpop-args
-         (apply car/blpop)
-         (wcar* conn))))
+; ============ Key-Value =============
+(defn set-key-val [conn key value expire-sec]
+  (wcar* conn (car/set key value "EX" expire-sec)))
 
-(defn enqueue-back [conn list element]
-  (wcar* conn (car/rpush list element)))
+(defn get-key [conn key]
+  (wcar* conn (car/get key)))
+
+(defn del-keys [conn keys]
+  (wcar* conn (apply car/del keys)))
+
+; ============== Sets ===============
+(defn add-to-set [conn set member]
+  (wcar* conn (car/sadd set member)))
+
+(defn del-from-set [conn set member]
+  (wcar* conn (car/srem set member)))
+
+(defn scan-set [conn set cursor count]
+  (wcar* conn (car/sscan set cursor "COUNT" count)))
+
+(defn size-of-set [conn set]
+  (wcar* conn (car/scard set)))
+
+; ============== Lists ===============
+(defn enqueue-back
+  ([conn list element]
+   (wcar* conn (car/lpush list element))))
 
 (defn enqueue-front [conn list element]
-  (wcar* conn (car/lpush list element)))
+  (wcar* conn (car/rpush list element)))
 
-(defn enqueue-with-expiry [conn list element expiry-sec]
-  (enqueue-back conn list element)
-  (wcar* conn (car/expire list expiry-sec)))
+(defn dequeue-and-preserve [conn src dst]
+  (wcar* conn (car/brpoplpush src dst d/long-polling-timeout-sec)))
 
+(defn remove-from-list [conn list element]
+  (wcar* conn (car/lrem list 1 element)))
+
+; ============ Sorted-Sets ============
 (defn enqueue-sorted-set [conn sorted-set score element]
   (wcar* conn (car/zadd sorted-set score element)))
 
@@ -42,18 +63,11 @@
           sorted-set min (u/epoch-time-ms)
           limit offset d/scheduled-jobs-pop-limit)))))
 
-(defn- appropriate-queue
-  [job]
-  (if (get-in job [:retry-opts :error])
-    (or (get-in job [:retry-opts :retry-queue])
-        (:queue job))
-    (:queue job)))
-
-(defn enqueue-due-jobs-to-front [conn sorted-set jobs]
+(defn enqueue-due-jobs-to-front [conn sorted-set jobs grouping-fn]
   (let [cas-attempts 100]
     (car/atomic
       conn cas-attempts
       (car/multi)
       (apply car/zrem sorted-set jobs)
-      (doseq [[queue jobs] (group-by appropriate-queue jobs)]
+      (doseq [[queue jobs] (group-by grouping-fn jobs)]
         (apply car/lpush queue jobs)))))

@@ -21,6 +21,8 @@ Getting Started
 
 **Note:** All configurations are optional. Goose defaults to values mentioned in Configuration Options.
 
+**GOOSE IS IN ALPHA. INTERFACE MIGHT CHANGE!!!**
+
 ### Client
 
 ### Worker
@@ -36,6 +38,7 @@ Configuration options
 | `:threads` | Worker | 1 | Number of threads in the threadpool |
 
 **TODO: Fill in all config options before open sourcing.**
+> Note: All jobs are retried upon failure by default. Either make jobs idempotent, or set retries to 0.
 
 Why the name "Goose"?
 ---------

@@ -20,13 +20,6 @@
         #"Queue length should be less than 1000"
         (sut/validate-queue (str (range 300))))))
 
-  (testing "queue is not prefixed"
-    (is
-      (thrown-with-msg?
-        clojure.lang.ExceptionInfo
-        #"Queue shouldn't be prefixed"
-        (sut/validate-queue (str d/queue-prefix "olttwa")))))
-
   (testing "queue isn't a protected keyword"
     (is
       (thrown-with-msg?
