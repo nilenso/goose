@@ -16,6 +16,10 @@
   [redis-conn id]
   (boolean (r/get-key redis-conn (heartbeat-id id))))
 
+(defn process-count
+  [redis-conn queue]
+  (r/size-of-set redis-conn (process-set queue)))
+
 (defn run
   [{:keys [internal-thread-pool
            id redis-conn queue]}]

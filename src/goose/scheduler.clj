@@ -1,6 +1,7 @@
 (ns goose.scheduler
   (:require
     [goose.defaults :as d]
+    [goose.heartbeat :as heartbeat]
     [goose.redis :as r]
     [goose.utils :as u]
 
@@ -23,7 +24,7 @@
     (:queue job)))
 
 (defn run
-  [{:keys [internal-thread-pool redis-conn
+  [{:keys [internal-thread-pool redis-conn queue
            scheduler-polling-interval-sec]}]
   (u/while-pool
     internal-thread-pool
@@ -33,5 +34,10 @@
         (r/enqueue-due-jobs-to-front
           redis-conn schedule-queue
           jobs (group-by execution-queue jobs))
-        (Thread/sleep (* 1000 (+ (rand-int 3) scheduler-polling-interval-sec))))))
+        (let [process-count (heartbeat/process-count redis-conn queue)]
+          ; Sleep for process-count * polling-interval + jitters
+          ; On average, Goose checks for scheduled jobs
+          ; every polling interval configured.
+          (Thread/sleep (* 1000 (+ (* scheduler-polling-interval-sec process-count)
+                                   (rand-int 3))))))))
   (log/info "Stopped scheduler. Exiting gracefully..."))

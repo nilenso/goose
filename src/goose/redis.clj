@@ -31,6 +31,9 @@
 (defn scan-set [conn set cursor count]
   (wcar* conn (car/sscan set cursor "COUNT" count)))
 
+(defn size-of-set [conn set]
+  (wcar* conn (car/scard set)))
+
 ; ============== Lists ===============
 (defn enqueue-back
   ([conn list element]

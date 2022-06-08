@@ -13,8 +13,7 @@
   (doseq [process processes]
     (when-not (heartbeat/alive? redis-conn process)
       (loop []
-        ; TODO: move to front of queue instead of back, non-blocking call?
-        ; TODO: use LMOVE
+        ; TODO: Move orphan jobs to front of prefixed-queue.
         (when (r/dequeue-reliable redis-conn (executor/execution-queue process) prefixed-queue)
           (recur)))
       (r/del-from-set redis-conn process-set process))))
@@ -34,6 +33,9 @@
             (remove #{id} processes))
           (when-not (= next initial-cursor)
             (recur next))))
-      ; TODO: fetch process count
-      (Thread/sleep (* 1000 60 2)))))
+      (let [process-count (heartbeat/process-count redis-conn queue)]
+        ; Sleep for (process-count) minutes + jitters.
+        ; On average, Goose checks for orphan jobs every 1 minute.
+        (Thread/sleep (* 1000 (+ (* 60 process-count)
+                                 (rand-int process-count))))))))
 
