@@ -11,8 +11,7 @@
 (def default-opts
   {:redis-url       d/default-redis-url
    :redis-pool-opts {}
-   :queue           d/default-queue
-   :retry-opts      retry/default-opts})
+   :queue           d/default-queue})
 
 (defn- enqueue
   [{:keys [redis-url redis-pool-opts
@@ -20,18 +19,19 @@
    schedule
    execute-fn-sym
    args]
-  (validate/enqueue-params
-    redis-url redis-pool-opts
-    queue retry-opts
-    execute-fn-sym args)
+  (let [enhanced-retry-opts (retry/enhance-opts retry-opts)]
+    (validate/enqueue-params
+      redis-url redis-pool-opts
+      queue enhanced-retry-opts
+      execute-fn-sym args)
+    (let [redis-conn (r/conn redis-url redis-pool-opts)
+          prefixed-queue (u/prefix-queue queue)
+          job (j/new execute-fn-sym args prefixed-queue enhanced-retry-opts)]
 
-  (let [redis-conn (r/conn redis-url redis-pool-opts)
-        prefixed-queue (u/prefix-queue queue)
-        job (j/new execute-fn-sym args prefixed-queue retry-opts)]
-    (if schedule
-      (scheduler/schedule-job redis-conn schedule job)
-      (j/enqueue redis-conn job))
-    (:id job)))
+      (if schedule
+        (scheduler/schedule-job redis-conn schedule job)
+        (j/enqueue redis-conn job))
+      (:id job))))
 
 (defn perform-async
   [opts execute-fn-sym & args]

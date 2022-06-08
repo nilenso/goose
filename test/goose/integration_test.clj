@@ -3,7 +3,6 @@
     [goose.client :as c]
     [goose.defaults :as d]
     [goose.redis :as r]
-    [goose.retry :as retry]
     [goose.utils :as u]
     [goose.worker :as w]
 
@@ -110,15 +109,13 @@
 (deftest retry-test
   (testing "Goose retries an errorneous function"
     (let [arg "retry-test"
-          retry-test-client-opts (-> client-opts
-                                     (retry/set-retry-opts
-                                       {:max-retries            2
-                                        :retry-delay-sec-fn-sym `immediate-retry
-                                        :retry-queue            (:retry queues)
-                                        :error-handler-fn-sym   `retry-test-error-handler}))
+          retry-opts {:max-retries            2
+                      :retry-delay-sec-fn-sym `immediate-retry
+                      :retry-queue            (:retry queues)
+                      :error-handler-fn-sym   `retry-test-error-handler}
           worker (w/start worker-opts)
           retry-worker (w/start (assoc worker-opts :queue (:retry queues)))]
-      (c/perform-async retry-test-client-opts `erroneous-fn arg)
+      (c/perform-async (assoc client-opts :retry-opts retry-opts) `erroneous-fn arg)
 
       (is (= java.lang.ArithmeticException (type (deref failed-on-execute 100 :retry-execute-timed-out))))
       (w/stop worker)
@@ -141,14 +138,12 @@
 
 (deftest dead-test
   (testing "Goose marks a job as dead upon reaching max retries"
-    (let [dead-test-client-opts (-> client-opts
-                                    (retry/set-retry-opts
-                                      {:max-retries            1
-                                       :retry-delay-sec-fn-sym `immediate-retry
-                                       :error-handler-fn-sym   `dead-test-error-handler
-                                       :death-handler-fn-sym   `dead-test-death-handler}))
+    (let [dead-job-opts {:max-retries            1
+                         :retry-delay-sec-fn-sym `immediate-retry
+                         :error-handler-fn-sym   `dead-test-error-handler
+                         :death-handler-fn-sym   `dead-test-death-handler}
           worker (w/start worker-opts)]
-      (c/perform-async dead-test-client-opts `dead-fn)
+      (c/perform-async (assoc client-opts :retry-opts dead-job-opts) `dead-fn)
 
       (is (= java.lang.ArithmeticException (type (deref job-dead 4200 :death-handler-timed-out))))
       (is (= 2 @dead-job-run-count))

@@ -37,11 +37,10 @@
     (assoc retry-opts :retry-queue (u/prefix-queue retry-queue))
     retry-opts))
 
-(defn set-retry-opts
-  [opts retry-opts]
-  (let [prefixed-opts (prefix-retry-queue-if-present retry-opts)
-        merged-opts (merge default-opts prefixed-opts)]
-    (assoc opts :retry-opts merged-opts)))
+(defn enhance-opts
+  [opts]
+  (let [prefixed-queue-opts (prefix-retry-queue-if-present opts)]
+    (merge default-opts prefixed-queue-opts)))
 
 (defn- failed-job-dynamic-config
   [{{:keys [retry-count]} :dynamic-config
@@ -79,9 +78,12 @@
     (r/enqueue-sorted-set redis-conn retry-schedule-queue retry-at job)))
 
 (defn- bury-job
-  [redis-conn {{:keys [last-retried-at skip-dead-queue
-                       death-handler-fn-sym]} :retry-opts
-               :as                                  job} ex]
+  [redis-conn
+   {{:keys [skip-dead-queue
+            death-handler-fn-sym]} :retry-opts
+    {:keys [last-retried-at]}      :dynamic-config
+    :as                            job}
+   ex]
   (let [death-handler (u/require-resolve death-handler-fn-sym)
         dead-at (or last-retried-at (u/epoch-time-ms))]
     (u/log-on-exceptions (death-handler job ex))
