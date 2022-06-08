@@ -15,19 +15,19 @@
     (catch Exception ex
       (retry/handle-failure redis-conn job ex))))
 
-(defn execution-queue
+(defn preservation-queue
   [id]
-  (str d/execution-queue-prefix id))
+  (str d/in-progress-queue-prefix id))
 
 (defn run
   [{:keys [thread-pool redis-conn
-           prefixed-queue execution-queue]}]
+           prefixed-queue in-progress-queue]}]
   (u/while-pool
     thread-pool
     (log/info "Long-polling broker...")
     (u/log-on-exceptions
-      (when-let [job (r/dequeue-reliable redis-conn prefixed-queue execution-queue)]
+      (when-let [job (r/dequeue-and-preserve redis-conn prefixed-queue in-progress-queue)]
         (execute-job redis-conn job)
-        (r/remove-from-list redis-conn execution-queue job))))
+        (r/remove-from-list redis-conn in-progress-queue job))))
   (log/info "Stopped worker. Exiting gracefully..."))
 

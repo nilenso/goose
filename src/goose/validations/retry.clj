@@ -9,12 +9,16 @@
 (defn validate-retry-opts
   [{:keys [max-retries retry-delay-sec-fn-sym
            retry-queue skip-dead-queue
-           error-handler-fn-sym death-handler-fn-sym]}]
-  ; TODO: validate no extra keys are present.
+           error-handler-fn-sym death-handler-fn-sym]
+    :as   retry-opts}]
   (when retry-queue (validate-queue retry-queue))
   (when-let
     [validation-error
      (cond
+       (not-empty (apply dissoc retry-opts [:max-retries :retry-delay-sec-fn-sym :skip-dead-queue
+                                            :retry-queue :error-handler-fn-sym :death-handler-fn-sym]))
+       [":retry-opts shouldn't have any extra keys" (u/wrap-error :retry-opts-invalid retry-opts)]
+
        (neg? max-retries)
        [":max-retries count shouldn't be negative" (u/wrap-error :negative-max-retries max-retries)]
 

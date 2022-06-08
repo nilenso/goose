@@ -6,8 +6,8 @@
     [taoensso.carmine :as car]))
 
 (defn conn
-  [url pool-opts]
-  {:pool pool-opts :spec {:uri url}})
+  [{:keys [redis-url redis-pool-opts]}]
+  {:pool redis-pool-opts :spec {:uri redis-url}})
 
 (defmacro wcar* [conn & body] `(car/wcar ~conn ~@body))
 
@@ -42,7 +42,7 @@
 (defn enqueue-front [conn list element]
   (wcar* conn (car/rpush list element)))
 
-(defn dequeue-reliable [conn src dst]
+(defn dequeue-and-preserve [conn src dst]
   (wcar* conn (car/brpoplpush src dst d/long-polling-timeout-sec)))
 
 (defn remove-from-list [conn list element]
@@ -63,11 +63,11 @@
           sorted-set min (u/epoch-time-ms)
           limit offset d/scheduled-jobs-pop-limit)))))
 
-(defn enqueue-due-jobs-to-front [conn sorted-set jobs grouped-jobs]
+(defn enqueue-due-jobs-to-front [conn sorted-set jobs grouping-fn]
   (let [cas-attempts 100]
     (car/atomic
       conn cas-attempts
       (car/multi)
       (apply car/zrem sorted-set jobs)
-      (doseq [[queue jobs] grouped-jobs]
+      (doseq [[queue jobs] (group-by grouping-fn jobs)]
         (apply car/lpush queue jobs)))))

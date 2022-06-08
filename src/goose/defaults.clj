@@ -10,7 +10,7 @@
 (def heartbeat-expire-sec 60)
 
 (def queue-prefix "goose/queue:")
-(def execution-queue-prefix "goose/execution-queue:")
+(def in-progress-queue-prefix "goose/in-progress-jobs:")
 
 (def default-queue "default")
 (def schedule-queue "scheduled-jobs")

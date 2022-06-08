@@ -38,6 +38,7 @@ Configuration options
 | `:threads` | Worker | 1 | Number of threads in the threadpool |
 
 **TODO: Fill in all config options before open sourcing.**
+> Note: All jobs are retried upon failure by default. Either make jobs idempotent, or set retries to 0.
 
 Why the name "Goose"?
 ---------

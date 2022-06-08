@@ -6,8 +6,8 @@
 
     [clojure.tools.logging :as log]))
 
-(def retry-schedule-queue (u/prefix-queue d/schedule-queue))
-(def dead-queue (u/prefix-queue d/dead-queue))
+(def ^:private prefixed-retry-schedule-queue (u/prefix-queue d/schedule-queue))
+(def ^:private prefixed-dead-queue (u/prefix-queue d/dead-queue))
 
 (defn default-error-handler
   [job ex]
@@ -39,61 +39,52 @@
 
 (defn enhance-opts
   [opts]
-  (let [prefixed-queue-opts (prefix-retry-queue-if-present opts)]
-    (merge default-opts prefixed-queue-opts)))
+  (->> opts
+       (prefix-retry-queue-if-present)
+       (merge default-opts)))
 
-(defn- failed-job-dynamic-config
-  [{{:keys [retry-count]} :dynamic-config
-    :keys                 [dynamic-config]}
-   ex]
-  (if retry-count
-    ; Job has failed before.
-    (assoc dynamic-config
-      :error ex
-      :last-retried-at (u/epoch-time-ms)
-      :retry-count (inc retry-count))
-
-    ; Job has failed for the first time.
-    (assoc dynamic-config
-      :error ex
-      :first-failed-at (u/epoch-time-ms)
-      :retry-count 0)))
+(defn- failure-state
+  [{{:keys [retry-count first-failed-at]} :state} ex]
+  {:error           ex
+   :last-retried-at (when first-failed-at (u/epoch-time-ms))
+   :first-failed-at (or first-failed-at (u/epoch-time-ms))
+   :retry-count     (if retry-count (inc retry-count) 0)})
 
 (defn- set-failed-config
   [job ex]
   (assoc
-    job :dynamic-config
-        (failed-job-dynamic-config job ex)))
+    job :state
+        (failure-state job ex)))
 
 (defn- retry-job
   [redis-conn {{:keys [retry-delay-sec-fn-sym
                        error-handler-fn-sym]} :retry-opts
-               {:keys [retry-count]}          :dynamic-config
+               {:keys [retry-count]}          :state
                :as                            job}
    ex]
   (let [error-handler (u/require-resolve error-handler-fn-sym)
         retry-delay-sec ((u/require-resolve retry-delay-sec-fn-sym) retry-count)
         retry-at (u/add-sec retry-delay-sec)]
     (u/log-on-exceptions (error-handler job ex))
-    (r/enqueue-sorted-set redis-conn retry-schedule-queue retry-at job)))
+    (r/enqueue-sorted-set redis-conn prefixed-retry-schedule-queue retry-at job)))
 
 (defn- bury-job
   [redis-conn
    {{:keys [skip-dead-queue
             death-handler-fn-sym]} :retry-opts
-    {:keys [last-retried-at]}      :dynamic-config
+    {:keys [last-retried-at]}      :state
     :as                            job}
    ex]
   (let [death-handler (u/require-resolve death-handler-fn-sym)
         dead-at (or last-retried-at (u/epoch-time-ms))]
     (u/log-on-exceptions (death-handler job ex))
     (when-not skip-dead-queue
-      (r/enqueue-sorted-set redis-conn dead-queue dead-at job))))
+      (r/enqueue-sorted-set redis-conn prefixed-dead-queue dead-at job))))
 
 (defn handle-failure
   [redis-conn job ex]
   (let [failed-job (set-failed-config job ex)
-        retry-count (get-in failed-job [:dynamic-config :retry-count])
+        retry-count (get-in failed-job [:state :retry-count])
         max-retries (get-in failed-job [:retry-opts :max-retries])]
     (if (< retry-count max-retries)
       (retry-job redis-conn failed-job ex)

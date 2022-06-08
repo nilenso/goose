@@ -51,10 +51,10 @@
 (defn arities
   [fn-sym]
   (->> fn-sym
-      (resolve)
-      (meta)
-      (:arglists)
-      (map count)))
+       (resolve)
+       (meta)
+       (:arglists)
+       (map count)))
 
 (defn hostname []
   (.getHostName (java.net.InetAddress/getLocalHost)))

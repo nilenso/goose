@@ -7,33 +7,39 @@
 
 (def ^:private initial-cursor "0")
 
-(defn enqueue-dead-processes-jobs
+(defn- reenqueue-orphan-jobs
+  [redis-conn prefixed-queue process]
+  (let [orphan-queue (executor/preservation-queue process)]
+    (loop []
+      ; Enqueuing in-progress jobs to front of queue isn't possible
+      ; because Carmine doesn't support `LMOVE` function.
+      ; https://github.com/nilenso/goose/issues/14
+      (when (r/dequeue-and-preserve redis-conn orphan-queue prefixed-queue)
+        (recur)))))
+
+(defn- check-liveness
   [redis-conn prefixed-queue
    process-set processes]
   (doseq [process processes]
     (when-not (heartbeat/alive? redis-conn process)
-      (loop []
-        ; TODO: Move orphan jobs to front of prefixed-queue.
-        (when (r/dequeue-reliable redis-conn (executor/execution-queue process) prefixed-queue)
-          (recur)))
+      (reenqueue-orphan-jobs redis-conn prefixed-queue process)
       (r/del-from-set redis-conn process-set process))))
 
 (defn run
   [{:keys [id internal-thread-pool
-           redis-conn prefixed-queue queue]}]
+           redis-conn prefixed-queue process-set]}]
   (u/while-pool
     internal-thread-pool
     (u/log-on-exceptions
       (loop [cursor nil]
         (let [current (or cursor initial-cursor)
-              process-set (heartbeat/process-set queue)
               [next processes] (r/scan-set redis-conn process-set current 1)]
-          (enqueue-dead-processes-jobs
+          (check-liveness
             redis-conn prefixed-queue process-set
             (remove #{id} processes))
           (when-not (= next initial-cursor)
             (recur next))))
-      (let [process-count (heartbeat/process-count redis-conn queue)]
+      (let [process-count (heartbeat/process-count redis-conn process-set)]
         ; Sleep for (process-count) minutes + jitters.
         ; On average, Goose checks for orphan jobs every 1 minute.
         (Thread/sleep (* 1000 (+ (* 60 process-count)

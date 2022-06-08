@@ -22,22 +22,21 @@
    :dead     d/dead-queue})
 
 (def client-opts
-  (assoc c/default-opts
-    :queue (:test queues)
-    :redis-url redis-url))
+  {:queue       (:test queues)
+   :broker-opts {:redis-url redis-url}})
 
 (def worker-opts
-  (assoc w/default-opts
-    :redis-url redis-url
-    :queue (:test queues)
-    :graceful-shutdown-sec 1
-    :scheduler-polling-interval-sec 1))
+  {:threads                        1
+   :broker-opts                    {:redis-url redis-url}
+   :queue                          (:test queues)
+   :graceful-shutdown-sec          1
+   :scheduler-polling-interval-sec 1})
 
 ; ======= Setup & Teardown ==========
 
 (defn- clear-redis
   [keys]
-  (let [redis-conn (r/conn redis-url {})]
+  (let [redis-conn (r/conn {:redis-url redis-url})]
     (r/del-keys redis-conn keys)))
 
 (defn integration-test-fixture [f]

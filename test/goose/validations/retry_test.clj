@@ -8,6 +8,13 @@
 (defn dummy-fn [_] "dummy")
 
 (deftest validate-retry-test
+  (testing "retry-opts only has configurable keys"
+    (is
+      (thrown-with-msg?
+        clojure.lang.ExceptionInfo
+        #":retry-opts shouldn't have any extra keys"
+        (sut/validate-retry-opts (assoc retry/default-opts :extra-key "foobar")))))
+
   (testing "max retry count is positive"
     (is
       (thrown-with-msg?

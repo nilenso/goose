@@ -1,5 +1,6 @@
 (ns goose.worker
   (:require
+    [goose.broker :as broker]
     [goose.defaults :as d]
     [goose.executor :as executor]
     [goose.heartbeat :as heartbeat]
@@ -19,8 +20,9 @@
 
 (defn- internal-stop
   "Gracefully shuts down the worker threadpool."
-  [{:keys [id queue thread-pool internal-thread-pool
-           redis-conn graceful-shutdown-sec]}]
+  [{:keys [id thread-pool internal-thread-pool
+           redis-conn process-set
+           graceful-shutdown-sec]}]
   ; Set state of thread-pool to SHUTDOWN.
   (log/warn "Shutting down thread-pool...")
   (cp/shutdown thread-pool)
@@ -31,7 +33,7 @@
   ; max(graceful-shutdown-sec, sleep time)
   (cp/shutdown! internal-thread-pool)
 
-  (heartbeat/stop id redis-conn queue)
+  (heartbeat/stop id redis-conn process-set)
 
   ; Give jobs executing grace time to complete.
   (log/warn "Awaiting executing jobs to complete.")
@@ -47,43 +49,44 @@
 
 (def default-opts
   {:threads                        1
-   :redis-url                      d/default-redis-url
-   :redis-pool-opts                {}
+   :broker-opts                    broker/default-opts
    :queue                          d/default-queue
    :scheduler-polling-interval-sec 5
    :graceful-shutdown-sec          30})
 
 (defn start
   "Starts a threadpool for worker."
-  [{:keys [threads redis-url redis-pool-opts
+  [{:keys [threads broker-opts
            queue scheduler-polling-interval-sec
            graceful-shutdown-sec]}]
-  (validate-worker-params
-    redis-url redis-pool-opts queue
-    scheduler-polling-interval-sec
-    graceful-shutdown-sec threads)
-  (let [thread-pool (cp/threadpool threads)
-        internal-thread-pool (cp/threadpool 3)
-        random-str (subs (str (random-uuid)) 24 36) ; Take last 12 chars of UUID.
-        id (str queue ":" (u/hostname) ":" random-str)
-        opts {:id                             id
-              :thread-pool                    thread-pool
-              :internal-thread-pool           internal-thread-pool
-              :redis-conn                     (r/conn redis-url redis-pool-opts)
+  (let [enhanced-broker-opts (broker/enhance-opts broker-opts)]
+    (validate-worker-params
+      enhanced-broker-opts queue threads
+      graceful-shutdown-sec
+      scheduler-polling-interval-sec)
+    (let [thread-pool (cp/threadpool threads)
+          ; 3 threads for scheduler, orphan-checker & heartbeat.
+          internal-thread-pool (cp/threadpool 3)
+          random-str (subs (str (random-uuid)) 24 36) ; Take last 12 chars of UUID.
+          id (str queue ":" (u/hostname) ":" random-str)
+          opts {:id                             id
+                :thread-pool                    thread-pool
+                :internal-thread-pool           internal-thread-pool
+                :redis-conn                     (r/conn enhanced-broker-opts)
 
-              :queue                          queue
-              :prefixed-queue                 (u/prefix-queue queue)
-              :execution-queue                (executor/execution-queue id)
+                :process-set                    (str d/process-prefix queue)
+                :prefixed-queue                 (u/prefix-queue queue)
+                :in-progress-queue              (executor/preservation-queue id)
 
-              :graceful-shutdown-sec          graceful-shutdown-sec
-              :scheduler-polling-interval-sec scheduler-polling-interval-sec}]
+                :graceful-shutdown-sec          graceful-shutdown-sec
+                :scheduler-polling-interval-sec scheduler-polling-interval-sec}]
 
-    (cp/future internal-thread-pool (heartbeat/run opts))
-    (cp/future internal-thread-pool (scheduler/run opts))
-    (cp/future internal-thread-pool (orphan-checker/run opts))
+      (cp/future internal-thread-pool (heartbeat/run opts))
+      (cp/future internal-thread-pool (scheduler/run opts))
+      (cp/future internal-thread-pool (orphan-checker/run opts))
 
-    (dotimes [_ threads]
-      (cp/future thread-pool (executor/run opts)))
+      (dotimes [_ threads]
+        (cp/future thread-pool (executor/run opts)))
 
-    (reify Shutdown
-      (stop [_] (internal-stop opts)))))
+      (reify Shutdown
+        (stop [_] (internal-stop opts))))))

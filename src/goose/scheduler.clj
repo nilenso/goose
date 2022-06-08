@@ -9,17 +9,17 @@
 
 (def schedule-queue (u/prefix-queue d/schedule-queue))
 
-(defn schedule-job
-  [redis-conn schedule
+(defn run-at
+  [redis-conn epoch-ms
    {:keys [queue] :as job}]
-  (let [scheduled-job (assoc job :schedule schedule)]
-    (if (< schedule (u/epoch-time-ms))
+  (let [scheduled-job (assoc job :schedule epoch-ms)]
+    (if (< epoch-ms (u/epoch-time-ms))
       (r/enqueue-front redis-conn queue scheduled-job)
-      (r/enqueue-sorted-set redis-conn schedule-queue schedule scheduled-job))))
+      (r/enqueue-sorted-set redis-conn schedule-queue epoch-ms scheduled-job))))
 
 (defn- execution-queue
   [job]
-  (if (get-in job [:dynamic-config :error])
+  (if (get-in job [:state :error])
     (or (get-in job [:retry-opts :retry-queue]) (:queue job))
     (:queue job)))
 
@@ -33,7 +33,7 @@
       (if-let [jobs (r/scheduled-jobs-due-now redis-conn schedule-queue)]
         (r/enqueue-due-jobs-to-front
           redis-conn schedule-queue
-          jobs (group-by execution-queue jobs))
+          jobs execution-queue)
         (let [process-count (heartbeat/process-count redis-conn queue)]
           ; Sleep for process-count * polling-interval + jitters
           ; On average, Goose checks for scheduled jobs

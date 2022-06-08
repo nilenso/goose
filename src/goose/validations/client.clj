@@ -18,10 +18,10 @@
     (catch Exception _
       true)))
 
-(defn enqueue-params
-  [redis-url redis-pool-opts
+(defn validate-enqueue-params
+  [broker-opts
    queue retry-opts execute-fn-sym args]
-  (validate-redis redis-url redis-pool-opts)
+  (validate-redis broker-opts)
   (validate-queue queue)
   (validate-retry-opts retry-opts)
   (when-let
@@ -40,16 +40,16 @@
        [":queue shouldn't be prefixed" (u/wrap-error :prefixed-queue queue)])]
     (throw (apply ex-info validation-error))))
 
-(defn date-time
+(defn validate-perform-at-params
   [date-time]
   (when (not (instance? java.util.Date date-time))
     (throw
       (ex-info "date-time should be an instance of date object"
                (u/wrap-error :date-time-invalid date-time)))))
 
-(defn seconds
+(defn validate-perform-in-sec-params
   [sec]
   (when (not (int? sec))
     (throw
       (ex-info "seconds should be an integer"
-               (u/wrap-error :seconds-non-integer sec )))))
+               (u/wrap-error :seconds-non-integer sec)))))
