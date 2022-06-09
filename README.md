@@ -19,6 +19,8 @@ Features
 Getting Started
 ---------
 
+[![Clojars Project](https://img.shields.io/clojars/v/com.nilenso/goose.svg?labelColor=283C67&color=729AD1&style=for-the-badge&logo=clojure&logoColor=fff)](https://clojars.org/com.nilenso/goose)
+
 *Note:* Goose will be ready for production usage after completion of [Project 0.2](https://github.com/orgs/nilenso/projects/1/)
 
 ### Client
