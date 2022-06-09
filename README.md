@@ -10,7 +10,7 @@ Features
 
 - A *functional* interface
 - *Reliable* - Code/Hardware/Network failure won't cause data loss
-- [Cloud-Native Architecture](link-to-architecture-decisions-dir)
+- [Cloud-Native Architecture](https://github.com/nilenso/goose/tree/main/architecture-decisions)
 - Lean, Expressive, Transparent & Extensible
 - Plug-and-play, minimal setup with *sane defaults*
 - Concurrency & Parallelism using Java thread-pools
@@ -19,7 +19,7 @@ Features
 Getting Started
 ---------
 
-*Note:* Goose will be ready for production usage after completion of [Project 0.2](link-to-project-0.2)
+*Note:* Goose will be ready for production usage after completion of [Project 0.2](https://github.com/orgs/nilenso/projects/1/)
 
 ### Client
 
@@ -50,7 +50,8 @@ Getting Started
 Custom Configuration
 ---------
 
-Goose provisions custom configuration for Message-Broker, Scheduling, Error-Handling & Retrying, Logging, & Worker Config. Details can be found in the respective Wikis.
+Goose provisions custom configuration for Message-Broker, Priority Queues, Scheduling, Error-Handling & Retrying, Logging, & Worker Config.
+Details can be found in the respective Wikis ([awaiting completion](https://github.com/nilenso/goose/issues/40)).
 
 Why the name "Goose"?
 ---------
