@@ -35,6 +35,7 @@
   (wcar* conn (car/scard set)))
 
 ; ============== Lists ===============
+; ===== FRONT/BACK -> RIGHT/LEFT =====
 (defn enqueue-back
   ([conn list element]
    (wcar* conn (car/lpush list element))))
@@ -70,4 +71,4 @@
       (car/multi)
       (apply car/zrem sorted-set jobs)
       (doseq [[queue jobs] (group-by grouping-fn jobs)]
-        (apply car/lpush queue jobs)))))
+        (apply car/rpush queue jobs)))))

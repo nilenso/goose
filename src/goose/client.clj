@@ -11,7 +11,8 @@
 
 (def default-opts
   {:broker-opts broker/default-opts
-   :queue       d/default-queue})
+   :queue       d/default-queue
+   :retry-opts  retry/default-opts})
 
 (defn- enqueue
   [{:keys [broker-opts
@@ -19,14 +20,14 @@
    schedule
    execute-fn-sym
    args]
-  (let [enhanced-retry-opts (retry/enhance-opts retry-opts)]
+  (let [prefixed-queue-retry-opts (retry/prefix-queue-if-present retry-opts)]
     (v/validate-enqueue-params
       broker-opts queue
-      enhanced-retry-opts
+      prefixed-queue-retry-opts
       execute-fn-sym args)
     (let [redis-conn (r/conn broker-opts)
           prefixed-queue (u/prefix-queue queue)
-          job (j/new execute-fn-sym args prefixed-queue enhanced-retry-opts)]
+          job (j/new execute-fn-sym args prefixed-queue prefixed-queue-retry-opts)]
 
       (if schedule
         (scheduler/run-at redis-conn schedule job)

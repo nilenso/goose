@@ -37,7 +37,7 @@
     (assoc retry-opts :retry-queue (u/prefix-queue retry-queue))
     retry-opts))
 
-(defn enhance-opts
+(defn prefix-queue-if-present
   [opts]
   (->> opts
        (prefix-retry-queue-if-present)

@@ -7,7 +7,8 @@
     [goose.worker :as w]
 
     [clojure.test :refer [deftest is testing use-fixtures]]
-    [goose.broker :as broker])
+    [goose.broker :as broker]
+    [goose.retry :as retry])
   (:import
     [java.util UUID]))
 
@@ -113,10 +114,11 @@
 (deftest retry-test
   (testing "Goose retries an errorneous function"
     (let [arg "retry-test"
-          retry-opts {:max-retries            2
-                      :retry-delay-sec-fn-sym `immediate-retry
-                      :retry-queue            (:retry queues)
-                      :error-handler-fn-sym   `retry-test-error-handler}
+          retry-opts (assoc retry/default-opts
+                       :max-retries 2
+                       :retry-delay-sec-fn-sym `immediate-retry
+                       :retry-queue (:retry queues)
+                       :error-handler-fn-sym `retry-test-error-handler)
           worker (w/start worker-opts)
           retry-worker (w/start (assoc worker-opts :queue (:retry queues)))]
       (c/perform-async (assoc client-opts :retry-opts retry-opts) `erroneous-fn arg)
@@ -142,10 +144,11 @@
 
 (deftest dead-test
   (testing "Goose marks a job as dead upon reaching max retries"
-    (let [dead-job-opts {:max-retries            1
-                         :retry-delay-sec-fn-sym `immediate-retry
-                         :error-handler-fn-sym   `dead-test-error-handler
-                         :death-handler-fn-sym   `dead-test-death-handler}
+    (let [dead-job-opts (assoc retry/default-opts
+                          :max-retries 1
+                          :retry-delay-sec-fn-sym `immediate-retry
+                          :error-handler-fn-sym `dead-test-error-handler
+                          :death-handler-fn-sym `dead-test-death-handler)
           worker (w/start worker-opts)]
       (c/perform-async (assoc client-opts :retry-opts dead-job-opts) `dead-fn)
 

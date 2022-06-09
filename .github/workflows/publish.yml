@@ -15,8 +15,3 @@ jobs:
         env:
           CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
           CLOJARS_PASSWORD: ${{ secrets.CLOJARS_DEPLOY_TOKEN }}
-      - name: Archive Goose Jar
-        uses: actions/upload-artifact@v3
-        with:
-          name: goose-${GITHUB_REF}
-          path: target/*.jar
