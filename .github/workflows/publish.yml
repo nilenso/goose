@@ -1,0 +1,18 @@
+name: publish
+
+on: [ push ]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    container: clojure:openjdk-17-tools-deps-1.11.0.1100-bullseye
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build Jar
+        run: clj -M:uberdeps --target target/goose-ci-test.jar
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: goose-jar
+          path: target/goose-ci-test.jar
+

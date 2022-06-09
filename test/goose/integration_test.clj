@@ -6,7 +6,8 @@
     [goose.utils :as u]
     [goose.worker :as w]
 
-    [clojure.test :refer [deftest is testing use-fixtures]])
+    [clojure.test :refer [deftest is testing use-fixtures]]
+    [goose.broker :as broker])
   (:import
     [java.util UUID]))
 
@@ -14,6 +15,10 @@
   (let [host (or (System/getenv "GOOSE_REDIS_HOST") "localhost")
         port (or (System/getenv "GOOSE_REDIS_PORT") "6379")]
     (str "redis://" host ":" port)))
+
+(def broker-opts
+  (assoc broker/default-opts
+    :redis-url redis-url))
 
 (def queues
   {:test     "test"
@@ -23,11 +28,11 @@
 
 (def client-opts
   {:queue       (:test queues)
-   :broker-opts {:redis-url redis-url}})
+   :broker-opts broker-opts})
 
 (def worker-opts
   {:threads                        1
-   :broker-opts                    {:redis-url redis-url}
+   :broker-opts                    broker-opts
    :queue                          (:test queues)
    :graceful-shutdown-sec          1
    :scheduler-polling-interval-sec 1})
