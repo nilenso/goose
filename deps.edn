@@ -15,8 +15,6 @@
            :uberdeps {:replace-deps {uberdeps/uberdeps {:mvn/version "1.1.4"}}
                      :replace-paths []
                      :main-opts ["-m" "uberdeps.uberjar"]}
-           :deploy {:extra-deps {slipset/deps-deploy {:mvn/version "RELEASE"}}
+           :deploy {:replace-deps {slipset/deps-deploy {:mvn/version "0.1.5"}}
                     :exec-fn deps-deploy.deps-deploy/deploy
-                    :exec-args {:installer :remote
-                                :sign-releases? true
-                                :artifact "goose.jar"}}}}
+                    :exec-args {:installer :remote :artifact "goose.jar"}}}}
