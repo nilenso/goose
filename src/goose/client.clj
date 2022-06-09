@@ -19,13 +19,12 @@
    schedule
    execute-fn-sym
    args]
-  (let [enhanced-broker-opts (broker/enhance-opts broker-opts)
-        enhanced-retry-opts (retry/enhance-opts retry-opts)]
+  (let [enhanced-retry-opts (retry/enhance-opts retry-opts)]
     (v/validate-enqueue-params
-      enhanced-broker-opts queue
+      broker-opts queue
       enhanced-retry-opts
       execute-fn-sym args)
-    (let [redis-conn (r/conn enhanced-broker-opts)
+    (let [redis-conn (r/conn broker-opts)
           prefixed-queue (u/prefix-queue queue)
           job (j/new execute-fn-sym args prefixed-queue enhanced-retry-opts)]
 

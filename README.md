@@ -1,51 +1,61 @@
 Goose: The sidekick for Clojure
 =========
 
-Simple, Scalable background processing library for Clojure.
+Simple, Reliable & Scalable background processing library for Clojure.
 
 Features
 ---------
 
-*[Simplicity is Complicated.](https://youtu.be/rFejpH_tAHM)* We've strived to make Goose as simple, transparent & functional as possible.
+*[Simplicity is Complicated.](https://youtu.be/rFejpH_tAHM)* We've strived to make Goose as _simple_ as possible.
 
-- A *simple*, *functional* interface
+- A *functional* interface
 - *Reliable* - Code/Hardware/Network failure won't cause data loss
 - [Cloud-Native Architecture](link-to-architecture-decisions-dir)
 - Lean, Expressive, Transparent & Extensible
-- Plug-and-play, minimal setup & *sane defaults*
+- Plug-and-play, minimal setup with *sane defaults*
 - Concurrency & Parallelism using Java thread-pools
-- Unit & E2E Tests 🙂
+- Unit & Integration Tests 🙂
 
 Getting Started
 ---------
 
-**Note:** All configurations are optional. Goose defaults to values mentioned in Configuration Options.
-
-**GOOSE IS IN ALPHA. INTERFACE MIGHT CHANGE!!!**
+*Note:* Goose will be ready for production usage after completion of [Project 0.2](link-to-project-0.2)
 
 ### Client
 
+```clojure
+(ns my-app
+  (:require [goose.client :as c]))
+
+(defn my-background-fn
+  [arg1 arg2]
+  (println "my-background-fn called with" arg1 arg2))
+
+(c/perform-async c/default-opts `my-background-fn "foo" :bar)
+(c/perform-in-sec c/default-opts 3600 `my-background-fn "scheduled" 123)
+```
+
 ### Worker
 
-Configuration options
+```clojure
+(ns my-worker
+  (:require [goose.worker :as w]))
+
+(let [worker (w/start w/default-opts)]
+  ; ... wait for SIGINT or SIGTERM ...
+  (w/stop worker))
+```
+
+
+Custom Configuration
 ---------
 
-| Option | For? | Default Value | Description |
-| --- | --- | --- | --- |
-| `:redis-url` | Both | `redis://localhost:6379` | URL for Redis. Valid URL is: `redis://username:password@hostname:0-65353` |
-| `:queue` | Both | `default` | Queue in redis which will be enqueued |
-| `:retries` | Client | `21` | Number of times a job should be retried with exponential backoff, before marking it as dead |
-| `:threads` | Worker | 1 | Number of threads in the threadpool |
-
-**TODO: Fill in all config options before open sourcing.**
-> Note: All jobs are retried upon failure by default. Either make jobs idempotent, or set retries to 0.
+Goose provisions custom configuration for Message-Broker, Scheduling, Error-Handling & Retrying, Logging, & Worker Config. Details can be found in the respective Wikis.
 
 Why the name "Goose"?
 ---------
 
-![goose-logo](link-to-goose-logo)
-
-**Note: Insert a *Clojury* logo here**
+> 🦆 Logo loading...
 
 Goose library is named after [Nick 'Goose' Bradshaw](https://historica.fandom.com/wiki/Nick_Bradshaw), the sidekick
 to [Captain Pete 'Maverick' Mitchell](https://topgun.fandom.com/wiki/Pete_Mitchell) in Top Gun.
