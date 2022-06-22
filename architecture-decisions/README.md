@@ -12,9 +12,10 @@ Philosophy
 Index
 ----------
 
+- [Multiple Brokers](https://github.com/nilenso/goose/tree/main/-architecture-decisions/pages/multiple-brokers.md)
 - [Interface](https://github.com/nilenso/goose/tree/main/-architecture-decisions/pages/interface.md)
 - [Enqueue-Dequeue](https://github.com/nilenso/goose/tree/main/-architecture-decisions/pages/enqueue-dequeue.md)
-- [Priority Queues](https://github.com/nilenso/goose/tree/main/-architecture-decisions/pages/priority-queues.md)
+- [Priority/Customized Queues](https://github.com/nilenso/goose/tree/main/-architecture-decisions/pages/priority-queues.md)
 - [Scheduling](https://github.com/nilenso/goose/tree/main/-architecture-decisions/pages/scheduling.md)
 - [Error-handling & Retrying](https://github.com/nilenso/goose/tree/main/-architecture-decisions/pages/error-handling.md)
 - [Reliability](https://github.com/nilenso/goose/tree/main/-architecture-decisions/pages/reliability.md)
