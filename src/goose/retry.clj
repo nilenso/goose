@@ -6,9 +6,6 @@
 
     [clojure.tools.logging :as log]))
 
-(def ^:private prefixed-retry-schedule-queue (u/prefix-queue d/schedule-queue))
-(def ^:private prefixed-dead-queue (u/prefix-queue d/dead-queue))
-
 (defn default-error-handler
   [job ex]
   (log/error ex "Job execution failed." job))
@@ -23,7 +20,7 @@
      (* (rand-int 20) (inc retry-count))
      (reduce * (repeat 4 retry-count)))) ; retry-count^4
 
-(def default-opts
+(defonce default-opts
   {:max-retries            27
    :retry-delay-sec-fn-sym `default-retry-delay-sec
    :retry-queue            nil
@@ -34,7 +31,7 @@
 (defn- prefix-retry-queue-if-present
   [retry-opts]
   (if-let [retry-queue (:retry-queue retry-opts)]
-    (assoc retry-opts :retry-queue (u/prefix-queue retry-queue))
+    (assoc retry-opts :retry-queue (d/prefix-queue retry-queue))
     retry-opts))
 
 (defn prefix-queue-if-present
@@ -66,7 +63,7 @@
         retry-delay-sec ((u/require-resolve retry-delay-sec-fn-sym) retry-count)
         retry-at (u/add-sec retry-delay-sec)]
     (u/log-on-exceptions (error-handler job ex))
-    (r/enqueue-sorted-set redis-conn prefixed-retry-schedule-queue retry-at job)))
+    (r/enqueue-sorted-set redis-conn d/prefixed-retry-schedule-queue retry-at job)))
 
 (defn- bury-job
   [redis-conn
@@ -79,7 +76,7 @@
         dead-at (or last-retried-at (u/epoch-time-ms))]
     (u/log-on-exceptions (death-handler job ex))
     (when-not skip-dead-queue
-      (r/enqueue-sorted-set redis-conn prefixed-dead-queue dead-at job))))
+      (r/enqueue-sorted-set redis-conn d/prefixed-dead-queue dead-at job))))
 
 (defn handle-failure
   [redis-conn job ex]

@@ -5,24 +5,24 @@
     [goose.redis :as r]
     [goose.utils :as u]))
 
-(def ^:private initial-cursor "0")
+(defonce ^:private initial-cursor "0")
 
 (defn- reenqueue-orphan-jobs
-  [redis-conn prefixed-queue process]
-  (let [orphan-queue (executor/preservation-queue process)]
-    (loop []
-      ; Enqueuing in-progress jobs to front of queue isn't possible
-      ; because Carmine doesn't support `LMOVE` function.
-      ; https://github.com/nilenso/goose/issues/14
-      (when (r/dequeue-and-preserve redis-conn orphan-queue prefixed-queue)
-        (recur)))))
+  [redis-conn orphan-queue prefixed-queue]
+  ; Enqueuing in-progress jobs to front of queue isn't possible
+  ; because Carmine doesn't support `LMOVE` function.
+  ; https://github.com/nilenso/goose/issues/14
+  (when (r/dequeue-and-preserve redis-conn orphan-queue prefixed-queue)
+    #(reenqueue-orphan-jobs redis-conn orphan-queue prefixed-queue)))
 
 (defn- check-liveness
   [redis-conn prefixed-queue
    process-set processes]
   (doseq [process processes]
     (when-not (heartbeat/alive? redis-conn process)
-      (reenqueue-orphan-jobs redis-conn prefixed-queue process)
+      (trampoline
+        reenqueue-orphan-jobs
+        redis-conn (executor/preservation-queue process) prefixed-queue)
       (r/del-from-set redis-conn process-set process))))
 
 (defn run

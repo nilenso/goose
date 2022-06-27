@@ -3,7 +3,6 @@
     [goose.client :as c]
     [goose.defaults :as d]
     [goose.redis :as r]
-    [goose.utils :as u]
     [goose.worker :as w]
 
     [clojure.test :refer [deftest is testing use-fixtures]]
@@ -46,7 +45,7 @@
     (r/del-keys redis-conn keys)))
 
 (defn integration-test-fixture [f]
-  (let [prefixed-queues (map u/prefix-queue (vals queues))]
+  (let [prefixed-queues (map d/prefix-queue (vals queues))]
     (clear-redis prefixed-queues)
     (f)
     (clear-redis prefixed-queues)))

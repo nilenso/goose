@@ -2,7 +2,7 @@
   (:require
     [goose.defaults :as d]))
 
-(def default-opts
+(defonce default-opts
   {:redis-url       d/default-redis-url
    :redis-pool-opts {}})
 
