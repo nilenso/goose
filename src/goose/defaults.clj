@@ -1,19 +1,28 @@
 (ns goose.defaults)
 
-(def default-redis-url "redis://localhost:6379")
-(def long-polling-timeout-sec 1)
-(def scheduled-jobs-pop-limit 50)
+(defonce default-redis-url "redis://localhost:6379")
+(defonce long-polling-timeout-sec 1)
+(defonce scheduled-jobs-pop-limit 50)
 
-(def process-prefix "goose/processes:")
+(defonce process-prefix "goose/processes:")
 
-(def heartbeat-prefix "goose/heartbeat:")
-(def heartbeat-expire-sec 60)
+(defonce heartbeat-prefix "goose/heartbeat:")
+(defonce heartbeat-sleep-sec 15)
+(defonce heartbeat-expire-sec 60)
 
-(def queue-prefix "goose/queue:")
-(def in-progress-queue-prefix "goose/in-progress-jobs:")
+(defonce queue-prefix "goose/queue:")
+(defonce in-progress-queue-prefix "goose/in-progress-jobs:")
 
-(def default-queue "default")
-(def schedule-queue "scheduled-jobs")
-(def dead-queue "dead-jobs")
+(defonce default-queue "default")
+(defonce schedule-queue "scheduled-jobs")
+(defonce dead-queue "dead-jobs")
 
-(def protected-queues [schedule-queue dead-queue])
+(defonce protected-queues [schedule-queue dead-queue])
+
+(defn prefix-queue
+  [queue]
+  (str queue-prefix queue))
+
+(defonce prefixed-schedule-queue (prefix-queue schedule-queue))
+(defonce prefixed-retry-schedule-queue (prefix-queue schedule-queue))
+(defonce prefixed-dead-queue (prefix-queue dead-queue))

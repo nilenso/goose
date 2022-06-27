@@ -47,12 +47,12 @@
   (log/warn "Sending InterruptedException to close threads.")
   (cp/shutdown! thread-pool))
 
-(def default-opts
-  {:threads                        1
-   :broker-opts                    broker/default-opts
-   :queue                          d/default-queue
-   :scheduler-polling-interval-sec 5
-   :graceful-shutdown-sec          30})
+(defonce default-opts
+         {:threads                        1
+          :broker-opts                    broker/default-opts
+          :queue                          d/default-queue
+          :scheduler-polling-interval-sec 5
+          :graceful-shutdown-sec          30})
 
 (defn start
   "Starts a threadpool for worker."
@@ -64,7 +64,7 @@
     graceful-shutdown-sec
     scheduler-polling-interval-sec)
   (let [thread-pool (cp/threadpool threads)
-        ; 3 threads for scheduler, orphan-checker & heartbeat.
+        ; Internal threadpool for scheduler, orphan-checker & heartbeat.
         internal-thread-pool (cp/threadpool 3)
         random-str (subs (str (random-uuid)) 24 36) ; Take last 12 chars of UUID.
         id (str queue ":" (u/hostname) ":" random-str)
@@ -74,7 +74,7 @@
               :redis-conn                     (r/conn broker-opts)
 
               :process-set                    (str d/process-prefix queue)
-              :prefixed-queue                 (u/prefix-queue queue)
+              :prefixed-queue                 (d/prefix-queue queue)
               :in-progress-queue              (executor/preservation-queue id)
 
               :graceful-shutdown-sec          graceful-shutdown-sec

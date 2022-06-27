@@ -1,7 +1,5 @@
 (ns goose.utils
   (:require
-    [goose.defaults :as d]
-
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [com.climate.claypoole :as cp]))
@@ -43,10 +41,6 @@
       (symbol)
       (require))
   (resolve fn-sym))
-
-(defn prefix-queue
-  [queue]
-  (str d/queue-prefix queue))
 
 (defn arities
   [fn-sym]
