@@ -1,6 +1,6 @@
 (ns goose.worker
   (:require
-    [goose.broker :as broker]
+    [goose.brokers.broker :as broker]
     [goose.defaults :as d]
     [goose.executor :as executor]
     [goose.heartbeat :as heartbeat]
@@ -49,7 +49,6 @@
 
 (defonce default-opts
          {:threads                        1
-          :broker-opts                    broker/default-opts
           :queue                          d/default-queue
           :scheduler-polling-interval-sec 5
           :graceful-shutdown-sec          30})
@@ -59,33 +58,34 @@
   [{:keys [threads broker-opts
            queue scheduler-polling-interval-sec
            graceful-shutdown-sec]}]
-  (validate-worker-params
-    broker-opts queue threads
-    graceful-shutdown-sec
-    scheduler-polling-interval-sec)
-  (let [thread-pool (cp/threadpool threads)
-        ; Internal threadpool for scheduler, orphan-checker & heartbeat.
-        internal-thread-pool (cp/threadpool 3)
-        random-str (subs (str (random-uuid)) 24 36) ; Take last 12 chars of UUID.
-        id (str queue ":" (u/hostname) ":" random-str)
-        opts {:id                             id
-              :thread-pool                    thread-pool
-              :internal-thread-pool           internal-thread-pool
-              :redis-conn                     (r/conn broker-opts)
+  (let [broker-opts (broker/create broker-opts threads)]
+    (validate-worker-params
+      broker-opts queue threads
+      graceful-shutdown-sec
+      scheduler-polling-interval-sec)
+    (let [thread-pool (cp/threadpool threads)
+          ; Internal threadpool for scheduler, orphan-checker & heartbeat.
+          internal-thread-pool (cp/threadpool d/internal-thread-pool-size)
+          random-str (subs (str (random-uuid)) 24 36) ; Take last 12 chars of UUID.
+          id (str queue ":" (u/hostname) ":" random-str)
+          opts {:id                             id
+                :thread-pool                    thread-pool
+                :internal-thread-pool           internal-thread-pool
+                :redis-conn                     (r/conn broker-opts)
 
-              :process-set                    (str d/process-prefix queue)
-              :prefixed-queue                 (d/prefix-queue queue)
-              :in-progress-queue              (executor/preservation-queue id)
+                :process-set                    (str d/process-prefix queue)
+                :prefixed-queue                 (d/prefix-queue queue)
+                :in-progress-queue              (executor/preservation-queue id)
 
-              :graceful-shutdown-sec          graceful-shutdown-sec
-              :scheduler-polling-interval-sec scheduler-polling-interval-sec}]
+                :graceful-shutdown-sec          graceful-shutdown-sec
+                :scheduler-polling-interval-sec scheduler-polling-interval-sec}]
 
-    (cp/future internal-thread-pool (heartbeat/run opts))
-    (cp/future internal-thread-pool (scheduler/run opts))
-    (cp/future internal-thread-pool (orphan-checker/run opts))
+      (cp/future internal-thread-pool (heartbeat/run opts))
+      (cp/future internal-thread-pool (scheduler/run opts))
+      (cp/future internal-thread-pool (orphan-checker/run opts))
 
-    (dotimes [_ threads]
-      (cp/future thread-pool (executor/run opts)))
+      (dotimes [_ threads]
+        (cp/future thread-pool (executor/run opts)))
 
-    (reify Shutdown
-      (stop [_] (internal-stop opts)))))
+      (reify Shutdown
+        (stop [_] (internal-stop opts))))))

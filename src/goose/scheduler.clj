@@ -24,9 +24,9 @@
 (defn run
   [{:keys [internal-thread-pool redis-conn queue
            scheduler-polling-interval-sec]}]
+  (log/info "Polling scheduled jobs...")
   (u/while-pool
     internal-thread-pool
-    (log/info "Polling scheduled jobs...")
     (u/log-on-exceptions
       (if-let [jobs (r/scheduled-jobs-due-now redis-conn d/prefixed-schedule-queue)]
         (r/enqueue-due-jobs-to-front

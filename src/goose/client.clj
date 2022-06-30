@@ -1,6 +1,6 @@
 (ns goose.client
   (:require
-    [goose.broker :as broker]
+    [goose.brokers.broker :as broker]
     [goose.defaults :as d]
     [goose.job :as j]
     [goose.redis :as r]
@@ -10,9 +10,8 @@
     [goose.validations.client :as v]))
 
 (defonce default-opts
-  {:broker-opts broker/default-opts
-   :queue       d/default-queue
-   :retry-opts  retry/default-opts})
+         {:queue      d/default-queue
+          :retry-opts retry/default-opts})
 
 (defn- enqueue
   [{:keys [broker-opts
@@ -20,14 +19,16 @@
    schedule
    execute-fn-sym
    args]
-  (let [prefixed-queue-retry-opts (retry/prefix-queue-if-present retry-opts)]
+  (let [retry-opts (retry/prefix-queue-if-present retry-opts)
+        broker-opts (broker/create broker-opts)]
     (v/validate-enqueue-params
       broker-opts queue
-      prefixed-queue-retry-opts
+      retry-opts
       execute-fn-sym args)
+
     (let [redis-conn (r/conn broker-opts)
           prefixed-queue (d/prefix-queue queue)
-          job (j/new execute-fn-sym args prefixed-queue prefixed-queue-retry-opts)]
+          job (j/new execute-fn-sym args prefixed-queue retry-opts)]
 
       (if schedule
         (scheduler/run-at redis-conn schedule job)

@@ -6,7 +6,6 @@
     [goose.worker :as w]
 
     [clojure.test :refer [deftest is testing use-fixtures]]
-    [goose.broker :as broker]
     [goose.retry :as retry])
   (:import
     [java.util UUID]))
@@ -17,8 +16,7 @@
     (str "redis://" host ":" port)))
 
 (def broker-opts
-  (assoc broker/default-opts
-    :redis-url redis-url))
+  {:redis {:redis-url redis-url}})
 
 (def queues
   {:test     "test"
