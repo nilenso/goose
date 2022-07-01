@@ -20,7 +20,7 @@
 (defn latency [enqueue-time]
   (println "Latency:" (- (u/epoch-time-ms) enqueue-time) "ms"))
 
-(defn dummy-handler [job ex])
+(defn dummy-handler [_ _])
 
 (def client-opts
   (assoc c/default-opts
@@ -58,21 +58,17 @@
 
 (defn dequeue
   [count]
-  (try
-    (let [worker-opts (assoc w/default-opts
-                        :broker-opts {:redis {:redis-url (str "redis://" redis-proxy)}}
-                        :threads 25)
-          start-time (u/epoch-time-ms)
-          worker (w/start worker-opts)]
-      (while (not (= 0 (r/wcar* redis-conn (car/llen (d/prefix-queue d/default-queue)))))
-        (Thread/sleep 200))
-      (println "Jobs processed:" count "Milliseconds taken:" (- (u/epoch-time-ms) start-time))
+  (let [worker-opts (assoc w/default-opts
+                      :broker-opts {:redis {:redis-url (str "redis://" redis-proxy)}}
+                      :threads 25)
+        start-time (u/epoch-time-ms)
+        worker (w/start worker-opts)]
+    (while (not (= 0 (r/wcar* redis-conn (car/llen (d/prefix-queue d/default-queue)))))
+      (Thread/sleep 200))
+    (println "Jobs processed:" count "Milliseconds taken:" (- (u/epoch-time-ms) start-time))
 
-      (c/perform-async client-opts `latency (u/epoch-time-ms))
-      (w/stop worker))
-    (catch Exception e
-      (println "Interrupted by user"))
-    (finally)))
+    (c/perform-async client-opts `latency (u/epoch-time-ms))
+    (w/stop worker)))
 
 (defn enqueue-dequeue
   [count]
@@ -84,7 +80,7 @@
   (flush-redis))
 
 (defn benchmark
-  [opts]
+  [_]
   (println "====================================
 Benchmark runs beyond 60 minutes.
 We're using criterium to warm-up JVM & pre-run GC.

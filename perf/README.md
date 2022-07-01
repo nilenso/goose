@@ -4,7 +4,7 @@ Performance
 <table>
 <tr>
   <th>Version</th>
-  <th>Specs</th>
+  <th>System Specs</th>
   <th>Broker</th>
   <th>Latency</th>
   <th>Threads</th>
