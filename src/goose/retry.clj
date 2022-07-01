@@ -21,12 +21,12 @@
      (reduce * (repeat 4 retry-count)))) ; retry-count^4
 
 (defonce default-opts
-  {:max-retries            27
-   :retry-delay-sec-fn-sym `default-retry-delay-sec
-   :retry-queue            nil
-   :error-handler-fn-sym   `default-error-handler
-   :skip-dead-queue        false
-   :death-handler-fn-sym   `default-death-handler})
+         {:max-retries            27
+          :retry-delay-sec-fn-sym `default-retry-delay-sec
+          :retry-queue            nil
+          :error-handler-fn-sym   `default-error-handler
+          :skip-dead-queue        false
+          :death-handler-fn-sym   `default-death-handler})
 
 (defn- prefix-retry-queue-if-present
   [retry-opts]

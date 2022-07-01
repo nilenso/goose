@@ -3,6 +3,11 @@ Goose: The sidekick for Clojure
 
 Simple, Reliable & Scalable background processing library for Clojure.
 
+Performance
+---------
+
+Details can be found in the [Benchmarking section](https://github.com/nilenso/goose/tree/main/perf).
+
 Features
 ---------
 
@@ -14,7 +19,7 @@ Features
 - Lean, Expressive, Transparent & Extensible
 - Plug-and-play, minimal setup with *sane defaults*
 - Concurrency & Parallelism using Java thread-pools
-- Unit & Integration Tests 🙂
+- Unit, Integration & [Performance](https://github.com/nilenso/goose/tree/main/perf) Tests 🙂
 
 Getting Started
 ---------
@@ -27,14 +32,19 @@ Getting Started
 
 ```clojure
 (ns my-app
-  (:require [goose.client :as c]))
+  (:require
+    [goose.client :as c]
+    [goose.brokers.redis :as redis]))
 
 (defn my-background-fn
   [arg1 arg2]
   (println "my-background-fn called with" arg1 arg2))
 
-(c/perform-async c/default-opts `my-background-fn "foo" :bar)
-(c/perform-in-sec c/default-opts 3600 `my-background-fn "scheduled" 123)
+(def client-opts
+  (assoc c/default-opts
+    :broker-opts {:redis redis/default-opts}))
+(c/perform-async client-opts `my-background-fn "foo" :bar)
+(c/perform-in-sec client-opts 3600 `my-background-fn "scheduled" 123)
 ```
 
 ### Worker
@@ -43,11 +53,12 @@ Getting Started
 (ns my-worker
   (:require [goose.worker :as w]))
 
-(let [worker (w/start w/default-opts)]
+(let [worker-opts (assoc w/default-opts
+                    :broker-opts {:redis redis/default-opts})
+      worker (w/start worker-opts)]
   ; ... wait for SIGINT or SIGTERM ...
   (w/stop worker))
 ```
-
 
 Custom Configuration
 ---------

@@ -22,7 +22,7 @@
 (defn run
   [{:keys [thread-pool redis-conn
            prefixed-queue in-progress-queue]}]
-  (log/info "Long-polling broker...")
+  (log/debug "Long-polling broker...")
   (u/while-pool
     thread-pool
     (u/log-on-exceptions

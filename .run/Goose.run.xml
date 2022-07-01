@@ -8,7 +8,7 @@
     <setting name="parameters" value="" />
     <setting name="workingDir" value="$PROJECT_DIR$" />
     <setting name="profiles" value="" />
-    <setting name="aliases" value="repl" />
+    <setting name="aliases" value="repl,perf" />
     <setting name="fixLineNumbers" value="false" />
     <setting name="focusEditor" value="false" />
     <method v="2" />

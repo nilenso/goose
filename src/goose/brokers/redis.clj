@@ -11,11 +11,11 @@
       (assoc redis-opts
         :redis-pool-opts {:max-total-per-key (+ d/internal-thread-pool-size thread-count)
                           :max-idle-per-key  (+ d/internal-thread-pool-size thread-count)
-                          :min-idle-per-key d/internal-thread-pool-size})
+                          :min-idle-per-key  d/internal-thread-pool-size})
       (assoc redis-opts
         :redis-pool-opts {:max-total-per-key d/client-redis-pool-size
                           :max-idle-per-key  d/client-redis-pool-size
-                          :min-idle-per-key 1}))))
+                          :min-idle-per-key  1}))))
 
 (defn new
   [{:keys [redis-url redis-pool-opts] :as opts}
