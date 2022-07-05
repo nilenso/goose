@@ -31,3 +31,5 @@ jobs:
         run: clj-kondo --lint src/
       - name: Lint test
         run: clj-kondo --lint test/
+      - name: Lint perf
+          run: clj-kondo --lint perf/
