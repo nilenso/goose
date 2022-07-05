@@ -11,19 +11,30 @@ Goose's interface:
 Rationale
 ---------
 
+- Args to background-function are kept last as they're variadic
+- Goose doesn't endorse a particular broker. Users have to choose between the 3 based on their 
+
 ##### Client
-- `opts` need to be explicitly set because everything is transparent. No config will be set implicitly without user's knowledge or control 
-- Goose will not implicitly pick config from env var, users can use default opts, or choose set opts.
-- Interface isn't finalized yet. It'll be decided as part of [this issue](https://github.com/nilenso/goose/issues/36)
+
+- `opts` need to be explicitly set because everything is transparent. No config will be set implicitly without user's knowledge or control
+- Goose will not implicitly pick config from env var, users can use default opts, or set their own config
 
 ##### Worker
+
 - Stopping a worker is a `reify` because contexts local to a process (ex: `id`) are used during shutdown & must not be lost
 
 Avoided Designs
 ---------
+
 - `s-expression`
-  - if someone can help change Goose's interface to this: `(async opts (bg-fn :arg1 :arg2)` from ``(async opts `bg-fn :arg1 :arg2)`` we'll be very thankful.
+  - Since anything can be passed as an s-expression, serializing at runtime isn't possible.
   - [at-at](https://github.com/overtone/at-at), [chime](https://github.com/jarohen/chime), etc. have this interface because they're in-memory. They don't have to serialize the s-expression & can evaluate them at a later time.
+  - if someone can help change Goose's interface to this: `(async opts (bg-fn :arg1 :arg2)` from ``(async opts `bg-fn :arg1 :arg2)`` we'll be very thankful.
+- Predefine background functions & their options as data in a common map accessible to both client & worker
+  - It felt OOish, not functional
+  - Duplication: if you stop enqueuing a function, you've to remember to remove it from the map too.
+  - No significant performance improvement found over chosen interface as demonstrated in [this issue](https://github.com/nilenso/goose/issues/36)
+  
 - wrap async functions inside a macro
   - It felt OOish, not functional
 - Clojure protocol for Goose

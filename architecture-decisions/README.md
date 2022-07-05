@@ -19,6 +19,6 @@ Index
 1. [Scheduling](https://github.com/nilenso/goose/blob/main/architecture-decisions/pages/scheduling.md)
 1. [Error-handling & Retrying](https://github.com/nilenso/goose/blob/main/architecture-decisions/pages/error-handling.md)
 1. [Reliability](https://github.com/nilenso/goose/blob/main/architecture-decisions/pages/reliability.md)
-1. [Redis](https://github.com/nile  nso/goose/blob/main/architecture-decisions/pages/redis.md)
+1. [Redis](https://github.com/nilenso/goose/blob/main/architecture-decisions/pages/redis.md)
 1. [Validations](https://github.com/nilenso/goose/blob/main/architecture-decisions/pages/validations.md)
 1. [Logging](https://github.com/nilenso/goose/blob/main/architecture-decisions/pages/logging.md)
