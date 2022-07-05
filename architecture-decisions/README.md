@@ -22,3 +22,4 @@ Index
 1. [Redis](https://github.com/nilenso/goose/blob/main/architecture-decisions/pages/redis.md)
 1. [Validations](https://github.com/nilenso/goose/blob/main/architecture-decisions/pages/validations.md)
 1. [Logging](https://github.com/nilenso/goose/blob/main/architecture-decisions/pages/logging.md)
+1. [Statsd metrics](https://github.com/nilenso/goose/blob/main/architecture-decisions/pages/statsd-metrics.md)

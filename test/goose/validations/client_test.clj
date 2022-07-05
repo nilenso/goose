@@ -25,6 +25,13 @@
           #"execute-fn-sym should be resolvable"
           (sut/perform-async opts `bar))))
 
+    (testing "execute-fn-sym is a function"
+      (is
+        (thrown-with-msg?
+          clojure.lang.ExceptionInfo
+          #"execute-fn-sym should be a fn"
+          (sut/perform-async opts `sut/default-opts))))
+
     (testing "args are serializable"
       (is
         (thrown-with-msg?
