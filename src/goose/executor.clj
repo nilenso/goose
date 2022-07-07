@@ -10,10 +10,12 @@
 
 (defn- execute-job
   [{:keys [redis-conn statsd-opts]} {:keys [id execute-fn-sym args] :as job}]
-  (let [statsd-opts (statsd/add-function-tag statsd-opts (str execute-fn-sym))]
+  (let [statsd-opts (statsd/add-function-tag statsd-opts (str execute-fn-sym))
+        sample-rate (:sample-rate statsd-opts)
+        tags (:tags statsd-opts)]
     (try
       (statsd/emit-metrics
-        statsd-opts
+        sample-rate tags
         (apply (u/require-resolve execute-fn-sym) args))
       (log/debug "Executed job-id:" id)
       (catch Exception ex

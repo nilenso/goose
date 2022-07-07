@@ -1,10 +1,18 @@
 (ns goose.statsd.statsd
   (:require
-    [com.unbounce.dogstatsd.core :as statsd]))
+    [clj-statsd :as statsd]))
 
 (defonce default-opts
-  {:sample-rate 1.0
+  {:host "127.0.0.1"
+   :port 8125
+   :sample-rate 1.0
    :tags        #{}})
+
+(defonce statsd-prefix "goose.")
+(defn initialize
+  [{:keys [host port]}]
+  (when (and host port)
+    (statsd/setup host port :prefix statsd-prefix)))
 
 (defn add-queue-tag
   [{:keys [tags sample-rate]} queue]
@@ -16,12 +24,21 @@
   {:sample-rate sample-rate
    :tags (merge tags (str "function:" function))})
 
+(defmacro timed-execution
+  "Time the execution of the provided code."
+  [rate tags & body]
+  `(let [start# (System/currentTimeMillis)]
+     (try
+       ~@body
+       (finally
+         (statsd/timing "job.execution_time" (- (System/currentTimeMillis) start#) ~rate ~tags)))))
+
 (defmacro emit-metrics
-  [opts run-fn]
+  [sample-rate tags run-fn]
   `(try
-     (statsd/increment "goose.jobs.count" ~opts)
-     (statsd/time! ["goose.job.runtime" ~opts] ~run-fn)
-     (statsd/increment "goose.jobs.success" ~opts)
+     (statsd/increment "jobs.count" 1 ~sample-rate ~tags)
+     (timed-execution ~sample-rate ~tags ~run-fn)
+     (statsd/increment "jobs.success" 1 ~sample-rate ~tags)
      (catch Exception ex#
-       (statsd/increment "goose.jobs.failure" ~opts)
+       (statsd/increment "jobs.failure" 1 ~sample-rate ~tags)
        (throw ex#))))
