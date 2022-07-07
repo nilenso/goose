@@ -34,8 +34,6 @@
   ; max(graceful-shutdown-sec, sleep time)
   (cp/shutdown! internal-thread-pool)
 
-  (heartbeat/stop id redis-conn process-set)
-
   ; Give jobs executing grace time to complete.
   (log/warn "Awaiting executing jobs to complete.")
 
@@ -43,6 +41,8 @@
     thread-pool
     graceful-shutdown-sec
     TimeUnit/SECONDS)
+
+  (heartbeat/stop id redis-conn process-set)
 
   ; Set state of thread-pool to STOP.
   (log/warn "Sending InterruptedException to close threads.")

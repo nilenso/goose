@@ -6,9 +6,9 @@ Rationale
 
 - Client for statsd: [clj-statsd](https://github.com/pyr/clj-statsd). Factors taken into consideration:
   - No bloat
-  - similicity & 
-  - popularity
-  - maintenance
+  - Simple 
+  - Popular
+  - Well-maintained
   
 
 Avoided Designs

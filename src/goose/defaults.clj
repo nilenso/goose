@@ -4,7 +4,7 @@
 (defonce long-polling-timeout-sec 1)
 (defonce client-redis-pool-size 5)
 (defonce scheduled-jobs-pop-limit 50)
-(defonce internal-thread-pool-size 3)
+(defonce internal-thread-pool-size 4)
 (defonce heartbeat-sleep-sec 15)
 (defonce heartbeat-expire-sec 60)
 
