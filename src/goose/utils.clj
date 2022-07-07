@@ -19,7 +19,7 @@
 (defn epoch-time-ms
   "Returns Unix epoch time for given date.
    If no date is given, returns epoch for current time."
-  ([] (epoch-time-ms (java.util.Date.)))
+  ([] (System/currentTimeMillis))
   ([date] (inst-ms date)))
 
 (defn add-sec

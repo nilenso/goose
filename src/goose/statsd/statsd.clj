@@ -1,5 +1,7 @@
 (ns goose.statsd.statsd
   (:require
+    [goose.utils :as u]
+
     [clj-statsd :as statsd]))
 
 (defonce default-opts
@@ -27,11 +29,11 @@
 (defmacro timed-execution
   "Time the execution of the provided code."
   [rate tags & body]
-  `(let [start# (System/currentTimeMillis)]
+  `(let [start# (u/epoch-time-ms)]
      (try
        ~@body
        (finally
-         (statsd/timing "job.execution_time" (- (System/currentTimeMillis) start#) ~rate ~tags)))))
+         (statsd/timing "job.execution_time" (- (u/epoch-time-ms) start#) ~rate ~tags)))))
 
 (defmacro emit-metrics
   [sample-rate tags run-fn]
@@ -42,3 +44,10 @@
      (catch Exception ex#
        (statsd/increment "jobs.failure" 1 ~sample-rate ~tags)
        (throw ex#))))
+
+(defn timing
+  [{:keys [sample-rate tags]} key value]
+  ; When a job is executed using API, latency might be negative.
+  ; Ignore negative values.
+  (when (pos? value)
+    (statsd/timing key value sample-rate tags)))

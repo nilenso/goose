@@ -8,11 +8,24 @@
 
     [clojure.tools.logging :as log]))
 
+(defn- record-latency
+  [statsd-opts job]
+  (cond
+    (:retry-at (:state job))
+    (statsd/timing statsd-opts "retry.latency" (- (u/epoch-time-ms) (:retry-at (:state job))))
+
+    (:schedule job)
+    (statsd/timing statsd-opts "scheduled.latency" (- (u/epoch-time-ms) (:schedule job)))
+
+    :else
+    (statsd/timing statsd-opts "execution.latency" (- (u/epoch-time-ms) (:enqueued-at job)))))
+
 (defn- execute-job
   [{:keys [redis-conn statsd-opts]} {:keys [id execute-fn-sym args] :as job}]
   (let [statsd-opts (statsd/add-function-tag statsd-opts (str execute-fn-sym))
         sample-rate (:sample-rate statsd-opts)
         tags (:tags statsd-opts)]
+    (record-latency statsd-opts job)
     (try
       (statsd/emit-metrics
         sample-rate tags
