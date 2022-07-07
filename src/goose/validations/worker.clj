@@ -1,15 +1,16 @@
 (ns goose.validations.worker
   (:require
     [goose.utils :as u]
+    [goose.validations.queue :refer [validate-queue]]
     [goose.validations.redis :refer [validate-redis]]
-    [goose.validations.queue :refer [validate-queue]]))
+    [goose.validations.statsd :refer [validate-statsd]]))
 
 (defn validate-worker-params
-  [broker-opts queue threads
-   graceful-shutdown-sec
-   scheduler-polling-interval-sec]
+  [broker-opts queue threads statsd-opts
+   graceful-shutdown-sec scheduler-polling-interval-sec]
   (validate-redis broker-opts)
   (validate-queue queue)
+  (validate-statsd statsd-opts)
   (when-let
     [validation-error
      (cond

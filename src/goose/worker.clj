@@ -7,6 +7,7 @@
     [goose.orphan-checker :as orphan-checker]
     [goose.redis :as r]
     [goose.scheduler :as scheduler]
+    [goose.statsd.statsd :as statsd]
     [goose.utils :as u]
     [goose.validations.worker :refer [validate-worker-params]]
 
@@ -51,18 +52,19 @@
          {:threads                        1
           :queue                          d/default-queue
           :scheduler-polling-interval-sec 5
-          :graceful-shutdown-sec          30})
+          :graceful-shutdown-sec          30
+          :statsd-opts                    statsd/default-opts})
 
 (defn start
   "Starts a threadpool for worker."
-  [{:keys [threads broker-opts
+  [{:keys [threads broker-opts statsd-opts
            queue scheduler-polling-interval-sec
            graceful-shutdown-sec]}]
-  (let [broker-opts (broker/create broker-opts threads)]
+  (let [broker-opts (broker/create broker-opts threads)
+        statsd-opts (statsd/add-queue-tag statsd-opts queue)]
     (validate-worker-params
-      broker-opts queue threads
-      graceful-shutdown-sec
-      scheduler-polling-interval-sec)
+      broker-opts queue threads statsd-opts
+      graceful-shutdown-sec scheduler-polling-interval-sec)
     (let [thread-pool (cp/threadpool threads)
           ; Internal threadpool for scheduler, orphan-checker & heartbeat.
           internal-thread-pool (cp/threadpool d/internal-thread-pool-size)
@@ -72,6 +74,7 @@
                 :thread-pool                    thread-pool
                 :internal-thread-pool           internal-thread-pool
                 :redis-conn                     (r/conn broker-opts)
+                :statsd-opts                    statsd-opts
 
                 :process-set                    (str d/process-prefix queue)
                 :prefixed-queue                 (d/prefix-queue queue)

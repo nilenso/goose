@@ -3,6 +3,7 @@
     [goose.client :as c]
     [goose.defaults :as d]
     [goose.redis :as r]
+    [goose.statsd.statsd :as statsd]
     [goose.worker :as w]
 
     [clojure.test :refer [deftest is testing use-fixtures]]
@@ -33,7 +34,8 @@
    :broker-opts                    broker-opts
    :queue                          (:test queues)
    :graceful-shutdown-sec          1
-   :scheduler-polling-interval-sec 1})
+   :scheduler-polling-interval-sec 1
+   :statsd-opts                    statsd/default-opts})
 
 ; ======= Setup & Teardown ==========
 
