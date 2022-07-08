@@ -12,13 +12,13 @@
   [statsd-opts job]
   (cond
     (:retry-at (:state job))
-    (statsd/timing statsd-opts "retry.latency" (- (u/epoch-time-ms) (:retry-at (:state job))))
+    (statsd/timing statsd-opts statsd/retry-latency (- (u/epoch-time-ms) (:retry-at (:state job))))
 
     (:schedule job)
-    (statsd/timing statsd-opts "scheduled.latency" (- (u/epoch-time-ms) (:schedule job)))
+    (statsd/timing statsd-opts statsd/schedule-latency (- (u/epoch-time-ms) (:schedule job)))
 
     :else
-    (statsd/timing statsd-opts "execution.latency" (- (u/epoch-time-ms) (:enqueued-at job)))))
+    (statsd/timing statsd-opts statsd/execution-latency (- (u/epoch-time-ms) (:enqueued-at job)))))
 
 (defn- execute-job
   [{:keys [redis-conn statsd-opts]} {:keys [id execute-fn-sym args] :as job}]

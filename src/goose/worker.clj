@@ -85,6 +85,7 @@
 
       (statsd/initialize statsd-opts)
 
+      (cp/future internal-thread-pool (statsd/run opts))
       (cp/future internal-thread-pool (heartbeat/run opts))
       (cp/future internal-thread-pool (scheduler/run opts))
       (cp/future internal-thread-pool (orphan-checker/run opts))

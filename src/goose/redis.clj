@@ -49,6 +49,9 @@
 (defn remove-from-list [conn list element]
   (wcar* conn (car/lrem list 1 element)))
 
+(defn list-size [conn list]
+  (wcar* conn (car/llen list)))
+
 ; ============ Sorted-Sets ============
 (defn enqueue-sorted-set [conn sorted-set score element]
   (wcar* conn (car/zadd sorted-set score element)))
@@ -72,3 +75,6 @@
       (apply car/zrem sorted-set jobs)
       (doseq [[queue jobs] (group-by grouping-fn jobs)]
         (apply car/rpush queue jobs)))))
+
+(defn set-size [conn sorted-set]
+  (wcar* conn (car/zcount sorted-set "-inf" "+inf")))
