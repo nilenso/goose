@@ -68,32 +68,23 @@
         (finally
           (statsd/timing execution-time (- (u/epoch-time-ms) start) sample-rate tags-list))))))
 
-(defn- fetch-queues
-  [redis-conn queues cursor]
-  (let [match-str (str d/queue-prefix "*")
-        [next scanned-queues] (r/scan-lists redis-conn match-str cursor 1)
-        queues (concat queues scanned-queues)]
-    (if (= next d/scan-initial-cursor)
-      queues
-      #(fetch-queues redis-conn queues next))))
-
-(defn- get-queue-metric
+(defn- statsd-queue-metric
   [queue]
   (str "enqueued." (d/affix-queue queue) ".size"))
 
-(defn- get-queues-size
+(defn- statsd-queues-size
   [redis-conn queues]
   (map
     (fn
       [queue]
-      [(get-queue-metric queue)
+      [(statsd-queue-metric queue)
        (r/list-size redis-conn queue)])
     queues))
 
 (defn- get-enqueued-size
   [redis-conn]
-  (let [queues (trampoline fetch-queues redis-conn '() d/scan-initial-cursor)
-        enqueued-list (get-queues-size redis-conn queues)
+  (let [queues (r/list-queues redis-conn)
+        enqueued-list (statsd-queues-size redis-conn queues)
         enqueued-map (into {} enqueued-list)
         total-size (reduce + (vals enqueued-map))]
     (assoc enqueued-map enqueued-size total-size)))

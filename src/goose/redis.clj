@@ -81,3 +81,19 @@
 
 (defn sorted-set-size [conn sorted-set]
   (wcar* conn (car/zcount sorted-set "-inf" "+inf")))
+
+; ============== Queues ===============
+(defn- fetch-queues
+  ([redis-conn]
+   (fetch-queues redis-conn '() d/scan-initial-cursor))
+  ([redis-conn queues cursor]
+   (let [match-str (str d/queue-prefix "*")
+         [next scanned-queues] (scan-lists redis-conn match-str cursor 1)
+         queues (concat queues scanned-queues)]
+     (if (= next d/scan-initial-cursor)
+       queues
+       #(fetch-queues redis-conn queues next)))))
+
+(defn list-queues
+  [redis-conn]
+  (trampoline fetch-queues redis-conn))
