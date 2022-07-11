@@ -7,6 +7,7 @@
 
     [clj-statsd :as statsd]))
 
+(defonce prefix "goose.")
 (defonce jobs-count "jobs.count")
 (defonce jobs-success "jobs.success")
 (defonce jobs-failure "jobs.failure")
@@ -36,25 +37,39 @@
 (defn initialize
   [{:keys [host port]}]
   (when (and host port)
-    (statsd/setup host port :prefix d/statsd-prefix)))
+    (statsd/setup host port :prefix prefix)))
 
-(defn run-job-and-send-metrics
-  [{:keys [sample-rate tags]} [key latency] fn-name run-fn]
-  (let [tags-list (build-tags (assoc tags :function fn-name))
-        start (u/epoch-time-ms)]
-    (try
-      (statsd/increment jobs-count 1 sample-rate tags-list)
-      ; When a job is executed using API, latency might be negative.
-      ; Ignore negative values.
-      (when (pos? latency)
-        (statsd/timing key latency sample-rate tags-list))
-      (run-fn)
-      (statsd/increment jobs-success 1 sample-rate tags-list)
-      (catch Exception ex
-        (statsd/increment jobs-failure 1 sample-rate tags-list)
-        (throw ex))
-      (finally
-        (statsd/timing execution-time (- (u/epoch-time-ms) start) sample-rate tags-list)))))
+(defn- calculate-latency
+  [job]
+  (cond
+    (:retry-at (:state job))
+    [retry-latency (- (u/epoch-time-ms) (:retry-at (:state job)))]
+    (:schedule job)
+    [schedule-latency (- (u/epoch-time-ms) (:schedule job))]
+    :else
+    [execution-latency (- (u/epoch-time-ms) (:enqueued-at job))]))
+
+(defn wrap-metrics
+  [call]
+  (fn [{{:keys [sample-rate tags]} :statsd-opts
+        :as opts}
+       {:keys [execute-fn-name] :as job}]
+    (let [tags-list (build-tags (assoc tags :function (str execute-fn-name)))
+          [latency-key latency-value] (calculate-latency job)
+          start (u/epoch-time-ms)]
+      (try
+        (statsd/increment jobs-count 1 sample-rate tags-list)
+        ; When a job is executed using API, latency might be negative.
+        ; Ignore negative values.
+        (when (pos? latency-value)
+          (statsd/timing latency-key latency-value sample-rate tags-list))
+        (call opts job)
+        (statsd/increment jobs-success 1 sample-rate tags-list)
+        (catch Exception ex
+          (statsd/increment jobs-failure 1 sample-rate tags-list)
+          (throw ex))
+        (finally
+          (statsd/timing execution-time (- (u/epoch-time-ms) start) sample-rate tags-list))))))
 
 (defn run
   [{{:keys [sample-rate tags]} :statsd-opts
@@ -67,11 +82,11 @@
             tags-list (build-tags tags)
             size-map {queue-size          [(r/list-size redis-conn prefixed-queue) tags-list]
                       schedule-queue-size [(r/sorted-set-size redis-conn d/prefixed-schedule-queue) tags-sans-queue-list]
-                      dead-queue-size     [(r/sorted-set-size redis-conn d/prefixed-dead-queue) tags-sans-queue-list]}]
+                      dead-queue-size     [(r/sorted-set-size redis-conn d/prefixed-dead-queue) tags-sans-queue-list]}
+            process-count (heartbeat/process-count redis-conn process-set)]
         ; Using doseq instead of map, because map is lazy.
         (doseq [[k [v tags]] size-map]
-          (statsd/gauge k v sample-rate tags)))
-      (let [process-count (heartbeat/process-count redis-conn process-set)]
+          (statsd/gauge k v sample-rate tags))
         ; Sleep for (process-count) minutes + jitters.
         ; On average, Goose sends queue level stats every 1 minute.
         (Thread/sleep (* 1000 (+ (* 60 process-count)

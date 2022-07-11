@@ -2,18 +2,20 @@
   (:require
     [goose.client :as c]
     [goose.defaults :as d]
+    [goose.middleware :as middleware]
     [goose.redis :as r]
+    [goose.retry :as retry]
     [goose.statsd.statsd :as statsd]
     [goose.worker :as w]
 
     [clojure.test :refer [deftest is testing use-fixtures]]
-    [goose.retry :as retry])
+    [taoensso.carmine :as car])
   (:import
     [java.util UUID]))
 
 (def redis-url
-  (let [host (or (System/getenv "GOOSE_REDIS_HOST") "localhost")
-        port (or (System/getenv "GOOSE_REDIS_PORT") "6379")]
+  (let [host (or (System/getenv "GOOSE_TEST_REDIS_HOST") "localhost")
+        port (or (System/getenv "GOOSE_TEST_REDIS_PORT") "6379")]
     (str "redis://" host ":" port)))
 
 (def broker-opts
@@ -33,22 +35,22 @@
   {:threads                        1
    :broker-opts                    broker-opts
    :queue                          (:test queues)
+   :middlewares                    middleware/specimen
    :graceful-shutdown-sec          1
    :scheduler-polling-interval-sec 1
    :statsd-opts                    (assoc statsd/default-opts :tags {:env "test"})})
 
 ; ======= Setup & Teardown ==========
 
-(defn- clear-redis
-  [keys]
-  (let [redis-conn (r/conn {:redis-url redis-url})]
-    (r/del-keys redis-conn keys)))
+(defn- clear-redis []
+  (let [redis-conn (r/conn (:redis broker-opts))]
+    (r/wcar* redis-conn (car/flushdb "sync"))))
 
-(defn integration-test-fixture [f]
-  (let [prefixed-queues (map d/prefix-queue (vals queues))]
-    (clear-redis prefixed-queues)
-    (f)
-    (clear-redis prefixed-queues)))
+(defn- integration-test-fixture
+  [f]
+  (clear-redis)
+  (f)
+  (clear-redis))
 
 (use-fixtures :once integration-test-fixture)
 

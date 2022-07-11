@@ -7,7 +7,6 @@
 (defonce internal-thread-pool-size 4)
 (defonce heartbeat-sleep-sec 15)
 (defonce heartbeat-expire-sec 60)
-(defonce statsd-prefix "goose.")
 
 (defonce queue-prefix "goose/queue:")
 (defonce in-progress-queue-prefix "goose/in-progress-jobs:")

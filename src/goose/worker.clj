@@ -4,8 +4,10 @@
     [goose.defaults :as d]
     [goose.executor :as executor]
     [goose.heartbeat :as heartbeat]
+    [goose.middleware :as middleware]
     [goose.orphan-checker :as orphan-checker]
     [goose.redis :as r]
+    [goose.retry :as retry]
     [goose.scheduler :as scheduler]
     [goose.statsd.statsd :as statsd]
     [goose.utils :as u]
@@ -51,6 +53,7 @@
 (defonce default-opts
          {:threads                        1
           :queue                          d/default-queue
+          :middlewares                    middleware/specimen
           :scheduler-polling-interval-sec 5
           :graceful-shutdown-sec          30
           :statsd-opts                    statsd/default-opts})
@@ -59,7 +62,7 @@
   "Starts a threadpool for worker."
   [{:keys [threads broker-opts statsd-opts
            queue scheduler-polling-interval-sec
-           graceful-shutdown-sec]}]
+           middlewares graceful-shutdown-sec]}]
   (let [broker-opts (broker/create broker-opts threads)
         statsd-opts (assoc-in statsd-opts [:tags :queue] queue)]
     (validate-worker-params
@@ -70,10 +73,15 @@
           internal-thread-pool (cp/threadpool d/internal-thread-pool-size)
           random-str (subs (str (random-uuid)) 24 36) ; Take last 12 chars of UUID.
           id (str queue ":" (u/hostname) ":" random-str)
+          call (-> executor/execute-job
+                   (statsd/wrap-metrics)
+                   (retry/wrap-failure)
+                   (middlewares))
           opts {:id                             id
                 :thread-pool                    thread-pool
                 :internal-thread-pool           internal-thread-pool
                 :redis-conn                     (r/conn broker-opts)
+                :call                           call
                 :statsd-opts                    statsd-opts
 
                 :process-set                    (str d/process-prefix queue)

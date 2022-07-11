@@ -79,11 +79,15 @@
     (when-not skip-dead-queue
       (r/enqueue-sorted-set redis-conn d/prefixed-dead-queue dead-at job))))
 
-(defn handle-failure
-  [redis-conn job ex]
-  (let [failed-job (set-failed-config job ex)
-        retry-count (get-in failed-job [:state :retry-count])
-        max-retries (get-in failed-job [:retry-opts :max-retries])]
-    (if (< retry-count max-retries)
-      (retry-job redis-conn failed-job ex)
-      (bury-job redis-conn failed-job ex))))
+(defn wrap-failure
+  [execute]
+  (fn [{:keys [redis-conn] :as opts} job]
+    (try
+      (execute opts job)
+      (catch Exception ex
+        (let [failed-job (set-failed-config job ex)
+              retry-count (get-in failed-job [:state :retry-count])
+              max-retries (get-in failed-job [:retry-opts :max-retries])]
+          (if (< retry-count max-retries)
+            (retry-job redis-conn failed-job ex)
+            (bury-job redis-conn failed-job ex)))))))
