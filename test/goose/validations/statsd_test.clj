@@ -1,7 +1,7 @@
 (ns goose.validations.statsd-test
   (:require
     [goose.validations.statsd :as sut]
-    [goose.statsd.statsd :as statsd]
+    [goose.statsd :as statsd]
 
     [clojure.test :refer [deftest is testing]]))
 

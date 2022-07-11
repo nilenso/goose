@@ -1,4 +1,6 @@
-(ns goose.defaults)
+(ns goose.defaults
+  (:require
+    [clojure.string :as string]))
 
 (defonce default-redis-url "redis://localhost:6379")
 (defonce long-polling-timeout-sec 1)
@@ -7,6 +9,7 @@
 (defonce internal-thread-pool-size 4)
 (defonce heartbeat-sleep-sec 15)
 (defonce heartbeat-expire-sec 60)
+(defonce scan-initial-cursor "0")
 
 (defonce queue-prefix "goose/queue:")
 (defonce in-progress-queue-prefix "goose/in-progress-jobs:")
@@ -22,6 +25,12 @@
 (defn prefix-queue
   [queue]
   (str queue-prefix queue))
+
+(defn affix-queue
+  [queue]
+  (-> queue
+      (string/split (re-pattern (str queue-prefix "*")))
+      (second)))
 
 (defonce prefixed-schedule-queue (prefix-queue schedule-queue))
 (defonce prefixed-retry-schedule-queue (prefix-queue schedule-queue))

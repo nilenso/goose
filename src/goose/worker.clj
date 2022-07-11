@@ -10,7 +10,7 @@
     [goose.redis :as r]
     [goose.retry :as retry]
     [goose.scheduler :as scheduler]
-    [goose.statsd.statsd :as statsd]
+    [goose.statsd :as statsd]
     [goose.utils :as u]
     [goose.validations.worker :refer [validate-worker-params]]
 
@@ -24,9 +24,8 @@
 
 (defn- internal-stop
   "Gracefully shuts down the worker threadpool."
-  [{:keys [id thread-pool internal-thread-pool
-           redis-conn process-set
-           graceful-shutdown-sec]}]
+  [{:keys [thread-pool internal-thread-pool graceful-shutdown-sec]
+    :as opts}]
   ; Set state of thread-pool to SHUTDOWN.
   (log/warn "Shutting down thread-pool...")
   (cp/shutdown thread-pool)
@@ -45,7 +44,7 @@
     graceful-shutdown-sec
     TimeUnit/SECONDS)
 
-  (heartbeat/stop id redis-conn process-set)
+  (heartbeat/stop opts)
 
   ; Set state of thread-pool to STOP.
   (log/warn "Sending InterruptedException to close threads.")

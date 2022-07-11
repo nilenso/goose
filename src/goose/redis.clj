@@ -28,7 +28,7 @@
 (defn del-from-set [conn set member]
   (wcar* conn (car/srem set member)))
 
-(defn scan-set [conn set cursor count]
+(defn scan-sets [conn set cursor count]
   (wcar* conn (car/sscan set cursor "COUNT" count)))
 
 (defn set-size [conn set]
@@ -48,6 +48,9 @@
 
 (defn remove-from-list [conn list element]
   (wcar* conn (car/lrem list 1 element)))
+
+(defn scan-lists [conn match cursor count]
+  (wcar* conn (car/scan cursor "MATCH" match "COUNT" count "TYPE" "LIST")))
 
 (defn list-size [conn list]
   (wcar* conn (car/llen list)))

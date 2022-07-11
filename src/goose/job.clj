@@ -1,6 +1,6 @@
 (ns goose.job
   (:require
-    [goose.statsd.statsd :as statsd]
+    [goose.statsd :as statsd]
     [goose.utils :as u]))
 
 (defn new

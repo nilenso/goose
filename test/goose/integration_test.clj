@@ -5,7 +5,7 @@
     [goose.middleware :as middleware]
     [goose.redis :as r]
     [goose.retry :as retry]
-    [goose.statsd.statsd :as statsd]
+    [goose.statsd :as statsd]
     [goose.worker :as w]
 
     [clojure.test :refer [deftest is testing use-fixtures]]
