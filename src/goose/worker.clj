@@ -4,6 +4,7 @@
     [goose.defaults :as d]
     [goose.executor :as executor]
     [goose.heartbeat :as heartbeat]
+    [goose.job :as job]
     [goose.middleware :as middleware]
     [goose.orphan-checker :as orphan-checker]
     [goose.redis :as r]
@@ -75,6 +76,7 @@
           id (str queue ":" (u/hostname) ":" random-str)
           call (-> executor/execute-job
                    (statsd/wrap-metrics)
+                   (job/wrap-latency)
                    (retry/wrap-failure)
                    (middlewares))
           opts {:id                             id

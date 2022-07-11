@@ -39,30 +39,21 @@
   (when (and host port)
     (statsd/setup host port :prefix prefix)))
 
-(defn- calculate-latency
-  [job]
-  (cond
-    (:retry-at (:state job))
-    [retry-latency (- (u/epoch-time-ms) (:retry-at (:state job)))]
-    (:schedule job)
-    [schedule-latency (- (u/epoch-time-ms) (:schedule job))]
-    :else
-    [execution-latency (- (u/epoch-time-ms) (:enqueued-at job))]))
-
 (defn wrap-metrics
   [call]
   (fn [{{:keys [sample-rate tags]} :statsd-opts
-        :as opts}
-       {:keys [execute-fn-name] :as job}]
-    (let [tags-list (build-tags (assoc tags :function (str execute-fn-name)))
-          [latency-key latency-value] (calculate-latency job)
+        :as                        opts}
+       {[job-type latency] :latency
+        :keys              [execute-fn-sym]
+        :as                job}]
+    (let [tags-list (build-tags (assoc tags :function (str execute-fn-sym)))
           start (u/epoch-time-ms)]
       (try
         (statsd/increment jobs-count 1 sample-rate tags-list)
         ; When a job is executed using API, latency might be negative.
         ; Ignore negative values.
-        (when (pos? latency-value)
-          (statsd/timing latency-key latency-value sample-rate tags-list))
+        (when (pos? latency)
+          (statsd/timing job-type latency sample-rate tags-list))
         (call opts job)
         (statsd/increment jobs-success 1 sample-rate tags-list)
         (catch Exception ex
