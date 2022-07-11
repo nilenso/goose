@@ -4,9 +4,13 @@
     [goose.defaults :as d]
     [goose.executor :as executor]
     [goose.heartbeat :as heartbeat]
+    [goose.job :as job]
+    [goose.middleware :as middleware]
     [goose.orphan-checker :as orphan-checker]
     [goose.redis :as r]
+    [goose.retry :as retry]
     [goose.scheduler :as scheduler]
+    [goose.statsd :as statsd]
     [goose.utils :as u]
     [goose.validations.worker :refer [validate-worker-params]]
 
@@ -20,9 +24,8 @@
 
 (defn- internal-stop
   "Gracefully shuts down the worker threadpool."
-  [{:keys [id thread-pool internal-thread-pool
-           redis-conn process-set
-           graceful-shutdown-sec]}]
+  [{:keys [thread-pool internal-thread-pool graceful-shutdown-sec]
+    :as opts}]
   ; Set state of thread-pool to SHUTDOWN.
   (log/warn "Shutting down thread-pool...")
   (cp/shutdown thread-pool)
@@ -33,8 +36,6 @@
   ; max(graceful-shutdown-sec, sleep time)
   (cp/shutdown! internal-thread-pool)
 
-  (heartbeat/stop id redis-conn process-set)
-
   ; Give jobs executing grace time to complete.
   (log/warn "Awaiting executing jobs to complete.")
 
@@ -43,6 +44,8 @@
     graceful-shutdown-sec
     TimeUnit/SECONDS)
 
+  (heartbeat/stop opts)
+
   ; Set state of thread-pool to STOP.
   (log/warn "Sending InterruptedException to close threads.")
   (cp/shutdown! thread-pool))
@@ -50,28 +53,37 @@
 (defonce default-opts
          {:threads                        1
           :queue                          d/default-queue
+          :middlewares                    middleware/specimen
           :scheduler-polling-interval-sec 5
-          :graceful-shutdown-sec          30})
+          :graceful-shutdown-sec          30
+          :statsd-opts                    statsd/default-opts})
 
 (defn start
   "Starts a threadpool for worker."
-  [{:keys [threads broker-opts
+  [{:keys [threads broker-opts statsd-opts
            queue scheduler-polling-interval-sec
-           graceful-shutdown-sec]}]
-  (let [broker-opts (broker/create broker-opts threads)]
+           middlewares graceful-shutdown-sec]}]
+  (let [broker-opts (broker/create broker-opts threads)
+        statsd-opts (assoc-in statsd-opts [:tags :queue] queue)]
     (validate-worker-params
-      broker-opts queue threads
-      graceful-shutdown-sec
-      scheduler-polling-interval-sec)
+      broker-opts queue threads statsd-opts
+      graceful-shutdown-sec scheduler-polling-interval-sec)
     (let [thread-pool (cp/threadpool threads)
           ; Internal threadpool for scheduler, orphan-checker & heartbeat.
           internal-thread-pool (cp/threadpool d/internal-thread-pool-size)
           random-str (subs (str (random-uuid)) 24 36) ; Take last 12 chars of UUID.
           id (str queue ":" (u/hostname) ":" random-str)
+          call (-> executor/execute-job
+                   (statsd/wrap-metrics)
+                   (job/wrap-latency)
+                   (retry/wrap-failure)
+                   (middlewares))
           opts {:id                             id
                 :thread-pool                    thread-pool
                 :internal-thread-pool           internal-thread-pool
                 :redis-conn                     (r/conn broker-opts)
+                :call                           call
+                :statsd-opts                    statsd-opts
 
                 :process-set                    (str d/process-prefix queue)
                 :prefixed-queue                 (d/prefix-queue queue)
@@ -80,6 +92,9 @@
                 :graceful-shutdown-sec          graceful-shutdown-sec
                 :scheduler-polling-interval-sec scheduler-polling-interval-sec}]
 
+      (statsd/initialize statsd-opts)
+
+      (cp/future internal-thread-pool (statsd/run opts))
       (cp/future internal-thread-pool (heartbeat/run opts))
       (cp/future internal-thread-pool (scheduler/run opts))
       (cp/future internal-thread-pool (orphan-checker/run opts))

@@ -20,8 +20,8 @@ jobs:
       - name: Run tests
         run: clj -X:test
         env:
-          GOOSE_REDIS_HOST: redis
-          GOOSE_REDIS_PORT: 6379
+          GOOSE_TEST_REDIS_HOST: redis
+          GOOSE_TEST_REDIS_PORT: 6379
       - name: Install clj-kondo
         run: |
           curl -sLO https://raw.githubusercontent.com/borkdude/clj-kondo/master/script/install-clj-kondo
@@ -32,4 +32,4 @@ jobs:
       - name: Lint test
         run: clj-kondo --lint test/
       - name: Lint perf
-          run: clj-kondo --lint perf/
+        run: clj-kondo --lint perf/

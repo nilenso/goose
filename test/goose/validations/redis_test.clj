@@ -5,7 +5,7 @@
     [clojure.test :refer [deftest is testing]]))
 
 (deftest validate-redis-test
-  (testing "redis URL is valid"
+  (testing "redis-url is valid"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo

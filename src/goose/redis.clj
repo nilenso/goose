@@ -28,10 +28,10 @@
 (defn del-from-set [conn set member]
   (wcar* conn (car/srem set member)))
 
-(defn scan-set [conn set cursor count]
+(defn scan-sets [conn set cursor count]
   (wcar* conn (car/sscan set cursor "COUNT" count)))
 
-(defn size-of-set [conn set]
+(defn set-size [conn set]
   (wcar* conn (car/scard set)))
 
 ; ============== Lists ===============
@@ -48,6 +48,12 @@
 
 (defn remove-from-list [conn list element]
   (wcar* conn (car/lrem list 1 element)))
+
+(defn scan-lists [conn match cursor count]
+  (wcar* conn (car/scan cursor "MATCH" match "COUNT" count "TYPE" "LIST")))
+
+(defn list-size [conn list]
+  (wcar* conn (car/llen list)))
 
 ; ============ Sorted-Sets ============
 (defn enqueue-sorted-set [conn sorted-set score element]
@@ -72,3 +78,6 @@
       (apply car/zrem sorted-set jobs)
       (doseq [[queue jobs] (group-by grouping-fn jobs)]
         (apply car/rpush queue jobs)))))
+
+(defn sorted-set-size [conn sorted-set]
+  (wcar* conn (car/zcount sorted-set "-inf" "+inf")))

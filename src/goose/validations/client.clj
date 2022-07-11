@@ -33,6 +33,9 @@
        (not (resolve execute-fn-sym))
        ["execute-fn-sym should be resolvable" (u/wrap-error :unresolvable-fn execute-fn-sym)]
 
+       (not (fn? @(resolve execute-fn-sym)))
+       ["execute-fn-sym should be a fn" (u/wrap-error :non-fn execute-fn-sym)]
+
        (args-unserializable? args)
        ["args should be serializable" (u/wrap-error :unserializable-args args)]
 

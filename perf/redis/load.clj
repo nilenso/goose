@@ -88,4 +88,5 @@ Exit using ctrl-C after recording ~10 samples.
 ====================================")
   (let [toxiproxy (add-latency-to-redis)]
     (.addShutdownHook (Runtime/getRuntime) (Thread. (fn [] (reset toxiproxy))))
-    (criterium/bench (enqueue-dequeue (* 100 1000)))))
+    (criterium/bench (enqueue-dequeue (* 100 1000)))
+    (reset toxiproxy)))
