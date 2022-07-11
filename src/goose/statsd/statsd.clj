@@ -8,9 +8,10 @@
     [clj-statsd :as statsd]))
 
 (defonce prefix "goose.")
-(defonce jobs-count "jobs.count")
+(defonce jobs-processed "jobs.processed")
 (defonce jobs-success "jobs.success")
 (defonce jobs-failure "jobs.failure")
+(defonce jobs-recovered "jobs.recovered")
 
 (defonce execution-time "job.execution_time")
 
@@ -31,13 +32,18 @@
 (defn- build-tags
   [tags]
   (map
-    (fn [[key value]] (str (name key) ":" (name value)))
+    (fn [[key value]] (str (name key) ":" value))
     tags))
 
 (defn initialize
   [{:keys [host port]}]
   (when (and host port)
     (statsd/setup host port :prefix prefix)))
+
+(defn increment-recovery
+  [{:keys [sample-rate tags]} execute-fn-sym]
+  (let [tags-list (build-tags (assoc tags :function execute-fn-sym))]
+    (statsd/increment jobs-recovered 1 sample-rate tags-list)))
 
 (defn wrap-metrics
   [call]
@@ -46,10 +52,10 @@
        {[job-type latency] :latency
         :keys              [execute-fn-sym]
         :as                job}]
-    (let [tags-list (build-tags (assoc tags :function (str execute-fn-sym)))
+    (let [tags-list (build-tags (assoc tags :function execute-fn-sym))
           start (u/epoch-time-ms)]
       (try
-        (statsd/increment jobs-count 1 sample-rate tags-list)
+        (statsd/increment jobs-processed 1 sample-rate tags-list)
         ; When a job is executed using API, latency might be negative.
         ; Ignore negative values.
         (when (pos? latency)

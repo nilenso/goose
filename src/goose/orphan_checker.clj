@@ -3,31 +3,34 @@
     [goose.executor :as executor]
     [goose.heartbeat :as heartbeat]
     [goose.redis :as r]
+    [goose.statsd.statsd :as statsd]
     [goose.utils :as u]))
 
 (defonce ^:private initial-cursor "0")
 
 (defn- reenqueue-orphan-jobs
-  [redis-conn orphan-queue prefixed-queue]
+  [{:keys [redis-conn prefixed-queue statsd-opts] :as opts}
+   orphan-queue]
   ; Enqueuing in-progress jobs to front of queue isn't possible
   ; because Carmine doesn't support `LMOVE` function.
   ; https://github.com/nilenso/goose/issues/14
-  (when (r/dequeue-and-preserve redis-conn orphan-queue prefixed-queue)
-    #(reenqueue-orphan-jobs redis-conn orphan-queue prefixed-queue)))
+  (when-let [job (r/dequeue-and-preserve redis-conn orphan-queue prefixed-queue)]
+    (statsd/increment-recovery statsd-opts (:execute-fn-sym job))
+    #(reenqueue-orphan-jobs opts orphan-queue)))
 
 (defn- check-liveness
-  [redis-conn prefixed-queue
-   process-set processes]
+  [{:keys [redis-conn process-set] :as opts} processes]
   (doseq [process processes]
     (when-not (heartbeat/alive? redis-conn process)
       (trampoline
         reenqueue-orphan-jobs
-        redis-conn (executor/preservation-queue process) prefixed-queue)
+        opts (executor/preservation-queue process))
       (r/del-from-set redis-conn process-set process))))
 
 (defn run
   [{:keys [id internal-thread-pool
-           redis-conn prefixed-queue process-set]}]
+           redis-conn process-set]
+    :as opts}]
   (u/while-pool
     internal-thread-pool
     (u/log-on-exceptions
@@ -35,7 +38,7 @@
         (let [current (or cursor initial-cursor)
               [next processes] (r/scan-set redis-conn process-set current 1)]
           (check-liveness
-            redis-conn prefixed-queue process-set
+            opts
             (remove #{id} processes))
           (when-not (= next initial-cursor)
             (recur next))))
