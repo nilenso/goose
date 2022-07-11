@@ -31,6 +31,10 @@
       (Thread/sleep (* 1000 d/heartbeat-sleep-sec)))))
 
 (defn stop
-  [id redis-conn process-set]
+  [{:keys [id redis-conn process-set in-progress-queue]}]
   (r/del-keys redis-conn [(str d/heartbeat-prefix id)])
-  (r/del-from-set redis-conn process-set id))
+  ; If job has swallowed thread-interrupted exception,
+  ; don't del the process from the queue.
+  ; Job/process get recovered/cleaned-up by orphan-checker.
+  (when (= 0 (r/list-size redis-conn in-progress-queue))
+    (r/del-from-set redis-conn process-set id)))
