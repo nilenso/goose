@@ -7,12 +7,6 @@
 
     [clj-statsd :as statsd]))
 
-(defonce default-opts
-         {:host        "127.0.0.1"
-          :port        8125
-          :sample-rate 1.0
-          :tags        #{}})
-
 (defonce jobs-count "jobs.count")
 (defonce jobs-success "jobs.success")
 (defonce jobs-failure "jobs.failure")
@@ -27,44 +21,40 @@
 (defonce schedule-queue-size "scheduled-queue.size")
 (defonce dead-queue-size "dead-queue.size")
 
+(defonce default-opts
+         {:host        "127.0.0.1"
+          :port        8125
+          :sample-rate 1.0
+          :tags        {}})
+
+(defn- build-tags
+  [tags]
+  (map
+    (fn [[key value]] (str (name key) ":" (name value)))
+    tags))
+
 (defn initialize
   [{:keys [host port]}]
   (when (and host port)
     (statsd/setup host port :prefix d/statsd-prefix)))
 
-(defn add-queue-tag
-  [{:keys [tags] :as opts} queue]
-  (assoc opts :tags (merge tags (str "queue:" queue))))
-
-(defn add-function-tag
-  [{:keys [tags] :as opts} function]
-  (assoc opts :tags (merge tags (str "function:" function))))
-
-(defmacro timed-execution
-  "Time the execution of the provided code."
-  [rate tags & body]
-  `(let [start# (u/epoch-time-ms)]
-     (try
-       ~@body
-       (finally
-         (statsd/timing execution-time (- (u/epoch-time-ms) start#) ~rate ~tags)))))
-
-(defmacro emit-metrics
-  [sample-rate tags run-fn]
-  `(try
-     (statsd/increment jobs-count 1 ~sample-rate ~tags)
-     (timed-execution ~sample-rate ~tags ~run-fn)
-     (statsd/increment jobs-success 1 ~sample-rate ~tags)
-     (catch Exception ex#
-       (statsd/increment jobs-failure 1 ~sample-rate ~tags)
-       (throw ex#))))
-
-(defn timing
-  [{:keys [sample-rate tags]} key value]
-  ; When a job is executed using API, latency might be negative.
-  ; Ignore negative values.
-  (when (pos? value)
-    (statsd/timing key value sample-rate tags)))
+(defn run-job-and-send-metrics
+  [{:keys [sample-rate tags]} [key latency] fn-name run-fn]
+  (let [tags-list (build-tags (assoc tags :function fn-name))
+        start (u/epoch-time-ms)]
+    (try
+      (statsd/increment jobs-count 1 sample-rate tags-list)
+      ; When a job is executed using API, latency might be negative.
+      ; Ignore negative values.
+      (when (pos? latency)
+        (statsd/timing key latency sample-rate tags-list))
+      (run-fn)
+      (statsd/increment jobs-success 1 sample-rate tags-list)
+      (catch Exception ex
+        (statsd/increment jobs-failure 1 sample-rate tags-list)
+        (throw ex))
+      (finally
+        (statsd/timing execution-time (- (u/epoch-time-ms) start) sample-rate tags-list)))))
 
 (defn run
   [{{:keys [sample-rate tags]} :statsd-opts
@@ -73,12 +63,13 @@
   (u/while-pool
     internal-thread-pool
     (u/log-on-exceptions
-      (let [size-map
-            {queue-size          (r/list-size redis-conn prefixed-queue)
-             schedule-queue-size (r/set-size redis-conn d/prefixed-schedule-queue)
-             dead-queue-size     (r/set-size redis-conn d/prefixed-dead-queue)}]
-        ; Using doseq because map is lazy and needs to be wrapped inside doall.
-        (doseq [[k v] size-map]
+      (let [tags-sans-queue-list (build-tags (dissoc tags :queue))
+            tags-list (build-tags tags)
+            size-map {queue-size          [(r/list-size redis-conn prefixed-queue) tags-list]
+                      schedule-queue-size [(r/sorted-set-size redis-conn d/prefixed-schedule-queue) tags-sans-queue-list]
+                      dead-queue-size     [(r/sorted-set-size redis-conn d/prefixed-dead-queue) tags-sans-queue-list]}]
+        ; Using doseq instead of map, because map is lazy.
+        (doseq [[k [v tags]] size-map]
           (statsd/gauge k v sample-rate tags)))
       (let [process-count (heartbeat/process-count redis-conn process-set)]
         ; Sleep for (process-count) minutes + jitters.

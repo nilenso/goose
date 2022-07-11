@@ -16,6 +16,6 @@
        (not (double? sample-rate))
        ["sample-rate should be a double" (u/wrap-error :invalid-sample-rate sample-rate)]
 
-       (not (set? tags))
-       ["tags should be a set" (u/wrap-error :invalid-tags tags)])]
+       (not (map? tags))
+       ["tags should be a map" (u/wrap-error :invalid-tags tags)])]
     (throw (apply ex-info validation-error))))

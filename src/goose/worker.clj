@@ -61,7 +61,7 @@
            queue scheduler-polling-interval-sec
            graceful-shutdown-sec]}]
   (let [broker-opts (broker/create broker-opts threads)
-        statsd-opts (statsd/add-queue-tag statsd-opts queue)]
+        statsd-opts (assoc-in statsd-opts [:tags :queue] queue)]
     (validate-worker-params
       broker-opts queue threads statsd-opts
       graceful-shutdown-sec scheduler-polling-interval-sec)

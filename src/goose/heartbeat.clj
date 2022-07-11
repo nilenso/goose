@@ -14,7 +14,7 @@
 
 (defn process-count
   [redis-conn process-set]
-  (r/size-of-set redis-conn process-set))
+  (r/set-size redis-conn process-set))
 
 (defn run
   [{:keys [internal-thread-pool

@@ -27,9 +27,9 @@
         #"sample-rate should be a double"
         (sut/validate-statsd (assoc statsd/default-opts :sample-rate 1)))))
 
-  (testing "tags should be a set"
+  (testing "tags should be a map"
     (is
       (thrown-with-msg?
         clojure.lang.ExceptionInfo
-        #"tags should be a set"
+        #"tags should be a map"
         (sut/validate-statsd (assoc statsd/default-opts :tags '("service:maverick")))))))

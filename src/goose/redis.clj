@@ -31,7 +31,7 @@
 (defn scan-set [conn set cursor count]
   (wcar* conn (car/sscan set cursor "COUNT" count)))
 
-(defn size-of-set [conn set]
+(defn set-size [conn set]
   (wcar* conn (car/scard set)))
 
 ; ============== Lists ===============
@@ -76,5 +76,5 @@
       (doseq [[queue jobs] (group-by grouping-fn jobs)]
         (apply car/rpush queue jobs)))))
 
-(defn set-size [conn sorted-set]
+(defn sorted-set-size [conn sorted-set]
   (wcar* conn (car/zcount sorted-set "-inf" "+inf")))

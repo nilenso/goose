@@ -35,7 +35,7 @@
    :queue                          (:test queues)
    :graceful-shutdown-sec          1
    :scheduler-polling-interval-sec 1
-   :statsd-opts                    (assoc statsd/default-opts :tags #{"env:test"})})
+   :statsd-opts                    (assoc statsd/default-opts :tags {:env "test"})})
 
 ; ======= Setup & Teardown ==========
 
