@@ -84,16 +84,30 @@
 
 ; ============== Queues ===============
 (defn- fetch-queues
-  ([redis-conn]
-   (fetch-queues redis-conn '() d/scan-initial-cursor))
-  ([redis-conn queues cursor]
+  ([conn]
+   (fetch-queues conn '() d/scan-initial-cursor))
+  ([conn queues cursor]
    (let [match-str (str d/queue-prefix "*")
-         [next scanned-queues] (scan-lists redis-conn match-str cursor 1)
+         [next scanned-queues] (scan-lists conn match-str cursor 1)
          queues (concat queues scanned-queues)]
      (if (= next d/scan-initial-cursor)
        queues
-       #(fetch-queues redis-conn queues next)))))
+       #(fetch-queues conn queues next)))))
 
 (defn list-queues
-  [redis-conn]
-  (trampoline fetch-queues redis-conn))
+  [conn]
+  (trampoline fetch-queues conn))
+
+(defn find-in-queue
+  ([conn queue match? limit]
+   (find-in-queue conn queue match? limit '() (dec (list-size conn queue))))
+  ([conn queue match? limit jobs i]
+   (if (neg? i)
+     jobs
+     (let [job (first (wcar* conn (car/lrange queue i i)))]
+       (if (match? job)
+         (let [jobs (conj jobs job)]
+           (if (< (count jobs) limit)
+             (recur conn queue match? limit jobs (dec i))
+             jobs))
+         (recur conn queue match? limit jobs (dec i)))))))

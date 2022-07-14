@@ -1,16 +1,16 @@
 (ns goose.api.queues
   (:require
+    [goose.api.init :as init]
     [goose.defaults :as d]
     [goose.redis :as r]))
 
-(defn list-all
-  [{:keys [redis-conn]}]
-  (map d/affix-queue (r/list-queues redis-conn)))
+(defn list-all []
+  (map d/affix-queue (r/list-queues @init/broker-conn)))
 
 (defn size
-  [{:keys [redis-conn]} queue]
-  (r/list-size redis-conn (d/prefix-queue queue)))
+  [queue]
+  (r/list-size @init/broker-conn (d/prefix-queue queue)))
 
 (defn clear
-  [{:keys [redis-conn]} queue]
-  (= 1 (r/del-keys redis-conn [(d/prefix-queue queue)])))
+  [queue]
+  (= 1 (r/del-keys @init/broker-conn [(d/prefix-queue queue)])))
