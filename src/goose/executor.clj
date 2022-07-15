@@ -24,4 +24,4 @@
     (u/log-on-exceptions
       (when-let [job (r/dequeue-and-preserve redis-conn prefixed-queue in-progress-queue)]
         (call opts job)
-        (r/remove-from-list redis-conn in-progress-queue job)))))
+        (r/del-from-list redis-conn in-progress-queue job)))))
