@@ -33,3 +33,8 @@
 
 (defn delete-all []
   (= 1 (r/del-keys @init/broker-conn [d/prefixed-schedule-queue])))
+
+(defn mas [])
+(goose.client/perform-async client-opts `mas)
+(find-by-id "9e4aaed6-bbb6-41d5-81bb-5d31600bb258")
+(count (find-by-pattern (fn [_] true)))

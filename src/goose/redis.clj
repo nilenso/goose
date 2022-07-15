@@ -13,6 +13,19 @@
 
 (defmacro wcar* [conn & body] `(car/wcar ~conn ~@body))
 
+; ============ Utils =============
+
+(defn iterate-redis
+  ([conn iterate-fn match? stop? cursor]
+   (iterate-redis conn iterate-fn match? stop? cursor '()))
+  ([conn iterate-fn match? stop? cursor elements]
+   (let [[next scanned-elements] (iterate-fn cursor)
+         filtered-elements (filter match? scanned-elements)
+         elements (concat elements filtered-elements)]
+     (if (stop? next (count elements))
+       elements
+       #(iterate-redis conn iterate-fn match? stop? next elements)))))
+
 ; ============ Key-Value =============
 (defn set-key-val [conn key value expire-sec]
   (wcar* conn (car/set key value "EX" expire-sec)))
@@ -67,20 +80,12 @@
 (defn scan-for-lists [conn cursor match count]
   (wcar* conn (car/scan cursor "MATCH" match "COUNT" count "TYPE" "LIST")))
 
-(defn- fetch-queues
-  ([conn]
-   (fetch-queues conn '() d/scan-initial-cursor))
-  ([conn queues cursor]
-   (let [match-str (str d/queue-prefix "*")
-         [next scanned-queues] (scan-for-lists conn cursor match-str 1)
-         queues (concat queues scanned-queues)]
-     (if (= next d/scan-initial-cursor)
-       queues
-       #(fetch-queues conn queues next)))))
-
 (defn list-queues
   [conn]
-  (trampoline fetch-queues conn))
+  (let [match-str (str d/queue-prefix "*")
+        iterate-fn (fn [cursor] (scan-for-lists conn cursor match-str 1))
+        stop? (fn [cursor _] (= cursor d/scan-initial-cursor))]
+    (trampoline iterate-redis conn iterate-fn identity stop? d/scan-initial-cursor)))
 
 (defn iterate-list
   [conn queue match? limit jobs index]
@@ -96,7 +101,13 @@
 
 (defn find-in-list
   ([conn queue match? limit]
-   (trampoline iterate-list conn queue match? limit '() (dec (list-size conn queue)))))
+   (let [iterate-fn (fn [index]
+                      (when (< -1 index)
+                        [(dec index) (wcar* conn (car/lrange queue index index))]))
+         stop? (fn [index count]
+                 (or (neg? index)
+                     (>= count limit)))]
+     (trampoline iterate-redis conn iterate-fn match? stop? (dec (list-size conn queue))))))
 
 ; ============ Sorted-Sets ============
 (def ^:private sorted-set-min "-inf")
@@ -132,21 +143,16 @@
 (defn scan-sorted-set [conn sorted-set cursor match count]
   (wcar* conn (car/zscan sorted-set cursor "MATCH" match "COUNT" count)))
 
-(defn- iterate-sorted-set
-  [conn sorted-set match? limit jobs cursor]
-  (let
-    [[next scanned-pairs] (scan-sorted-set conn sorted-set cursor "*" 1)
-     scanned-jobs (take-nth 2 scanned-pairs)
-     matched-jobs (filter match? scanned-jobs)
-     jobs (concat jobs matched-jobs)]
-    (if (or (>= (count jobs) limit)
-            (= next d/scan-initial-cursor))
-      jobs
-      #(iterate-sorted-set conn sorted-set match? limit jobs next))))
-
 (defn find-in-sorted-set
   ([conn sorted-set match? limit]
-   (trampoline iterate-sorted-set conn sorted-set match? limit '() d/scan-initial-cursor)))
+   (let [iterate-fn (fn [cursor]
+                      (let [[next scanned-pairs] (scan-sorted-set conn sorted-set cursor "*" 1)
+                            scanned-jobs (take-nth 2 scanned-pairs)]
+                        [next scanned-jobs]))
+         stop? (fn [next count]
+                 (or (>= count limit)
+                     (= next d/scan-initial-cursor)))]
+     (trampoline iterate-redis conn iterate-fn match? stop? d/scan-initial-cursor))))
 
 (defn del-from-sorted-set [conn sorted-set member]
   (wcar* conn (car/zrem sorted-set member)))

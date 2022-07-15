@@ -27,12 +27,10 @@
       (r/del-from-set redis-conn process-set process))))
 
 (defn- fetch-processes
-  [redis-conn process-set processes cursor]
-  (let [[next scanned-processes] (r/scan-sets redis-conn process-set cursor 1)
-        processes (concat processes scanned-processes)]
-    (if (= next d/scan-initial-cursor)
-      processes
-      #(fetch-processes redis-conn process-set processes next))))
+  [redis-conn process-set]
+  (let [iterate-fn (fn [cursor] (r/scan-sets redis-conn process-set cursor 1))
+        stop? (fn [cursor _] (= cursor d/scan-initial-cursor))]
+    (trampoline r/iterate-redis redis-conn iterate-fn identity stop? d/scan-initial-cursor)))
 
 (defn run
   [{:keys [id internal-thread-pool redis-conn process-set]
@@ -40,7 +38,7 @@
   (u/while-pool
     internal-thread-pool
     (u/log-on-exceptions
-      (let [processes (trampoline fetch-processes redis-conn process-set '() d/scan-initial-cursor)]
+      (let [processes (fetch-processes redis-conn process-set)]
         (check-liveness opts (remove #{id} processes)))
       (let [process-count (heartbeat/process-count redis-conn process-set)]
         ; Sleep for (process-count) minutes + jitters.
