@@ -1,4 +1,4 @@
-(ns goose.api.init
+(ns goose.api.api
   (:require
     [goose.brokers.broker :as broker]
     [goose.redis :as r]))

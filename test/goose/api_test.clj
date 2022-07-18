@@ -2,51 +2,24 @@
   (:require
     [goose.api.dead-jobs :as dead-jobs]
     [goose.api.enqueued-jobs :as enqueued-jobs]
-    [goose.api.init :as init]
     [goose.api.scheduled-jobs :as scheduled-jobs]
     [goose.client :as c]
-    [goose.redis :as r]
+    [goose.test-utils :as tu]
     [goose.worker :as w]
 
-    [clojure.test :refer [deftest is testing use-fixtures]]
-    [taoensso.carmine :as car]))
-
-(def redis-url
-  (let [host (or (System/getenv "GOOSE_TEST_REDIS_HOST") "localhost")
-        port (or (System/getenv "GOOSE_TEST_REDIS_PORT") "6379")]
-    (str "redis://" host ":" port)))
-
-(def broker-opts
-  {:redis {:redis-url redis-url}})
+    [clojure.test :refer [deftest is testing use-fixtures]]))
 
 (def queue "api-test")
 (def client-opts
   {:queue       queue
-   :broker-opts broker-opts})
-(def worker-opts
-  {:threads                        1
-   :broker-opts                    broker-opts
-   :queue                          queue
-   :graceful-shutdown-sec          1
-   :scheduler-polling-interval-sec 1
-   :statsd-opts                    {:disabled? true}})
+   :broker-opts tu/broker-opts})
 
-(defn- clear-redis []
-  (let [redis-conn (r/conn (:redis broker-opts))]
-    (r/wcar* redis-conn (car/flushdb "sync"))))
-
-(defn- fixture
-  [f]
-  (clear-redis)
-  (init/initialize broker-opts)
-  (f)
-  (clear-redis))
-
-(use-fixtures :once fixture)
+; ======= Setup & Teardown ==========
+(use-fixtures :once tu/fixture)
 
 (defn bg-fn [id] (inc id))
 (deftest enqueued-jobs-test
-  (testing "enqueued-jobs APIF"
+  (testing "enqueued-jobs API"
     (let [job-id (c/perform-async client-opts `bg-fn 1)
           _ (c/perform-async client-opts `bg-fn 2)]
       (is (= (list queue) (enqueued-jobs/list-all-queues)))
@@ -55,7 +28,7 @@
         (is (= 1 (count (enqueued-jobs/find-by-pattern queue match?)))))
 
       (let [job (enqueued-jobs/find-by-id queue job-id)]
-        (is (some? (enqueued-jobs/enqueue-front-for-execution queue job)))
+        (is (some? (enqueued-jobs/prioritise-execution queue job)))
         (is (true? (enqueued-jobs/delete queue job))))
 
       (is (true? (enqueued-jobs/delete-all queue))))))
@@ -70,7 +43,7 @@
         (is (= 2 (count (scheduled-jobs/find-by-pattern match?)))))
 
       (let [job (scheduled-jobs/find-by-id job-id1)]
-        (is (some? (scheduled-jobs/enqueue-front-for-execution job)))
+        (is (some? (scheduled-jobs/prioritise-execution job)))
         (is (false? (scheduled-jobs/delete job)))
         (is (true? (enqueued-jobs/delete queue job))))
 
@@ -87,7 +60,7 @@
 
 (deftest dead-jobs-test
   (testing "dead-jobs API"
-    (let [worker (w/start worker-opts)
+    (let [worker (w/start (tu/worker-opts queue))
           job-opts (update-in client-opts [:retry-opts] assoc
                               :max-retries 0
                               :death-handler-fn-sym `death-handler)
@@ -103,7 +76,7 @@
       (is (= 4 (dead-jobs/size)))
 
       (let [dead-job (dead-jobs/find-by-id dead-job-id)]
-        (is some? (dead-jobs/enqueue-front-for-execution dead-job))
+        (is some? (dead-jobs/re-enqueue-for-execution dead-job))
         (is true? (enqueued-jobs/delete queue dead-job)))
 
       (let [match? (fn [job] (= (list 0) (:args job)))
