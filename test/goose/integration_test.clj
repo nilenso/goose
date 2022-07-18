@@ -46,13 +46,13 @@
   (let [redis-conn (r/conn (:redis broker-opts))]
     (r/wcar* redis-conn (car/flushdb "sync"))))
 
-(defn- integration-test-fixture
+(defn- fixture
   [f]
   (clear-redis)
   (f)
   (clear-redis))
 
-(use-fixtures :once integration-test-fixture)
+(use-fixtures :once fixture)
 
 ; ======= TEST: Async execution ==========
 (def perform-async-fn-executed (promise))
