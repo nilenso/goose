@@ -21,6 +21,7 @@
    args]
   (let [retry-opts (retry/prefix-queue-if-present retry-opts)
         broker-opts (broker/create broker-opts)]
+    (println retry-opts)
     (v/validate-enqueue-params
       broker-opts queue
       retry-opts

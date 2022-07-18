@@ -25,7 +25,7 @@
   (let [conn @init/broker-conn
         sorted-set d/prefixed-schedule-queue]
     (when (r/sorted-set-score conn sorted-set job)
-      (r/enqueue-due-jobs-to-front conn sorted-set job scheduler/execution-queue))))
+      (r/enqueue-due-jobs-to-front conn sorted-set (list job) scheduler/execution-queue))))
 
 (defn delete
   [job]

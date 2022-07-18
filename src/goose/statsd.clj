@@ -24,7 +24,8 @@
 (defonce dead-queue-size "dead-queue.size")
 
 (defonce default-opts
-         {:host        "127.0.0.1"
+         {:disabled?   false
+          :host        "127.0.0.1"
           :port        8125
           :sample-rate 1.0
           :tags        {}})
@@ -36,8 +37,8 @@
     tags))
 
 (defn initialize
-  [{:keys [host port]}]
-  (when (and host port)
+  [{:keys [host port disabled?]}]
+  (when-not disabled?
     (statsd/setup host port :prefix prefix)))
 
 (defn increment-recovery
