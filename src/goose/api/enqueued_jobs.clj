@@ -37,7 +37,3 @@
 (defn delete-all
   [queue]
   (= 1 (r/del-keys @init/broker-conn [(d/prefix-queue queue)])))
-
-(find-by-id "default" "4382be97-1843-41a1-8226-84d0fe45e4f5")
-(count (find-by-pattern "default" (fn [_] true)))
-(list-all-queues)
