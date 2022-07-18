@@ -70,13 +70,13 @@
       (let [match? (fn [job] (not= (list 1) (:args job)))]
         (is (= 2 (count (scheduled-jobs/find-by-pattern match?)))))
 
-      (let [job1 (scheduled-jobs/find-by-id job-id1)]
-        (is (some? (scheduled-jobs/enqueue-front-for-execution job1)))
-        (is (false? (scheduled-jobs/delete job1)))
-        (is (true? (enqueued-jobs/delete queue job1))))
+      (let [job (scheduled-jobs/find-by-id job-id1)]
+        (is (some? (scheduled-jobs/enqueue-front-for-execution job)))
+        (is (false? (scheduled-jobs/delete job)))
+        (is (true? (enqueued-jobs/delete queue job))))
 
-      (let [job2 (scheduled-jobs/find-by-id job-id2)]
-        (is (true? (scheduled-jobs/delete job2))))
+      (let [job (scheduled-jobs/find-by-id job-id2)]
+        (is (true? (scheduled-jobs/delete job))))
 
       (is (true? (scheduled-jobs/delete-all))))))
 
@@ -95,10 +95,12 @@
           dead-job-id (c/perform-async job-opts `dead-fn -1)
           _ (doseq [id (range 3)] (c/perform-async job-opts `dead-fn id))
           circuit-breaker (atom 0)]
+      ; Wait until 4 jobs have died after execution.
       (while (and (> 4 @circuit-breaker) (not= 4 @dead-fn-atom))
         (swap! circuit-breaker inc)
         (Thread/sleep 40))
       (w/stop worker)
+
       (is (= 4 (dead-jobs/size)))
 
       (let [dead-job (dead-jobs/find-by-id dead-job-id)]

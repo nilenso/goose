@@ -2,7 +2,6 @@
   (:require
     [goose.client :as c]
     [goose.defaults :as d]
-    [goose.middleware :as middleware]
     [goose.redis :as r]
     [goose.retry :as retry]
     [goose.statsd :as statsd]
@@ -35,7 +34,6 @@
   {:threads                        1
    :broker-opts                    broker-opts
    :queue                          (:test queues)
-   :middlewares                    middleware/specimen
    :graceful-shutdown-sec          1
    :scheduler-polling-interval-sec 1
    :statsd-opts                    (assoc statsd/default-opts :tags {:env "test"})})

@@ -5,7 +5,6 @@
     [goose.executor :as executor]
     [goose.heartbeat :as heartbeat]
     [goose.job :as job]
-    [goose.middleware :as middleware]
     [goose.orphan-checker :as orphan-checker]
     [goose.redis :as r]
     [goose.retry :as retry]
@@ -53,7 +52,6 @@
 (defonce default-opts
          {:threads                        1
           :queue                          d/default-queue
-          :middlewares                    middleware/specimen
           :scheduler-polling-interval-sec 5
           :graceful-shutdown-sec          30
           :statsd-opts                    statsd/default-opts})
