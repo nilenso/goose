@@ -6,7 +6,6 @@
     [goose.api.scheduled-jobs :as scheduled-jobs]
     [goose.client :as c]
     [goose.redis :as r]
-    [goose.statsd :as statsd]
     [goose.worker :as w]
 
     [clojure.test :refer [deftest is testing use-fixtures]]
@@ -30,7 +29,7 @@
    :queue                          queue
    :graceful-shutdown-sec          1
    :scheduler-polling-interval-sec 1
-   :statsd-opts                    (assoc statsd/default-opts :disabled? true)})
+   :statsd-opts                    {:disabled? true}})
 
 (defn- clear-redis []
   (let [redis-conn (r/conn (:redis broker-opts))]
