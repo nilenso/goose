@@ -74,7 +74,8 @@
     :as                            job}
    ex]
   (let [death-handler (u/require-resolve death-handler-fn-sym)
-        dead-at (or last-retried-at (u/epoch-time-ms))]
+        dead-at (or last-retried-at (u/epoch-time-ms))
+        job (assoc-in job [:state :dead-at] dead-at)]
     (u/log-on-exceptions (death-handler job ex))
     (when-not skip-dead-queue
       (r/enqueue-sorted-set redis-conn d/prefixed-dead-queue dead-at job))))

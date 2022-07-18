@@ -2,24 +2,13 @@
   (:require
     [goose.client :as c]
     [goose.defaults :as d]
-    [goose.middleware :as middleware]
-    [goose.redis :as r]
     [goose.retry :as retry]
-    [goose.statsd :as statsd]
+    [goose.test-utils :as tu]
     [goose.worker :as w]
 
-    [clojure.test :refer [deftest is testing use-fixtures]]
-    [taoensso.carmine :as car])
+    [clojure.test :refer [deftest is testing use-fixtures]])
   (:import
     [java.util UUID]))
-
-(def redis-url
-  (let [host (or (System/getenv "GOOSE_TEST_REDIS_HOST") "localhost")
-        port (or (System/getenv "GOOSE_TEST_REDIS_PORT") "6379")]
-    (str "redis://" host ":" port)))
-
-(def broker-opts
-  {:redis {:redis-url redis-url}})
 
 (def queues
   {:test     "test"
@@ -29,30 +18,10 @@
 
 (def client-opts
   {:queue       (:test queues)
-   :broker-opts broker-opts})
-
-(def worker-opts
-  {:threads                        1
-   :broker-opts                    broker-opts
-   :queue                          (:test queues)
-   :middlewares                    middleware/specimen
-   :graceful-shutdown-sec          1
-   :scheduler-polling-interval-sec 1
-   :statsd-opts                    (assoc statsd/default-opts :tags {:env "test"})})
+   :broker-opts tu/broker-opts})
 
 ; ======= Setup & Teardown ==========
-
-(defn- clear-redis []
-  (let [redis-conn (r/conn (:redis broker-opts))]
-    (r/wcar* redis-conn (car/flushdb "sync"))))
-
-(defn- integration-test-fixture
-  [f]
-  (clear-redis)
-  (f)
-  (clear-redis))
-
-(use-fixtures :once integration-test-fixture)
+(use-fixtures :once tu/fixture)
 
 ; ======= TEST: Async execution ==========
 (def perform-async-fn-executed (promise))
@@ -62,7 +31,7 @@
 (deftest perform-async-test
   (testing "Goose executes a function asynchronously"
     (let [arg "async-execute-test"
-          worker (w/start worker-opts)]
+          worker (w/start (tu/worker-opts (:test queues)))]
       (is (uuid? (UUID/fromString (c/perform-async client-opts `perform-async-fn arg))))
       (is (= arg (deref perform-async-fn-executed 100 :e2e-test-timed-out)))
       (w/stop worker))))
@@ -76,7 +45,7 @@
   (testing "Goose executes a function scheduled in future"
     (let [arg "scheduling-test"
           _ (c/perform-in-sec client-opts 1 `perform-in-sec-fn arg)
-          scheduler (w/start worker-opts)]
+          scheduler (w/start (tu/worker-opts (:test queues)))]
       (is (= arg (deref perform-in-sec-fn-executed 4100 :scheduler-test-timed-out)))
       (w/stop scheduler))))
 
@@ -89,7 +58,7 @@
   (testing "Goose executes a function scheduled in past"
     (let [arg "scheduling-test"
           _ (c/perform-at client-opts (java.util.Date.) `perform-at-fn arg)
-          scheduler (w/start worker-opts)]
+          scheduler (w/start (tu/worker-opts (:test queues)))]
       (is (= arg (deref perform-at-fn-executed 100 :scheduler-test-timed-out)))
       (w/stop scheduler))))
 
@@ -120,8 +89,8 @@
                        :retry-delay-sec-fn-sym `immediate-retry
                        :retry-queue (:retry queues)
                        :error-handler-fn-sym `retry-test-error-handler)
-          worker (w/start worker-opts)
-          retry-worker (w/start (assoc worker-opts :queue (:retry queues)))]
+          worker (w/start (tu/worker-opts (:test queues)))
+          retry-worker (w/start (tu/worker-opts (:retry queues)))]
       (c/perform-async (assoc client-opts :retry-opts retry-opts) `erroneous-fn arg)
 
       (is (= java.lang.ArithmeticException (type (deref failed-on-execute 100 :retry-execute-timed-out))))
@@ -150,7 +119,7 @@
                           :retry-delay-sec-fn-sym `immediate-retry
                           :error-handler-fn-sym `dead-test-error-handler
                           :death-handler-fn-sym `dead-test-death-handler)
-          worker (w/start worker-opts)]
+          worker (w/start (tu/worker-opts (:test queues)))]
       (c/perform-async (assoc client-opts :retry-opts dead-job-opts) `dead-fn)
 
       (is (= java.lang.ArithmeticException (type (deref job-dead 4200 :death-handler-timed-out))))

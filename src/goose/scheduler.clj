@@ -15,7 +15,7 @@
       (r/enqueue-front redis-conn queue scheduled-job)
       (r/enqueue-sorted-set redis-conn d/prefixed-schedule-queue epoch-ms scheduled-job))))
 
-(defn- execution-queue
+(defn execution-queue
   [job]
   (if (get-in job [:state :error])
     (or (get-in job [:retry-opts :retry-queue]) (:queue job))

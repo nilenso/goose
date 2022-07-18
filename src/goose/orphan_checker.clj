@@ -4,8 +4,7 @@
     [goose.heartbeat :as heartbeat]
     [goose.redis :as r]
     [goose.statsd :as statsd]
-    [goose.utils :as u]
-    [goose.defaults :as d]))
+    [goose.utils :as u]))
 
 (defn- reenqueue-orphan-jobs
   [{:keys [redis-conn prefixed-queue statsd-opts] :as opts}
@@ -26,25 +25,16 @@
         opts (executor/preservation-queue process))
       (r/del-from-set redis-conn process-set process))))
 
-(defn- fetch-processes
-  [redis-conn process-set processes cursor]
-  (let [[next scanned-processes] (r/scan-sets redis-conn process-set cursor 1)
-        processes (concat processes scanned-processes)]
-    (if (= next d/scan-initial-cursor)
-      processes
-      #(fetch-processes redis-conn process-set processes next))))
-
 (defn run
   [{:keys [id internal-thread-pool redis-conn process-set]
     :as   opts}]
   (u/while-pool
     internal-thread-pool
     (u/log-on-exceptions
-      (let [processes (trampoline fetch-processes redis-conn process-set '() d/scan-initial-cursor)]
+      (let [processes (r/find-in-set redis-conn process-set identity)]
         (check-liveness opts (remove #{id} processes)))
       (let [process-count (heartbeat/process-count redis-conn process-set)]
         ; Sleep for (process-count) minutes + jitters.
         ; On average, Goose checks for orphan jobs every 1 minute.
         (Thread/sleep (* 1000 (+ (* 60 process-count)
                                  (rand-int process-count))))))))
-

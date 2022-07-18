@@ -5,7 +5,6 @@
     [goose.executor :as executor]
     [goose.heartbeat :as heartbeat]
     [goose.job :as job]
-    [goose.middleware :as middleware]
     [goose.orphan-checker :as orphan-checker]
     [goose.redis :as r]
     [goose.retry :as retry]
@@ -25,7 +24,7 @@
 (defn- internal-stop
   "Gracefully shuts down the worker threadpool."
   [{:keys [thread-pool internal-thread-pool graceful-shutdown-sec]
-    :as opts}]
+    :as   opts}]
   ; Set state of thread-pool to SHUTDOWN.
   (log/warn "Shutting down thread-pool...")
   (cp/shutdown thread-pool)
@@ -53,10 +52,20 @@
 (defonce default-opts
          {:threads                        1
           :queue                          d/default-queue
-          :middlewares                    middleware/specimen
           :scheduler-polling-interval-sec 5
           :graceful-shutdown-sec          30
           :statsd-opts                    statsd/default-opts})
+
+(defn- chain-middlewares
+  [middlewares]
+  (let
+    [call (-> executor/execute-job
+              (statsd/wrap-metrics)
+              (job/wrap-latency)
+              (retry/wrap-failure))]
+    (if middlewares
+      (-> call (middlewares))
+      call)))
 
 (defn start
   "Starts a threadpool for worker."
@@ -73,11 +82,7 @@
           internal-thread-pool (cp/threadpool d/internal-thread-pool-size)
           random-str (subs (str (random-uuid)) 24 36) ; Take last 12 chars of UUID.
           id (str queue ":" (u/hostname) ":" random-str)
-          call (-> executor/execute-job
-                   (statsd/wrap-metrics)
-                   (job/wrap-latency)
-                   (retry/wrap-failure)
-                   (middlewares))
+          call (chain-middlewares middlewares)
           opts {:id                             id
                 :thread-pool                    thread-pool
                 :internal-thread-pool           internal-thread-pool
