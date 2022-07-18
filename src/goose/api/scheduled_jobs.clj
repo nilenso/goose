@@ -21,6 +21,8 @@
   (r/sorted-set-size @init/broker-conn d/prefixed-schedule-queue))
 
 (defn enqueue-front-for-execution
+  "Move a job after verification of existence.
+  Hence, this accepts only 1 job instead of multiple."
   [job]
   (let [conn @init/broker-conn
         sorted-set d/prefixed-schedule-queue]

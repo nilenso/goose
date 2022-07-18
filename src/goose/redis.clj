@@ -43,11 +43,17 @@
 (defn del-from-set [conn set member]
   (wcar* conn (car/srem set member)))
 
-(defn scan-sets [conn set cursor count]
+(defn scan-set [conn set cursor count]
   (wcar* conn (car/sscan set cursor "COUNT" count)))
 
 (defn set-size [conn set]
   (wcar* conn (car/scard set)))
+
+(defn find-in-set
+  [conn set match?]
+  (let [iterate-fn (fn [cursor] (scan-set conn set cursor 1))
+        stop? (fn [cursor _] (= cursor d/scan-initial-cursor))]
+    (trampoline iterate-redis conn iterate-fn match? stop? d/scan-initial-cursor)))
 
 ; ============== Lists ===============
 ; ===== FRONT/BACK -> RIGHT/LEFT =====
@@ -77,27 +83,14 @@
 (defn list-size [conn list]
   (wcar* conn (car/llen list)))
 
-(defn scan-for-lists [conn cursor match count]
+(defn- scan-for-lists [conn cursor match count]
   (wcar* conn (car/scan cursor "MATCH" match "COUNT" count "TYPE" "LIST")))
 
-(defn list-queues
-  [conn]
-  (let [match-str (str d/queue-prefix "*")
-        iterate-fn (fn [cursor] (scan-for-lists conn cursor match-str 1))
+(defn find-lists
+  [conn match-str]
+  (let [iterate-fn (fn [cursor] (scan-for-lists conn cursor match-str 1))
         stop? (fn [cursor _] (= cursor d/scan-initial-cursor))]
     (trampoline iterate-redis conn iterate-fn identity stop? d/scan-initial-cursor)))
-
-(defn iterate-list
-  [conn queue match? limit jobs index]
-  (if (neg? index)
-    jobs
-    (let [job (first (wcar* conn (car/lrange queue index index)))]
-      (if (match? job)
-        (let [jobs (conj jobs job)]
-          (if (>= (count jobs) limit)
-            jobs
-            #(iterate-list conn queue match? limit jobs (dec index))))
-        #(iterate-list conn queue match? limit jobs (dec index))))))
 
 (defn find-in-list
   ([conn queue match? limit]

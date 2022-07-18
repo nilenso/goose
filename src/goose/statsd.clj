@@ -84,7 +84,7 @@
 
 (defn- get-enqueued-size
   [redis-conn]
-  (let [queues (r/list-queues redis-conn)
+  (let [queues (r/find-lists redis-conn (str d/queue-prefix "*"))
         enqueued-list (statsd-queues-size redis-conn queues)
         enqueued-map (into {} enqueued-list)
         total-size (reduce + (vals enqueued-map))]

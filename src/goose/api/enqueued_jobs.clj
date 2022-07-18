@@ -5,7 +5,7 @@
     [goose.redis :as r]))
 
 (defn list-all-queues []
-  (map d/affix-queue (r/list-queues @init/broker-conn)))
+  (map d/affix-queue (r/find-lists @init/broker-conn (str d/queue-prefix "*"))))
 
 (defn find-by-id
   [queue id]
@@ -24,6 +24,8 @@
   (r/list-size @init/broker-conn (d/prefix-queue queue)))
 
 (defn enqueue-front-for-execution
+  "Move a job after verification of existence.
+  Hence, this accepts only 1 job instead of multiple."
   [queue job]
   (let [prefixed-queue (d/prefix-queue queue)
         conn @init/broker-conn]

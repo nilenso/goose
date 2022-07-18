@@ -17,11 +17,12 @@
   ([match? limit]
    (r/find-in-sorted-set @init/broker-conn d/prefixed-dead-queue match? limit)))
 
-(defn size
-  []
+(defn size []
   (r/sorted-set-size @init/broker-conn d/prefixed-dead-queue))
 
 (defn enqueue-front-for-execution
+  "Move a job after verification of existence.
+  Hence, this accepts only 1 job instead of multiple."
   [job]
   (let [conn @init/broker-conn
         sorted-set d/prefixed-dead-queue]
