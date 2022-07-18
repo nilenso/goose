@@ -3,8 +3,7 @@
     [goose.api.init :as init]
     [goose.defaults :as d]
     [goose.redis :as r]
-    [goose.scheduler :as scheduler]
-    [goose.utils :as u]))
+    [goose.scheduler :as scheduler]))
 
 (defn find-by-id
   [id]
@@ -34,9 +33,9 @@
   (= 1 (r/del-from-sorted-set @init/broker-conn d/prefixed-dead-queue job)))
 
 (defn delete-older-than
-  [date]
+  [epoch-time-ms]
   (< 0 (r/del-from-sorted-set-until
-         @init/broker-conn d/prefixed-dead-queue (u/epoch-time-ms date))))
+         @init/broker-conn d/prefixed-dead-queue epoch-time-ms)))
 
 (defn delete-all []
   (= 1 (r/del-keys @init/broker-conn [d/prefixed-dead-queue])))

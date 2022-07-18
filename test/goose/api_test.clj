@@ -6,13 +6,11 @@
     [goose.api.scheduled-jobs :as scheduled-jobs]
     [goose.client :as c]
     [goose.redis :as r]
-    [goose.retry :as retry]
+    [goose.statsd :as statsd]
     [goose.worker :as w]
 
-
     [clojure.test :refer [deftest is testing use-fixtures]]
-    [taoensso.carmine :as car]
-    [goose.statsd :as statsd]))
+    [taoensso.carmine :as car]))
 
 (def redis-url
   (let [host (or (System/getenv "GOOSE_TEST_REDIS_HOST") "localhost")
@@ -43,81 +41,77 @@
   (clear-redis)
   (init/initialize broker-opts)
   (f)
-  ;(clear-redis)
-  )
+  (clear-redis))
 
 (use-fixtures :once fixture)
 
-(defn bg-fn1 [])
-
-(defn bg-fn2 [])
-(defn match?
-  [job]
-  (= `bg-fn2 (:execute-fn-sym job)))
-
+(defn bg-fn [id] (inc id))
 (deftest enqueued-jobs-test
   (testing "enqueued-jobs APIF"
-    (let [job-id (c/perform-async client-opts `bg-fn1)
-          job (enqueued-jobs/find-by-id queue job-id)
-
-          _ (c/perform-async client-opts `bg-fn2)]
+    (let [job-id (c/perform-async client-opts `bg-fn 1)
+          _ (c/perform-async client-opts `bg-fn 2)]
       (is (= (list queue) (enqueued-jobs/list-all-queues)))
       (is (= 2 (enqueued-jobs/size queue)))
-      (is (= 1 (count (enqueued-jobs/find-by-pattern queue match?))))
+      (let [match? (fn [job] (= (list 2) (:args job)))]
+        (is (= 1 (count (enqueued-jobs/find-by-pattern queue match?)))))
 
-      (is (some? (enqueued-jobs/enqueue-front-for-execution queue job)))
+      (let [job (enqueued-jobs/find-by-id queue job-id)]
+        (is (some? (enqueued-jobs/enqueue-front-for-execution queue job)))
+        (is (true? (enqueued-jobs/delete queue job))))
 
-      (is (true? (enqueued-jobs/delete queue job)))
       (is (true? (enqueued-jobs/delete-all queue))))))
 
 (deftest scheduled-jobs-test
   (testing "scheduled-jobs API"
-    (let [job-id1 (c/perform-in-sec client-opts 10 `bg-fn1)
-          job1 (scheduled-jobs/find-by-id job-id1)
-
-          job-id2 (c/perform-in-sec client-opts 10 `bg-fn2)
-          job2 (scheduled-jobs/find-by-id job-id2)
-          _ (c/perform-in-sec client-opts 10 `bg-fn2)]
+    (let [job-id1 (c/perform-in-sec client-opts 10 `bg-fn 1)
+          job-id2 (c/perform-in-sec client-opts 10 `bg-fn 2)
+          _ (c/perform-in-sec client-opts 10 `bg-fn 3)]
       (is (= 3 (scheduled-jobs/size)))
-      (is (= 2 (count (scheduled-jobs/find-by-pattern match?))))
+      (let [match? (fn [job] (not= (list 1) (:args job)))]
+        (is (= 2 (count (scheduled-jobs/find-by-pattern match?)))))
 
-      (is (some? (scheduled-jobs/enqueue-front-for-execution job1)))
-      (is (false? (scheduled-jobs/delete job1)))
-      (is (true? (enqueued-jobs/delete queue job1)))
+      (let [job1 (scheduled-jobs/find-by-id job-id1)]
+        (is (some? (scheduled-jobs/enqueue-front-for-execution job1)))
+        (is (false? (scheduled-jobs/delete job1)))
+        (is (true? (enqueued-jobs/delete queue job1))))
 
-      (is (true? (scheduled-jobs/delete job2)))
+      (let [job2 (scheduled-jobs/find-by-id job-id2)]
+        (is (true? (scheduled-jobs/delete job2))))
+
       (is (true? (scheduled-jobs/delete-all))))))
 
-(defn dead-test-error-handler [_ _])
-(def dead-fn1-executed (promise))
-(defn dead-fn1 []
-  (deliver dead-fn1-executed true)
-  (throw (Exception. "i'll die")))
-(def dead-fn2-executed (promise))
-(defn dead-fn2 []
-  (deliver dead-fn2-executed true)
-  (throw (Exception. "i'll die")))
-
-(defn dead-jobs-match?
-  [job]
-  (= `dead-fn2 (:execute-fn-sym job)))
-
-(def dead-job-opts
-  (assoc retry/default-opts
-    :max-retries 0
-    :death-handler-fn-sym `dead-test-error-handler))
+(defn death-handler [_ _])
+(def dead-fn-atom (atom 0))
+(defn dead-fn [id]
+  (swap! dead-fn-atom inc)
+  (throw (Exception. (str id " died!"))))
 
 (deftest dead-jobs-test
   (testing "dead-jobs API"
     (let [worker (w/start worker-opts)
-          dead-job-id1 (c/perform-async (assoc client-opts :retry-opts dead-job-opts) `dead-fn1)
-          dead-job-id2 (c/perform-async (assoc client-opts :retry-opts dead-job-opts) `dead-fn2)]
-      (is (true? (deref dead-fn1-executed 100 :api-test-timed-out)))
-      (is (true? (deref dead-fn2-executed 10 :api-test-timed-out)))
+          job-opts (update-in client-opts [:retry-opts] assoc
+                              :max-retries 0
+                              :death-handler-fn-sym `death-handler)
+          dead-job-id (c/perform-async job-opts `dead-fn -1)
+          _ (doseq [id (range 3)] (c/perform-async job-opts `dead-fn id))
+          circuit-breaker (atom 0)]
+      (while (and (> 4 @circuit-breaker) (not= 4 @dead-fn-atom))
+        (swap! circuit-breaker inc)
+        (Thread/sleep 40))
       (w/stop worker)
-      (is (= 2 (dead-jobs/size)))
+      (is (= 4 (dead-jobs/size)))
 
-      (let [dead-job1 (dead-jobs/find-by-id dead-job-id1)]
-        (is some? (dead-jobs/enqueue-front-for-execution dead-job1)))
-      (let [[dead-job2] (dead-jobs/find-by-pattern dead-jobs-match?)]
-        (is (true? (dead-jobs/delete dead-job2)))))))
+      (let [dead-job (dead-jobs/find-by-id dead-job-id)]
+        (is some? (dead-jobs/enqueue-front-for-execution dead-job))
+        (is true? (enqueued-jobs/delete queue dead-job)))
+
+      (let [match? (fn [job] (= (list 0) (:args job)))
+            [dead-job] (dead-jobs/find-by-pattern match?)
+            dead-at (get-in dead-job [:state :dead-at])]
+        (is (true? (dead-jobs/delete-older-than dead-at))))
+
+      (let [match? (fn [job] (= (list 1) (:args job)))
+            [dead-job] (dead-jobs/find-by-pattern match?)]
+        (is (true? (dead-jobs/delete dead-job))))
+
+      (is (true? (dead-jobs/delete-all))))))
