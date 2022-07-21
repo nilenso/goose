@@ -6,8 +6,7 @@
     [goose.redis :as r]
     [goose.retry :as retry]
     [goose.scheduler :as scheduler]
-    [goose.utils :as u]
-    [goose.validations.client :as v]))
+    [goose.utils :as u]))
 
 (defonce default-opts
          {:queue      d/default-queue
@@ -36,10 +35,8 @@
 
 (defn perform-at
   [opts date-time execute-fn-sym & args]
-  (v/validate-perform-at-params date-time)
   (enqueue opts (u/epoch-time-ms date-time) execute-fn-sym args))
 
 (defn perform-in-sec
   [opts sec execute-fn-sym & args]
-  (v/validate-perform-in-sec-params sec)
   (enqueue opts (u/add-sec sec) execute-fn-sym args))
