@@ -24,7 +24,7 @@
 (defonce dead-queue-size "dead-queue.size")
 
 (defonce default-opts
-         {:disabled?   false
+         {:enabled?    true
           :host        "127.0.0.1"
           :port        8125
           :sample-rate 1.0
@@ -37,25 +37,24 @@
     tags))
 
 (defn initialize
-  [{:keys [host port disabled?]}]
-  (when-not disabled?
+  [{:keys [host port enabled?]}]
+  (when enabled?
     (statsd/setup host port :prefix prefix)))
 
 (defn increment-recovery
-  [{:keys [disabled? sample-rate tags]} execute-fn-sym]
-  (when-not disabled?
+  [{:keys [enabled? sample-rate tags]} execute-fn-sym]
+  (when enabled?
     (let [tags-list (build-tags (assoc tags :function execute-fn-sym))]
       (statsd/increment jobs-recovered 1 sample-rate tags-list))))
 
 (defn wrap-metrics
   [call]
-  (fn [{{:keys [disabled? sample-rate tags]} :statsd-opts
-        :as                                  opts}
+  (fn [{{:keys [enabled? sample-rate tags]} :statsd-opts
+        :as                                 opts}
        {[job-type latency] :latency
         :keys              [execute-fn-sym]
         :as                job}]
-    (if disabled?
-      (call opts job)
+    (if enabled?
       (let [tags-list (build-tags (assoc tags :function execute-fn-sym))
             start (u/epoch-time-ms)]
         (try
@@ -70,7 +69,8 @@
             (statsd/increment jobs-failure 1 sample-rate tags-list)
             (throw ex))
           (finally
-            (statsd/timing execution-time (- (u/epoch-time-ms) start) sample-rate tags-list)))))))
+            (statsd/timing execution-time (- (u/epoch-time-ms) start) sample-rate tags-list))))
+      (call opts job))))
 
 (defn- statsd-queue-metric
   [queue]
@@ -94,9 +94,9 @@
     (assoc queues-size-map total-enqueued-size total-size)))
 
 (defn run
-  [{{:keys [disabled? sample-rate tags]} :statsd-opts
-    :keys                                [internal-thread-pool redis-conn process-set]}]
-  (when-not disabled?
+  [{{:keys [enabled? sample-rate tags]} :statsd-opts
+    :keys                               [internal-thread-pool redis-conn process-set]}]
+  (when enabled?
     (u/while-pool
       internal-thread-pool
       (u/log-on-exceptions
