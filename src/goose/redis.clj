@@ -8,8 +8,8 @@
 
 (def ^:private atomic-lock-attempts 100)
 (defn conn
-  [{:keys [redis-url redis-pool-opts]}]
-  {:pool redis-pool-opts :spec {:uri redis-url}})
+  [{:keys [url pool-opts]}]
+  {:pool pool-opts :spec {:uri url}})
 
 (defmacro wcar* [conn & body] `(car/wcar ~conn ~@body))
 

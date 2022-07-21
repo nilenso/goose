@@ -31,9 +31,9 @@
                  :death-handler-fn-sym `dummy-handler}))
 
 (def redis-conn
-  (r/conn {:redis-url       d/default-redis-url
-           :redis-pool-opts {:max-total-per-key 1
-                             :max-idle-per-key  1}}))
+  (r/conn {:url       d/default-redis-url
+           :pool-opts {:max-total-per-key 1
+                       :max-idle-per-key  1}}))
 (def redis-proxy "localhost:6380")
 
 (defn- flush-redis []
@@ -53,13 +53,15 @@
 
 (defn bulk-enqueue
   [count]
-  (dotimes [n count]
-    (c/perform-async client-opts `my-fn n)))
+  (let [start-time (u/epoch-time-ms)]
+    (dotimes [n count]
+      (c/perform-async client-opts `my-fn n))
+    (println "Jobs enqueued:" count "Milliseconds taken:" (- (u/epoch-time-ms) start-time))))
 
 (defn dequeue
   [count]
   (let [worker-opts (assoc w/default-opts
-                      :broker-opts {:redis {:redis-url (str "redis://" redis-proxy)}}
+                      :broker-opts {:redis {:url (str "redis://" redis-proxy)}}
                       :threads 25)
         start-time (u/epoch-time-ms)
         worker (w/start worker-opts)]

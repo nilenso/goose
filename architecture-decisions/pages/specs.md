@@ -1,13 +1,15 @@
-ADR: Validations
+ADR: Specs
 =============
 
-Intent: If user uses Goose in incorrect manner, either throw an exception or have a way for user to find out exact error
+Intent: If user uses Goose in incorrect manner, either throw an exception or have a way for user to find out error
 
 Rationale
 ---------
 
 - We're [re-consider current approach to validations](https://github.com/nilenso/goose/issues/23)
 - [Claypoole](https://github.com/clj-commons/claypoole) also does validations same way as Goose
+- Specs have an option of lowering overhead in production. Job enqueue performance improves by 20% when validations are disabled
+- When doing validations manually, most code was checking for non-matching patterns. Spec definitions are more intuitive & reader-friendly
 
 Avoided Designs
 ---------

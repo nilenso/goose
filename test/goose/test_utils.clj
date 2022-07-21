@@ -10,7 +10,7 @@
   (let [host (or (System/getenv "GOOSE_TEST_REDIS_HOST") "localhost")
         port (or (System/getenv "GOOSE_TEST_REDIS_PORT") "6379")]
     (str "redis://" host ":" port)))
-(def broker-opts {:redis {:redis-url redis-url}})
+(def broker-opts {:redis {:url redis-url}})
 (def redis-conn (r/conn (:redis broker-opts)))
 (defn clear-redis [] (r/wcar* redis-conn (car/flushdb "SYNC")))
 

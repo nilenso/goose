@@ -2,7 +2,6 @@
   (:require
     [goose.defaults :as d]
     [goose.utils :as u]
-    [goose.validations.queue :refer [validate-queue]]
 
     [clojure.string :as str]))
 
@@ -11,7 +10,6 @@
            retry-queue skip-dead-queue
            error-handler-fn-sym death-handler-fn-sym]
     :as   retry-opts}]
-  (when retry-queue (validate-queue retry-queue))
   (when-let
     [validation-error
      (cond

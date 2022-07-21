@@ -57,7 +57,7 @@
 (deftest perform-at-test
   (testing "Goose executes a function scheduled in past"
     (let [arg "scheduling-test"
-          _ (c/perform-at client-opts (java.util.Date.) `perform-at-fn arg)
+          _ (c/perform-at client-opts (java.time.Instant/now) `perform-at-fn arg)
           scheduler (w/start (tu/worker-opts (:test queues)))]
       (is (= arg (deref perform-at-fn-executed 100 :scheduler-test-timed-out)))
       (w/stop scheduler))))
