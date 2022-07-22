@@ -18,7 +18,8 @@
   [f]
   (clear-redis)
   (api/initialize broker-opts)
-  (f))
+  (f)
+  (clear-redis))
 
 (defn worker-opts
   [queue]
@@ -28,3 +29,11 @@
    :graceful-shutdown-sec          1
    :scheduler-polling-interval-sec 1
    :statsd-opts                    (assoc statsd/default-opts :tags {:env "test"})})
+
+(defn spec-problem
+  [ex]
+  (:pred (first (:clojure.spec.alpha/problems (ex-data ex)))))
+
+(defn spec-path
+  [ex]
+  (:path (first (:clojure.spec.alpha/problems (ex-data ex)))))

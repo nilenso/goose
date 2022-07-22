@@ -12,8 +12,8 @@
     [taoensso.carmine.connections :refer [IConnectionPool]]))
 
 ; ========== Qualified Function Symbols ==============
-(s/def ::fn? #(fn? @(resolve %)))
-(s/def ::fn-sym (s/and qualified-symbol? resolve ::fn?))
+(defn- resolvable-fn? [func] (fn? @(resolve func)))
+(s/def ::fn-sym (s/and qualified-symbol? resolve resolvable-fn?))
 
 ; ========== Redis ==============
 ; Valid Redis URL patterns:
@@ -33,11 +33,11 @@
   (s/or :redis (s/keys :req-un [:broker/redis])))
 
 ; ============== Queue ==============
+(defn- unprefixed? [queue] (not (string/starts-with? queue d/queue-prefix)))
+(defn- not-protected? [queue] (not (string/includes? d/protected-queues queue)))
+(defn- len-below-1000? [queue] (< (count queue) 1000))
 (s/def ::queue
-  (s/and string?
-         #(< (count %) 1000)
-         #(not (string/starts-with? % d/queue-prefix))
-         #(not (string/includes? d/protected-queues %))))
+  (s/and string? len-below-1000? unprefixed? not-protected?))
 
 ; ============== Retry Opts ==============
 (s/def :retry/max-retries nat-int?)

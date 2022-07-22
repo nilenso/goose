@@ -6,7 +6,8 @@
  :paths   ["src"]
 
  :aliases {:test {:extra-paths ["test"]
-                  :extra-deps  {io.github.cognitect-labs/test-runner {:git/tag "v0.5.0" :git/sha "b3fd0d2"}}
+                  :extra-deps  {io.github.cognitect-labs/test-runner {:git/tag "v0.5.0" :git/sha "b3fd0d2"}
+                                expectations/clojure-test {:mvn/version "1.2.1"}}
                   :exec-fn     test-runner/test-and-shutdown}
            :repl {:extra-deps {vvvvalvalval/scope-capture  {:mvn/version "0.3.2"}
                                org.clojure/tools.namespace {:mvn/version "1.3.0"}}}

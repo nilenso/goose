@@ -6,13 +6,15 @@
     [goose.client :as c]
     [goose.test-utils :as tu]
     [goose.worker :as w]
+    [goose.retry :as retry]
 
     [clojure.test :refer [deftest is testing use-fixtures]]))
 
 (def queue "api-test")
 (def client-opts
   {:queue       queue
-   :broker-opts tu/broker-opts})
+   :broker-opts tu/broker-opts
+   :retry-opts  retry/default-opts})
 
 ; ======= Setup & Teardown ==========
 (use-fixtures :once tu/fixture)
