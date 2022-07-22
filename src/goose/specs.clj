@@ -19,18 +19,18 @@
 ; Valid Redis URL patterns:
 ; #1: redis://username:password@hostname:0-65353
 ; #2: redis://hostname:0-65353
-(s/def :redis/url #(re-matches #"redis://.+:[0-9]{1,5}" %))
-(s/def :redis/pool-opts
+(s/def :goose.specs.redis/url #(re-matches #"redis://.+:[0-9]{1,5}" %))
+(s/def :goose.specs.redis/pool-opts
   (s/or :none #(= :none %)
         :map #(map? %)
         :iconn-pool #(satisfies? IConnectionPool %)))
 
 ; ============== Brokers ==============
-(s/def :broker/redis
-  (s/keys :req-un [:redis/url]
-          :opt-un [:redis/pool-opts]))
+(s/def ::redis
+  (s/keys :req-un [:goose.specs.redis/url]
+          :opt-un [:goose.specs.redis/pool-opts]))
 (s/def ::broker-opts
-  (s/or :redis (s/keys :req-un [:broker/redis])))
+  (s/or :redis (s/keys :req-un [::redis])))
 
 ; ============== Queue ==============
 (defn- unprefixed? [queue] (not (string/starts-with? queue d/queue-prefix)))
@@ -40,28 +40,28 @@
   (s/and string? len-below-1000? unprefixed? not-protected?))
 
 ; ============== Retry Opts ==============
-(s/def :retry/max-retries nat-int?)
-(s/def :retry/retry-delay-sec-fn-sym
+(s/def ::max-retries nat-int?)
+(s/def ::retry-delay-sec-fn-sym
   (s/and ::fn-sym
          #(pos-int? (@(resolve %) 0))))
-(s/def :retry/retry-queue (s/nilable ::queue))
-(s/def :retry/handler-fn-sym
+(s/def ::retry-queue (s/nilable ::queue))
+(s/def ::handler-fn-sym
   (s/and ::fn-sym
          #(some #{2} (u/arities %))))
-(s/def :retry/error-handler-fn-sym :retry/handler-fn-sym)
-(s/def :retry/death-handler-fn-sym :retry/handler-fn-sym)
-(s/def :retry/skip-dead-queue boolean?)
+(s/def ::error-handler-fn-sym ::handler-fn-sym)
+(s/def ::death-handler-fn-sym ::handler-fn-sym)
+(s/def ::skip-dead-queue boolean?)
 (s/def ::retry-opts
-  (s/keys :req-un [:retry/max-retries :retry/retry-delay-sec-fn-sym :retry/skip-dead-queue
-                   :retry/error-handler-fn-sym :retry/death-handler-fn-sym]
-          :opt-un [:retry/retry-queue]))
+  (s/keys :req-un [::max-retries ::retry-delay-sec-fn-sym ::skip-dead-queue
+                   ::error-handler-fn-sym ::death-handler-fn-sym]
+          :opt-un [::retry-queue]))
 
 ; ============== Statsd Opts ==============
-(s/def :statsd/enabled? boolean?)
-(s/def :statsd/host string?)
-(s/def :statsd/port pos-int?)
-(s/def :statsd/sample-rate double?)
-(s/def :statsd/tags map?)
+(s/def :goose.specs.statsd/enabled? boolean?)
+(s/def :goose.specs.statsd/host string?)
+(s/def :goose.specs.statsd/port pos-int?)
+(s/def :goose.specs.statsd/sample-rate double?)
+(s/def :goose.specs.statsd/tags map?)
 (s/def ::statsd-opts
   (s/keys :req-un [:statsd/enabled?]
           :opt-un [:statsd/host :statsd/port
@@ -71,38 +71,38 @@
 (defn- serializable? [arg]
   (try (= arg (nippy/thaw (nippy/freeze arg)))
        (catch Exception _ false)))
-(s/def :args/serializable? serializable?)
-(s/def ::c/opts (s/keys :req-un [::broker-opts ::queue]
-                        :opt-un [::retry-opts]))
+(s/def ::args-serializable? serializable?)
+(s/def ::client-opts (s/keys :req-un [::broker-opts ::queue]
+                             :opt-un [::retry-opts]))
 
 ; ============== Worker ==============
 (s/def ::threads pos-int?)
 (s/def ::graceful-shutdown-sec pos-int?)
 (s/def ::scheduler-polling-interval-sec pos-int?)
-(s/def ::w/opts (s/keys :req-un [::broker-opts ::queue ::threads
+(s/def ::worker-opts (s/keys :req-un [::broker-opts ::queue ::threads
                                  ::scheduler-polling-interval-sec
                                  ::graceful-shutdown-sec ::statsd-opts]))
 
 ; ============== FDEFs ==============
 (s/fdef c/perform-async
-        :args (s/cat :opts ::c/opts
+        :args (s/cat :opts ::client-opts
                      :execute-fn-sym ::fn-sym
-                     :args (s/* :args/serializable?)))
+                     :args (s/* ::args-serializable?)))
 
 (s/fdef c/perform-at
-        :args (s/cat :opts ::c/opts
+        :args (s/cat :opts ::client-opts
                      :date-time inst?
                      :execute-fn-sym ::fn-sym
-                     :args (s/* :args/serializable?)))
+                     :args (s/* ::args-serializable?)))
 
 (s/fdef c/perform-in-sec
-        :args (s/cat :opts ::c/opts
+        :args (s/cat :opts ::client-opts
                      :sec int?
                      :execute-fn-sym ::fn-sym
-                     :args (s/* :args/serializable?)))
+                     :args (s/* ::args-serializable?)))
 
 (s/fdef w/start
-        :args (s/cat :opts ::w/opts))
+        :args (s/cat :opts ::worker-opts))
 
 (def ^:private fns-with-specs
   [`c/perform-async
