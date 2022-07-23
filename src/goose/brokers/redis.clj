@@ -9,13 +9,13 @@
   (let [redis-opts {:url url}]
     (if thread-count
       (assoc redis-opts
-        :pool-opts {:max-total-per-key      (+ d/internal-thread-pool-size thread-count)
-                          :max-idle-per-key (+ d/internal-thread-pool-size thread-count)
-                          :min-idle-per-key d/internal-thread-pool-size})
+        :pool-opts {:max-total-per-key (+ d/internal-thread-pool-size thread-count)
+                    :max-idle-per-key  (+ d/internal-thread-pool-size thread-count)
+                    :min-idle-per-key  d/internal-thread-pool-size})
       (assoc redis-opts
-        :pool-opts {:max-total-per-key      d/client-redis-pool-size
-                          :max-idle-per-key d/client-redis-pool-size
-                          :min-idle-per-key 1}))))
+        :pool-opts {:max-total-per-key d/client-redis-pool-size
+                    :max-idle-per-key  d/client-redis-pool-size
+                    :min-idle-per-key  1}))))
 
 (defn new
   [{:keys [url pool-opts] :as opts}

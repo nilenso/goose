@@ -8,12 +8,11 @@
     [clojure.spec.alpha :as s]
     [clojure.spec.test.alpha :as st]
     [clojure.string :as string]
-    [taoensso.nippy :as nippy]
-    [taoensso.carmine.connections :refer [IConnectionPool]]))
+    [taoensso.carmine.connections :refer [IConnectionPool]]
+    [taoensso.nippy :as nippy]))
 
 ; ========== Qualified Function Symbols ==============
-(defn- resolvable-fn? [func] (fn? @(resolve func)))
-(s/def ::fn-sym (s/and qualified-symbol? resolve resolvable-fn?))
+(s/def ::fn-sym (s/and qualified-symbol? resolve #(fn? @(resolve %))))
 
 ; ========== Redis ==============
 ; Valid Redis URL patterns:
@@ -22,7 +21,7 @@
 (s/def :goose.specs.redis/url #(re-matches #"redis://.+:[0-9]{1,5}" %))
 (s/def :goose.specs.redis/pool-opts
   (s/or :none #(= :none %)
-        :map #(map? %)
+        :map map?
         :iconn-pool #(satisfies? IConnectionPool %)))
 
 ; ============== Brokers ==============
@@ -30,14 +29,14 @@
   (s/keys :req-un [:goose.specs.redis/url]
           :opt-un [:goose.specs.redis/pool-opts]))
 (s/def ::broker-opts
-  (s/or :redis (s/keys :req-un [::redis])))
+  (s/and
+    #(= 1 (count %))
+    (s/or :redis (s/keys :req-un [::redis]))))
 
 ; ============== Queue ==============
 (defn- unprefixed? [queue] (not (string/starts-with? queue d/queue-prefix)))
 (defn- not-protected? [queue] (not (string/includes? d/protected-queues queue)))
-(defn- len-below-1000? [queue] (< (count queue) 1000))
-(s/def ::queue
-  (s/and string? len-below-1000? unprefixed? not-protected?))
+(s/def ::queue (s/and string? #(< (count %) 1000) unprefixed? not-protected?))
 
 ; ============== Retry Opts ==============
 (s/def ::max-retries nat-int?)
@@ -68,10 +67,9 @@
                    :statsd/sample-rate :statsd/tags]))
 
 ; ============== Client ==============
-(defn- serializable? [arg]
-  (try (= arg (nippy/thaw (nippy/freeze arg)))
-       (catch Exception _ false)))
-(s/def ::args-serializable? serializable?)
+(s/def ::args-serializable?
+  #(try (= % (nippy/thaw (nippy/freeze %)))
+        (catch Exception _ false)))
 (s/def ::client-opts (s/keys :req-un [::broker-opts ::queue]
                              :opt-un [::retry-opts]))
 
@@ -80,8 +78,8 @@
 (s/def ::graceful-shutdown-sec pos-int?)
 (s/def ::scheduler-polling-interval-sec pos-int?)
 (s/def ::worker-opts (s/keys :req-un [::broker-opts ::queue ::threads
-                                 ::scheduler-polling-interval-sec
-                                 ::graceful-shutdown-sec ::statsd-opts]))
+                                      ::scheduler-polling-interval-sec
+                                      ::graceful-shutdown-sec ::statsd-opts]))
 
 ; ============== FDEFs ==============
 (s/fdef c/perform-async
