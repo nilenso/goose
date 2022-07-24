@@ -1,6 +1,5 @@
 (ns test-runner
-  (:require
-    [cognitect.test-runner.api :as test-runner]))
+  (:require [cognitect.test-runner.api :as test-runner]))
 
 (defn test-and-shutdown
   [_]

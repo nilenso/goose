@@ -15,8 +15,9 @@
   (specs/instrument)
   (are [sut]
     (is
-      (thrown?
+      (thrown-with-msg?
         clojure.lang.ExceptionInfo
+        #"Call to goose.* did not conform to spec."
         (sut)))
 
     ; :execute-fn-sym
