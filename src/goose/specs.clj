@@ -62,9 +62,11 @@
 (s/def :goose.specs.statsd/sample-rate double?)
 (s/def :goose.specs.statsd/tags map?)
 (s/def ::statsd-opts
-  (s/keys :req-un [:statsd/enabled?]
-          :opt-un [:statsd/host :statsd/port
-                   :statsd/sample-rate :statsd/tags]))
+  (s/keys :req-un [:goose.specs.statsd/enabled?]
+          :opt-un [:goose.specs.statsd/host
+                   :goose.specs.statsd/port
+                   :goose.specs.statsd/tags
+                   :goose.specs.statsd/sample-rate]))
 
 ; ============== Client ==============
 (s/def ::args-serializable?

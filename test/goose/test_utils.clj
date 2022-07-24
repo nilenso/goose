@@ -1,8 +1,11 @@
 (ns goose.test-utils
   (:require
     [goose.api.api :as api]
-    [goose.statsd :as statsd]
+    [goose.defaults :as d]
     [goose.redis :as r]
+    [goose.retry :as retry]
+    [goose.statsd :as statsd]
+    [goose.specs :as specs]
 
     [taoensso.carmine :as car]))
 
@@ -21,15 +24,19 @@
 
 (defn fixture
   [f]
+  (specs/instrument)
   (clear-redis)
   (api/initialize broker-opts)
+
   (f)
+
   (clear-redis))
 
 (def queue "test")
 (def client-opts
   {:broker-opts broker-opts
-   :queue       queue})
+   :queue       queue
+   :retry-opts  retry/default-opts})
 
 (def worker-opts
   {:threads                        1
@@ -38,11 +45,3 @@
    :graceful-shutdown-sec          1
    :scheduler-polling-interval-sec 1
    :statsd-opts                    (assoc statsd/default-opts :tags {:env "test"})})
-
-(defn spec-problem
-  [ex]
-  (:pred (first (:clojure.spec.alpha/problems (ex-data ex)))))
-
-(defn spec-path
-  [ex]
-  (:path (first (:clojure.spec.alpha/problems (ex-data ex)))))
