@@ -40,20 +40,21 @@
 
 ; ============== Retry Opts ==============
 (s/def ::max-retries nat-int?)
-(s/def ::retry-delay-sec-fn-sym
-  (s/and ::fn-sym
-         #(pos-int? (@(resolve %) 0))))
 (s/def ::retry-queue (s/nilable ::queue))
-(s/def ::handler-fn-sym
-  (s/and ::fn-sym
-         #(some #{2} (u/arities %))))
-(s/def ::error-handler-fn-sym ::handler-fn-sym)
-(s/def ::death-handler-fn-sym ::handler-fn-sym)
 (s/def ::skip-dead-queue boolean?)
+(s/def ::retry-delay-sec-fn-sym
+  (s/and ::fn-sym #(some #{1} (u/arities %))))
+(s/def ::error-handler-fn-sym
+  (s/and ::fn-sym #(some #{2} (u/arities %))))
+(s/def ::death-handler-fn-sym
+  (s/and ::fn-sym #(some #{2} (u/arities %))))
 (s/def ::retry-opts
-  (s/keys :req-un [::max-retries ::retry-delay-sec-fn-sym ::skip-dead-queue
-                   ::error-handler-fn-sym ::death-handler-fn-sym]
-          :opt-un [::retry-queue]))
+  (s/and
+    (s/map-of #{:max-retries :retry-delay-sec-fn-sym :skip-dead-queue
+                :retry-queue :error-handler-fn-sym :death-handler-fn-sym} any?)
+    (s/keys :req-un [::max-retries ::retry-delay-sec-fn-sym ::skip-dead-queue
+                     ::error-handler-fn-sym ::death-handler-fn-sym]
+            :opt-un [::retry-queue])))
 
 ; ============== Statsd Opts ==============
 (s/def :goose.specs.statsd/enabled? boolean?)
