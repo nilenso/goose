@@ -11,7 +11,6 @@
     [goose.scheduler :as scheduler]
     [goose.statsd :as statsd]
     [goose.utils :as u]
-    [goose.validations.worker :refer [validate-worker-params]]
 
     [clojure.tools.logging :as log]
     [com.climate.claypoole :as cp])
@@ -73,39 +72,36 @@
            queue scheduler-polling-interval-sec
            middlewares graceful-shutdown-sec]}]
   (let [broker-opts (broker/create broker-opts threads)
-        statsd-opts (assoc-in statsd-opts [:tags :queue] queue)]
-    (validate-worker-params
-      broker-opts queue threads statsd-opts
-      graceful-shutdown-sec scheduler-polling-interval-sec)
-    (let [thread-pool (cp/threadpool threads)
-          ; Internal threadpool for scheduler, orphan-checker & heartbeat.
-          internal-thread-pool (cp/threadpool d/internal-thread-pool-size)
-          random-str (subs (str (random-uuid)) 24 36) ; Take last 12 chars of UUID.
-          id (str queue ":" (u/hostname) ":" random-str)
-          call (chain-middlewares middlewares)
-          opts {:id                             id
-                :thread-pool                    thread-pool
-                :internal-thread-pool           internal-thread-pool
-                :redis-conn                     (r/conn broker-opts)
-                :call                           call
-                :statsd-opts                    statsd-opts
+        statsd-opts (assoc-in statsd-opts [:tags :queue] queue)
+        thread-pool (cp/threadpool threads)
+        ; Internal threadpool for scheduler, orphan-checker & heartbeat.
+        internal-thread-pool (cp/threadpool d/internal-thread-pool-size)
+        random-str (subs (str (random-uuid)) 24 36) ; Take last 12 chars of UUID.
+        id (str queue ":" (u/hostname) ":" random-str)
+        call (chain-middlewares middlewares)
+        opts {:id                             id
+              :thread-pool                    thread-pool
+              :internal-thread-pool           internal-thread-pool
+              :redis-conn                     (r/conn broker-opts)
+              :call                           call
+              :statsd-opts                    statsd-opts
 
-                :process-set                    (str d/process-prefix queue)
-                :prefixed-queue                 (d/prefix-queue queue)
-                :in-progress-queue              (executor/preservation-queue id)
+              :process-set                    (str d/process-prefix queue)
+              :prefixed-queue                 (d/prefix-queue queue)
+              :in-progress-queue              (executor/preservation-queue id)
 
-                :graceful-shutdown-sec          graceful-shutdown-sec
-                :scheduler-polling-interval-sec scheduler-polling-interval-sec}]
+              :graceful-shutdown-sec          graceful-shutdown-sec
+              :scheduler-polling-interval-sec scheduler-polling-interval-sec}]
 
-      (statsd/initialize statsd-opts)
+    (statsd/initialize statsd-opts)
 
-      (cp/future internal-thread-pool (statsd/run opts))
-      (cp/future internal-thread-pool (heartbeat/run opts))
-      (cp/future internal-thread-pool (scheduler/run opts))
-      (cp/future internal-thread-pool (orphan-checker/run opts))
+    (cp/future internal-thread-pool (statsd/run opts))
+    (cp/future internal-thread-pool (heartbeat/run opts))
+    (cp/future internal-thread-pool (scheduler/run opts))
+    (cp/future internal-thread-pool (orphan-checker/run opts))
 
-      (dotimes [_ threads]
-        (cp/future thread-pool (executor/run opts)))
+    (dotimes [_ threads]
+      (cp/future thread-pool (executor/run opts)))
 
-      (reify Shutdown
-        (stop [_] (internal-stop opts))))))
+    (reify Shutdown
+      (stop [_] (internal-stop opts)))))
