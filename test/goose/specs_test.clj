@@ -20,6 +20,7 @@
         #"Call to goose.* did not conform to spec."
         (sut)))
 
+    ; Client specs
     ; :execute-fn-sym
     #(c/perform-async tu/client-opts 'my-fn)
     #(c/perform-async tu/client-opts `my-fn)
@@ -67,5 +68,5 @@
     #(w/start (assoc-in tu/worker-opts [:broker-opts :rmq] "2-brokers"))
 
     ; :redis-opts
-    #(c/perform-async (assoc-in tu/client-opts [:broker-opts :redis :url] "invalid-url") `tu/my-fn)
+    #(c/perform-async (assoc-in tu/client-opts [:broker-opts :redis :url] :invalid-url) `tu/my-fn)
     #(w/start (assoc-in tu/worker-opts [:broker-opts :redis :pool-opts] "invalid-pool-opts"))))
