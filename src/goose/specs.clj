@@ -15,10 +15,7 @@
 (s/def ::fn-sym (s/and qualified-symbol? resolve #(fn? @(resolve %))))
 
 ; ========== Redis ==============
-; Valid Redis URL patterns:
-; #1: redis://username:password@hostname:0-65353
-; #2: redis://hostname:0-65353
-(s/def :goose.specs.redis/url #(re-matches #"redis://.+:[0-9]{1,5}" %))
+(s/def :goose.specs.redis/url string?)
 (s/def :goose.specs.redis/pool-opts
   (s/or :none #(= :none %)
         :map map?
