@@ -9,7 +9,6 @@ Rationale
   - Simple 
   - Popular
   - Well-maintained
-  
 
 Avoided Designs
 ---------
