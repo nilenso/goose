@@ -37,14 +37,16 @@
     tags))
 
 (defn initialize
-  [{:keys [host port enabled?]}]
+  [{:keys [enabled? host port]}]
   (when enabled?
     (statsd/setup host port :prefix prefix)))
 
 (defn increment-recovery
-  [{:keys [enabled? sample-rate tags]} execute-fn-sym]
+  [{:keys [enabled? sample-rate tags]}
+   {:keys [execute-fn-sym queue]}]
   (when enabled?
-    (let [tags-list (build-tags (assoc tags :function execute-fn-sym))]
+    (let [tags-list (build-tags (assoc tags :function execute-fn-sym
+                                            :queue queue))]
       (statsd/increment jobs-recovered 1 sample-rate tags-list))))
 
 (defn wrap-metrics
@@ -52,10 +54,11 @@
   (fn [{{:keys [enabled? sample-rate tags]} :statsd-opts
         :as                                 opts}
        {[job-type latency] :latency
-        :keys              [execute-fn-sym]
+        :keys              [execute-fn-sym queue]
         :as                job}]
     (if enabled?
-      (let [tags-list (build-tags (assoc tags :function execute-fn-sym))
+      (let [tags-list (build-tags (assoc tags :function execute-fn-sym
+                                              :queue queue))
             start (u/epoch-time-ms)]
         (try
           (statsd/increment jobs-processed 1 sample-rate tags-list)
@@ -100,15 +103,14 @@
     (u/while-pool
       internal-thread-pool
       (u/log-on-exceptions
-        (let [tags-list (build-tags (dissoc tags :queue))
+        (let [tags-list (build-tags tags)
               size-map {schedule-queue-size (redis-cmds/sorted-set-size redis-conn d/prefixed-schedule-queue)
-                        dead-queue-size     (redis-cmds/sorted-set-size redis-conn d/prefixed-dead-queue)}
-              process-count (heartbeat/process-count redis-conn process-set)]
+                        dead-queue-size     (redis-cmds/sorted-set-size redis-conn d/prefixed-dead-queue)}]
           ; Using doseq instead of map, because map is lazy.
           (doseq [[k v] (merge size-map (get-size-of-all-queues redis-conn))]
             (statsd/gauge k v sample-rate tags-list))
           ; Sleep for (process-count) minutes + jitters.
           ; On average, Goose sends queue level stats every 1 minute.
-          ; TODO: Since statsd runner sends metrics for all queues, sleep for global process-count.
-          (Thread/sleep (* 1000 (+ (* 60 process-count)
-                                   (rand-int process-count)))))))))
+          (let [process-count (heartbeat/process-count redis-conn process-set)]
+            (Thread/sleep (* 1000 (+ (* 60 process-count)
+                                     (rand-int process-count))))))))))

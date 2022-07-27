@@ -9,21 +9,21 @@
 
 (defn run-at
   [redis-conn epoch-ms
-   {:keys [queue] :as job}]
+   {:keys [prefixed-queue] :as job}]
   (let [scheduled-job (assoc job :schedule epoch-ms)]
     (if (< epoch-ms (u/epoch-time-ms))
-      (redis-cmds/enqueue-front redis-conn queue scheduled-job)
+      (redis-cmds/enqueue-front redis-conn prefixed-queue scheduled-job)
       (redis-cmds/enqueue-sorted-set redis-conn d/prefixed-schedule-queue epoch-ms scheduled-job))))
 
 (defn execution-queue
   [job]
   (if (get-in job [:state :error])
-    (or (get-in job [:retry-opts :retry-queue]) (:queue job))
-    (:queue job)))
+    (or (get-in job [:retry-opts :prefixed-retry-queue]) (:prefixed-queue job))
+    (:prefixed-queue job)))
 
 (defn run
-  [{:keys [internal-thread-pool redis-conn queue
-           scheduler-polling-interval-sec]}]
+  [{:keys [internal-thread-pool redis-conn
+           scheduler-polling-interval-sec process-set]}]
   (log/info "Polling scheduled jobs...")
   (u/while-pool
     internal-thread-pool
@@ -32,7 +32,7 @@
         (redis-cmds/enqueue-due-jobs-to-front
           redis-conn d/prefixed-schedule-queue
           jobs execution-queue)
-        (let [process-count (heartbeat/process-count redis-conn queue)]
+        (let [process-count (heartbeat/process-count redis-conn process-set)]
           ; Sleep for process-count * polling-interval + jitters
           ; On average, Goose checks for scheduled jobs
           ; every polling interval configured.

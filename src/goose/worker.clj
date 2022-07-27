@@ -72,8 +72,7 @@
   [{:keys [threads broker-opts statsd-opts
            queue scheduler-polling-interval-sec
            middlewares graceful-shutdown-sec]}]
-  (let [statsd-opts (assoc-in statsd-opts [:tags :queue] queue)
-        thread-pool (cp/threadpool threads)
+  (let [thread-pool (cp/threadpool threads)
         ; Internal threadpool for scheduler, orphan-checker & heartbeat.
         internal-thread-pool (cp/threadpool d/internal-thread-pool-size)
         random-str (subs (str (random-uuid)) 24 36) ; Take last 12 chars of UUID.

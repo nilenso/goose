@@ -28,21 +28,21 @@
           :skip-dead-queue        false
           :death-handler-fn-sym   `default-death-handler})
 
-(defn- prefix-retry-queue-if-present
+(defn- prefix-retry-queue
   [retry-opts]
   (if-let [retry-queue (:retry-queue retry-opts)]
-    (assoc retry-opts :retry-queue (d/prefix-queue retry-queue))
+    (assoc retry-opts :prefixed-retry-queue (d/prefix-queue retry-queue))
     retry-opts))
 
 (defn prefix-queue-if-present
   [opts]
   (->> opts
-       (prefix-retry-queue-if-present)
+       (prefix-retry-queue)
        (merge default-opts)))
 
 (defn- failure-state
   [{{:keys [retry-count first-failed-at]} :state} ex]
-  {:error           ex
+  {:error           (str ex)
    :last-retried-at (when first-failed-at (u/epoch-time-ms))
    :first-failed-at (or first-failed-at (u/epoch-time-ms))
    :retry-count     (if retry-count (inc retry-count) 0)})

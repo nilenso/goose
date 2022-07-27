@@ -13,7 +13,7 @@
   ; because Carmine doesn't support `LMOVE` function.
   ; https://github.com/nilenso/goose/issues/14
   (when-let [job (redis-cmds/dequeue-and-preserve redis-conn orphan-queue prefixed-queue)]
-    (statsd/increment-recovery statsd-opts (:execute-fn-sym job))
+    (statsd/increment-recovery statsd-opts job)
     #(reenqueue-orphan-jobs opts orphan-queue)))
 
 (defn- check-liveness

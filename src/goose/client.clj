@@ -23,7 +23,7 @@
   (let [redis-conn (broker/new broker-opts)
         retry-opts (retry/prefix-queue-if-present retry-opts)
         prefixed-queue (d/prefix-queue queue)
-        job (j/new execute-fn-sym args prefixed-queue retry-opts)]
+        job (j/new execute-fn-sym args queue prefixed-queue retry-opts)]
 
     (if schedule
       (scheduler/run-at redis-conn schedule job)

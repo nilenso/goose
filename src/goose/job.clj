@@ -4,11 +4,12 @@
     [goose.utils :as u]))
 
 (defn new
-  [execute-fn-sym args queue retry-opts]
+  [execute-fn-sym args queue prefixed-queue retry-opts]
   {:id             (str (random-uuid))
    :execute-fn-sym execute-fn-sym
    :args           args
    :queue          queue
+   :prefixed-queue prefixed-queue
    :retry-opts     retry-opts
    :enqueued-at    (u/epoch-time-ms)})
 
