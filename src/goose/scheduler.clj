@@ -1,8 +1,8 @@
 (ns goose.scheduler
   (:require
+    [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]
     [goose.heartbeat :as heartbeat]
-    [goose.redis :as r]
     [goose.utils :as u]
 
     [clojure.tools.logging :as log]))
@@ -12,8 +12,8 @@
    {:keys [queue] :as job}]
   (let [scheduled-job (assoc job :schedule epoch-ms)]
     (if (< epoch-ms (u/epoch-time-ms))
-      (r/enqueue-front redis-conn queue scheduled-job)
-      (r/enqueue-sorted-set redis-conn d/prefixed-schedule-queue epoch-ms scheduled-job))))
+      (redis-cmds/enqueue-front redis-conn queue scheduled-job)
+      (redis-cmds/enqueue-sorted-set redis-conn d/prefixed-schedule-queue epoch-ms scheduled-job))))
 
 (defn execution-queue
   [job]
@@ -28,8 +28,8 @@
   (u/while-pool
     internal-thread-pool
     (u/log-on-exceptions
-      (if-let [jobs (r/scheduled-jobs-due-now redis-conn d/prefixed-schedule-queue)]
-        (r/enqueue-due-jobs-to-front
+      (if-let [jobs (redis-cmds/scheduled-jobs-due-now redis-conn d/prefixed-schedule-queue)]
+        (redis-cmds/enqueue-due-jobs-to-front
           redis-conn d/prefixed-schedule-queue
           jobs execution-queue)
         (let [process-count (heartbeat/process-count redis-conn queue)]

@@ -1,12 +1,12 @@
 (ns goose.worker
   (:require
     [goose.brokers.broker :as broker]
+    [goose.brokers.redis.client :as redis-client]
     [goose.defaults :as d]
     [goose.executor :as executor]
     [goose.heartbeat :as heartbeat]
     [goose.job :as job]
     [goose.orphan-checker :as orphan-checker]
-    [goose.redis :as r]
     [goose.retry :as retry]
     [goose.scheduler :as scheduler]
     [goose.statsd :as statsd]
@@ -49,7 +49,8 @@
   (cp/shutdown! thread-pool))
 
 (defonce default-opts
-         {:threads                        1
+         {:broker-opts                    redis-client/default-opts
+          :threads                        1
           :queue                          d/default-queue
           :scheduler-polling-interval-sec 5
           :graceful-shutdown-sec          30
@@ -71,8 +72,7 @@
   [{:keys [threads broker-opts statsd-opts
            queue scheduler-polling-interval-sec
            middlewares graceful-shutdown-sec]}]
-  (let [broker-opts (broker/create broker-opts threads)
-        statsd-opts (assoc-in statsd-opts [:tags :queue] queue)
+  (let [statsd-opts (assoc-in statsd-opts [:tags :queue] queue)
         thread-pool (cp/threadpool threads)
         ; Internal threadpool for scheduler, orphan-checker & heartbeat.
         internal-thread-pool (cp/threadpool d/internal-thread-pool-size)
@@ -82,7 +82,7 @@
         opts {:id                             id
               :thread-pool                    thread-pool
               :internal-thread-pool           internal-thread-pool
-              :redis-conn                     (r/conn broker-opts)
+              :redis-conn                     (broker/new broker-opts threads)
               :call                           call
               :statsd-opts                    statsd-opts
 

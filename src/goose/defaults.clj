@@ -11,6 +11,8 @@
 (defonce heartbeat-expire-sec 60)
 (defonce scan-initial-cursor "0")
 
+(defonce redis :redis)
+
 (defonce queue-prefix "goose/queue:")
 (defonce in-progress-queue-prefix "goose/in-progress-jobs:")
 (defonce process-prefix "goose/processes:")

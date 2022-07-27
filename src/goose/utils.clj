@@ -4,9 +4,6 @@
     [clojure.tools.logging :as log]
     [com.climate.claypoole :as cp]))
 
-(defn wrap-error [error data]
-  {:errors {error data}})
-
 (defmacro log-on-exceptions
   "Catch any Exception from the body and log it."
   [& body]

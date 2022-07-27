@@ -1,11 +1,13 @@
 (ns redis.load
   (:require
+    [goose.api.enqueued-jobs :as enqueued-jobs]
+    [goose.brokers.broker :as broker]
+    [goose.brokers.redis.client :as redis-client]
+    [goose.brokers.redis.commands :as redis-cmds]
     [goose.client :as c]
-    [goose.worker :as w]
-    [goose.utils :as u]
-    [goose.redis :as r]
-    [goose.brokers.redis :as redis-broker]
     [goose.defaults :as d]
+    [goose.utils :as u]
+    [goose.worker :as w]
 
     [criterium.core :as criterium]
     [taoensso.carmine :as car])
@@ -24,20 +26,16 @@
 
 (def client-opts
   (assoc c/default-opts
-    :broker-opts {:redis redis-broker/default-opts}
     :retry-opts {:max-retries          1
                  :skip-dead-queue      true
                  :error-handler-fn-sym `dummy-handler
                  :death-handler-fn-sym `dummy-handler}))
 
-(def redis-conn
-  (r/conn {:url       d/default-redis-url
-           :pool-opts {:max-total-per-key 1
-                       :max-idle-per-key  1}}))
+(def redis-conn (broker/new redis-client/default-opts))
 (def redis-proxy "localhost:6380")
 
 (defn- flush-redis []
-  (r/wcar* redis-conn (car/flushdb "sync")))
+  (redis-cmds/wcar* redis-conn (car/flushdb "sync")))
 
 (defprotocol Toxiproxy
   (reset [_]))
@@ -61,11 +59,11 @@
 (defn dequeue
   [count]
   (let [worker-opts (assoc w/default-opts
-                      :broker-opts {:redis {:url (str "redis://" redis-proxy)}}
+                      :broker-opts {:url (str "redis://" redis-proxy) :type :redis}
                       :threads 25)
         start-time (u/epoch-time-ms)
         worker (w/start worker-opts)]
-    (while (not (= 0 (r/wcar* redis-conn (car/llen (d/prefix-queue d/default-queue)))))
+    (while (not (= 0 (enqueued-jobs/size redis-client/default-opts d/default-queue)))
       (Thread/sleep 200))
     (println "Jobs processed:" count "Milliseconds taken:" (- (u/epoch-time-ms) start-time))
 
@@ -77,8 +75,11 @@
   (flush-redis)
 
   (bulk-enqueue count)
-  (dequeue count)
+  (dequeue count))
 
+(defn shutdown-fn
+  [toxiproxy]
+  (reset toxiproxy)
   (flush-redis))
 
 (defn benchmark
@@ -89,6 +90,6 @@ We're using criterium to warm-up JVM & pre-run GC.
 Exit using ctrl-C after recording ~10 samples.
 ====================================")
   (let [toxiproxy (add-latency-to-redis)]
-    (.addShutdownHook (Runtime/getRuntime) (Thread. (fn [] (reset toxiproxy))))
+    (.addShutdownHook (Runtime/getRuntime) (Thread. #(shutdown-fn toxiproxy)))
     (criterium/bench (enqueue-dequeue (* 100 1000)))
-    (reset toxiproxy)))
+    (shutdown-fn toxiproxy)))

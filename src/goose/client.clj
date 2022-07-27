@@ -1,16 +1,18 @@
 (ns goose.client
   (:require
     [goose.brokers.broker :as broker]
+    [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]
     [goose.job :as j]
-    [goose.redis :as r]
     [goose.retry :as retry]
     [goose.scheduler :as scheduler]
-    [goose.utils :as u]))
+    [goose.utils :as u]
+    [goose.brokers.redis.client :as redis-client]))
 
 (defonce default-opts
-         {:queue      d/default-queue
-          :retry-opts retry/default-opts})
+         {:broker-opts redis-client/default-opts
+          :queue       d/default-queue
+          :retry-opts  retry/default-opts})
 
 (defn- enqueue
   [{:keys [broker-opts
@@ -18,15 +20,14 @@
    schedule
    execute-fn-sym
    args]
-  (let [retry-opts (retry/prefix-queue-if-present retry-opts)
-        broker-opts (broker/create broker-opts)
-        redis-conn (r/conn broker-opts)
+  (let [redis-conn (broker/new broker-opts)
+        retry-opts (retry/prefix-queue-if-present retry-opts)
         prefixed-queue (d/prefix-queue queue)
         job (j/new execute-fn-sym args prefixed-queue retry-opts)]
 
     (if schedule
       (scheduler/run-at redis-conn schedule job)
-      (r/enqueue-back redis-conn prefixed-queue job))
+      (redis-cmds/enqueue-back redis-conn prefixed-queue job))
     (:id job)))
 
 (defn perform-async

@@ -1,7 +1,7 @@
 (ns goose.executor
   (:require
+    [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]
-    [goose.redis :as r]
     [goose.utils :as u]
 
     [clojure.tools.logging :as log]))
@@ -22,6 +22,6 @@
   (u/while-pool
     thread-pool
     (u/log-on-exceptions
-      (when-let [job (r/dequeue-and-preserve redis-conn prefixed-queue in-progress-queue)]
+      (when-let [job (redis-cmds/dequeue-and-preserve redis-conn prefixed-queue in-progress-queue)]
         (call opts job)
-        (r/del-from-list redis-conn in-progress-queue job)))))
+        (redis-cmds/del-from-list redis-conn in-progress-queue job)))))

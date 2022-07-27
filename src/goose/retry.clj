@@ -1,7 +1,7 @@
 (ns goose.retry
   (:require
+    [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]
-    [goose.redis :as r]
     [goose.utils :as u]
 
     [clojure.tools.logging :as log]))
@@ -64,7 +64,7 @@
         retry-at (u/add-sec retry-delay-sec)
         job (assoc-in job [:state :retry-at] retry-at)]
     (u/log-on-exceptions (error-handler job ex))
-    (r/enqueue-sorted-set redis-conn d/prefixed-retry-schedule-queue retry-at job)))
+    (redis-cmds/enqueue-sorted-set redis-conn d/prefixed-retry-schedule-queue retry-at job)))
 
 (defn- bury-job
   [redis-conn
@@ -78,7 +78,7 @@
         job (assoc-in job [:state :dead-at] dead-at)]
     (u/log-on-exceptions (death-handler job ex))
     (when-not skip-dead-queue
-      (r/enqueue-sorted-set redis-conn d/prefixed-dead-queue dead-at job))))
+      (redis-cmds/enqueue-sorted-set redis-conn d/prefixed-dead-queue dead-at job))))
 
 (defn wrap-failure
   [execute]

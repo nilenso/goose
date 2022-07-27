@@ -1,4 +1,4 @@
-(ns goose.redis
+(ns goose.brokers.redis.commands
   {:no-doc true}
   (:require
     [goose.defaults :as d]
@@ -7,9 +7,6 @@
     [taoensso.carmine :as car]))
 
 (def ^:private atomic-lock-attempts 100)
-(defn conn
-  [{:keys [url pool-opts]}]
-  {:pool pool-opts :spec {:uri url}})
 
 (defmacro wcar* [conn & body] `(car/wcar ~conn ~@body))
 

@@ -32,18 +32,13 @@ Getting Started
 
 ```clojure
 (ns my-app
-  (:require
-    [goose.client :as c]
-    [goose.brokers.redis :as redis]))
+  (:require [goose.client :as c]))
 
 (defn my-background-fn
   [arg1 arg2]
   (println "my-background-fn called with" arg1 arg2))
 
-(def client-opts
-  (assoc c/default-opts
-    :broker-opts {:redis redis/default-opts}))
-(c/perform-async client-opts `my-background-fn "foo" :bar)
+(c/perform-async c/default-opts `my-background-fn "foo" :bar)
 (c/perform-in-sec client-opts 3600 `my-background-fn "scheduled" 123)
 ```
 
@@ -53,9 +48,7 @@ Getting Started
 (ns my-worker
   (:require [goose.worker :as w]))
 
-(let [worker-opts (assoc w/default-opts
-                    :broker-opts {:redis redis/default-opts})
-      worker (w/start worker-opts)]
+(let [worker (w/start w/default-opts)]
   ; ... wait for SIGINT or SIGTERM ...
   (w/stop worker))
 ```

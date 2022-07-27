@@ -1,8 +1,8 @@
 (ns goose.statsd
   (:require
+    [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]
     [goose.heartbeat :as heartbeat]
-    [goose.redis :as r]
     [goose.utils :as u]
 
     [clj-statsd :as statsd]))
@@ -82,12 +82,12 @@
     (fn
       [queue]
       [(statsd-queue-metric queue)
-       (r/list-size redis-conn queue)])
+       (redis-cmds/list-size redis-conn queue)])
     queues))
 
 (defn- get-size-of-all-queues
   [redis-conn]
-  (let [queues (r/find-lists redis-conn (str d/queue-prefix "*"))
+  (let [queues (redis-cmds/find-lists redis-conn (str d/queue-prefix "*"))
         queues-size (statsd-queues-size redis-conn queues)
         queues-size-map (into {} queues-size)
         total-size (reduce + (vals queues-size-map))]
@@ -101,8 +101,8 @@
       internal-thread-pool
       (u/log-on-exceptions
         (let [tags-list (build-tags (dissoc tags :queue))
-              size-map {schedule-queue-size (r/sorted-set-size redis-conn d/prefixed-schedule-queue)
-                        dead-queue-size     (r/sorted-set-size redis-conn d/prefixed-dead-queue)}
+              size-map {schedule-queue-size (redis-cmds/sorted-set-size redis-conn d/prefixed-schedule-queue)
+                        dead-queue-size     (redis-cmds/sorted-set-size redis-conn d/prefixed-dead-queue)}
               process-count (heartbeat/process-count redis-conn process-set)]
           ; Using doseq instead of map, because map is lazy.
           (doseq [[k v] (merge size-map (get-size-of-all-queues redis-conn))]

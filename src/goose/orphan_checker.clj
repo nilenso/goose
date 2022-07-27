@@ -1,8 +1,8 @@
 (ns goose.orphan-checker
   (:require
+    [goose.brokers.redis.commands :as redis-cmds]
     [goose.executor :as executor]
     [goose.heartbeat :as heartbeat]
-    [goose.redis :as r]
     [goose.statsd :as statsd]
     [goose.utils :as u]))
 
@@ -12,7 +12,7 @@
   ; Enqueuing in-progress jobs to front of queue isn't possible
   ; because Carmine doesn't support `LMOVE` function.
   ; https://github.com/nilenso/goose/issues/14
-  (when-let [job (r/dequeue-and-preserve redis-conn orphan-queue prefixed-queue)]
+  (when-let [job (redis-cmds/dequeue-and-preserve redis-conn orphan-queue prefixed-queue)]
     (statsd/increment-recovery statsd-opts (:execute-fn-sym job))
     #(reenqueue-orphan-jobs opts orphan-queue)))
 
@@ -23,7 +23,7 @@
       (trampoline
         reenqueue-orphan-jobs
         opts (executor/preservation-queue process))
-      (r/del-from-set redis-conn process-set process))))
+      (redis-cmds/del-from-set redis-conn process-set process))))
 
 (defn run
   [{:keys [id internal-thread-pool redis-conn process-set]
@@ -31,7 +31,7 @@
   (u/while-pool
     internal-thread-pool
     (u/log-on-exceptions
-      (let [processes (r/find-in-set redis-conn process-set identity)]
+      (let [processes (redis-cmds/find-in-set redis-conn process-set identity)]
         (check-liveness opts (remove #{id} processes)))
       (let [process-count (heartbeat/process-count redis-conn process-set)]
         ; Sleep for (process-count) minutes + jitters.
