@@ -1,45 +1,40 @@
 Goose: The sidekick for Clojure
 =========
+[![Test & Lint Workflow](https://github.com/nilenso/goose/actions/workflows/test_lint.yml/badge.svg)](https://github.com/nilenso/goose/actions/workflows/test_lint.yml)
+[![cljdoc badge](https://cljdoc.org/badge/com.nilenso/goose)](https://cljdoc.org/d/com.nilenso/goose)
 
-Simple, Reliable & Scalable background processing library for Clojure.
+*Simple, Reliable & Scalable* background processing library for Clojure.
 
 Performance
 ---------
-
-Details can be found in the [Benchmarking section](https://github.com/nilenso/goose/tree/main/perf).
+Please refer to the [Benchmarking section](https://github.com/nilenso/goose/tree/main/perf).
 
 Features
 ---------
-
-*[Simplicity is Complicated.](https://youtu.be/rFejpH_tAHM)* We've strived to make Goose as _simple_ as possible.
-
-- A *functional* interface
 - *Reliable* - Code/Hardware/Network failure won't cause data loss
-- [Cloud-Native Architecture](https://github.com/nilenso/goose/tree/main/architecture-decisions)
-- Lean, Expressive, Transparent & Extensible
-- Plug-and-play, minimal setup with *sane defaults*
+- [Transparent Design & Cloud-Native Architecture](https://github.com/nilenso/goose/tree/main/architecture-decisions)
+- [Scheduling](https://github.com/nilenso/goose/wiki/Scheduling)
+- [Error Handling & Retries](https://github.com/nilenso/goose/wiki/Error-Handling-&-Retries)
 - Concurrency & Parallelism using Java thread-pools
-- Unit, Integration & [Performance](https://github.com/nilenso/goose/tree/main/perf) Tests 🙂
+- Unit, Integration & [Performance](https://github.com/nilenso/goose/tree/main/perf) Tests
 
 Getting Started
 ---------
 
 [![Clojars Project](https://img.shields.io/clojars/v/com.nilenso/goose.svg?labelColor=283C67&color=729AD1&style=for-the-badge&logo=clojure&logoColor=fff)](https://clojars.org/com.nilenso/goose)
 
-*Note:* Goose will be ready for production usage after completion of [Project 0.2](https://github.com/orgs/nilenso/projects/1/)
-
+For details, refer to [Goose Wiki](https://github.com/nilenso/goose/wiki).
 ### Client
 
 ```clojure
 (ns my-app
   (:require [goose.client :as c]))
 
-(defn my-background-fn
+(defn my-fn
   [arg1 arg2]
-  (println "my-background-fn called with" arg1 arg2))
+  (println "my-fn called with" arg1 arg2))
 
-(c/perform-async c/default-opts `my-background-fn "foo" :bar)
-(c/perform-in-sec client-opts 3600 `my-background-fn "scheduled" 123)
+(c/perform-async c/default-opts `my-fn "foo" :bar)
 ```
 
 ### Worker
@@ -49,19 +44,18 @@ Getting Started
   (:require [goose.worker :as w]))
 
 (let [worker (w/start w/default-opts)]
-  ; ... wait for SIGINT or SIGTERM ...
+  ; ... listen for SIGINT or SIGTERM ...
   (w/stop worker))
 ```
 
-Custom Configuration
+Getting Help
 ---------
+[![Get help on Slack](http://img.shields.io/badge/slack-clojurians%20%23goose-F49109?labelColor=3c0c3c&logo=slack&style=for-the-badge)](https://clojurians.slack.com/channels/goose)
 
-Goose provisions custom configuration for Message-Broker, Priority Queues, Scheduling, Error-Handling & Retrying, Logging, & Worker Config.
-Details can be found in the respective Wikis ([awaiting completion](https://github.com/nilenso/goose/issues/40)).
+Please [open an issue](https://github.com/nilenso/goose/issues/new) or ping us on [#goose @Clojurians slack](https://clojurians.slack.com/channels/goose).
 
 Why the name "Goose"?
 ---------
-
 > 🦆 Logo loading...
 
 Goose library is named after [Nick 'Goose' Bradshaw](https://historica.fandom.com/wiki/Nick_Bradshaw), the sidekick
@@ -69,6 +63,4 @@ to [Captain Pete 'Maverick' Mitchell](https://topgun.fandom.com/wiki/Pete_Mitche
 
 License
 ---------
-
-Please see [LICENSE](https://github.com/nilenso/goose/blob/main/LICENSE) for licensing details.
-
+[![Licence](https://img.shields.io/github/license/Ileriayo/markdown-badges?style=for-the-badge)](./LICENSE)
