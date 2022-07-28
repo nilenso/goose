@@ -3,8 +3,6 @@ ADR: Error-handling & Retrying
 
 Rationale
 ---------
-- TODO: Add a table explaining back-off fn & it's possible values
-  - `(/ (reduce + (map default-retry-delay-sec (range 27))) 86400.0)`
 - Reuse same schedule queue for retrying jobs
     - Semantics of `scheduled jobs` & `failed jobs due for retry` are same
     - Half load on redis

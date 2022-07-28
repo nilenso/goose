@@ -54,6 +54,7 @@
           :queue                          d/default-queue
           :scheduler-polling-interval-sec 5
           :graceful-shutdown-sec          30
+          :error-service-cfg              nil
           :statsd-opts                    statsd/default-opts})
 
 (defn- chain-middlewares
@@ -69,8 +70,8 @@
 
 (defn start
   "Starts a threadpool for worker."
-  [{:keys [threads broker-opts statsd-opts
-           queue scheduler-polling-interval-sec
+  [{:keys [threads broker-opts statsd-opts queue
+           error-service-cfg scheduler-polling-interval-sec
            middlewares graceful-shutdown-sec]}]
   (let [thread-pool (cp/threadpool threads)
         ; Internal threadpool for scheduler, orphan-checker & heartbeat.
@@ -83,6 +84,7 @@
               :internal-thread-pool           internal-thread-pool
               :redis-conn                     (broker/new broker-opts threads)
               :call                           call
+              :error-service-cfg              error-service-cfg
               :statsd-opts                    statsd-opts
 
               :process-set                    (str d/process-prefix queue)

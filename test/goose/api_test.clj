@@ -47,7 +47,7 @@
 
       (is (true? (scheduled-jobs/delete-all tu/broker-opts))))))
 
-(defn death-handler [_ _])
+(defn death-handler [_ _ _])
 (def dead-fn-atom (atom 0))
 (defn dead-fn [id]
   (swap! dead-fn-atom inc)

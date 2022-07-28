@@ -29,7 +29,7 @@ Avoided Designs
 - `s-expression`
   - Since anything can be passed as an s-expression, serializing at runtime isn't possible.
   - [at-at](https://github.com/overtone/at-at), [chime](https://github.com/jarohen/chime), etc. have this interface because they're in-memory. They don't have to serialize the s-expression & can evaluate them at a later time.
-  - if someone can help change Goose's interface to this: `(async opts (bg-fn :arg1 :arg2)` from ``(async opts `bg-fn :arg1 :arg2)`` we'll be very thankful.
+  - We'd want an interface like this: `(perform-async opts (bg-fn :arg1 :arg2)` from ``(perform-async opts `bg-fn :arg1 :arg2)``, but that isn't possible with the constructs of Clojure
 - Predefine background functions & their options as data in a common map accessible to both client & worker
   - It felt OOish, not functional
   - Duplication: if you stop enqueuing a function, you've to remember to remove it from the map too.

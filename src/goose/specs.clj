@@ -41,9 +41,9 @@
 (s/def ::retry-delay-sec-fn-sym
   (s/and ::fn-sym #(some #{1} (u/arities %))))
 (s/def ::error-handler-fn-sym
-  (s/and ::fn-sym #(some #{2} (u/arities %))))
+  (s/and ::fn-sym #(some #{3} (u/arities %))))
 (s/def ::death-handler-fn-sym
-  (s/and ::fn-sym #(some #{2} (u/arities %))))
+  (s/and ::fn-sym #(some #{3} (u/arities %))))
 (s/def ::retry-opts
   (s/and
     (s/map-of #{:max-retries :retry-delay-sec-fn-sym :skip-dead-queue

@@ -60,7 +60,7 @@
 (def failed-on-1st-retry (promise))
 (def succeeded-on-2nd-retry (promise))
 
-(defn retry-test-error-handler [_ ex]
+(defn retry-test-error-handler [_ _ ex]
   (if (realized? failed-on-execute)
     (deliver failed-on-1st-retry ex)
     (deliver failed-on-execute ex)))
@@ -93,8 +93,8 @@
 
 ; ======= TEST: Error handling dead-job using job queue ==========
 (def job-dead (promise))
-(defn dead-test-error-handler [_ _])
-(defn dead-test-death-handler [_ ex]
+(defn dead-test-error-handler [_ _ _])
+(defn dead-test-death-handler [_ _ ex]
   (deliver job-dead ex))
 
 (def dead-job-run-count (atom 0))
