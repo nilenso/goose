@@ -82,10 +82,10 @@
       (redis-cmds/enqueue-sorted-set redis-conn d/prefixed-dead-queue dead-at job))))
 
 (defn wrap-failure
-  [call]
+  [next]
   (fn [opts job]
     (try
-      (call opts job)
+      (next opts job)
       (catch Exception ex
         (let [failed-job (set-failed-config job ex)
               retry-count (get-in failed-job [:state :retry-count])

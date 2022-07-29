@@ -7,9 +7,8 @@
     [clojure.tools.logging :as log]))
 
 (defn execute-job
-  [_ {:keys [id execute-fn-sym args]}]
-  (apply (u/require-resolve execute-fn-sym) args)
-  (log/debug "Executed job-id:" id))
+  [_ {:keys [execute-fn-sym args]}]
+  (apply (u/require-resolve execute-fn-sym) args))
 
 (defn preservation-queue
   [id]

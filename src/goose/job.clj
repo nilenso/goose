@@ -24,7 +24,7 @@
     [statsd/execution-latency (- (u/epoch-time-ms) (:enqueued-at job))]))
 
 (defn wrap-latency
-  [call]
+  [next]
   (fn [opts job]
     (let [job (assoc job :latency (calculate-latency job))]
-      (call opts job))))
+      (next opts job))))

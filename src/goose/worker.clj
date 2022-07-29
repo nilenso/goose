@@ -54,19 +54,19 @@
           :queue                          d/default-queue
           :scheduler-polling-interval-sec 5
           :graceful-shutdown-sec          30
+          :middlewares                    nil
           :error-service-cfg              nil
           :statsd-opts                    statsd/default-opts})
 
 (defn- chain-middlewares
   [middlewares]
-  (let
-    [call (-> executor/execute-job
-              (statsd/wrap-metrics)
-              (job/wrap-latency)
-              (retry/wrap-failure))]
-    (if middlewares
-      (-> call (middlewares))
-      call)))
+  (let [call (if middlewares
+               (-> executor/execute-job (middlewares))
+               executor/execute-job)]
+    (-> call
+        (statsd/wrap-metrics)
+        (job/wrap-latency)
+        (retry/wrap-failure))))
 
 (defn start
   "Starts a threadpool for worker."

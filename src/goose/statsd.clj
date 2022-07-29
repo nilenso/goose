@@ -50,7 +50,7 @@
       (statsd/increment jobs-recovered 1 sample-rate tags-list))))
 
 (defn wrap-metrics
-  [call]
+  [next]
   (fn [{{:keys [enabled? sample-rate tags]} :statsd-opts
         :as                                 opts}
        {[job-type latency] :latency
@@ -66,14 +66,14 @@
           ; Ignore negative values.
           (when (pos? latency)
             (statsd/timing job-type latency sample-rate tags-list))
-          (call opts job)
+          (next opts job)
           (statsd/increment jobs-success 1 sample-rate tags-list)
           (catch Exception ex
             (statsd/increment jobs-failure 1 sample-rate tags-list)
             (throw ex))
           (finally
             (statsd/timing execution-time (- (u/epoch-time-ms) start) sample-rate tags-list))))
-      (call opts job))))
+      (next opts job))))
 
 (defn- statsd-queue-metric
   [queue]
