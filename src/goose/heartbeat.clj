@@ -1,4 +1,5 @@
 (ns goose.heartbeat
+  {:no-doc true}
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]

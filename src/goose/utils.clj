@@ -4,7 +4,7 @@
     [clojure.tools.logging :as log]
     [com.climate.claypoole :as cp]))
 
-(defmacro log-on-exceptions
+(defmacro ^:no-doc log-on-exceptions
   "Catch any Exception from the body and log it."
   [& body]
   `(try
@@ -19,17 +19,17 @@
   ([] (System/currentTimeMillis))
   ([date] (inst-ms date)))
 
-(defn add-sec
+(defn ^:no-doc add-sec
   ([sec] (add-sec sec (epoch-time-ms)))
-  ([sec epoch-time]
-   (+ (* 1000 sec) epoch-time)))
+  ([sec epoch-time-millis]
+   (+ (* 1000 sec) epoch-time-millis)))
 
-(defmacro while-pool
+(defmacro ^:no-doc while-pool
   [pool & body]
   `(while (not (cp/shutdown? ~pool))
      ~@body))
 
-(defn require-resolve
+(defn ^:no-doc require-resolve
   [fn-sym]
   (-> fn-sym
       (str)
@@ -39,7 +39,7 @@
       (require))
   (resolve fn-sym))
 
-(defn arities
+(defn ^:no-doc arities
   [fn-sym]
   (->> fn-sym
        (resolve)
@@ -47,5 +47,5 @@
        (:arglists)
        (map count)))
 
-(defn hostname []
+(defn ^:no-doc hostname []
   (.getHostName (java.net.InetAddress/getLocalHost)))

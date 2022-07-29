@@ -36,12 +36,12 @@
     (fn [[key value]] (str (name key) ":" value))
     tags))
 
-(defn initialize
+(defn ^:no-doc initialize
   [{:keys [enabled? host port]}]
   (when enabled?
     (statsd/setup host port :prefix prefix)))
 
-(defn increment-recovery
+(defn ^:no-doc increment-recovery
   [{:keys [enabled? sample-rate tags]}
    {:keys [execute-fn-sym queue]}]
   (when enabled?
@@ -49,7 +49,7 @@
                                             :queue queue))]
       (statsd/increment jobs-recovered 1 sample-rate tags-list))))
 
-(defn wrap-metrics
+(defn ^:no-doc wrap-metrics
   [next]
   (fn [{{:keys [enabled? sample-rate tags]} :statsd-opts
         :as                                 opts}
@@ -96,7 +96,7 @@
         total-size (reduce + (vals queues-size-map))]
     (assoc queues-size-map total-enqueued-size total-size)))
 
-(defn run
+(defn ^:no-doc run
   [{{:keys [enabled? sample-rate tags]} :statsd-opts
     :keys                               [internal-thread-pool redis-conn process-set]}]
   (when enabled?

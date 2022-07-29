@@ -18,6 +18,7 @@
     [java.util.concurrent TimeUnit]))
 
 (defprotocol Shutdown
+  "Shutdown a worker object."
   (stop [_]))
 
 (defn- internal-stop
