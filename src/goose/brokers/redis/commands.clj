@@ -46,6 +46,15 @@
 (defn set-size [conn set]
   (wcar* conn (car/scard set)))
 
+(defn- scan-for-sets [conn cursor match count]
+  (wcar* conn (car/scan cursor "MATCH" match "COUNT" count "TYPE" "SET")))
+
+(defn find-sets
+  [conn match-str]
+  (let [iterate-fn (fn [cursor] (scan-for-sets conn cursor match-str 1))
+        stop? (fn [cursor _] (= cursor d/scan-initial-cursor))]
+    (trampoline iterate-redis conn iterate-fn identity stop? d/scan-initial-cursor)))
+
 (defn find-in-set
   [conn set match?]
   (let [iterate-fn (fn [cursor] (scan-set conn set cursor 1))

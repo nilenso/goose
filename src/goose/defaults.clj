@@ -37,6 +37,3 @@
 (def prefixed-schedule-queue (prefix-queue schedule-queue))
 (def prefixed-retry-schedule-queue (prefix-queue schedule-queue))
 (def prefixed-dead-queue (prefix-queue dead-queue))
-
-; Test if defonce is documented in cljdoc.org
-(defonce test-var nil)

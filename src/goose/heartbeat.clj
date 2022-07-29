@@ -17,6 +17,12 @@
   [redis-conn process-set]
   (redis-cmds/set-size redis-conn process-set))
 
+(defn total-process-count
+  [redis-conn]
+  (let [process-sets (redis-cmds/find-sets redis-conn (str d/process-prefix "*"))
+        process-counts (map (fn [process] (process-count redis-conn process)) process-sets)]
+    (reduce + process-counts)))
+
 (defn run
   [{:keys [internal-thread-pool
            id redis-conn process-set

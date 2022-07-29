@@ -24,7 +24,7 @@
 
 (defn run
   [{:keys [internal-thread-pool redis-conn
-           scheduler-polling-interval-sec process-set]}]
+           scheduler-polling-interval-sec]}]
   (log/info "Polling scheduled jobs...")
   (u/while-pool
     internal-thread-pool
@@ -33,10 +33,12 @@
         (redis-cmds/enqueue-due-jobs-to-front
           redis-conn d/prefixed-schedule-queue
           jobs execution-queue)
-        (let [process-count (heartbeat/process-count redis-conn process-set)]
-          ; Sleep for process-count * polling-interval + jitters
+        (let [total-process-count (heartbeat/total-process-count redis-conn)]
+          ; Sleep for total-process-count * polling-interval + jitters
+          ; Regardless of number of processes,
           ; On average, Goose checks for scheduled jobs
-          ; every polling interval configured.
-          (Thread/sleep (* 1000 (+ (* scheduler-polling-interval-sec process-count)
+          ; every polling interval configured to reduce load on Redis.
+          ; All worker processes must have same polling interval.
+          (Thread/sleep (* 1000 (+ (* scheduler-polling-interval-sec total-process-count)
                                    (rand-int 3))))))))
   (log/info "Stopped scheduler. Exiting gracefully..."))

@@ -99,7 +99,7 @@
 
 (defn ^:no-doc run
   [{{:keys [enabled? sample-rate tags]} :statsd-opts
-    :keys                               [internal-thread-pool redis-conn process-set]}]
+    :keys                               [internal-thread-pool redis-conn]}]
   (when enabled?
     (u/while-pool
       internal-thread-pool
@@ -112,6 +112,6 @@
             (statsd/gauge k v sample-rate tags-list))
           ; Sleep for (process-count) minutes + jitters.
           ; On average, Goose sends queue level stats every 1 minute.
-          (let [process-count (heartbeat/process-count redis-conn process-set)]
-            (Thread/sleep (* 1000 (+ (* 60 process-count)
-                                     (rand-int process-count))))))))))
+          (let [total-process-count (heartbeat/total-process-count redis-conn)]
+            (Thread/sleep (* 1000 (+ (* 60 total-process-count)
+                                     (rand-int total-process-count))))))))))
