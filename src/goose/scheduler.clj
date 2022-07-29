@@ -33,6 +33,8 @@
         (redis-cmds/enqueue-due-jobs-to-front
           redis-conn d/prefixed-schedule-queue
           jobs execution-queue)
+        ; Instead of sleeping when due jobs are found,
+        ; Goose immediately polls to check if more jobs are due.
         (let [total-process-count (heartbeat/total-process-count redis-conn)]
           ; Sleep for total-process-count * polling-interval + jitters
           ; Regardless of number of processes,

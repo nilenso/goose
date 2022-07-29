@@ -109,9 +109,9 @@
                         dead-queue-size     (redis-cmds/sorted-set-size redis-conn d/prefixed-dead-queue)}]
           ; Using doseq instead of map, because map is lazy.
           (doseq [[k v] (merge size-map (get-size-of-all-queues redis-conn))]
-            (statsd/gauge k v sample-rate tags-list))
-          ; Sleep for (process-count) minutes + jitters.
+            (statsd/gauge k v sample-rate tags-list)))
+        (let [total-process-count (heartbeat/total-process-count redis-conn)]
+          ; Sleep for total-process-count minutes + jitters.
           ; On average, Goose sends queue level stats every 1 minute.
-          (let [total-process-count (heartbeat/total-process-count redis-conn)]
-            (Thread/sleep (* 1000 (+ (* 60 total-process-count)
-                                     (rand-int total-process-count))))))))))
+          (Thread/sleep (* 1 (+ (* 60 total-process-count)
+                                   (rand-int total-process-count)))))))))

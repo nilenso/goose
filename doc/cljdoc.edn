@@ -1,1 +1,2 @@
-{:cljdoc.doc/tree [["Wiki" {:file "goose-wiki.md"}]]}
+{:cljdoc.doc/tree
+ [["Wiki" {:file "goose-wiki.md"}]]}

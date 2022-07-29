@@ -8,8 +8,6 @@ Rationale
 
 - Github wiki has [version-control](https://docs.github.com/en/communities/documenting-your-project-with-wikis/adding-or-editing-wiki-pages#adding-or-editing-wiki-pages-locally)
 - Documentation can evolve independently of releases
-  
-
 
 Avoided Designs
 ---------
