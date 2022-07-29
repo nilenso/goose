@@ -15,17 +15,17 @@
 
 (defonce execution-time "job.execution_time")
 
-(defonce retry-latency "retry.latency")
-(defonce schedule-latency "scheduled.latency")
 (defonce execution-latency "execution.latency")
+(defonce schedule-latency "scheduled.latency")
+(defonce retry-latency "retry.latency")
 
-(defonce total-enqueued-size "total-enqueued.size")
-(defonce schedule-queue-size "scheduled-queue.size")
-(defonce dead-queue-size "dead-queue.size")
+(defonce total-enqueued-size "total_enqueued.size")
+(defonce schedule-queue-size "scheduled_queue.size")
+(defonce dead-queue-size "dead_queue.size")
 
 (defonce default-opts
          {:enabled?    true
-          :host        "127.0.0.1"
+          :host        "localhost"
           :port        8125
           :sample-rate 1.0
           :tags        {}})
