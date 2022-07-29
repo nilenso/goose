@@ -23,12 +23,13 @@
 (defonce schedule-queue-size "scheduled_queue.size")
 (defonce dead-queue-size "dead_queue.size")
 
-(defonce default-opts
-         {:enabled?    true
-          :host        "localhost"
-          :port        8125
-          :sample-rate 1.0
-          :tags        {}})
+(def default-opts
+  "Default config for StatsD Metrics."
+  {:enabled?    true
+   :host        "localhost"
+   :port        8125
+   :sample-rate 1.0
+   :tags        {}})
 
 (defn- build-tags
   [tags]

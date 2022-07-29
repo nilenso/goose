@@ -1,4 +1,5 @@
 (ns goose.job
+  {:no-doc true}
   (:require
     [goose.statsd :as statsd]
     [goose.utils :as u]))

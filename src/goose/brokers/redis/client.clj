@@ -3,9 +3,10 @@
     [goose.brokers.broker :as broker]
     [goose.defaults :as d]))
 
-(defonce default-opts
-         {:type d/redis
-          :url  d/default-redis-url})
+(def default-opts
+  "Default config for Redis client."
+  {:type d/redis
+   :url  d/default-redis-url})
 
 (defn- new-pool-opts
   [thread-count]
@@ -17,7 +18,7 @@
      :max-idle-per-key  d/client-redis-pool-size
      :min-idle-per-key  1}))
 
-(defmethod broker/new d/redis
+(defmethod broker/new d/redis new-redis-client
   ([opts] (broker/new opts nil))
   ([{:keys [url pool-opts]} thread-count]
    (let [pool-opts (or pool-opts (new-pool-opts thread-count))]

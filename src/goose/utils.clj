@@ -14,7 +14,7 @@
          (log/error e# "Exception occurred")))))
 
 (defn epoch-time-ms
-  "Returns Unix epoch time for given date.
+  "Returns Unix epoch milliseconds for given date.
    If no date is given, returns epoch for current time."
   ([] (System/currentTimeMillis))
   ([date] (inst-ms date)))

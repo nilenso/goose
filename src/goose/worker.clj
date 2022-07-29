@@ -49,15 +49,16 @@
   (log/warn "Sending InterruptedException to close threads.")
   (cp/shutdown! thread-pool))
 
-(defonce default-opts
-         {:broker-opts                    redis-client/default-opts
-          :threads                        1
-          :queue                          d/default-queue
-          :scheduler-polling-interval-sec 5
-          :graceful-shutdown-sec          30
-          :middlewares                    nil
-          :error-service-cfg              nil
-          :statsd-opts                    statsd/default-opts})
+(def default-opts
+  "Default config for Goose worker."
+  {:broker-opts                    redis-client/default-opts
+   :threads                        1
+   :queue                          d/default-queue
+   :scheduler-polling-interval-sec 5
+   :graceful-shutdown-sec          30
+   :middlewares                    nil
+   :error-service-cfg              nil
+   :statsd-opts                    statsd/default-opts})
 
 (defn- chain-middlewares
   [middlewares]

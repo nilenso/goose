@@ -24,11 +24,11 @@
 
 (defonce protected-queues [schedule-queue dead-queue])
 
-(defn prefix-queue
+(defn ^:no-doc prefix-queue
   [queue]
   (str queue-prefix queue))
 
-(defn affix-queue
+(defn ^:no-doc affix-queue
   [queue]
   (-> queue
       (string/split (re-pattern (str queue-prefix "*")))

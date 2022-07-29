@@ -9,10 +9,11 @@
     [goose.scheduler :as scheduler]
     [goose.utils :as u]))
 
-(defonce default-opts
-         {:broker-opts redis-client/default-opts
-          :queue       d/default-queue
-          :retry-opts  retry/default-opts})
+(def default-opts
+  "Default config for Goose client."
+  {:broker-opts redis-client/default-opts
+   :queue       d/default-queue
+   :retry-opts  retry/default-opts})
 
 (defn- enqueue
   [{:keys [broker-opts
@@ -31,13 +32,22 @@
     (:id job)))
 
 (defn perform-async
+  "Enqueue a function for async execution.
+  `execute-fn-sym` should be a fully-qualified function symbol.
+  `args` are variadic. "
   [opts execute-fn-sym & args]
   (enqueue opts nil execute-fn-sym args))
 
 (defn perform-at
+  "Schedule a function for execution at given date & time.
+  `execute-fn-sym` should be a fully-qualified function symbol.
+  `args` are variadic. "
   [opts date-time execute-fn-sym & args]
   (enqueue opts (u/epoch-time-ms date-time) execute-fn-sym args))
 
 (defn perform-in-sec
+  "Schedule a function for execution in given seconds.
+  `execute-fn-sym` should be a fully-qualified function symbol.
+  `args` are variadic. "
   [opts sec execute-fn-sym & args]
   (enqueue opts (u/add-sec sec) execute-fn-sym args))

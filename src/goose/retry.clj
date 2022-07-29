@@ -7,26 +7,35 @@
     [clojure.tools.logging :as log]))
 
 (defn default-error-handler
+  "Default error handler of a Job.
+  Called when a job fails.
+  Logs exception & job details."
   [_ job ex]
   (log/error ex "Job execution failed." job))
 
 (defn default-death-handler
+  "Default death handler of a Job
+  Called when a job fails & has exhausted retries.
+  Logs exception & job details."
   [_ job ex]
   (log/error ex "Job retries exhausted." job))
 
 (defn default-retry-delay-sec
+  "Calculates backoff seconds
+  before a failed Job is retried."
   [retry-count]
   (+ 20
      (* (rand-int 20) (inc retry-count))
      (reduce * (repeat 4 retry-count)))) ; retry-count^4
 
-(defonce default-opts
-         {:max-retries            27
-          :retry-delay-sec-fn-sym `default-retry-delay-sec
-          :retry-queue            nil
-          :error-handler-fn-sym   `default-error-handler
-          :skip-dead-queue        false
-          :death-handler-fn-sym   `default-death-handler})
+(def default-opts
+  "Default config for Error Handling & Retries."
+  {:max-retries            27
+   :retry-delay-sec-fn-sym `default-retry-delay-sec
+   :retry-queue            nil
+   :error-handler-fn-sym   `default-error-handler
+   :skip-dead-queue        false
+   :death-handler-fn-sym   `default-death-handler})
 
 (defn- prefix-retry-queue
   [retry-opts]
@@ -34,7 +43,7 @@
     (assoc retry-opts :prefixed-retry-queue (d/prefix-queue retry-queue))
     retry-opts))
 
-(defn prefix-queue-if-present
+(defn ^:no-doc prefix-queue-if-present
   [opts]
   (->> opts
        (prefix-retry-queue)
@@ -81,7 +90,7 @@
     (when-not skip-dead-queue
       (redis-cmds/enqueue-sorted-set redis-conn d/prefixed-dead-queue dead-at job))))
 
-(defn wrap-failure
+(defn ^:no-doc wrap-failure
   [next]
   (fn [opts job]
     (try
