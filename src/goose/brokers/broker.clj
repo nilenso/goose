@@ -1,14 +1,8 @@
 (ns goose.brokers.broker
-  (:require
-    [goose.brokers.redis :as redis]))
+  {:no-doc true})
 
-(defn create
-  ([opts]
-   (create opts nil))
-  ([opts thread-count]
-   (cond
-     (:redis opts)
-     (redis/new (:redis opts) thread-count)
+(defmulti new
+          (fn [broker & _] (:type broker)))
 
-     :else (throw (ex-info "broker-opts missing" {})))))
-
+(defmethod new :default [x & _]
+  (throw (ex-info "Invalid broker type" x)))

@@ -65,8 +65,8 @@
     #(c/perform-async (assoc-in tu/client-opts [:retry-opts :extra-key] :foo-bar) `tu/my-fn)
 
     ; :broker-opts
-    #(w/start (assoc-in tu/worker-opts [:broker-opts :rmq] "2-brokers"))
+    #(w/start (assoc-in tu/worker-opts [:broker-opts :type] :invalid-type))
 
     ; :redis-opts
-    #(c/perform-async (assoc-in tu/client-opts [:broker-opts :redis :url] :invalid-url) `tu/my-fn)
-    #(w/start (assoc-in tu/worker-opts [:broker-opts :redis :pool-opts] "invalid-pool-opts"))))
+    #(c/perform-async (assoc-in tu/client-opts [:broker-opts :url] :invalid-url) `tu/my-fn)
+    #(w/start (assoc-in tu/worker-opts [:broker-opts :pool-opts] :invalid-pool-opts))))

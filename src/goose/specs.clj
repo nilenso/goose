@@ -15,6 +15,7 @@
 (s/def ::fn-sym (s/and qualified-symbol? resolve #(fn? @(resolve %))))
 
 ; ========== Redis ==============
+(s/def :goose.specs.redis/type #(= % d/redis))
 (s/def :goose.specs.redis/url string?)
 (s/def :goose.specs.redis/pool-opts
   (s/or :none #(= :none %)
@@ -23,12 +24,10 @@
 
 ; ============== Brokers ==============
 (s/def ::redis
-  (s/keys :req-un [:goose.specs.redis/url]
+  (s/keys :req-un [:goose.specs.redis/url :goose.specs.redis/type]
           :opt-un [:goose.specs.redis/pool-opts]))
 (s/def ::broker-opts
-  (s/and
-    #(= 1 (count %))
-    (s/or :redis (s/keys :req-un [::redis]))))
+  (s/or :redis ::redis))
 
 ; ============== Queue ==============
 (defn- unprefixed? [queue] (not (string/starts-with? queue d/queue-prefix)))
@@ -42,9 +41,9 @@
 (s/def ::retry-delay-sec-fn-sym
   (s/and ::fn-sym #(some #{1} (u/arities %))))
 (s/def ::error-handler-fn-sym
-  (s/and ::fn-sym #(some #{2} (u/arities %))))
+  (s/and ::fn-sym #(some #{3} (u/arities %))))
 (s/def ::death-handler-fn-sym
-  (s/and ::fn-sym #(some #{2} (u/arities %))))
+  (s/and ::fn-sym #(some #{3} (u/arities %))))
 (s/def ::retry-opts
   (s/and
     (s/map-of #{:max-retries :retry-delay-sec-fn-sym :skip-dead-queue

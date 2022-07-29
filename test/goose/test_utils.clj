@@ -1,8 +1,8 @@
 (ns goose.test-utils
   (:require
-    [goose.api.api :as api]
+    [goose.brokers.broker :as broker]
+    [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]
-    [goose.redis :as r]
     [goose.retry :as retry]
     [goose.statsd :as statsd]
     [goose.specs :as specs]
@@ -15,18 +15,14 @@
   (let [host (or (System/getenv "GOOSE_TEST_REDIS_HOST") "localhost")
         port (or (System/getenv "GOOSE_TEST_REDIS_PORT") "6379")]
     (str "redis://" host ":" port)))
-(def broker-opts
-  {:redis
-   {:url       redis-url
-    :pool-opts {:max-total-per-key (inc d/internal-thread-pool-size)}}})
-(def redis-conn (r/conn (:redis broker-opts)))
-(defn clear-redis [] (r/wcar* redis-conn (car/flushdb "SYNC")))
+(def broker-opts {:url redis-url :type d/redis})
+(def redis-conn (broker/new broker-opts))
+(defn clear-redis [] (redis-cmds/wcar* redis-conn (car/flushdb "SYNC")))
 
 (defn fixture
   [f]
   (specs/instrument)
   (clear-redis)
-  (api/initialize broker-opts)
 
   (f)
 

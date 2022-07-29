@@ -1,4 +1,4 @@
-(ns goose.redis
+(ns goose.brokers.redis.commands
   {:no-doc true}
   (:require
     [goose.defaults :as d]
@@ -7,9 +7,6 @@
     [taoensso.carmine :as car]))
 
 (def ^:private atomic-lock-attempts 100)
-(defn conn
-  [{:keys [url pool-opts]}]
-  {:pool pool-opts :spec {:uri url}})
 
 (defmacro wcar* [conn & body] `(car/wcar ~conn ~@body))
 
@@ -48,6 +45,15 @@
 
 (defn set-size [conn set]
   (wcar* conn (car/scard set)))
+
+(defn- scan-for-sets [conn cursor match count]
+  (wcar* conn (car/scan cursor "MATCH" match "COUNT" count "TYPE" "SET")))
+
+(defn find-sets
+  [conn match-str]
+  (let [iterate-fn (fn [cursor] (scan-for-sets conn cursor match-str 1))
+        stop? (fn [cursor _] (= cursor d/scan-initial-cursor))]
+    (trampoline iterate-redis conn iterate-fn identity stop? d/scan-initial-cursor)))
 
 (defn find-in-set
   [conn set match?]
@@ -98,8 +104,9 @@
                       (when (< -1 index)
                         [(dec index) (wcar* conn (car/lrange queue index index))]))
          stop? (fn [index count]
-                 (or (neg? index)
-                     (>= count limit)))]
+                 (if index
+                   (or (neg? index) (>= count limit))
+                   true))]
      (trampoline iterate-redis conn iterate-fn match? stop? (dec (list-size conn queue))))))
 
 ; ============ Sorted-Sets ============
