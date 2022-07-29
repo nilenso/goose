@@ -84,6 +84,5 @@ Interface
 Polymorphism
 -------------
 
-Use `defmulti` & `defmethod` as explained
-in [Aphyr's Polymorphism blog](https://aphyr.com/posts/352-clojure-from-the-ground-up-polymorphism#multimethods) to
-delegate functionality based on brokers.
+Use `defmulti` & `defmethod` as explained in [Aphyr's Polymorphism blog](https://aphyr.com/posts/352-clojure-from-the-ground-up-polymorphism#multimethods) to
+elegate functionality based on brokers.
