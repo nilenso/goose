@@ -8,6 +8,11 @@
   (let [conn (broker/new broker-opts)]
     (map d/affix-queue (redis-cmds/find-lists conn (str d/queue-prefix "*")))))
 
+(defn size
+  [broker-opts queue]
+  (let [conn (broker/new broker-opts)]
+    (redis-cmds/list-size conn (d/prefix-queue queue))))
+
 (defn find-by-id
   [broker-opts queue id]
   (let [conn (broker/new broker-opts)
@@ -22,26 +27,23 @@
    (let [conn (broker/new broker-opts)]
      (redis-cmds/find-in-list conn (d/prefix-queue queue) match? limit))))
 
-(defn size
-  [broker-opts queue]
-  (let [conn (broker/new broker-opts)]
-    (redis-cmds/list-size conn (d/prefix-queue queue))))
-
 (defn prioritise-execution
   "Move a job after verification of existence.
   Hence, this accepts only 1 job instead of multiple."
-  [broker-opts queue job]
+  [broker-opts job]
   (let [conn (broker/new broker-opts)
-        prefixed-queue (d/prefix-queue queue)]
+        prefixed-queue (:prefixed-queue job)]
     (when (redis-cmds/list-position conn prefixed-queue job)
-      (redis-cmds/del-from-list-and-enqueue-front conn (d/prefix-queue queue) job))))
+      (redis-cmds/del-from-list-and-enqueue-front conn prefixed-queue job))))
 
 (defn delete
-  [broker-opts queue job]
-  (let [conn (broker/new broker-opts)]
-    (= 1 (redis-cmds/del-from-list conn (d/prefix-queue queue) job))))
+  [broker-opts job]
+  (let [conn (broker/new broker-opts)
+        prefixed-queue (:prefixed-queue job)]
+    (= 1 (redis-cmds/del-from-list conn prefixed-queue job))))
 
 (defn delete-all
   [broker-opts queue]
-  (let [conn (broker/new broker-opts)]
-    (= 1 (redis-cmds/del-keys conn [(d/prefix-queue queue)]))))
+  (let [conn (broker/new broker-opts)
+        prefixed-queue (d/prefix-queue queue)]
+    (= 1 (redis-cmds/del-keys conn [prefixed-queue]))))

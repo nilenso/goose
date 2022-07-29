@@ -5,6 +5,10 @@
     [goose.defaults :as d]
     [goose.scheduler :as scheduler]))
 
+(defn size [broker-opts]
+  (let [conn (broker/new broker-opts)]
+    (redis-cmds/sorted-set-size conn d/prefixed-dead-queue)))
+
 (defn find-by-id
   [broker-opts id]
   (let [conn (broker/new broker-opts)
@@ -18,10 +22,6 @@
   ([broker-opts match? limit]
    (let [conn (broker/new broker-opts)]
      (redis-cmds/find-in-sorted-set conn d/prefixed-dead-queue match? limit))))
-
-(defn size [broker-opts]
-  (let [conn (broker/new broker-opts)]
-    (redis-cmds/sorted-set-size conn d/prefixed-dead-queue)))
 
 (defn re-enqueue-for-execution
   "Move a job after verification of existence.

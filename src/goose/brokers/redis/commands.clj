@@ -95,8 +95,9 @@
                       (when (< -1 index)
                         [(dec index) (wcar* conn (car/lrange queue index index))]))
          stop? (fn [index count]
-                 (or (neg? index)
-                     (>= count limit)))]
+                 (if index
+                   (or (neg? index) (>= count limit))
+                   true))]
      (trampoline iterate-redis conn iterate-fn match? stop? (dec (list-size conn queue))))))
 
 ; ============ Sorted-Sets ============

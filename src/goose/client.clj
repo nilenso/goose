@@ -1,13 +1,13 @@
 (ns goose.client
   (:require
     [goose.brokers.broker :as broker]
+    [goose.brokers.redis.client :as redis-client]
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]
     [goose.job :as j]
     [goose.retry :as retry]
     [goose.scheduler :as scheduler]
-    [goose.utils :as u]
-    [goose.brokers.redis.client :as redis-client]))
+    [goose.utils :as u]))
 
 (defonce default-opts
          {:broker-opts redis-client/default-opts

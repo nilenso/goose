@@ -23,8 +23,8 @@
         (is (= 1 (count (enqueued-jobs/find-by-pattern tu/broker-opts tu/queue match?)))))
 
       (let [job (enqueued-jobs/find-by-id tu/broker-opts tu/queue job-id)]
-        (is (some? (enqueued-jobs/prioritise-execution tu/broker-opts tu/queue job)))
-        (is (true? (enqueued-jobs/delete tu/broker-opts tu/queue job))))
+        (is (some? (enqueued-jobs/prioritise-execution tu/broker-opts job)))
+        (is (true? (enqueued-jobs/delete tu/broker-opts job))))
 
       (is (true? (enqueued-jobs/delete-all tu/broker-opts tu/queue))))))
 
@@ -40,7 +40,7 @@
       (let [job (scheduled-jobs/find-by-id tu/broker-opts job-id1)]
         (is (some? (scheduled-jobs/prioritise-execution tu/broker-opts job)))
         (is (false? (scheduled-jobs/delete tu/broker-opts job)))
-        (is (true? (enqueued-jobs/delete tu/broker-opts tu/queue job))))
+        (is (true? (enqueued-jobs/delete tu/broker-opts job))))
 
       (let [job (scheduled-jobs/find-by-id tu/broker-opts job-id2)]
         (is (true? (scheduled-jobs/delete tu/broker-opts job))))
@@ -73,7 +73,7 @@
 
       (let [dead-job (dead-jobs/find-by-id tu/broker-opts dead-job-id)]
         (is some? (dead-jobs/re-enqueue-for-execution tu/broker-opts dead-job))
-        (is true? (enqueued-jobs/delete tu/broker-opts tu/queue dead-job)))
+        (is true? (enqueued-jobs/delete tu/broker-opts dead-job)))
 
       (let [match? (fn [job] (= (list 0) (:args job)))
             [dead-job] (dead-jobs/find-by-pattern tu/broker-opts match?)
