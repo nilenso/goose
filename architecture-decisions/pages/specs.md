@@ -17,7 +17,7 @@ Rationale
   - Debugging becomes tougher when processing half-correct data
 - Since specs are defined in a different namespace, they're magical & opaque
   - This violates Clojure's philosophy of transparency & expressiveness
-  - It'd be nice to have specs as part of 
+  - It'd be nice to have specs as part of the function definition
 - Some specs are less user-friendly
   - `s/or` is non-intuitive when compared to `s/and`
   - `s/keys` & `s/map-of` aren't macro-level friendly. For instance, restricting a map to a fixed set keys is complicated

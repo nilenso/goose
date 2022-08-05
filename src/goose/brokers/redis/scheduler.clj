@@ -1,9 +1,9 @@
-(ns goose.scheduler
+(ns goose.brokers.redis.scheduler
   {:no-doc true}
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]
-    [goose.heartbeat :as heartbeat]
+    [goose.brokers.redis.heartbeat :as heartbeat]
     [goose.utils :as u]
 
     [clojure.tools.logging :as log]))

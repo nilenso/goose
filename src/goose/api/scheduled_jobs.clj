@@ -3,7 +3,7 @@
     [goose.brokers.broker :as broker]
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]
-    [goose.scheduler :as scheduler]))
+    [goose.brokers.redis.scheduler :as redis-scheduler]))
 
 (defn size
   "Get size of Scheduled Jobs."
@@ -35,7 +35,7 @@
   (let [conn (broker/new broker-opts)
         sorted-set d/prefixed-schedule-queue]
     (when (redis-cmds/sorted-set-score conn sorted-set job)
-      (redis-cmds/enqueue-due-jobs-to-front conn sorted-set (list job) scheduler/execution-queue))))
+      (redis-cmds/enqueue-due-jobs-to-front conn sorted-set (list job) redis-scheduler/execution-queue))))
 
 (defn delete
   "Delete a Scheduled Job."

@@ -2,16 +2,16 @@
   (:require
     [clojure.string :as string]))
 
-(def default-redis-url "redis://localhost:6379")
 (def long-polling-timeout-sec 1)
-(def client-redis-pool-size 5)
 (def scheduled-jobs-pop-limit 50)
-(def internal-thread-pool-size 4)
 (def heartbeat-sleep-sec 15)
 (def heartbeat-expire-sec 60)
 (def scan-initial-cursor "0")
 
 (def redis :redis)
+(def redis-internal-thread-pool-size 4)
+(def redis-default-url "redis://localhost:6379")
+(def redis-client-pool-size 5)
 
 (def queue-prefix "goose/queue:")
 (def in-progress-queue-prefix "goose/in-progress-jobs:")

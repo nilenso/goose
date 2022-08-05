@@ -6,3 +6,16 @@
 
 (defmethod new :default [x & _]
   (throw (ex-info "Invalid broker type" x)))
+
+(defprotocol Broker
+  "Protocol for all Goose brokers."
+  (enqueue [this job])
+  (schedule [this schedule job])
+  (start [this worker-opts])
+
+  ; enqueued-jobs API
+
+  ; scheduled-jobs API
+  ; dead-jobs API
+  )
+
