@@ -3,7 +3,7 @@
     [goose.defaults :as d]
     [goose.utils :as u]
 
-    [clj-statsd ]))
+    [clj-statsd]))
 
 (defonce prefix "goose.")
 (defonce jobs-processed "jobs.processed")

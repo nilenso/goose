@@ -11,19 +11,18 @@
 
 (def default-opts
   "Default config for Goose worker."
-  {:broker-opts                    redis-client/default-opts
-   :threads                        1
-   :queue                          d/default-queue
-   :scheduler-polling-interval-sec 5
-   :graceful-shutdown-sec          30
-   :middlewares                    nil
-   :error-service-cfg              nil
-   :statsd-opts                    statsd/default-opts})
+  {:broker-opts           redis-client/default-opts
+   :threads               1
+   :queue                 d/default-queue
+   :graceful-shutdown-sec 30
+   :middlewares           nil
+   :error-service-cfg     nil
+   :statsd-opts           statsd/default-opts})
 
 (defn start
   "Starts a threadpool for worker."
   [{:keys [broker-opts statsd-opts]
-    :as opts}]
+    :as   opts}]
   (let [broker (b/new broker-opts)]
 
     (statsd/initialize statsd-opts)

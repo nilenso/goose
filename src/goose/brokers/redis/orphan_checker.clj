@@ -2,7 +2,7 @@
   {:no-doc true}
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
-    [goose.brokers.redis.executor :as  redis-executor]
+    [goose.brokers.redis.executor :as redis-executor]
     [goose.brokers.redis.heartbeat :as heartbeat]
     [goose.statsd :as statsd]
     [goose.utils :as u]))

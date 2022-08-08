@@ -38,7 +38,6 @@
     ; Worker specs
     #(w/start (assoc tu/worker-opts :threads -1.1))
     #(w/start (assoc tu/worker-opts :graceful-shutdown-sec -2))
-    #(w/start (assoc tu/worker-opts :scheduler-polling-interval-sec 0))
 
     ; :statad-opts
     #(w/start (assoc-in tu/worker-opts [:statsd-opts :enabled?] 1))
@@ -69,4 +68,5 @@
 
     ; :redis-opts
     #(c/perform-async (assoc-in tu/client-opts [:broker-opts :url] :invalid-url) `tu/my-fn)
-    #(w/start (assoc-in tu/worker-opts [:broker-opts :pool-opts] :invalid-pool-opts))))
+    #(w/start (assoc-in tu/worker-opts [:broker-opts :pool-opts] :invalid-pool-opts))
+    #(c/perform-in-sec (assoc-in tu/client-opts [:broker-opts :scheduler-polling-interval-sec] 0) 1 `tu/my-fn)))

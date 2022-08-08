@@ -17,6 +17,7 @@
 ; ========== Redis ==============
 (s/def :goose.specs.redis/type #(= % d/redis))
 (s/def :goose.specs.redis/url string?)
+(s/def :goose.specs.redis/scheduler-polling-interval-sec pos-int?)
 (s/def :goose.specs.redis/pool-opts
   (s/or :none #(= :none %)
         :map map?
@@ -24,7 +25,8 @@
 
 ; ============== Brokers ==============
 (s/def ::redis
-  (s/keys :req-un [:goose.specs.redis/url :goose.specs.redis/type]
+  (s/keys :req-un [:goose.specs.redis/type :goose.specs.redis/url
+                   :goose.specs.redis/scheduler-polling-interval-sec]
           :opt-un [:goose.specs.redis/pool-opts]))
 (s/def ::broker-opts
   (s/or :redis ::redis))
@@ -75,9 +77,7 @@
 ; ============== Worker ==============
 (s/def ::threads pos-int?)
 (s/def ::graceful-shutdown-sec pos-int?)
-(s/def ::scheduler-polling-interval-sec pos-int?)
 (s/def ::worker-opts (s/keys :req-un [::broker-opts ::queue ::threads
-                                      ::scheduler-polling-interval-sec
                                       ::graceful-shutdown-sec ::statsd-opts]))
 
 ; ============== FDEFs ==============

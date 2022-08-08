@@ -9,14 +9,17 @@
     [goose.brokers.redis.worker :as redis-worker]
     [goose.defaults :as d]))
 
-(defrecord Redis [conn]
+(defrecord Redis [conn scheduler-polling-interval-sec]
   b/Broker
   (enqueue [this job]
     (redis-cmds/enqueue-back (:conn this) (:prefixed-queue job) job))
   (schedule [this schedule job]
     (redis-scheduler/run-at (:conn this) schedule job))
   (start [this worker-opts]
-    (redis-worker/start (assoc worker-opts :redis-conn (:conn this))))
+    (redis-worker/start
+      (assoc worker-opts
+        :redis-conn (:conn this)
+        :scheduler-polling-interval-sec (:scheduler-polling-interval-sec this))))
 
   ; enqueued-jobs API
   (enqueued-jobs-list-all-queues [this]
@@ -66,8 +69,9 @@
 
 (def default-opts
   "Default config for Redis client."
-  {:type d/redis
-   :url  d/redis-default-url})
+  {:type                           d/redis
+   :url                            d/redis-default-url
+   :scheduler-polling-interval-sec 5})
 
 (defn- new-pool-opts
   [thread-count]
@@ -81,6 +85,7 @@
 
 (defmethod b/new d/redis new-redis-client
   ([opts] (b/new opts nil))
-  ([{:keys [url pool-opts]} thread-count]
+  ([{:keys [url pool-opts scheduler-polling-interval-sec]} thread-count]
    (let [pool-opts (or pool-opts (new-pool-opts thread-count))]
-     (Redis. {:spec {:uri url} :pool pool-opts}))))
+     (Redis. {:spec {:uri url} :pool pool-opts}
+             scheduler-polling-interval-sec))))

@@ -1,6 +1,6 @@
 (ns goose.brokers.redis.worker
   (:require
-    [goose.brokers.redis.executor :as  redis-executor]
+    [goose.brokers.redis.executor :as redis-executor]
     [goose.brokers.redis.heartbeat :as redis-heartbeat]
     [goose.brokers.redis.orphan-checker :as redis-orphan-checker]
     [goose.brokers.redis.retry :as redis-retry]
