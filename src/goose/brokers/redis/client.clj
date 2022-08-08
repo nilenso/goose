@@ -6,7 +6,7 @@
     [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.brokers.redis.scheduler :as redis-scheduler]
-    [goose.brokers.redis.worker :as worker]
+    [goose.brokers.redis.worker :as redis-worker]
     [goose.defaults :as d]))
 
 (defrecord Redis [conn]
@@ -16,7 +16,7 @@
   (schedule [this schedule job]
     (redis-scheduler/run-at (:conn this) schedule job))
   (start [this worker-opts]
-    (worker/start (assoc worker-opts :redis-conn (:conn this))))
+    (redis-worker/start (assoc worker-opts :redis-conn (:conn this))))
 
   ; enqueued-jobs API
   (enqueued-jobs-list-all-queues [this]

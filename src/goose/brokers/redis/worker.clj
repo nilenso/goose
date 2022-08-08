@@ -1,15 +1,15 @@
 (ns goose.brokers.redis.worker
   (:require
     [goose.brokers.redis.executor :as  redis-executor]
-    [goose.brokers.redis.heartbeat :as heartbeat]
-    [goose.brokers.redis.orphan-checker :as orphan-checker]
+    [goose.brokers.redis.heartbeat :as redis-heartbeat]
+    [goose.brokers.redis.orphan-checker :as redis-orphan-checker]
+    [goose.brokers.redis.retry :as redis-retry]
+    [goose.brokers.redis.scheduler :as redis-scheduler]
+    [goose.brokers.redis.statsd :as redis-statsd]
     [goose.defaults :as d]
     [goose.executor]
     [goose.job :as job]
-    [goose.brokers.redis.retry :as redis-retry]
-    [goose.brokers.redis.scheduler :as redis-scheduler]
-    [goose.statsd :as statsd]
-    [goose.brokers.redis.statsd :as redis-statsd]
+    [goose.statsd]
     [goose.utils :as u]
 
     [clojure.tools.logging :as log]
@@ -39,7 +39,7 @@
     graceful-shutdown-sec
     TimeUnit/SECONDS)
 
-  (heartbeat/stop opts)
+  (redis-heartbeat/stop opts)
 
   ; Set state of thread-pool to STOP.
   (log/warn "Sending InterruptedException to close threads.")
@@ -51,7 +51,7 @@
                (-> goose.executor/execute-job (middlewares))
                goose.executor/execute-job)]
     (-> call
-        (statsd/wrap-metrics)
+        (goose.statsd/wrap-metrics)
         (job/wrap-latency)
         (redis-retry/wrap-failure))))
 
@@ -81,9 +81,9 @@
               :scheduler-polling-interval-sec scheduler-polling-interval-sec}]
 
     (cp/future internal-thread-pool (redis-statsd/run opts))
-    (cp/future internal-thread-pool (heartbeat/run opts))
+    (cp/future internal-thread-pool (redis-heartbeat/run opts))
     (cp/future internal-thread-pool (redis-scheduler/run opts))
-    (cp/future internal-thread-pool (orphan-checker/run opts))
+    (cp/future internal-thread-pool (redis-orphan-checker/run opts))
 
     (dotimes [_ threads]
       (cp/future thread-pool (redis-executor/run opts)))
