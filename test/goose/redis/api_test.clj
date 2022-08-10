@@ -1,4 +1,4 @@
-(ns goose.api-test
+(ns goose.redis.api-test
   (:require
     [goose.api.dead-jobs :as dead-jobs]
     [goose.api.enqueued-jobs :as enqueued-jobs]
@@ -15,8 +15,8 @@
 
 (deftest enqueued-jobs-test
   (testing "enqueued-jobs API"
-    (let [job-id (c/perform-async tu/client-opts `tu/my-fn 1)
-          _ (c/perform-async tu/client-opts `tu/my-fn 2)]
+    (let [job-id (c/perform-async tu/redis-client-opts `tu/my-fn 1)
+          _ (c/perform-async tu/redis-client-opts `tu/my-fn 2)]
       (is (= (list tu/queue) (enqueued-jobs/list-all-queues tu/redis-opts)))
       (is (= 2 (enqueued-jobs/size tu/redis-opts tu/queue)))
       (let [match? (fn [job] (= (list 2) (:args job)))]
@@ -30,9 +30,9 @@
 
 (deftest scheduled-jobs-test
   (testing "scheduled-jobs API"
-    (let [job-id1 (c/perform-in-sec tu/client-opts 10 `tu/my-fn 1)
-          job-id2 (c/perform-in-sec tu/client-opts 10 `tu/my-fn 2)
-          _ (c/perform-in-sec tu/client-opts 10 `tu/my-fn 3)]
+    (let [job-id1 (c/perform-in-sec tu/redis-client-opts 10 `tu/my-fn 1)
+          job-id2 (c/perform-in-sec tu/redis-client-opts 10 `tu/my-fn 2)
+          _ (c/perform-in-sec tu/redis-client-opts 10 `tu/my-fn 3)]
       (is (= 3 (scheduled-jobs/size tu/redis-opts)))
       (let [match? (fn [job] (not= (list 1) (:args job)))]
         (is (= 2 (count (scheduled-jobs/find-by-pattern tu/redis-opts match?)))))
@@ -55,11 +55,11 @@
 
 (deftest dead-jobs-test
   (testing "dead-jobs API"
-    (let [worker (w/start tu/worker-opts)
+    (let [worker (w/start tu/redis-worker-opts)
           retry-opts (assoc retry/default-opts
                        :max-retries 0
                        :death-handler-fn-sym `death-handler)
-          job-opts (assoc tu/client-opts :retry-opts retry-opts)
+          job-opts (assoc tu/redis-client-opts :retry-opts retry-opts)
           dead-job-id (c/perform-async job-opts `dead-fn -1)
           _ (doseq [id (range 3)] (c/perform-async job-opts `dead-fn id))
           circuit-breaker (atom 0)]
