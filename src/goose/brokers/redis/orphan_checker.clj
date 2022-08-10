@@ -1,9 +1,9 @@
-(ns goose.orphan-checker
+(ns goose.brokers.redis.orphan-checker
   {:no-doc true}
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
-    [goose.executor :as executor]
-    [goose.heartbeat :as heartbeat]
+    [goose.brokers.redis.executor :as redis-executor]
+    [goose.brokers.redis.heartbeat :as heartbeat]
     [goose.statsd :as statsd]
     [goose.utils :as u]))
 
@@ -23,7 +23,7 @@
     (when-not (heartbeat/alive? redis-conn process)
       (trampoline
         reenqueue-orphan-jobs
-        opts (executor/preservation-queue process))
+        opts (redis-executor/preservation-queue process))
       (redis-cmds/del-from-set redis-conn process-set process))))
 
 (defn run

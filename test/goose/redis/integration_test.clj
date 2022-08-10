@@ -1,4 +1,4 @@
-(ns goose.integration-test
+(ns goose.redis.integration-test
   (:require
     [goose.client :as c]
     [goose.retry :as retry]
@@ -20,8 +20,8 @@
 (deftest perform-async-test
   (testing "Goose executes a function asynchronously"
     (let [arg "async-execute-test"
-          worker (w/start tu/worker-opts)]
-      (is (uuid? (UUID/fromString (c/perform-async tu/client-opts `perform-async-fn arg))))
+          worker (w/start tu/redis-worker-opts)]
+      (is (uuid? (UUID/fromString (c/perform-async tu/redis-client-opts `perform-async-fn arg))))
       (is (= arg (deref perform-async-fn-executed 100 :e2e-test-timed-out)))
       (w/stop worker))))
 
@@ -33,8 +33,8 @@
 (deftest perform-in-sec-test
   (testing "Goose executes a function scheduled in future"
     (let [arg "scheduling-test"
-          _ (c/perform-in-sec tu/client-opts 1 `perform-in-sec-fn arg)
-          scheduler (w/start tu/worker-opts)]
+          _ (c/perform-in-sec tu/redis-client-opts 1 `perform-in-sec-fn arg)
+          scheduler (w/start tu/redis-worker-opts)]
       (is (= arg (deref perform-in-sec-fn-executed 4100 :scheduler-test-timed-out)))
       (w/stop scheduler))))
 
@@ -46,8 +46,8 @@
 (deftest perform-at-test
   (testing "Goose executes a function scheduled in past"
     (let [arg "scheduling-test"
-          _ (c/perform-at tu/client-opts (java.time.Instant/now) `perform-at-fn arg)
-          scheduler (w/start tu/worker-opts)]
+          _ (c/perform-at tu/redis-client-opts (java.time.Instant/now) `perform-at-fn arg)
+          scheduler (w/start tu/redis-worker-opts)]
       (is (= arg (deref perform-at-fn-executed 100 :scheduler-test-timed-out)))
       (w/stop scheduler))))
 
@@ -79,9 +79,9 @@
                        :retry-delay-sec-fn-sym `immediate-retry
                        :retry-queue retry-queue
                        :error-handler-fn-sym `retry-test-error-handler)
-          worker (w/start tu/worker-opts)
-          retry-worker (w/start (assoc tu/worker-opts :queue retry-queue))]
-      (c/perform-async (assoc tu/client-opts :retry-opts retry-opts) `erroneous-fn arg)
+          worker (w/start tu/redis-worker-opts)
+          retry-worker (w/start (assoc tu/redis-worker-opts :queue retry-queue))]
+      (c/perform-async (assoc tu/redis-client-opts :retry-opts retry-opts) `erroneous-fn arg)
 
       (is (= java.lang.ArithmeticException (type (deref failed-on-execute 100 :retry-execute-timed-out))))
       (w/stop worker)
@@ -109,8 +109,8 @@
                           :retry-delay-sec-fn-sym `immediate-retry
                           :error-handler-fn-sym `dead-test-error-handler
                           :death-handler-fn-sym `dead-test-death-handler)
-          worker (w/start tu/worker-opts)]
-      (c/perform-async (assoc tu/client-opts :retry-opts dead-job-opts) `dead-fn)
+          worker (w/start tu/redis-worker-opts)]
+      (c/perform-async (assoc tu/redis-client-opts :retry-opts dead-job-opts) `dead-fn)
 
       (is (= java.lang.ArithmeticException (type (deref job-dead 4200 :death-handler-timed-out))))
       (is (= 2 @dead-job-run-count))
