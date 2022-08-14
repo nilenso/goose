@@ -60,7 +60,7 @@ Please [open an issue](https://github.com/nilenso/goose/issues/new) or ping us o
 Why the name "Goose"?
 ---------
 <p align="center">
-	<img src="logo/goose-round@2x.png" width="360">
+  <img src="logo/goose-round@2x.png" width="360">
 </p>
 
 Named after [Nick 'Goose' Bradshaw](https://historica.fandom.com/wiki/Nick_Bradshaw), the _sidekick_
