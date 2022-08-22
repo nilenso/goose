@@ -1,13 +1,12 @@
 (ns goose.brokers.redis.statsd
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
-    [goose.defaults :as d]
     [goose.brokers.redis.heartbeat :as heartbeat]
+    [goose.defaults :as d]
     [goose.statsd :as statsd]
     [goose.utils :as u]
 
     [clj-statsd]))
-
 
 (defn- statsd-queues-size
   [redis-conn queues]

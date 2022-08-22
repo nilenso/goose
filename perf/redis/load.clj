@@ -25,18 +25,20 @@
 
 (defn dummy-handler [_ _])
 
+(def redis-broker (broker/new redis-client/default-opts))
+(def redis-proxy "localhost:6380")
+(def redis-broker-with-latency (broker/new {:url (str "redis://" redis-proxy) :type :redis}))
+
 (def client-opts
   (assoc c/default-opts
+    :broker redis-broker
     :retry-opts {:max-retries          1
                  :skip-dead-queue      true
                  :error-handler-fn-sym `dummy-handler
                  :death-handler-fn-sym `dummy-handler}))
 
-(def redis-conn (broker/new redis-client/default-opts))
-(def redis-proxy "localhost:6380")
-
 (defn- flush-redis []
-  (redis-cmds/wcar* redis-conn (car/flushdb "sync")))
+  (redis-cmds/wcar* redis-broker (car/flushdb "sync")))
 
 (defprotocol Toxiproxy
   (reset [_]))
@@ -60,7 +62,7 @@
 (defn dequeue
   [count]
   (let [worker-opts (assoc w/default-opts
-                      :broker-opts {:url (str "redis://" redis-proxy) :type :redis}
+                      :broker redis-broker-with-latency
                       :threads 25)
         start-time (u/epoch-time-ms)
         worker (w/start worker-opts)]

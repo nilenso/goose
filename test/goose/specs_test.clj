@@ -1,5 +1,7 @@
 (ns goose.specs-test
   (:require
+    [goose.brokers.broker :as b]
+    [goose.brokers.redis.client :as redis-client]
     [goose.client :as c]
     [goose.defaults :as d]
     [goose.specs :as specs]
@@ -47,6 +49,9 @@
     #(w/start (assoc-in tu/redis-worker-opts [:statsd-opts :tags] '("service:maverick")))
 
     ; Common specs
+    ; :broker
+    #(c/perform-async (assoc tu/redis-client-opts :broker :invalid) `tu/my-fn)
+
     ; :queue
     #(c/perform-async (assoc tu/redis-client-opts :queue :non-string) `tu/my-fn)
     #(w/start (assoc tu/redis-worker-opts :queue (str (range 300))))
@@ -63,10 +68,7 @@
     #(c/perform-in-sec (assoc-in tu/redis-client-opts [:retry-opts :skip-dead-queue] 1) 1 `tu/my-fn)
     #(c/perform-async (assoc-in tu/redis-client-opts [:retry-opts :extra-key] :foo-bar) `tu/my-fn)
 
-    ; :broker-opts
-    #(w/start (assoc-in tu/redis-worker-opts [:broker-opts :type] :invalid-type))
-
     ; :redis-opts
-    #(c/perform-async (assoc-in tu/redis-client-opts [:broker-opts :url] :invalid-url) `tu/my-fn)
-    #(w/start (assoc-in tu/redis-worker-opts [:broker-opts :pool-opts] :invalid-pool-opts))
-    #(c/perform-in-sec (assoc-in tu/redis-client-opts [:broker-opts :scheduler-polling-interval-sec] 0) 1 `tu/my-fn)))
+    #(b/new (assoc redis-client/default-opts :url :invalid-url) )
+    #(b/new (assoc redis-client/default-opts :pool-opts :invalid-pool-opts))
+    #(b/new (assoc redis-client/default-opts :scheduler-polling-interval-sec 0))))

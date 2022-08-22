@@ -1,9 +1,9 @@
-Goose: The sidekick for Clojure
+Goose 🦆
 =========
 [![Test & Lint Workflow](https://github.com/nilenso/goose/actions/workflows/test_lint.yml/badge.svg)](https://github.com/nilenso/goose/actions/workflows/test_lint.yml)
 [![cljdoc badge](https://cljdoc.org/badge/com.nilenso/goose)](https://cljdoc.org/d/com.nilenso/goose)
 
-*Simple, Reliable & Scalable* background processing library for Clojure.
+A *Simple, Reliable & Scalable* background job processing library for Clojure.
 
 Performance
 ---------

@@ -17,35 +17,35 @@
   (testing "enqueued-jobs API"
     (let [job-id (c/perform-async tu/redis-client-opts `tu/my-fn 1)
           _ (c/perform-async tu/redis-client-opts `tu/my-fn 2)]
-      (is (= (list tu/queue) (enqueued-jobs/list-all-queues tu/redis-opts)))
-      (is (= 2 (enqueued-jobs/size tu/redis-opts tu/queue)))
+      (is (= (list tu/queue) (enqueued-jobs/list-all-queues tu/redis-broker)))
+      (is (= 2 (enqueued-jobs/size tu/redis-broker tu/queue)))
       (let [match? (fn [job] (= (list 2) (:args job)))]
-        (is (= 1 (count (enqueued-jobs/find-by-pattern tu/redis-opts tu/queue match?)))))
+        (is (= 1 (count (enqueued-jobs/find-by-pattern tu/redis-broker tu/queue match?)))))
 
-      (let [job (enqueued-jobs/find-by-id tu/redis-opts tu/queue job-id)]
-        (is (some? (enqueued-jobs/prioritise-execution tu/redis-opts job)))
-        (is (true? (enqueued-jobs/delete tu/redis-opts job))))
+      (let [job (enqueued-jobs/find-by-id tu/redis-broker tu/queue job-id)]
+        (is (some? (enqueued-jobs/prioritise-execution tu/redis-broker job)))
+        (is (true? (enqueued-jobs/delete tu/redis-broker job))))
 
-      (is (true? (enqueued-jobs/delete-all tu/redis-opts tu/queue))))))
+      (is (true? (enqueued-jobs/delete-all tu/redis-broker tu/queue))))))
 
 (deftest scheduled-jobs-test
   (testing "scheduled-jobs API"
     (let [job-id1 (c/perform-in-sec tu/redis-client-opts 10 `tu/my-fn 1)
           job-id2 (c/perform-in-sec tu/redis-client-opts 10 `tu/my-fn 2)
           _ (c/perform-in-sec tu/redis-client-opts 10 `tu/my-fn 3)]
-      (is (= 3 (scheduled-jobs/size tu/redis-opts)))
+      (is (= 3 (scheduled-jobs/size tu/redis-broker)))
       (let [match? (fn [job] (not= (list 1) (:args job)))]
-        (is (= 2 (count (scheduled-jobs/find-by-pattern tu/redis-opts match?)))))
+        (is (= 2 (count (scheduled-jobs/find-by-pattern tu/redis-broker match?)))))
 
-      (let [job (scheduled-jobs/find-by-id tu/redis-opts job-id1)]
-        (is (some? (scheduled-jobs/prioritise-execution tu/redis-opts job)))
-        (is (false? (scheduled-jobs/delete tu/redis-opts job)))
-        (is (true? (enqueued-jobs/delete tu/redis-opts job))))
+      (let [job (scheduled-jobs/find-by-id tu/redis-broker job-id1)]
+        (is (some? (scheduled-jobs/prioritise-execution tu/redis-broker job)))
+        (is (false? (scheduled-jobs/delete tu/redis-broker job)))
+        (is (true? (enqueued-jobs/delete tu/redis-broker job))))
 
-      (let [job (scheduled-jobs/find-by-id tu/redis-opts job-id2)]
-        (is (true? (scheduled-jobs/delete tu/redis-opts job))))
+      (let [job (scheduled-jobs/find-by-id tu/redis-broker job-id2)]
+        (is (true? (scheduled-jobs/delete tu/redis-broker job))))
 
-      (is (true? (scheduled-jobs/delete-all tu/redis-opts))))))
+      (is (true? (scheduled-jobs/delete-all tu/redis-broker))))))
 
 (defn death-handler [_ _ _])
 (def dead-fn-atom (atom 0))
@@ -69,19 +69,19 @@
         (Thread/sleep 40))
       (w/stop worker)
 
-      (is (= 4 (dead-jobs/size tu/redis-opts)))
+      (is (= 4 (dead-jobs/size tu/redis-broker)))
 
-      (let [dead-job (dead-jobs/find-by-id tu/redis-opts dead-job-id)]
-        (is some? (dead-jobs/re-enqueue-for-execution tu/redis-opts dead-job))
-        (is true? (enqueued-jobs/delete tu/redis-opts dead-job)))
+      (let [dead-job (dead-jobs/find-by-id tu/redis-broker dead-job-id)]
+        (is some? (dead-jobs/re-enqueue-for-execution tu/redis-broker dead-job))
+        (is true? (enqueued-jobs/delete tu/redis-broker dead-job)))
 
       (let [match? (fn [job] (= (list 0) (:args job)))
-            [dead-job] (dead-jobs/find-by-pattern tu/redis-opts match?)
+            [dead-job] (dead-jobs/find-by-pattern tu/redis-broker match?)
             dead-at (get-in dead-job [:state :dead-at])]
-        (is (true? (dead-jobs/delete-older-than tu/redis-opts dead-at))))
+        (is (true? (dead-jobs/delete-older-than tu/redis-broker dead-at))))
 
       (let [match? (fn [job] (= (list 1) (:args job)))
-            [dead-job] (dead-jobs/find-by-pattern tu/redis-opts match?)]
-        (is (true? (dead-jobs/delete tu/redis-opts dead-job))))
+            [dead-job] (dead-jobs/find-by-pattern tu/redis-broker match?)]
+        (is (true? (dead-jobs/delete tu/redis-broker dead-job))))
 
-      (is (true? (dead-jobs/delete-all tu/redis-opts))))))
+      (is (true? (dead-jobs/delete-all tu/redis-broker))))))
