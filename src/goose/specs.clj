@@ -40,7 +40,8 @@
 ; ============== Queue ==============
 (defn- unprefixed? [queue] (not (string/starts-with? queue d/queue-prefix)))
 (defn- not-protected? [queue] (not (string/includes? d/protected-queues queue)))
-(s/def ::queue (s/and string? #(< (count %) 1000) unprefixed? not-protected?))
+; RMQ queue names cannot be longer than 255 bytes.
+(s/def ::queue (s/and string? #(< (count %) 200) unprefixed? not-protected?))
 
 ; ============== Retry Opts ==============
 (s/def ::max-retries nat-int?)
