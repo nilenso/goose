@@ -1,6 +1,10 @@
 (ns goose.test-utils
   (:require
     [goose.brokers.broker :as b]
+    ; When calling a multi-method, be sure to load
+    ; all namespaces implementing the multi-method.
+    [goose.brokers.redis.client]
+
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]
     [goose.retry :as retry]
