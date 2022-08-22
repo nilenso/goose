@@ -4,6 +4,7 @@
 
 (def long-polling-timeout-sec 1)
 (def scheduled-jobs-pop-limit 50)
+(def cron-entries-pop-limit 50)
 (def heartbeat-sleep-sec 15)
 (def heartbeat-expire-sec 60)
 (def scan-initial-cursor "0")
@@ -16,8 +17,9 @@
 (def default-queue "default")
 (def schedule-queue "scheduled-jobs")
 (def dead-queue "dead-jobs")
+(def cron-schedules-queue "cron-schedules")
 
-(def protected-queues [schedule-queue dead-queue])
+(def protected-queues [schedule-queue dead-queue cron-schedules-queue])
 
 (defn ^:no-doc prefix-queue
   [queue]
@@ -32,6 +34,7 @@
 (def prefixed-schedule-queue (prefix-queue schedule-queue))
 (def prefixed-retry-schedule-queue (prefix-queue schedule-queue))
 (def prefixed-dead-queue (prefix-queue dead-queue))
+(def prefixed-cron-schedules-queue (prefix-queue cron-schedules-queue))
 
 (def redis-internal-thread-pool-size 4)
 (def redis-default-url "redis://localhost:6379")

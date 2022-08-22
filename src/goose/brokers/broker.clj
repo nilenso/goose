@@ -6,6 +6,7 @@
   (enqueue [_ job])
   (schedule [_ schedule job])
   (start [_ worker-opts])
+  (register-cron [_ cron-schedule job-description])
 
   ; enqueued-jobs API
   (enqueued-jobs-list-all-queues [_])

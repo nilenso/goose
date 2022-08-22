@@ -6,7 +6,7 @@
 
     [taoensso.carmine :as car]))
 
-(def ^:private atomic-lock-attempts 100)
+(def atomic-lock-attempts 100)
 
 (defmacro wcar* [conn & body] `(car/wcar ~conn ~@body))
 
@@ -22,6 +22,11 @@
      (if (stop? next (count elements))
        elements
        #(iterate-redis conn iterate-fn match? stop? next elements)))))
+
+(defmacro with-transaction [redis-conn & body]
+  `(car/atomic ~redis-conn atomic-lock-attempts
+     (car/multi)
+     ~@body))
 
 ; ============ Key-Value =============
 (defn set-key-val [conn key value expire-sec]
@@ -110,8 +115,8 @@
      (trampoline iterate-redis conn iterate-fn match? stop? (dec (list-size conn queue))))))
 
 ; ============ Sorted-Sets ============
-(def ^:private sorted-set-min "-inf")
-(def ^:private sorted-set-max "+inf")
+(def sorted-set-min "-inf")
+(def sorted-set-max "+inf")
 
 (defn enqueue-sorted-set [conn sorted-set score element]
   (wcar* conn (car/zadd sorted-set score element)))

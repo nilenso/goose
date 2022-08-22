@@ -20,6 +20,22 @@
     (or (get-in job [:retry-opts :prefixed-retry-queue]) (:prefixed-queue job))
     (:prefixed-queue job)))
 
+(defn description
+  "A job description is a description of how the job
+  should be created. It's a job without the id or enqueued-at."
+  [execute-fn-sym args queue prefixed-queue retry-opts]
+  {:execute-fn-sym execute-fn-sym
+   :args           args
+   :queue          queue
+   :prefixed-queue prefixed-queue
+   :retry-opts     retry-opts})
+
+(defn from-description
+  [job-description]
+  (assoc job-description
+    :id (str (random-uuid))
+    :enqueued-at (u/epoch-time-ms)))
+
 (defn- calculate-latency
   [job]
   (cond

@@ -10,6 +10,7 @@
     [goose.metrics.statsd :as statsd]
     [goose.utils :as u]
     [goose.worker :as w]
+    [goose.cron.parsing :as cron-parsing]
 
     [clojure.spec.alpha :as s]
     [clojure.spec.test.alpha :as st]
@@ -19,6 +20,9 @@
 
 ; ========== Qualified Function Symbols ==============
 (s/def ::fn-sym (s/and qualified-symbol? resolve #(fn? @(resolve %))))
+
+; ========== Cron ===============
+(s/def ::cron-string (s/and string? cron-parsing/valid-cron?))
 
 ; ========== Redis ==============
 (s/def :goose.specs.redis/url string?)
@@ -152,6 +156,12 @@
 (s/fdef c/perform-in-sec
         :args (s/cat :opts ::client-opts
                      :sec int?
+                     :execute-fn-sym ::fn-sym
+                     :args (s/* ::args-serializable?)))
+
+(s/fdef c/perform-every
+        :args (s/cat :opts ::client-opts
+                     :cron-schedule ::cron-string
                      :execute-fn-sym ::fn-sym
                      :args (s/* ::args-serializable?)))
 

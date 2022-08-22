@@ -7,7 +7,8 @@
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.brokers.redis.scheduler :as redis-scheduler]
     [goose.brokers.redis.worker :as redis-worker]
-    [goose.defaults :as d]))
+    [goose.defaults :as d]
+    [goose.brokers.redis.cron.registry :as cron-registry]))
 
 (defrecord Redis [conn scheduler-polling-interval-sec]
   b/Broker
@@ -16,6 +17,8 @@
     (select-keys job [:id]))
   (schedule [this schedule job]
     (redis-scheduler/run-at (:conn this) schedule job))
+  (register-cron [this cron-schedule job-description]
+    (cron-registry/register-cron (:conn this) cron-schedule job-description))
   (start [this worker-opts]
     (redis-worker/start
       (assoc worker-opts

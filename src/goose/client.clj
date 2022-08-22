@@ -11,6 +11,22 @@
   {:queue      d/default-queue
    :retry-opts retry/default-opts})
 
+(defn- register-cron-schedule
+  [{:keys [broker-opts queue retry-opts] :as _opts}
+   cron-schedule
+   execute-fn-sym
+   args]
+  (let [redis-conn     (b/new broker-opts)
+        retry-opts     (retry/prefix-queue-if-present retry-opts)
+        prefixed-queue (d/prefix-queue queue)]
+    (:id (b/register-cron redis-conn
+                          cron-schedule
+                          (j/description execute-fn-sym
+                                         args
+                                         queue
+                                         prefixed-queue
+                                         retry-opts)))))
+
 (defn- enqueue
   [{:keys [broker queue retry-opts]}
    schedule
@@ -44,3 +60,11 @@
   `args` are variadic."
   [opts sec execute-fn-sym & args]
   (enqueue opts (u/add-sec sec) execute-fn-sym args))
+
+(defn perform-every
+  "Schedule a function for periodic execution.
+  `cron-schedule` should be a string in the UNIX cron format.
+  `execute-fn-sym` should be a fully-qualified function symbol.
+  `args` are variadic. "
+  [opts cron-schedule execute-fn-sym & args]
+  (register-cron-schedule opts cron-schedule execute-fn-sym args))
