@@ -1,5 +1,4 @@
-(ns goose.brokers.broker
-  {:no-doc true})
+(ns goose.brokers.broker)
 
 (defmulti new
           (fn [broker & _] (:type broker)))

@@ -83,7 +83,7 @@
      :max-idle-per-key  d/redis-client-pool-size
      :min-idle-per-key  1}))
 
-(defmethod b/new d/redis new-redis-client
+(defmethod b/new d/redis new-redis-broker
   ([opts] (b/new opts nil))
   ([{:keys [url pool-opts scheduler-polling-interval-sec]} thread-count]
    (let [pool-opts (or pool-opts (new-pool-opts thread-count))]

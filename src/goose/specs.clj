@@ -1,5 +1,6 @@
 (ns goose.specs
   (:require
+    [goose.brokers.broker :as b]
     [goose.client :as c]
     [goose.defaults :as d]
     [goose.utils :as u]
@@ -24,12 +25,16 @@
         :iconn-pool #(satisfies? IConnectionPool %)))
 
 ; ============== Brokers ==============
+(s/def ::broker #(satisfies? b/Broker %))
+
 (s/def ::redis
   (s/keys :req-un [:goose.specs.redis/type :goose.specs.redis/url
                    :goose.specs.redis/scheduler-polling-interval-sec]
           :opt-un [:goose.specs.redis/pool-opts]))
 (s/def ::broker-opts
   (s/or :redis ::redis))
+(s/fdef b/new
+        :args (s/cat :broker-opts ::broker-opts))
 
 ; ============== Queue ==============
 (defn- unprefixed? [queue] (not (string/starts-with? queue d/queue-prefix)))
@@ -71,13 +76,13 @@
 (s/def ::args-serializable?
   #(try (= % (nippy/thaw (nippy/freeze %)))
         (catch Exception _ false)))
-(s/def ::client-opts (s/keys :req-un [::broker-opts ::queue]
+(s/def ::client-opts (s/keys :req-un [::broker ::queue]
                              :opt-un [::retry-opts]))
 
 ; ============== Worker ==============
 (s/def ::threads pos-int?)
 (s/def ::graceful-shutdown-sec pos-int?)
-(s/def ::worker-opts (s/keys :req-un [::broker-opts ::queue ::threads
+(s/def ::worker-opts (s/keys :req-un [::broker ::queue ::threads
                                       ::graceful-shutdown-sec ::statsd-opts]))
 
 ; ============== FDEFs ==============
@@ -102,7 +107,8 @@
         :args (s/cat :opts ::worker-opts))
 
 (def ^:private fns-with-specs
-  [`c/perform-async
+  [`b/new
+   `c/perform-async
    `c/perform-at
    `c/perform-in-sec
    `w/start])
