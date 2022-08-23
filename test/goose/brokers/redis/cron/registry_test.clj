@@ -23,7 +23,7 @@
       cron-schedule)))
 
 (deftest cron-registry-test
-  (testing "Registering, checking and enqueueing cron entries"
+  (testing "Registering and checking cron entries"
     (let [broker     (broker/new tu/redis-opts)
           cron-entry (cron-registry/register-cron broker
                                                   "*/5 * * * *"
@@ -50,8 +50,21 @@
                                       (before-due-time
                                         "*/5 * * * *"))]
         (is (nil? (cron-registry/due-cron-entries broker))
-            "The cron entry is not due before the scheduled cron time"))
+            "The cron entry is not due before the scheduled cron time")))))
 
+(deftest find-and-enqueue-cron-entries-test
+  (testing "find-and-enqueue-cron-entries"
+    (let [broker (broker/new tu/redis-opts)]
+      (is (not (cron-registry/find-and-enqueue-cron-entries broker))
+          "find-and-enqueue-cron-entries returns falsey if due cron entries were not found")
+
+      (cron-registry/register-cron broker
+                                   "*/5 * * * *"
+                                   (j/description `foo-sym
+                                                  [:a "b" 3]
+                                                  "foo-queue"
+                                                  (d/prefix-queue "foo-queue")
+                                                  retry/default-opts))
       (with-redefs [u/epoch-time-ms                (constantly
                                                      (after-due-time
                                                        "*/5 * * * *"))
@@ -59,8 +72,8 @@
                                                      (inc
                                                        (after-due-time
                                                          "*/5 * * * *")))]
-        (when-let [entries (cron-registry/due-cron-entries broker)]
-          (cron-registry/enqueue-due-cron-entries broker entries)))
+        (is (cron-registry/find-and-enqueue-cron-entries broker)
+            "find-and-enqueue-cron-entries returns truthy if due cron entries were found"))
 
       (is (nil?
             (with-redefs [u/epoch-time-ms (constantly
@@ -80,37 +93,4 @@
                                                   (= `foo-sym execute-fn-sym)))
                  first
                  (dissoc :id :enqueued-at)))
-          "A job is created from the cron entry and enqueued")))
-
-  (testing "find-and-enqueue-cron-entries"
-    (testing "Registering, checking and enqueueing cron entries"
-      (let [broker     (broker/new tu/redis-opts)]
-        (cron-registry/register-cron broker
-                                     "*/5 * * * *"
-                                     (j/description `foo-sym
-                                                    [:a "b" 3]
-                                                    "foo-queue"
-                                                    (d/prefix-queue "foo-queue")
-                                                    retry/default-opts))
-        (with-redefs [u/epoch-time-ms                (constantly
-                                                       (after-due-time
-                                                         "*/5 * * * *"))
-                      cron-parsing/next-run-epoch-ms (constantly
-                                                       (inc
-                                                         (after-due-time
-                                                           "*/5 * * * *")))]
-          (is (cron-registry/find-and-enqueue-cron-entries broker)
-              "find-and-enqueue-cron-entries returns truthy if due cron entries were found"))
-
-        (is (= {:args           [:a "b" 3]
-                :execute-fn-sym `foo-sym
-                :prefixed-queue (d/prefix-queue "foo-queue")
-                :queue          "foo-queue"
-                :retry-opts     retry/default-opts}
-               (-> (enqueued-jobs/find-by-pattern tu/redis-opts
-                                                  "foo-queue"
-                                                  (fn [{:keys [execute-fn-sym]}]
-                                                    (= `foo-sym execute-fn-sym)))
-                   first
-                   (dissoc :id :enqueued-at)))
-            "A job is created from the cron entry and enqueued")))))
+          "A job is created from the cron entry and enqueued"))))

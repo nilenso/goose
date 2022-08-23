@@ -28,33 +28,37 @@
   (doseq [[queue-key grouped-jobs] (group-by :prefixed-queue jobs)]
     (apply car/rpush queue-key grouped-jobs)))
 
-(defn enqueue-due-cron-entries
-  [redis-conn due-cron-entries]
+(defn- enqueue-due-cron-entries
+  [due-cron-entries]
   (let [jobs-to-enqueue          (map (comp j/from-description :job-description) due-cron-entries)
-        ;; The due times must be computed here because it is effectful
-        ;; and shouldn't go in a transaction block.
         entries-by-next-due-time (group-by (comp cron-parsing/next-run-epoch-ms :cron-schedule)
                                            due-cron-entries)]
-    (redis-cmds/with-transaction redis-conn
-      (enqueue-jobs-to-ready-on-priority jobs-to-enqueue)
-      (doseq [[due-epoch-ms cron-entries] entries-by-next-due-time
-              cron-entry cron-entries]
-        (set-due-time cron-entry due-epoch-ms)))))
+    (enqueue-jobs-to-ready-on-priority jobs-to-enqueue)
+    (doseq [[due-epoch-ms cron-entries] entries-by-next-due-time
+            cron-entry cron-entries]
+      (set-due-time cron-entry due-epoch-ms))))
+
+(defn- due-cron-entries-command []
+  (car/zrangebyscore d/prefixed-cron-schedules-queue
+                     redis-cmds/sorted-set-min
+                     (u/epoch-time-ms)
+                     "limit"
+                     0
+                     d/cron-entries-pop-limit))
 
 (defn due-cron-entries
   [redis-conn]
   (not-empty
     (redis-cmds/wcar* redis-conn
-      (car/zrangebyscore d/prefixed-cron-schedules-queue
-                         redis-cmds/sorted-set-min
-                         (u/epoch-time-ms)
-                         "limit"
-                         0
-                         d/cron-entries-pop-limit))))
+      (due-cron-entries-command))))
 
 (defn find-and-enqueue-cron-entries
   "Returns truthy if due cron entries were found."
   [redis-conn]
-  (when-let [due-cron-entries (due-cron-entries redis-conn)]
-    (enqueue-due-cron-entries redis-conn due-cron-entries)
-    true))
+  (redis-cmds/with-transaction redis-conn
+    (car/watch d/prefixed-cron-schedules-queue)
+    (let [due-cron-entries (not-empty (car/with-replies (due-cron-entries-command)))]
+      (car/multi)
+      (when due-cron-entries
+        (enqueue-due-cron-entries due-cron-entries)
+        true))))

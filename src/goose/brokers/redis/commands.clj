@@ -23,10 +23,20 @@
        elements
        #(iterate-redis conn iterate-fn match? stop? next elements)))))
 
+(defn run-with-transaction
+  "Runs fn inside a Carmine atomic block, and returns
+  whatever fn returns."
+  [redis-conn fn]
+  (let [return-value (atom nil)]
+    (car/atomic redis-conn atomic-lock-attempts
+      ;; This ugliness is necessary because car/atomic does not return the value
+      ;; of the last expression inside it.
+      (reset! return-value (fn)))
+    @return-value))
+
 (defmacro with-transaction [redis-conn & body]
-  `(car/atomic ~redis-conn atomic-lock-attempts
-     (car/multi)
-     ~@body))
+  `(run-with-transaction ~redis-conn
+                         (fn [] ~@body)))
 
 ; ============ Key-Value =============
 (defn set-key-val [conn key value expire-sec]
