@@ -12,14 +12,13 @@
    :retry-opts retry/default-opts})
 
 (defn- register-cron-schedule
-  [{:keys [broker-opts queue retry-opts] :as _opts}
+  [{:keys [broker queue retry-opts] :as _opts}
    cron-schedule
    execute-fn-sym
    args]
-  (let [redis-conn     (b/new broker-opts)
-        retry-opts     (retry/prefix-queue-if-present retry-opts)
+  (let [retry-opts     (retry/prefix-queue-if-present retry-opts)
         prefixed-queue (d/prefix-queue queue)]
-    (:id (b/register-cron redis-conn
+    (:id (b/register-cron broker
                           cron-schedule
                           (j/description execute-fn-sym
                                          args
