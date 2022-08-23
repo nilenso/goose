@@ -1,4 +1,4 @@
-(ns goose.brokers.redis.client
+(ns goose.brokers.redis.broker
   (:require
     [goose.brokers.broker :as b]
     [goose.brokers.redis.api.dead-jobs :as dead-jobs]
@@ -69,8 +69,8 @@
 
 (def default-opts
   "Default config for Redis client."
-  {:type                           d/redis
-   :url                            d/redis-default-url
+  {:url                            d/redis-default-url
+   :pool-opts                      nil
    :scheduler-polling-interval-sec 5})
 
 (defn- new-pool-opts
@@ -83,9 +83,10 @@
      :max-idle-per-key  d/redis-client-pool-size
      :min-idle-per-key  1}))
 
-(defmethod b/new d/redis new-redis-broker
-  ([opts] (b/new opts nil))
+(defn new
+  "Create a client for Redis broker."
+  ([opts] (goose.brokers.redis.broker/new opts nil))
   ([{:keys [url pool-opts scheduler-polling-interval-sec]} thread-count]
    (let [pool-opts (or pool-opts (new-pool-opts thread-count))]
-     (Redis. {:spec {:uri url} :pool pool-opts}
+     (->Redis {:spec {:uri url} :pool pool-opts}
              scheduler-polling-interval-sec))))

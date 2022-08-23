@@ -1,12 +1,7 @@
 (ns goose.test-utils
   (:require
-    [goose.brokers.broker :as b]
-    ; When calling a multi-method, be sure to load
-    ; all namespaces implementing the multi-method.
-    [goose.brokers.redis.client]
-
+    [goose.brokers.redis.broker :as redis]
     [goose.brokers.redis.commands :as redis-cmds]
-    [goose.defaults :as d]
     [goose.retry :as retry]
     [goose.specs :as specs]
     [goose.statsd :as statsd]
@@ -28,9 +23,9 @@
   (let [host (or (System/getenv "GOOSE_TEST_REDIS_HOST") "localhost")
         port (or (System/getenv "GOOSE_TEST_REDIS_PORT") "6379")]
     (str "redis://" host ":" port)))
-(def redis-opts {:url redis-url :type d/redis :scheduler-polling-interval-sec 1})
+(def redis-opts {:url redis-url :scheduler-polling-interval-sec 1})
 (def redis-conn {:spec {:uri (:url redis-opts)}})
-(def redis-broker (b/new redis-opts))
+(def redis-broker (redis/new redis-opts 1))
 (def redis-client-opts (assoc client-opts :broker redis-broker))
 (def redis-worker-opts (assoc worker-opts :broker redis-broker))
 (defn clear-redis [] (redis-cmds/wcar* redis-conn (car/flushdb "SYNC")))

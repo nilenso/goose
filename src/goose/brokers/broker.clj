@@ -1,10 +1,5 @@
-(ns goose.brokers.broker)
-
-(defmulti new
-          (fn [broker & _] (:type broker)))
-
-(defmethod new :default [x & _]
-  (throw (ex-info "Invalid broker type" x)))
+(ns goose.brokers.broker
+  {:no-doc true})
 
 (defprotocol Broker
   "Protocol for all Goose brokers."

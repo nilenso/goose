@@ -8,7 +8,6 @@
 (def heartbeat-expire-sec 60)
 (def scan-initial-cursor "0")
 
-(def redis :redis)
 (def redis-internal-thread-pool-size 4)
 (def redis-default-url "redis://localhost:6379")
 (def redis-client-pool-size 5)

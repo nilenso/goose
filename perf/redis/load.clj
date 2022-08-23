@@ -2,8 +2,7 @@
   {:no-doc true}
   (:require
     [goose.api.enqueued-jobs :as enqueued-jobs]
-    [goose.brokers.broker :as broker]
-    [goose.brokers.redis.client :as redis-client]
+    [goose.brokers.redis.broker :as redis]
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.client :as c]
     [goose.defaults :as d]
@@ -25,9 +24,9 @@
 
 (defn dummy-handler [_ _])
 
-(def redis-broker (broker/new redis-client/default-opts))
+(def redis-broker (redis/new redis/default-opts))
 (def redis-proxy "localhost:6380")
-(def redis-broker-with-latency (broker/new {:url (str "redis://" redis-proxy) :type :redis}))
+(def redis-broker-with-latency (redis/new {:url (str "redis://" redis-proxy)}))
 
 (def client-opts
   (assoc c/default-opts
@@ -66,7 +65,7 @@
                       :threads 25)
         start-time (u/epoch-time-ms)
         worker (w/start worker-opts)]
-    (while (not (= 0 (enqueued-jobs/size redis-client/default-opts d/default-queue)))
+    (while (not (= 0 (enqueued-jobs/size redis/default-opts d/default-queue)))
       (Thread/sleep 200))
     (println "Jobs processed:" count "Milliseconds taken:" (- (u/epoch-time-ms) start-time))
 

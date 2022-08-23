@@ -1,7 +1,6 @@
 (ns goose.specs-test
   (:require
-    [goose.brokers.broker :as b]
-    [goose.brokers.redis.client :as redis-client]
+    [goose.brokers.redis.broker :as redis]
     [goose.client :as c]
     [goose.defaults :as d]
     [goose.specs :as specs]
@@ -69,6 +68,6 @@
     #(c/perform-async (assoc-in tu/redis-client-opts [:retry-opts :extra-key] :foo-bar) `tu/my-fn)
 
     ; :redis-opts
-    #(b/new (assoc redis-client/default-opts :url :invalid-url) )
-    #(b/new (assoc redis-client/default-opts :pool-opts :invalid-pool-opts))
-    #(b/new (assoc redis-client/default-opts :scheduler-polling-interval-sec 0))))
+    #(redis/new (assoc redis/default-opts :url :invalid-url))
+    #(redis/new (assoc redis/default-opts :pool-opts :invalid-pool-opts))
+    #(redis/new (assoc redis/default-opts :scheduler-polling-interval-sec 0))))

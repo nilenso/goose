@@ -1,6 +1,7 @@
 (ns goose.specs
   (:require
     [goose.brokers.broker :as b]
+    [goose.brokers.redis.broker :as redis]
     [goose.client :as c]
     [goose.defaults :as d]
     [goose.utils :as u]
@@ -16,7 +17,6 @@
 (s/def ::fn-sym (s/and qualified-symbol? resolve #(fn? @(resolve %))))
 
 ; ========== Redis ==============
-(s/def :goose.specs.redis/type #(= % d/redis))
 (s/def :goose.specs.redis/url string?)
 (s/def :goose.specs.redis/scheduler-polling-interval-sec pos-int?)
 (s/def :goose.specs.redis/pool-opts
@@ -24,17 +24,15 @@
         :map map?
         :iconn-pool #(satisfies? IConnectionPool %)))
 
-; ============== Brokers ==============
-(s/def ::broker #(satisfies? b/Broker %))
-
 (s/def ::redis
-  (s/keys :req-un [:goose.specs.redis/type :goose.specs.redis/url
+  (s/keys :req-un [:goose.specs.redis/url
                    :goose.specs.redis/scheduler-polling-interval-sec]
           :opt-un [:goose.specs.redis/pool-opts]))
-(s/def ::broker-opts
-  (s/or :redis ::redis))
-(s/fdef b/new
-        :args (s/cat :broker-opts ::broker-opts))
+(s/fdef redis/new
+        :args (s/cat :redis ::redis))
+
+; ============== Brokers ==============
+(s/def ::broker #(satisfies? b/Broker %))
 
 ; ============== Queue ==============
 (defn- unprefixed? [queue] (not (string/starts-with? queue d/queue-prefix)))
@@ -107,7 +105,7 @@
         :args (s/cat :opts ::worker-opts))
 
 (def ^:private fns-with-specs
-  [`b/new
+  [`redis/new
    `c/perform-async
    `c/perform-at
    `c/perform-in-sec
