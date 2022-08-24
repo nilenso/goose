@@ -4,8 +4,7 @@
     [goose.brokers.rmq.channels :as channels]
     [goose.brokers.rmq.commands :as rmq-cmds]
     [goose.brokers.rmq.worker :as rmq-worker]
-    [langohr.core :as rmq]
-    ))
+    [langohr.core :as rmq]))
 
 (defprotocol Close
   "Close connections for RabbitMQ broker."

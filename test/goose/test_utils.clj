@@ -64,3 +64,15 @@
   (f)
 
   (rmq-purge-test-queue))
+
+(defn exit-cli
+  "A utility function called by test-runner.
+  Contains logic necessary to exit CLI.
+  Not necessary to exit REPL."
+  []
+  (rmq/close rmq-broker)
+
+  ; clj-statsd uses agents.
+  ; If not shutdown, program won't quit.
+  ; https://stackoverflow.com/questions/38504056/program-wont-end-when-using-clj-statsd
+  (shutdown-agents))

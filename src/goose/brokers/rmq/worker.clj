@@ -7,13 +7,19 @@
     [goose.defaults :as d]
 
     [clojure.tools.logging :as log]
-    [com.climate.claypoole :as cp])
+    [com.climate.claypoole :as cp]
+    [langohr.basic :as lb]
+    [langohr.consumers :as lc])
   (:import
     [java.util.concurrent TimeUnit]))
 
 (defn- internal-stop
   "Gracefully shuts down the worker threadpool."
-  [{:keys [thread-pool graceful-shutdown-sec]}]
+  [{:keys [thread-pool consumers graceful-shutdown-sec]}]
+  ; Cancel all subscriptions to RabbitMQ.
+  (log/warn "Cancelling consumer subscriptions...")
+  (doall (map (fn [[ch consumer]] (lb/cancel ch consumer)) @consumers))
+
   ; Set state of thread-pool to SHUTDOWN.
   (log/warn "Shutting down thread-pool...")
   (cp/shutdown thread-pool)
@@ -43,16 +49,19 @@
   (let [prefixed-queue (d/prefix-queue queue)
         thread-pool (cp/threadpool threads)
         channels (:channels pool)
+        consumers (atom '())
         opts {:thread-pool           thread-pool
               :graceful-shutdown-sec graceful-shutdown-sec
               :call                  (chain-middlewares middlewares)
-              :prefixed-queue        prefixed-queue}]
+              :prefixed-queue        prefixed-queue
+              :consumers             consumers}]
     (rmq-cmds/create-queue (first channels) prefixed-queue)
     (channels/set-prefetch-limit pool threads)
 
     (dotimes [i threads]
       (let [ch (nth channels (mod i (:count pool)))
-            opts (assoc opts :ch ch)]
-        (cp/future thread-pool (rmq-dequeuer/run opts))))
+            opts (assoc opts :ch ch)
+            consumer-tag (lc/subscribe ch prefixed-queue (rmq-dequeuer/handler opts) {:auto-ack false})]
+        (swap! consumers #(conj % [ch consumer-tag]))))
 
     #(internal-stop opts)))
