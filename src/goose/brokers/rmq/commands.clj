@@ -1,8 +1,10 @@
 (ns goose.brokers.rmq.commands
+  {:no-doc true}
   (:require
     [goose.defaults :as d]
     [taoensso.nippy :as nippy]
-    [langohr.basic :as lb]))
+    [langohr.basic :as lb]
+    [langohr.queue :as lq]))
 
 (defn create-queue
   [ch name]
