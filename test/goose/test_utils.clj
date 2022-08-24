@@ -2,10 +2,14 @@
   (:require
     [goose.brokers.redis.broker :as redis]
     [goose.brokers.redis.commands :as redis-cmds]
+    [goose.brokers.rmq.broker :as rmq]
+    [goose.brokers.rmq.channels :as channels]
+    [goose.defaults :as d]
     [goose.retry :as retry]
     [goose.specs :as specs]
     [goose.metrics.statsd :as statsd]
 
+    [langohr.queue :as lq]
     [taoensso.carmine :as car]))
 
 (defn my-fn [arg] arg)
@@ -38,3 +42,25 @@
   (f)
 
   (clear-redis))
+
+(def rmq-url
+  (let [host (or (System/getenv "GOOSE_TEST_RABBITMQ_HOST") "localhost")
+        port (or (System/getenv "GOOSE_TEST_RABBITMQ_PORT") "5672")
+        username (or (System/getenv "GOOSE_TEST_RABBITMQ_USERNAME") "guest")
+        password (or (System/getenv "GOOSE_TEST_RABBITMQ_PASSWORD") "guest")]
+    (str "amqp://" username ":" password "@" host ":" port)))
+(def rmq-opts {:settings {:uri rmq-url} :channel-count 1})
+(def rmq-broker (rmq/new rmq-opts))
+(def rmq-client-opts (assoc client-opts :broker rmq-broker))
+(def rmq-worker-opts (assoc worker-opts :broker rmq-broker))
+(defn rmq-purge-test-queue []
+  (let [ch (channels/get-one (:pool rmq-broker))]
+    (lq/purge ch (d/prefix-queue queue))))
+
+(defn rmq-fixture
+  [f]
+  (specs/instrument)
+
+  (f)
+
+  (rmq-purge-test-queue))

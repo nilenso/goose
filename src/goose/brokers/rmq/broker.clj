@@ -36,5 +36,5 @@
   "Create a client for RabbitMQ broker."
   ([{:keys [settings channel-count]}]
    (let [conn (rmq/connect settings)
-         channels (channels/new conn channel-count)]
-     (->RabbitMQ conn channels))))
+         channel-pool (channels/new conn channel-count)]
+     (->RabbitMQ conn channel-pool))))

@@ -45,7 +45,8 @@
         channels (:channels pool)
         opts {:thread-pool           thread-pool
               :graceful-shutdown-sec graceful-shutdown-sec
-              :call                  (chain-middlewares middlewares)}]
+              :call                  (chain-middlewares middlewares)
+              :prefixed-queue        prefixed-queue}]
     (rmq-cmds/create-queue (first channels) prefixed-queue)
     (channels/set-prefetch-limit pool threads)
 
