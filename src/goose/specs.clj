@@ -2,6 +2,7 @@
   (:require
     [goose.brokers.broker :as b]
     [goose.brokers.redis.broker :as redis]
+    [goose.brokers.rmq.broker :as rmq]
     [goose.client :as c]
     [goose.defaults :as d]
     [goose.metrics.protocol :as metrics-protocol]
@@ -34,6 +35,27 @@
         :args (s/alt :one (s/cat :redis ::redis)
                      :two (s/cat :redis ::redis
                                  :thread-count (s/or :nil nil? :int pos-int?))))
+
+; ========== RabbitMQ ==============
+(s/def :goose.specs.rmq/uri string?)
+(s/def :goose.specs.rmq/host string?)
+(s/def :goose.specs.rmq/port int?)
+(s/def :goose.specs.rmq/username string?)
+(s/def :goose.specs.rmq/password string?)
+(s/def :goose.specs.rmq/vhost string?)
+(s/def :goose.specs.rmq/settings
+  (s/keys :opt-un [:goose.specs.rmq/uri
+                   :goose.specs.rmq/host :goose.specs.rmq/port
+                   :goose.specs.rmq/username :goose.specs.rmq/password
+                   :goose.specs.rmq/vhost]))
+(s/def :goose.specs.rmq/channel-count pos-int?)
+
+(s/def ::rmq
+  (s/keys :req-un [:goose.specs.rmq/settings
+                   :goose.specs.rmq/channel-count]))
+(s/fdef rmq/new
+        :args (s/cat :opts map?))
+
 ; ============== Brokers ==============
 (s/def ::broker #(satisfies? b/Broker %))
 
@@ -116,6 +138,7 @@
 (def ^:private fns-with-specs
   [`redis/new
    `statsd/new
+   `rmq/new
    `c/perform-async
    `c/perform-at
    `c/perform-in-sec
