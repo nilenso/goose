@@ -1,4 +1,4 @@
-(ns goose.brokers.rmq.channels
+(ns goose.brokers.rmq.channel
   (:require
     [langohr.basic :as lb]
     [langohr.channel :as lch]
@@ -23,7 +23,7 @@
   (close-all [this]
     (doall (map (fn [ch] (rmq/close ch)) (:channels this)))))
 
-(defn- open-channel
+(defn open
   [conn]
   (fn [_]
     (or
@@ -32,5 +32,5 @@
 
 (defn new
   [conn count]
-  (let [channels (map (open-channel conn) (range count))]
+  (let [channels (map (open conn) (range count))]
     (->Channels channels count)))

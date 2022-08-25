@@ -1,7 +1,7 @@
 (ns goose.brokers.rmq.worker
   {:no-doc true}
   (:require
-    [goose.brokers.rmq.channels :as channels]
+    [goose.brokers.rmq.channel :as rmq-channel]
     [goose.brokers.rmq.commands :as rmq-cmds]
     [goose.brokers.rmq.dequeuer :as rmq-dequeuer]
     [goose.defaults :as d]
@@ -44,11 +44,11 @@
     call))
 
 (defn start
-  [{:keys [pool queue threads middlewares
+  [{:keys [rmq-conn queue threads middlewares
            graceful-shutdown-sec]}]
   (let [prefixed-queue (d/prefix-queue queue)
         thread-pool (cp/threadpool threads)
-        channels (:channels pool)
+        channels (doall (map (rmq-channel/open rmq-conn) (range threads)))
         consumers (atom '())
         opts {:thread-pool           thread-pool
               :graceful-shutdown-sec graceful-shutdown-sec
@@ -56,10 +56,10 @@
               :prefixed-queue        prefixed-queue
               :consumers             consumers}]
     (rmq-cmds/create-queue (first channels) prefixed-queue)
-    (channels/set-prefetch-limit pool threads)
+    (doall (map (fn [ch] (lb/qos ch 1)) channels))
 
     (dotimes [i threads]
-      (let [ch (nth channels (mod i (:count pool)))
+      (let [ch (nth channels i)
             opts (assoc opts :ch ch)
             consumer-tag (lc/subscribe ch prefixed-queue (rmq-dequeuer/handler opts) {:auto-ack false})]
         (swap! consumers #(conj % [ch consumer-tag]))))

@@ -1,7 +1,7 @@
 (ns goose.brokers.rmq.broker
   (:require
     [goose.brokers.broker :as b]
-    [goose.brokers.rmq.channels :as channels]
+    [goose.brokers.rmq.channel :as channels]
     [goose.brokers.rmq.commands :as rmq-cmds]
     [goose.brokers.rmq.worker :as rmq-worker]
     [langohr.core :as rmq]))
@@ -17,7 +17,7 @@
   (start [this worker-opts]
     (rmq-worker/start
       (assoc worker-opts
-        :pool (:pool this))))
+        :rmq-conn (:conn this))))
 
   Close
   (close [this]
