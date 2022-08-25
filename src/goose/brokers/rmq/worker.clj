@@ -3,7 +3,7 @@
   (:require
     [goose.brokers.rmq.channel :as rmq-channel]
     [goose.brokers.rmq.commands :as rmq-cmds]
-    [goose.brokers.rmq.dequeuer :as rmq-dequeuer]
+    [goose.brokers.rmq.consumer :as rmq-consumer]
     [goose.defaults :as d]
 
     [clojure.tools.logging :as log]
@@ -38,8 +38,8 @@
 (defn- chain-middlewares
   [middlewares]
   (let [call (if middlewares
-               (-> rmq-dequeuer/execute-job (middlewares))
-               rmq-dequeuer/execute-job)]
+               (-> rmq-consumer/execute-job (middlewares))
+               rmq-consumer/execute-job)]
     call))
 
 (defn start
@@ -55,5 +55,5 @@
               :channels              channels}]
     (rmq-cmds/create-queue (first channels) prefixed-queue)
 
-    (let [consumers (rmq-dequeuer/run opts)]
+    (let [consumers (rmq-consumer/run opts)]
       #(internal-stop opts consumers))))

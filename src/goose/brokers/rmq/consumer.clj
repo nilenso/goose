@@ -1,4 +1,4 @@
-(ns goose.brokers.rmq.dequeuer
+(ns goose.brokers.rmq.consumer
   {:no-doc true}
   (:require
     [goose.defaults :as d]
