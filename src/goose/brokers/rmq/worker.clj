@@ -17,7 +17,7 @@
   [{:keys [thread-pool graceful-shutdown-sec]} consumers]
   ; Cancel all subscriptions to RabbitMQ.
   (log/warn "Cancelling consumer subscriptions...")
-  (doall (map (fn [[ch consumer]] (lb/cancel ch consumer)) consumers))
+  (doall (for [[ch consumer] consumers] (lb/cancel ch consumer)))
 
   ; Set state of thread-pool to SHUTDOWN.
   (log/warn "Shutting down thread-pool...")
@@ -47,7 +47,7 @@
            graceful-shutdown-sec]}]
   (let [prefixed-queue (d/prefix-queue queue)
         thread-pool (cp/threadpool threads)
-        channels (rmq-channel/new rmq-conn threads)
+        channels (rmq-channel/new-pool rmq-conn threads)
         opts {:thread-pool           thread-pool
               :graceful-shutdown-sec graceful-shutdown-sec
               :call                  (chain-middlewares middlewares)

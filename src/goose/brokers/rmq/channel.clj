@@ -9,7 +9,7 @@
     (lch/open conn)
     (throw (Exception. "CHANNEL_MAX limit reached: cannot open new channels"))))
 
-(defn new
-  [conn count]
+(defn new-pool
+  [conn size]
   ; Since `for` returns a lazy-seq; using `doall` to force execution.
-  (doall (for [_ (range count)] (open conn))))
+  (doall (for [_ (range size)] (open conn))))

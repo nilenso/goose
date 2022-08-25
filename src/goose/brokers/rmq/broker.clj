@@ -15,7 +15,7 @@
 (defrecord RabbitMQ [conn channels]
   b/Broker
   (enqueue [this job]
-    (rmq-cmds/enqueue-back (u/get-one (:channels this)) job))
+    (rmq-cmds/enqueue-back (u/random-element (:channels this)) job))
   (start [this worker-opts]
     (rmq-worker/start (assoc worker-opts :rmq-conn (:conn this))))
 
@@ -32,13 +32,12 @@
 
 (defn new
   "Create a client for RabbitMQ broker.
-  When enqueuing, channel-count MUST be provided.
-  When executing jobs using Goose worker,
-  channel-count need not be given as
-  channels are created equal to thread-count."
+  When enqueuing jobs, channel-pool-size MUST be defined.
+  When executing jobs, channel-pool-size should not be given
+  as worker creates channels equal to number of threads."
   ([opts]
    (goose.brokers.rmq.broker/new opts 0))
-  ([{:keys [settings]} channel-count]
+  ([{:keys [settings]} channel-pool-size]
    (let [conn (lcore/connect settings)
-         channel-pool (channels/new conn channel-count)]
+         channel-pool (channels/new-pool conn channel-pool-size)]
      (->RabbitMQ conn channel-pool))))

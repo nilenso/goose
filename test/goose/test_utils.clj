@@ -55,7 +55,7 @@
 (def rmq-client-opts (assoc client-opts :broker client-rmq-broker))
 (def rmq-worker-opts (assoc worker-opts :broker worker-rmq-broker))
 (defn rmq-purge-test-queue []
-  (let [ch (u/get-one (:channels client-rmq-broker))]
+  (let [ch (u/random-element (:channels client-rmq-broker))]
     (lq/purge ch (d/prefix-queue queue))))
 
 (defn rmq-fixture

@@ -57,7 +57,7 @@
 (s/fdef rmq/new
         :args (s/alt :one (s/cat :opts ::rmq)
                      :two (s/cat :opts ::rmq
-                                 :channel-count nat-int?)))
+                                 :channel-pool-size nat-int?)))
 
 ; ============== Brokers ==============
 (s/def ::broker #(satisfies? b/Broker %))
