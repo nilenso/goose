@@ -3,7 +3,6 @@
     [goose.brokers.redis.broker :as redis]
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.brokers.rmq.broker :as rmq]
-    [goose.brokers.rmq.channel :as channels]
     [goose.defaults :as d]
     [goose.retry :as retry]
     [goose.specs :as specs]

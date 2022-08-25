@@ -48,7 +48,7 @@
            graceful-shutdown-sec]}]
   (let [prefixed-queue (d/prefix-queue queue)
         thread-pool (cp/threadpool threads)
-        channels (doall (map (rmq-channel/open rmq-conn) (range threads)))
+        channels (rmq-channel/new rmq-conn threads)
         consumers (atom '())
         opts {:thread-pool           thread-pool
               :graceful-shutdown-sec graceful-shutdown-sec

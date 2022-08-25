@@ -4,8 +4,9 @@
     [goose.brokers.rmq.channel :as channels]
     [goose.brokers.rmq.commands :as rmq-cmds]
     [goose.brokers.rmq.worker :as rmq-worker]
-    [langohr.core :as lcore]
-    [goose.utils :as u]))
+    [goose.utils :as u]
+
+    [langohr.core :as lcore]))
 
 (defprotocol Close
   "Close connections for RabbitMQ broker."
@@ -16,9 +17,7 @@
   (enqueue [this job]
     (rmq-cmds/enqueue-back (u/get-one (:channels this)) job))
   (start [this worker-opts]
-    (rmq-worker/start
-      (assoc worker-opts
-        :rmq-conn (:conn this))))
+    (rmq-worker/start (assoc worker-opts :rmq-conn (:conn this))))
 
   Close
   (close [this]
@@ -30,8 +29,7 @@
   "Default config for RabbitMQ client.
   Refer to http://clojurerabbitmq.info/articles/connecting.html
   for complete set of settings."
-  {:settings      {:uri "amqp://guest:guest@localhost:5672/"}
-   :channel-count 1})
+  {:settings {:uri "amqp://guest:guest@localhost:5672/"}})
 
 (defn new
   "Create a client for RabbitMQ broker.
