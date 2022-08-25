@@ -13,7 +13,6 @@
     [java.util.concurrent TimeUnit]))
 
 (defn- internal-stop
-  "Gracefully shuts down the worker threadpool."
   [{:keys [thread-pool graceful-shutdown-sec]} consumers]
   ; Cancel all subscriptions to RabbitMQ.
   (log/warn "Cancelling consumer subscriptions...")
@@ -26,10 +25,7 @@
   ; Give jobs executing grace time to complete.
   (log/warn "Awaiting executing jobs to complete.")
 
-  (.awaitTermination
-    thread-pool
-    graceful-shutdown-sec
-    TimeUnit/SECONDS)
+  (.awaitTermination thread-pool graceful-shutdown-sec TimeUnit/SECONDS)
 
   ; Set state of thread-pool to STOP.
   (log/warn "Sending InterruptedException to close threads.")

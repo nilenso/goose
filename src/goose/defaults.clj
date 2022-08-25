@@ -12,6 +12,7 @@
 (def redis-default-url "redis://localhost:6379")
 (def redis-client-pool-size 5)
 
+(def rmq-default-url "amqp://guest:guest@localhost:5672")
 (def rmq-exchange "")
 (def rmq-prefetch-limit 1)
 

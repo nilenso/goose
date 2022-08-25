@@ -7,10 +7,10 @@
     [goose.retry :as retry]
     [goose.specs :as specs]
     [goose.metrics.statsd :as statsd]
+    [goose.utils :as u]
 
     [langohr.queue :as lq]
-    [taoensso.carmine :as car]
-    [goose.utils :as u]))
+    [taoensso.carmine :as car]))
 
 (defn my-fn [arg] arg)
 (def queue "test")

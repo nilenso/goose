@@ -4,6 +4,7 @@
     [goose.brokers.rmq.channel :as channels]
     [goose.brokers.rmq.commands :as rmq-cmds]
     [goose.brokers.rmq.worker :as rmq-worker]
+    [goose.defaults :as d]
     [goose.utils :as u]
 
     [langohr.core :as lcore]))
@@ -28,7 +29,7 @@
   "Default config for RabbitMQ client.
   Refer to http://clojurerabbitmq.info/articles/connecting.html
   for complete set of settings."
-  {:settings {:uri "amqp://guest:guest@localhost:5672/"}})
+  {:settings {:uri d/rmq-default-url}})
 
 (defn new
   "Create a client for RabbitMQ broker.
