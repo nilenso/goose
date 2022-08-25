@@ -4,16 +4,17 @@
     [goose.brokers.rmq.channel :as channels]
     [goose.brokers.rmq.commands :as rmq-cmds]
     [goose.brokers.rmq.worker :as rmq-worker]
-    [langohr.core :as rmq]))
+    [langohr.core :as lcore]
+    [goose.utils :as u]))
 
 (defprotocol Close
   "Close connections for RabbitMQ broker."
   (close [this]))
 
-(defrecord RabbitMQ [conn pool]
+(defrecord RabbitMQ [conn channels]
   b/Broker
   (enqueue [this job]
-    (rmq-cmds/enqueue-back (channels/get-one (:pool this)) job))
+    (rmq-cmds/enqueue-back (u/get-one (:channels this)) job))
   (start [this worker-opts]
     (rmq-worker/start
       (assoc worker-opts
@@ -21,8 +22,9 @@
 
   Close
   (close [this]
-    (channels/close-all (:pool this))
-    (rmq/close (:conn this))))
+    (for [ch (:channels this)]
+      (lcore/close ch))
+    (lcore/close (:conn this))))
 
 (def default-opts
   "Default config for RabbitMQ client.
@@ -32,8 +34,14 @@
    :channel-count 1})
 
 (defn new
-  "Create a client for RabbitMQ broker."
-  ([{:keys [settings channel-count]}]
-   (let [conn (rmq/connect settings)
+  "Create a client for RabbitMQ broker.
+  When enqueuing, channel-count MUST be provided.
+  When executing jobs using Goose worker,
+  channel-count need not be given as
+  channels are created equal to thread-count."
+  ([opts]
+   (goose.brokers.rmq.broker/new opts 0))
+  ([{:keys [settings]} channel-count]
+   (let [conn (lcore/connect settings)
          channel-pool (channels/new conn channel-count)]
      (->RabbitMQ conn channel-pool))))

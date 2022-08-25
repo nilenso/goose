@@ -49,3 +49,9 @@
 
 (defn ^:no-doc hostname []
   (.getHostName (java.net.InetAddress/getLocalHost)))
+
+(defn ^:no-doc get-one
+  [any-list]
+  (if (< 0 (count any-list))
+    (nth any-list (rand-int (count any-list)))
+    (throw (Exception. "List is empty."))))

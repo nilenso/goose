@@ -10,7 +10,8 @@
     [goose.metrics.statsd :as statsd]
 
     [langohr.queue :as lq]
-    [taoensso.carmine :as car]))
+    [taoensso.carmine :as car]
+    [goose.utils :as u]))
 
 (defn my-fn [arg] arg)
 (def queue "test")
@@ -49,12 +50,13 @@
         username (or (System/getenv "GOOSE_TEST_RABBITMQ_USERNAME") "guest")
         password (or (System/getenv "GOOSE_TEST_RABBITMQ_PASSWORD") "guest")]
     (str "amqp://" username ":" password "@" host ":" port)))
-(def rmq-opts {:settings {:uri rmq-url} :channel-count 1})
-(def rmq-broker (rmq/new rmq-opts))
-(def rmq-client-opts (assoc client-opts :broker rmq-broker))
-(def rmq-worker-opts (assoc worker-opts :broker rmq-broker))
+(def rmq-opts {:settings {:uri rmq-url}})
+(def client-rmq-broker (rmq/new rmq-opts 1))
+(def worker-rmq-broker (rmq/new rmq-opts))
+(def rmq-client-opts (assoc client-opts :broker client-rmq-broker))
+(def rmq-worker-opts (assoc worker-opts :broker worker-rmq-broker))
 (defn rmq-purge-test-queue []
-  (let [ch (channels/get-one (:pool rmq-broker))]
+  (let [ch (u/get-one (:channels client-rmq-broker))]
     (lq/purge ch (d/prefix-queue queue))))
 
 (defn rmq-fixture
@@ -70,7 +72,8 @@
   Contains logic necessary to exit CLI.
   Not necessary to exit REPL."
   []
-  (rmq/close rmq-broker)
+  (rmq/close client-rmq-broker)
+  (rmq/close worker-rmq-broker)
 
   ; clj-statsd uses agents.
   ; If not shutdown, program won't quit.

@@ -43,18 +43,21 @@
 (s/def :goose.specs.rmq/username string?)
 (s/def :goose.specs.rmq/password string?)
 (s/def :goose.specs.rmq/vhost string?)
+; A non-exhaustive list of RabbitMQ settings.
+; Full list of settings can be found here:
+; http://clojurerabbitmq.info/articles/connecting.html
 (s/def :goose.specs.rmq/settings
   (s/keys :opt-un [:goose.specs.rmq/uri
                    :goose.specs.rmq/host :goose.specs.rmq/port
                    :goose.specs.rmq/username :goose.specs.rmq/password
                    :goose.specs.rmq/vhost]))
-(s/def :goose.specs.rmq/channel-count pos-int?)
 
 (s/def ::rmq
-  (s/keys :req-un [:goose.specs.rmq/settings
-                   :goose.specs.rmq/channel-count]))
+  (s/keys :req-un [:goose.specs.rmq/settings]))
 (s/fdef rmq/new
-        :args (s/cat :opts map?))
+        :args (s/alt :one (s/cat :opts ::rmq)
+                     :two (s/cat :opts ::rmq
+                                 :channel-count nat-int?)))
 
 ; ============== Brokers ==============
 (s/def ::broker #(satisfies? b/Broker %))
