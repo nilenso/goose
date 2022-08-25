@@ -2,7 +2,7 @@
   {:no-doc true}
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
-    [goose.brokers.redis.executor :as redis-executor]
+    [goose.brokers.redis.consumer :as redis-consumer]
     [goose.brokers.redis.heartbeat :as heartbeat]
     [goose.statsd :as statsd]
     [goose.utils :as u]))
@@ -23,7 +23,7 @@
     (when-not (heartbeat/alive? redis-conn process)
       (trampoline
         reenqueue-orphan-jobs
-        opts (redis-executor/preservation-queue process))
+        opts (redis-consumer/preservation-queue process))
       (redis-cmds/del-from-set redis-conn process-set process))))
 
 (defn run

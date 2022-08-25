@@ -1,4 +1,4 @@
-(ns goose.brokers.redis.executor
+(ns goose.brokers.redis.consumer
   {:no-doc true}
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
@@ -6,6 +6,10 @@
     [goose.utils :as u]
 
     [clojure.tools.logging :as log]))
+
+(defn execute-job
+  [_ {:keys [execute-fn-sym args]}]
+  (apply (u/require-resolve execute-fn-sym) args))
 
 (defn preservation-queue
   [id]

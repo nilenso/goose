@@ -89,4 +89,4 @@
   ([{:keys [url pool-opts scheduler-polling-interval-sec]} thread-count]
    (let [pool-opts (or pool-opts (new-pool-opts thread-count))]
      (->Redis {:spec {:uri url} :pool pool-opts}
-             scheduler-polling-interval-sec))))
+              scheduler-polling-interval-sec))))

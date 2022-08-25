@@ -29,8 +29,9 @@
                    :goose.specs.redis/scheduler-polling-interval-sec]
           :opt-un [:goose.specs.redis/pool-opts]))
 (s/fdef redis/new
-        :args (s/cat :redis ::redis))
-
+        :args (s/alt :one (s/cat :redis ::redis)
+                     :two (s/cat :redis ::redis
+                                 :thread-count (s/or :nil nil? :int pos-int?))))
 ; ============== Brokers ==============
 (s/def ::broker #(satisfies? b/Broker %))
 

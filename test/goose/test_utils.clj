@@ -30,7 +30,7 @@
 (def redis-worker-opts (assoc worker-opts :broker redis-broker))
 (defn clear-redis [] (redis-cmds/wcar* redis-conn (car/flushdb "SYNC")))
 
-(defn fixture
+(defn redis-fixture
   [f]
   (specs/instrument)
   (clear-redis)

@@ -10,7 +10,7 @@
                   :exec-fn     test-runner/test-and-shutdown}
            :repl {:extra-deps {vvvvalvalval/scope-capture  {:mvn/version "0.3.2"}
                                org.clojure/tools.namespace {:mvn/version "1.3.0"}}}
-           :perf {:paths      ["perf", "src"]
-                  :exec-fn    redis.load/benchmark
-                  :extra-deps {criterium/criterium                 {:mvn/version "0.4.6"}
-                               eu.rekawek.toxiproxy/toxiproxy-java {:mvn/version "2.1.3"}}}}}
+           :perf {:extra-paths ["perf"]
+                  :exec-fn     redis.load/benchmark
+                  :extra-deps  {criterium/criterium                 {:mvn/version "0.4.6"}
+                                eu.rekawek.toxiproxy/toxiproxy-java {:mvn/version "2.1.3"}}}}}

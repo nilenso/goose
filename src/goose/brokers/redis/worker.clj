@@ -1,13 +1,12 @@
 (ns goose.brokers.redis.worker
   (:require
-    [goose.brokers.redis.executor :as redis-executor]
+    [goose.brokers.redis.consumer :as redis-consumer]
     [goose.brokers.redis.heartbeat :as redis-heartbeat]
     [goose.brokers.redis.orphan-checker :as redis-orphan-checker]
     [goose.brokers.redis.retry :as redis-retry]
     [goose.brokers.redis.scheduler :as redis-scheduler]
     [goose.brokers.redis.statsd :as redis-statsd]
     [goose.defaults :as d]
-    [goose.executor]
     [goose.job :as job]
     [goose.statsd]
     [goose.utils :as u]
@@ -48,8 +47,8 @@
 (defn- chain-middlewares
   [middlewares]
   (let [call (if middlewares
-               (-> goose.executor/execute-job (middlewares))
-               goose.executor/execute-job)]
+               (-> redis-consumer/execute-job (middlewares))
+               redis-consumer/execute-job)]
     (-> call
         (goose.statsd/wrap-metrics)
         (job/wrap-latency)
@@ -75,7 +74,7 @@
 
               :process-set                    (str d/process-prefix queue)
               :prefixed-queue                 (d/prefix-queue queue)
-              :in-progress-queue              (redis-executor/preservation-queue id)
+              :in-progress-queue              (redis-consumer/preservation-queue id)
 
               :graceful-shutdown-sec          graceful-shutdown-sec
               :scheduler-polling-interval-sec scheduler-polling-interval-sec}]
@@ -86,6 +85,6 @@
     (cp/future internal-thread-pool (redis-orphan-checker/run opts))
 
     (dotimes [_ threads]
-      (cp/future thread-pool (redis-executor/run opts)))
+      (cp/future thread-pool (redis-consumer/run opts)))
 
     #(internal-stop opts)))

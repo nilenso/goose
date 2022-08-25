@@ -11,7 +11,7 @@
     [clojure.test :refer [deftest is testing use-fixtures]]))
 
 ; ======= Setup & Teardown ==========
-(use-fixtures :once tu/fixture)
+(use-fixtures :once tu/redis-fixture)
 
 (deftest enqueued-jobs-test
   (testing "enqueued-jobs API"

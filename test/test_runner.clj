@@ -1,9 +1,11 @@
 (ns test-runner
-  (:require [cognitect.test-runner.api :as test-runner]))
+  (:require
+    [cognitect.test-runner.api :as test-runner]))
 
 (defn test-and-shutdown
-  [_]
-  (test-runner/test ["-m" "cognitect.test-runner"])
+  [args]
+  (let [test-params (array-map :-m "cognitect.test-runner")]
+    (test-runner/test (merge test-params args)))
 
   ; clj-statsd uses agents.
   ; If not shutdown, program won't quit.

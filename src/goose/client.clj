@@ -8,8 +8,8 @@
 
 (def default-opts
   "Default config for Goose client."
-  {:queue       d/default-queue
-   :retry-opts  retry/default-opts})
+  {:queue      d/default-queue
+   :retry-opts retry/default-opts})
 
 (defn- enqueue
   [{:keys [broker queue retry-opts]}

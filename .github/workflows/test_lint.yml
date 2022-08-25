@@ -8,7 +8,7 @@ jobs:
     container: clojure:openjdk-17-tools-deps-1.11.0.1100-bullseye
     services:
       redis:
-        image: redis
+        image: redis:7.0
         # Health checks will wait until redis has started.
         options: >-
           --health-cmd "redis-cli ping"
