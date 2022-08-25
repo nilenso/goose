@@ -13,6 +13,7 @@
 (def redis-client-pool-size 5)
 
 (def rmq-exchange "")
+(def rmq-prefetch-limit 1)
 
 (def queue-prefix "goose/queue:")
 (def in-progress-queue-prefix "goose/in-progress-jobs:")

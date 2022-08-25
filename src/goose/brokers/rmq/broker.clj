@@ -21,8 +21,7 @@
 
   Close
   (close [this]
-    (for [ch (:channels this)]
-      (lcore/close ch))
+    ; Channels get closed automatically when connection is closed.
     (lcore/close (:conn this))))
 
 (def default-opts

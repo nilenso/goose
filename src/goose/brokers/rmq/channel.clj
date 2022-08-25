@@ -1,4 +1,5 @@
 (ns goose.brokers.rmq.channel
+  {:no-doc true}
   (:require
     [langohr.channel :as lch]))
 
@@ -10,5 +11,5 @@
 
 (defn new
   [conn count]
-  (for [_ (range count)]
-    (open conn)))
+  ; Since `for` returns a lazy-seq; using `doall` to force execution.
+  (doall (for [_ (range count)] (open conn))))
