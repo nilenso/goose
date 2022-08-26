@@ -60,18 +60,20 @@
                      ::error-handler-fn-sym ::death-handler-fn-sym]
             :opt-un [::retry-queue])))
 
-; ============== Metrics Opts ==============
-(s/def :goose.specs.metrics/enabled? boolean?)
-(s/def :goose.specs.metrics/host string?)
-(s/def :goose.specs.metrics/port pos-int?)
-(s/def :goose.specs.metrics/sample-rate double?)
-(s/def :goose.specs.metrics/tags map?)
+; ============== StatsD Metrics ==============
+(s/def :goose.specs.statsd/enabled? boolean?)
+(s/def :goose.specs.statsd/host string?)
+(s/def :goose.specs.statsd/port pos-int?)
+(s/def :goose.specs.statsd/prefix string?)
+(s/def :goose.specs.statsd/sample-rate double?)
+(s/def :goose.specs.statsd/tags map?)
 (s/def ::statsd-opts
-  (s/keys :req-un [:goose.specs.metrics/enabled?]
-          :opt-un [:goose.specs.metrics/host
-                   :goose.specs.metrics/port
-                   :goose.specs.metrics/tags
-                   :goose.specs.metrics/sample-rate]))
+  (s/keys :req-un [:goose.specs.statsd/enabled?]
+          :opt-un [:goose.specs.statsd/host
+                   :goose.specs.statsd/port
+                   :goose.specs.statsd/prefix
+                   :goose.specs.statsd/tags
+                   :goose.specs.statsd/sample-rate]))
 (s/fdef statsd/new
         :args (s/cat :opts ::statsd-opts))
 

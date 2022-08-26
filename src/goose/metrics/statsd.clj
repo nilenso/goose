@@ -3,7 +3,6 @@
   Users can choose custom plugins by
   implementing Metrics protocol."
   (:require
-    [goose.metrics.keys :as keys]
     [goose.metrics.protocol :as protocol]
 
     [clj-statsd]))
@@ -20,28 +19,29 @@
 (defrecord StatsD [enabled? sample-rate user-tags]
   protocol/Protocol
   (enabled? [_] enabled?)
-  (gauge [_ metric value goose-tags]
+  (gauge [_ key value goose-tags]
     (when enabled?
-      (with-merged-tags clj-statsd/gauge metric value sample-rate user-tags goose-tags)))
-  (increment [_ metric value goose-tags]
+      (with-merged-tags clj-statsd/gauge key value sample-rate user-tags goose-tags)))
+  (increment [_ key value goose-tags]
     (when enabled?
-      (with-merged-tags clj-statsd/increment metric value sample-rate user-tags goose-tags)))
-  (timing [_ metric duration goose-tags]
+      (with-merged-tags clj-statsd/increment key value sample-rate user-tags goose-tags)))
+  (timing [_ key duration goose-tags]
     (when enabled?
-      (with-merged-tags clj-statsd/timing metric duration sample-rate user-tags goose-tags))))
+      (with-merged-tags clj-statsd/timing key duration sample-rate user-tags goose-tags))))
 
 (def default-opts
   "Default config for StatsD Metrics."
   {:enabled?    true
    :host        "localhost"
    :port        8125
+   :prefix      ""
    :sample-rate 1.0
    :tags        {}})
 
 (defn new
-  [{:keys [enabled? host port sample-rate tags]}]
+  [{:keys [enabled? host port prefix sample-rate tags]}]
   (when enabled?
-    (clj-statsd/setup host port :prefix keys/prefix))
+    (clj-statsd/setup host port :prefix prefix))
   (->StatsD enabled? sample-rate tags))
 
 

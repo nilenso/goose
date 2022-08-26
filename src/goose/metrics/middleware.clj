@@ -10,13 +10,10 @@
        {[job-type latency] :latency
         :keys              [execute-fn-sym queue]
         :as                job}]
-    (let [tags {:function execute-fn-sym
-                :queue    queue}
+    (let [tags {:function execute-fn-sym :queue queue}
           start (u/epoch-time-ms)]
       (try
-        (protocol/increment metrics-plugin keys/jobs-processed 1 tags)
         ; When a job is executed using API, latency might be negative.
-        ; Ignore negative values.
         (when (pos? latency)
           (protocol/timing metrics-plugin job-type latency tags))
         (next opts job)
@@ -25,4 +22,5 @@
           (protocol/increment metrics-plugin keys/jobs-failure 1 tags)
           (throw ex))
         (finally
+          (protocol/increment metrics-plugin keys/jobs-processed 1 tags)
           (protocol/timing metrics-plugin keys/execution-time (- (u/epoch-time-ms) start) tags))))))

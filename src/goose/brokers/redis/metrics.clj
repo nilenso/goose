@@ -29,10 +29,10 @@
 
 (defn run
   [{:keys [internal-thread-pool redis-conn metrics-plugin]}]
-  (when metrics-protocol/enabled? metrics-plugin
-    (u/while-pool
-      internal-thread-pool
-      (u/log-on-exceptions
+  (u/log-on-exceptions
+    (when (metrics-protocol/enabled? metrics-plugin)
+      (u/while-pool
+        internal-thread-pool
         (let [size-map {metrics-keys/schedule-queue-size (redis-cmds/sorted-set-size redis-conn d/prefixed-schedule-queue)
                         metrics-keys/dead-queue-size     (redis-cmds/sorted-set-size redis-conn d/prefixed-dead-queue)}]
           ; Using doseq instead of map, because map is lazy.

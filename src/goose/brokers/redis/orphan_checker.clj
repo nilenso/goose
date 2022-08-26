@@ -10,7 +10,7 @@
 
 (defn- publish-metrics
   [metrics-plugin {:keys [execute-fn-sym queue]}]
-  (let [tags {:function execute-fn-sym :queue    queue}]
+  (let [tags {:function execute-fn-sym :queue queue}]
     (metrics-protocol/increment metrics-plugin metrics-keys/jobs-recovered 1 tags)))
 
 (defn- reenqueue-orphan-jobs
