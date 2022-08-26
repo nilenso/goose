@@ -4,6 +4,8 @@
     [goose.brokers.redis.broker :as redis]
     [goose.client :as c]
     [goose.defaults :as d]
+    [goose.metrics.protocol :as metrics-protocol]
+    [goose.metrics.statsd :as statsd]
     [goose.utils :as u]
     [goose.worker :as w]
 
@@ -58,18 +60,20 @@
                      ::error-handler-fn-sym ::death-handler-fn-sym]
             :opt-un [::retry-queue])))
 
-; ============== Statsd Opts ==============
-(s/def :goose.specs.statsd/enabled? boolean?)
-(s/def :goose.specs.statsd/host string?)
-(s/def :goose.specs.statsd/port pos-int?)
-(s/def :goose.specs.statsd/sample-rate double?)
-(s/def :goose.specs.statsd/tags map?)
+; ============== Metrics Opts ==============
+(s/def :goose.specs.metrics/enabled? boolean?)
+(s/def :goose.specs.metrics/host string?)
+(s/def :goose.specs.metrics/port pos-int?)
+(s/def :goose.specs.metrics/sample-rate double?)
+(s/def :goose.specs.metrics/tags map?)
 (s/def ::statsd-opts
-  (s/keys :req-un [:goose.specs.statsd/enabled?]
-          :opt-un [:goose.specs.statsd/host
-                   :goose.specs.statsd/port
-                   :goose.specs.statsd/tags
-                   :goose.specs.statsd/sample-rate]))
+  (s/keys :req-un [:goose.specs.metrics/enabled?]
+          :opt-un [:goose.specs.metrics/host
+                   :goose.specs.metrics/port
+                   :goose.specs.metrics/tags
+                   :goose.specs.metrics/sample-rate]))
+(s/fdef statsd/new
+        :args (s/cat :opts ::statsd-opts))
 
 ; ============== Client ==============
 (s/def ::args-serializable?
@@ -81,8 +85,9 @@
 ; ============== Worker ==============
 (s/def ::threads pos-int?)
 (s/def ::graceful-shutdown-sec pos-int?)
+(s/def ::metrics-plugin #(satisfies? metrics-protocol/Protocol %))
 (s/def ::worker-opts (s/keys :req-un [::broker ::queue ::threads
-                                      ::graceful-shutdown-sec ::statsd-opts]))
+                                      ::graceful-shutdown-sec ::metrics-plugin]))
 
 ; ============== FDEFs ==============
 (s/fdef c/perform-async
@@ -107,6 +112,7 @@
 
 (def ^:private fns-with-specs
   [`redis/new
+   `statsd/new
    `c/perform-async
    `c/perform-at
    `c/perform-in-sec

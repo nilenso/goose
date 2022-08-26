@@ -8,11 +8,11 @@
 
     [clj-statsd]))
 
-(defn build-tags
+(defn- build-tags
   [tags]
   (map (fn [[key value]] (str (name key) ":" value)) tags))
 
-(defn with-merged-tags
+(defn- with-merged-tags
   [f metric value sample-rate user-tags goose-tags]
   (let [tags (build-tags (merge user-tags goose-tags))]
     (f metric value sample-rate tags)))
