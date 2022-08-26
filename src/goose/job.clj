@@ -1,7 +1,7 @@
 (ns goose.job
   {:no-doc true}
   (:require
-    [goose.statsd :as statsd]
+    [goose.metrics.keys :as metrics-keys]
     [goose.utils :as u]))
 
 (defn new
@@ -18,11 +18,11 @@
   [job]
   (cond
     (:retry-at (:state job))
-    [statsd/retry-latency (- (u/epoch-time-ms) (:retry-at (:state job)))]
+    [metrics-keys/retry-latency (- (u/epoch-time-ms) (:retry-at (:state job)))]
     (:schedule job)
-    [statsd/schedule-latency (- (u/epoch-time-ms) (:schedule job))]
+    [metrics-keys/schedule-latency (- (u/epoch-time-ms) (:schedule job))]
     :else
-    [statsd/execution-latency (- (u/epoch-time-ms) (:enqueued-at job))]))
+    [metrics-keys/execution-latency (- (u/epoch-time-ms) (:enqueued-at job))]))
 
 (defn wrap-latency
   [next]
