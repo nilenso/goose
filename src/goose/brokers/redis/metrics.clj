@@ -41,6 +41,6 @@
         (let [total-process-count (heartbeat/total-process-count redis-conn)]
           ; Sleep for total-process-count minutes + jitters.
           ; On average, Goose sends queue level stats every 1 minute.
-          (Thread/sleep (* 1 (+ (* 60 total-process-count)
+          (Thread/sleep (* 1000 (+ (* 60 total-process-count)
                                 (rand-int total-process-count)))))))))
 

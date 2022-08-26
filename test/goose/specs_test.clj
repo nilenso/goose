@@ -43,7 +43,7 @@
     #(w/start (assoc tu/redis-worker-opts :metrics-plugin :invalid))
 
     ; :statad-opts
-    #(statsd/new (assoc statsd/default-opts :enabled? 1))
+    #(statsd/new (assoc statsd/default-opts :enabled 1))
     #(statsd/new (assoc statsd/default-opts :host 127.0))
     #(statsd/new (assoc statsd/default-opts :port "8125"))
     #(statsd/new (assoc statsd/default-opts :prefix :symbol))

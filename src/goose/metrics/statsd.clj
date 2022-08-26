@@ -16,32 +16,34 @@
   (let [tags (build-tags (merge user-tags goose-tags))]
     (f metric value sample-rate tags)))
 
-(defrecord StatsD [enabled? sample-rate user-tags]
+(defrecord StatsD [enabled sample-rate user-tags]
   protocol/Protocol
-  (enabled? [_] enabled?)
+  (enabled? [_] enabled)
   (gauge [_ key value goose-tags]
-    (when enabled?
+    (when enabled
       (with-merged-tags clj-statsd/gauge key value sample-rate user-tags goose-tags)))
   (increment [_ key value goose-tags]
-    (when enabled?
+    (when enabled
       (with-merged-tags clj-statsd/increment key value sample-rate user-tags goose-tags)))
   (timing [_ key duration goose-tags]
-    (when enabled?
+    (when enabled
       (with-merged-tags clj-statsd/timing key duration sample-rate user-tags goose-tags))))
 
 (def default-opts
   "Default config for StatsD Metrics."
-  {:enabled?    true
+  {:enabled     true
    :host        "localhost"
    :port        8125
-   :prefix      ""
+   :prefix      "goose."
    :sample-rate 1.0
    :tags        {}})
 
 (defn new
-  [{:keys [enabled? host port prefix sample-rate tags]}]
-  (when enabled?
+  "Create a StatsD Metrics plugin.
+  Prefix metrics to distinguish between 2 microservices."
+  [{:keys [enabled host port prefix sample-rate tags]}]
+  (when enabled
     (clj-statsd/setup host port :prefix prefix))
-  (->StatsD enabled? sample-rate tags))
+  (->StatsD enabled sample-rate tags))
 
 
