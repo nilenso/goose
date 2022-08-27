@@ -15,6 +15,11 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      rabbitmq:
+        image: rabbitmq:3.9
+        env:
+          RABBITMQ_DEFAULT_USER: goose
+          RABBITMQ_DEFAULT_PASS: top-gun
     steps:
       - uses: actions/checkout@v3
       - name: Run tests
@@ -22,6 +27,10 @@ jobs:
         env:
           GOOSE_TEST_REDIS_HOST: redis
           GOOSE_TEST_REDIS_PORT: 6379
+          GOOSE_TEST_RABBITMQ_HOST: rabbitmq
+          GOOSE_TEST_RABBITMQ_PORT: 5672
+          GOOSE_TEST_RABBITMQ_USERNAME: goose
+          GOOSE_TEST_RABBITMQ_PASSWORD: top-gun
       - name: Install clj-kondo
         run: |
           curl -sLO https://raw.githubusercontent.com/borkdude/clj-kondo/master/script/install-clj-kondo

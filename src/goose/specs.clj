@@ -2,6 +2,7 @@
   (:require
     [goose.brokers.broker :as b]
     [goose.brokers.redis.broker :as redis]
+    [goose.brokers.rmq.broker :as rmq]
     [goose.client :as c]
     [goose.defaults :as d]
     [goose.metrics.protocol :as metrics-protocol]
@@ -34,13 +35,40 @@
         :args (s/alt :one (s/cat :redis ::redis)
                      :two (s/cat :redis ::redis
                                  :thread-count (s/or :nil nil? :int pos-int?))))
+
+; ========== RabbitMQ ==============
+(s/def :goose.specs.rmq/uri string?)
+(s/def :goose.specs.rmq/host string?)
+(s/def :goose.specs.rmq/port int?)
+(s/def :goose.specs.rmq/username string?)
+(s/def :goose.specs.rmq/password string?)
+(s/def :goose.specs.rmq/vhost string?)
+; A non-exhaustive list of RabbitMQ settings.
+; Full list of settings can be found here:
+; http://clojurerabbitmq.info/articles/connecting.html
+(s/def :goose.specs.rmq/settings
+  (s/keys :opt-un [:goose.specs.rmq/uri
+                   :goose.specs.rmq/host
+                   :goose.specs.rmq/port
+                   :goose.specs.rmq/username
+                   :goose.specs.rmq/password
+                   :goose.specs.rmq/vhost]))
+
+(s/def ::rmq
+  (s/keys :req-un [:goose.specs.rmq/settings]))
+(s/fdef rmq/new
+        :args (s/alt :one (s/cat :opts ::rmq)
+                     :two (s/cat :opts ::rmq
+                                 :channel-pool-size nat-int?)))
+
 ; ============== Brokers ==============
 (s/def ::broker #(satisfies? b/Broker %))
 
 ; ============== Queue ==============
 (defn- unprefixed? [queue] (not (string/starts-with? queue d/queue-prefix)))
 (defn- not-protected? [queue] (not (string/includes? d/protected-queues queue)))
-(s/def ::queue (s/and string? #(< (count %) 1000) unprefixed? not-protected?))
+; RMQ queue names cannot be longer than 255 bytes.
+(s/def ::queue (s/and string? #(< (count %) 200) unprefixed? not-protected?))
 
 ; ============== Retry Opts ==============
 (s/def ::max-retries nat-int?)
@@ -115,6 +143,7 @@
 (def ^:private fns-with-specs
   [`redis/new
    `statsd/new
+   `rmq/new
    `c/perform-async
    `c/perform-at
    `c/perform-in-sec

@@ -1,4 +1,5 @@
 (ns goose.utils
+  (:refer-clojure :exclude [list])
   (:require
     [clojure.string :as str]
     [clojure.tools.logging :as log]
@@ -49,3 +50,10 @@
 
 (defn ^:no-doc hostname []
   (.getHostName (java.net.InetAddress/getLocalHost)))
+
+(defn ^:no-doc random-element
+  "Randomly select an element from a list & return it."
+  [list]
+  (if (zero? (count list))
+    (throw (Exception. "List is empty."))
+    (nth list (rand-int (count list)))))

@@ -2,10 +2,14 @@
   (:require
     [goose.brokers.redis.broker :as redis]
     [goose.brokers.redis.commands :as redis-cmds]
+    [goose.brokers.rmq.broker :as rmq]
+    [goose.defaults :as d]
     [goose.retry :as retry]
     [goose.specs :as specs]
     [goose.metrics.statsd :as statsd]
+    [goose.utils :as u]
 
+    [langohr.queue :as lq]
     [taoensso.carmine :as car]))
 
 (defn my-fn [arg] arg)
@@ -38,3 +42,39 @@
   (f)
 
   (clear-redis))
+
+(def rmq-url
+  (let [host (or (System/getenv "GOOSE_TEST_RABBITMQ_HOST") "localhost")
+        port (or (System/getenv "GOOSE_TEST_RABBITMQ_PORT") "5672")
+        username (or (System/getenv "GOOSE_TEST_RABBITMQ_USERNAME") "guest")
+        password (or (System/getenv "GOOSE_TEST_RABBITMQ_PASSWORD") "guest")]
+    (str "amqp://" username ":" password "@" host ":" port)))
+(def rmq-opts {:settings {:uri rmq-url}})
+(def client-rmq-broker (rmq/new rmq-opts 1))
+(def worker-rmq-broker (rmq/new rmq-opts))
+(def rmq-client-opts (assoc client-opts :broker client-rmq-broker))
+(def rmq-worker-opts (assoc worker-opts :broker worker-rmq-broker))
+(defn rmq-purge-test-queue []
+  (let [ch (u/random-element (:channels client-rmq-broker))]
+    (lq/purge ch (d/prefix-queue queue))))
+
+(defn rmq-fixture
+  [f]
+  (specs/instrument)
+
+  (f)
+
+  (rmq-purge-test-queue))
+
+(defn exit-cli
+  "A utility function called by test-runner.
+  Contains logic necessary to exit CLI.
+  Not necessary to exit REPL."
+  []
+  (rmq/close client-rmq-broker)
+  (rmq/close worker-rmq-broker)
+
+  ; clj-statsd uses agents.
+  ; If not shutdown, program won't quit.
+  ; https://stackoverflow.com/questions/38504056/program-wont-end-when-using-clj-statsd
+  (shutdown-agents))
