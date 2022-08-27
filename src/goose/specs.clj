@@ -48,8 +48,10 @@
 ; http://clojurerabbitmq.info/articles/connecting.html
 (s/def :goose.specs.rmq/settings
   (s/keys :opt-un [:goose.specs.rmq/uri
-                   :goose.specs.rmq/host :goose.specs.rmq/port
-                   :goose.specs.rmq/username :goose.specs.rmq/password
+                   :goose.specs.rmq/host
+                   :goose.specs.rmq/port
+                   :goose.specs.rmq/username
+                   :goose.specs.rmq/password
                    :goose.specs.rmq/vhost]))
 
 (s/def ::rmq

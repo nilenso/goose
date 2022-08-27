@@ -13,10 +13,10 @@
     [java.util.concurrent TimeUnit]))
 
 (defn- internal-stop
-  [{:keys [thread-pool graceful-shutdown-sec]} consumers]
+  [{:keys [thread-pool graceful-shutdown-sec ch+consumers]}]
   ; Cancel all subscriptions to RabbitMQ.
   (log/warn "Cancelling consumer subscriptions...")
-  (doall (for [[ch consumer] consumers] (lb/cancel ch consumer)))
+  (doall (for [[ch consumer] ch+consumers] (lb/cancel ch consumer)))
 
   ; Set state of thread-pool to SHUTDOWN.
   (log/warn "Shutting down thread-pool...")
@@ -39,8 +39,7 @@
     call))
 
 (defn start
-  [{:keys [rmq-conn queue threads middlewares
-           graceful-shutdown-sec]}]
+  [{:keys [rmq-conn queue threads middlewares graceful-shutdown-sec]}]
   (let [prefixed-queue (d/prefix-queue queue)
         thread-pool (cp/threadpool threads)
         channels (rmq-channel/new-pool rmq-conn threads)
@@ -52,4 +51,4 @@
     (rmq-cmds/create-queue (first channels) prefixed-queue)
 
     (let [consumers (rmq-consumer/run opts)]
-      #(internal-stop opts consumers))))
+      #(internal-stop (assoc opts :ch+consumers consumers)))))

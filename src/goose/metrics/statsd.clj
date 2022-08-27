@@ -13,7 +13,7 @@
 (defmacro ^:private with-merged-tags
   [f metric value sample-rate tags additional-tags]
   `(let [tags# (build-tags (merge ~tags ~additional-tags))]
-    (~f ~metric ~value ~sample-rate tags#)))
+     (~f ~metric ~value ~sample-rate tags#)))
 
 (defrecord StatsD [enabled? sample-rate tags]
   protocol/Protocol

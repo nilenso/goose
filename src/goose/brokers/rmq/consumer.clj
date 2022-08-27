@@ -15,11 +15,13 @@
   (lb/ack ch delivery-tag))
 
 (defn- handler
-  [{:keys [call thread-pool] :as opts}]
-  (fn [ch {:keys [delivery-tag]} ^bytes payload]
-    (let [job (nippy/thaw payload)
-          opts (assoc opts :ch ch :delivery-tag delivery-tag)]
-      (cp/future thread-pool (call opts job)))))
+  [{:keys [call thread-pool] :as opts}
+   ch
+   {:keys [delivery-tag]}
+   ^bytes payload]
+  (let [job (nippy/thaw payload)
+        opts (assoc opts :ch ch :delivery-tag delivery-tag)]
+    (cp/future thread-pool (call opts job))))
 
 (defn run
   [{:keys [channels prefixed-queue] :as opts}]
@@ -28,4 +30,4 @@
       (let [opts (assoc opts :ch ch)]
         ; Set prefetch-limit to 1.
         (lb/qos ch d/rmq-prefetch-limit)
-        [ch (lc/subscribe ch prefixed-queue (handler opts) {:auto-ack false})]))))
+        [ch (lc/subscribe ch prefixed-queue (partial handler opts) {:auto-ack false})]))))

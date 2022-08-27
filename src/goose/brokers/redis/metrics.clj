@@ -34,7 +34,7 @@
       (u/while-pool
         internal-thread-pool
         (let [protected-queues->size {metrics-keys/schedule-queue-size (redis-cmds/sorted-set-size redis-conn d/prefixed-schedule-queue)
-                        metrics-keys/dead-queue-size     (redis-cmds/sorted-set-size redis-conn d/prefixed-dead-queue)}]
+                                      metrics-keys/dead-queue-size     (redis-cmds/sorted-set-size redis-conn d/prefixed-dead-queue)}]
           ; Using doseq instead of map, because map is lazy.
           (doseq [[k v] (merge protected-queues->size (get-size-of-all-queues redis-conn))]
             (metrics-protocol/gauge metrics-plugin k v {})))
@@ -42,5 +42,5 @@
           ; Sleep for total-process-count minutes + jitters.
           ; On average, Goose sends queue level stats every 1 minute.
           (Thread/sleep (* 1000 (+ (* 60 total-process-count)
-                                (rand-int total-process-count)))))))))
+                                   (rand-int total-process-count)))))))))
 
