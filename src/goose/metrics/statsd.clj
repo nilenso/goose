@@ -1,7 +1,6 @@
 (ns goose.metrics.statsd
-  "StatsD is the default plugin for Goose.
-  Users can choose custom plugins by
-  implementing Metrics protocol."
+  "StatsD is the default & specimen plugin for Goose.
+  Plugins can be customized by implementing Metrics protocol."
   (:require
     [goose.metrics.protocol :as protocol]
 
@@ -16,22 +15,19 @@
   (let [tags (build-tags (merge user-tags goose-tags))]
     (f metric value sample-rate tags)))
 
-(defrecord StatsD [enabled sample-rate user-tags]
+(defrecord StatsD [enabled? sample-rate user-tags]
   protocol/Protocol
-  (enabled? [_] enabled)
-  (gauge [_ key value goose-tags]
-    (when enabled
-      (with-merged-tags clj-statsd/gauge key value sample-rate user-tags goose-tags)))
-  (increment [_ key value goose-tags]
-    (when enabled
-      (with-merged-tags clj-statsd/increment key value sample-rate user-tags goose-tags)))
-  (timing [_ key duration goose-tags]
-    (when enabled
-      (with-merged-tags clj-statsd/timing key duration sample-rate user-tags goose-tags))))
+  (enabled? [this] (:enabled? this))
+  (gauge [this key value goose-tags]
+    (with-merged-tags clj-statsd/gauge key value (:sample-rate this) (:user-tags this) goose-tags))
+  (increment [this key value goose-tags]
+    (with-merged-tags clj-statsd/increment key value (:sample-rate this) (:user-tags this) goose-tags))
+  (timing [this key duration goose-tags]
+    (with-merged-tags clj-statsd/timing key duration (:sample-rate this) (:user-tags this) goose-tags)))
 
 (def default-opts
   "Default config for StatsD Metrics."
-  {:enabled     true
+  {:enabled?    true
    :host        "localhost"
    :port        8125
    :prefix      "goose."
@@ -41,9 +37,7 @@
 (defn new
   "Create a StatsD Metrics plugin.
   Prefix metrics to distinguish between 2 microservices."
-  [{:keys [enabled host port prefix sample-rate tags]}]
-  (when enabled
+  [{:keys [enabled? host port prefix sample-rate tags]}]
+  (when enabled?
     (clj-statsd/setup host port :prefix prefix))
-  (->StatsD enabled sample-rate tags))
-
-
+  (->StatsD enabled? sample-rate tags))
