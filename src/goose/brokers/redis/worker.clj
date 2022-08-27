@@ -2,13 +2,13 @@
   (:require
     [goose.brokers.redis.consumer :as redis-consumer]
     [goose.brokers.redis.heartbeat :as redis-heartbeat]
+    [goose.brokers.redis.metrics :as redis-metrics]
     [goose.brokers.redis.orphan-checker :as redis-orphan-checker]
     [goose.brokers.redis.retry :as redis-retry]
     [goose.brokers.redis.scheduler :as redis-scheduler]
-    [goose.brokers.redis.statsd :as redis-statsd]
     [goose.defaults :as d]
     [goose.job :as job]
-    [goose.statsd]
+    [goose.metrics.middleware :as metrics-middleware]
     [goose.utils :as u]
 
     [clojure.tools.logging :as log]
@@ -50,12 +50,12 @@
                (-> redis-consumer/execute-job (middlewares))
                redis-consumer/execute-job)]
     (-> call
-        (goose.statsd/wrap-metrics)
+        (metrics-middleware/wrap-metrics)
         (job/wrap-latency)
         (redis-retry/wrap-failure))))
 
 (defn start
-  [{:keys [redis-conn threads statsd-opts queue
+  [{:keys [redis-conn threads metrics-plugin queue
            error-service-cfg scheduler-polling-interval-sec
            middlewares graceful-shutdown-sec]}]
   (let [thread-pool (cp/threadpool threads)
@@ -70,7 +70,7 @@
               :redis-conn                     redis-conn
               :call                           call
               :error-service-cfg              error-service-cfg
-              :statsd-opts                    statsd-opts
+              :metrics-plugin                 metrics-plugin
 
               :process-set                    (str d/process-prefix queue)
               :prefixed-queue                 (d/prefix-queue queue)
@@ -79,7 +79,7 @@
               :graceful-shutdown-sec          graceful-shutdown-sec
               :scheduler-polling-interval-sec scheduler-polling-interval-sec}]
 
-    (cp/future internal-thread-pool (redis-statsd/run opts))
+    (cp/future internal-thread-pool (redis-metrics/run opts))
     (cp/future internal-thread-pool (redis-heartbeat/run opts))
     (cp/future internal-thread-pool (redis-scheduler/run opts))
     (cp/future internal-thread-pool (redis-orphan-checker/run opts))

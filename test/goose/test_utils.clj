@@ -4,7 +4,7 @@
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.retry :as retry]
     [goose.specs :as specs]
-    [goose.statsd :as statsd]
+    [goose.metrics.statsd :as statsd]
 
     [taoensso.carmine :as car]))
 
@@ -17,7 +17,7 @@
   {:threads               1
    :queue                 queue
    :graceful-shutdown-sec 1
-   :statsd-opts           (assoc statsd/default-opts :tags {:env "test"})})
+   :metrics-plugin        (statsd/new (assoc statsd/default-opts :tags {:env "test"}))})
 
 (def redis-url
   (let [host (or (System/getenv "GOOSE_TEST_REDIS_HOST") "localhost")

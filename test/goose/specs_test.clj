@@ -3,6 +3,7 @@
     [goose.brokers.redis.broker :as redis]
     [goose.client :as c]
     [goose.defaults :as d]
+    [goose.metrics.statsd :as statsd]
     [goose.specs :as specs]
     [goose.test-utils :as tu]
     [goose.worker :as w]
@@ -39,13 +40,15 @@
     ; Worker specs
     #(w/start (assoc tu/redis-worker-opts :threads -1.1))
     #(w/start (assoc tu/redis-worker-opts :graceful-shutdown-sec -2))
+    #(w/start (assoc tu/redis-worker-opts :metrics-plugin :invalid))
 
     ; :statad-opts
-    #(w/start (assoc-in tu/redis-worker-opts [:statsd-opts :enabled?] 1))
-    #(w/start (assoc-in tu/redis-worker-opts [:statsd-opts :host] 127.0))
-    #(w/start (assoc-in tu/redis-worker-opts [:statsd-opts :port] "8125"))
-    #(w/start (assoc-in tu/redis-worker-opts [:statsd-opts :sample-rate] 1))
-    #(w/start (assoc-in tu/redis-worker-opts [:statsd-opts :tags] '("service:maverick")))
+    #(statsd/new (assoc statsd/default-opts :enabled? 1))
+    #(statsd/new (assoc statsd/default-opts :host 127.0))
+    #(statsd/new (assoc statsd/default-opts :port "8125"))
+    #(statsd/new (assoc statsd/default-opts :prefix :symbol))
+    #(statsd/new (assoc statsd/default-opts :sample-rate 1))
+    #(statsd/new (assoc statsd/default-opts :tags '("service:maverick")))
 
     ; Common specs
     ; :broker
