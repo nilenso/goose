@@ -8,7 +8,7 @@
     [goose.metrics.protocol :as metrics-protocol]
     [goose.utils :as u]))
 
-(defn- publish-metrics
+(defn- increment-job-recovery-metric
   [metrics-plugin {:keys [execute-fn-sym queue]}]
   (let [tags {:function execute-fn-sym :queue queue}]
     (metrics-protocol/increment metrics-plugin metrics-keys/jobs-recovered 1 tags)))
@@ -20,7 +20,7 @@
   ; because Carmine doesn't support `LMOVE` function.
   ; https://github.com/nilenso/goose/issues/14
   (when-let [job (redis-cmds/dequeue-and-preserve redis-conn orphan-queue prefixed-queue)]
-    (publish-metrics metrics-plugin job)
+    (increment-job-recovery-metric metrics-plugin job)
     #(reenqueue-orphan-jobs opts orphan-queue)))
 
 (defn- check-liveness
@@ -35,9 +35,9 @@
 (defn run
   [{:keys [id internal-thread-pool redis-conn process-set]
     :as   opts}]
-  (u/while-pool
-    internal-thread-pool
-    (u/log-on-exceptions
+  (u/log-on-exceptions
+    (u/while-pool
+      internal-thread-pool
       (let [processes (redis-cmds/find-in-set redis-conn process-set identity)]
         (check-liveness opts (remove #{id} processes)))
       (let [process-count (heartbeat/process-count redis-conn process-set)]
