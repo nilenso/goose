@@ -29,7 +29,7 @@
     (* 1000 (+ (* scheduler-polling-interval-sec total-process-count)
                (rand-int 3)))))
 
-(defn- find-and-move-scheduled-jobs
+(defn- enqueue-due-scheduled-jobs
   "Returns truthy if due jobs were found."
   [redis-conn]
   (when-let [due-scheduled-jobs (redis-cmds/scheduled-jobs-due-now redis-conn d/prefixed-schedule-queue)]
@@ -46,8 +46,8 @@
   (u/log-on-exceptions
     (u/while-pool
       internal-thread-pool
-      (let [scheduled-jobs-found? (find-and-move-scheduled-jobs redis-conn)
-            cron-entries-found?   (cron-registry/find-and-enqueue-cron-entries redis-conn)]
+      (let [scheduled-jobs-found? (enqueue-due-scheduled-jobs redis-conn)
+            cron-entries-found?   (cron-registry/enqueue-due-cron-entries redis-conn)]
         (when-not (or scheduled-jobs-found?
                       cron-entries-found?)
           ; Goose only sleeps if no due jobs or cron entries are found.

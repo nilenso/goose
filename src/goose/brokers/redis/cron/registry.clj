@@ -21,22 +21,18 @@
                                    entry)
     entry))
 
-(defn set-due-time [cron-entry next-run-epoch-ms]
-  (car/zadd d/prefixed-cron-schedules-queue "XX" next-run-epoch-ms cron-entry))
+(defn- set-due-time [cron-entry]
+  (car/zadd d/prefixed-cron-schedules-queue
+            "XX"
+            "GT"
+            (-> cron-entry
+                :cron-schedule
+                cron-parsing/next-run-epoch-ms)
+            cron-entry))
 
 (defn- enqueue-jobs-to-ready-on-priority [jobs]
   (doseq [[queue-key grouped-jobs] (group-by :prefixed-queue jobs)]
     (apply car/rpush queue-key grouped-jobs)))
-
-(defn- enqueue-due-cron-entries
-  [due-cron-entries]
-  (let [jobs-to-enqueue          (map (comp j/from-description :job-description) due-cron-entries)
-        entries-by-next-due-time (group-by (comp cron-parsing/next-run-epoch-ms :cron-schedule)
-                                           due-cron-entries)]
-    (enqueue-jobs-to-ready-on-priority jobs-to-enqueue)
-    (doseq [[due-epoch-ms cron-entries] entries-by-next-due-time
-            cron-entry cron-entries]
-      (set-due-time cron-entry due-epoch-ms))))
 
 (defn- due-cron-entries-command []
   (car/zrangebyscore d/prefixed-cron-schedules-queue
@@ -52,7 +48,7 @@
     (redis-cmds/wcar* redis-conn
       (due-cron-entries-command))))
 
-(defn find-and-enqueue-cron-entries
+(defn enqueue-due-cron-entries
   "Returns truthy if due cron entries were found."
   [redis-conn]
   (redis-cmds/with-transaction redis-conn
@@ -60,5 +56,8 @@
     (let [due-cron-entries (not-empty (car/with-replies (due-cron-entries-command)))]
       (car/multi)
       (when due-cron-entries
-        (enqueue-due-cron-entries due-cron-entries)
+        (let [jobs-to-enqueue (map (comp j/from-description :job-description) due-cron-entries)]
+          (enqueue-jobs-to-ready-on-priority jobs-to-enqueue)
+          (doseq [cron-entry due-cron-entries]
+            (set-due-time cron-entry)))
         true))))

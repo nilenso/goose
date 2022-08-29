@@ -10,7 +10,7 @@
             [goose.test-utils :as tu]
             [goose.api.enqueued-jobs :as enqueued-jobs]))
 
-(use-fixtures :each tu/fixture)
+(use-fixtures :each tu/redis-fixture)
 
 (defn- after-due-time [cron-schedule]
   (inc
@@ -53,7 +53,7 @@
 
 (deftest find-and-enqueue-cron-entries-test
   (testing "find-and-enqueue-cron-entries"
-    (is (not (cron-registry/find-and-enqueue-cron-entries tu/redis-conn))
+    (is (not (cron-registry/enqueue-due-cron-entries tu/redis-conn))
         "find-and-enqueue-cron-entries returns falsey if due cron entries were not found")
 
     (cron-registry/register-cron tu/redis-conn
@@ -70,7 +70,7 @@
                                                    (inc
                                                      (after-due-time
                                                        "*/5 * * * *")))]
-      (is (cron-registry/find-and-enqueue-cron-entries tu/redis-conn)
+      (is (cron-registry/enqueue-due-cron-entries tu/redis-conn)
           "find-and-enqueue-cron-entries returns truthy if due cron entries were found"))
 
     (is (nil?
