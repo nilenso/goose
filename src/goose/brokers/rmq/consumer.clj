@@ -27,7 +27,6 @@
   [{:keys [channels prefixed-queue] :as opts}]
   (doall ; Using `doall` to immediately start a consumer.
     (for [ch channels]
-      (let [opts (assoc opts :ch ch)]
-        ; Set prefetch-limit to 1.
-        (lb/qos ch d/rmq-prefetch-limit)
+      (do
+        (lb/qos ch d/rmq-prefetch-limit) ; Set prefetch-limit to 1.
         [ch (lc/subscribe ch prefixed-queue (partial handler opts) {:auto-ack false})]))))
