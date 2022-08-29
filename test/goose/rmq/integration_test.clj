@@ -36,7 +36,14 @@
           _ (c/perform-in-sec tu/rmq-client-opts 1 `perform-in-sec-fn arg)
           worker (w/start tu/rmq-worker-opts)]
       (is (= arg (deref perform-in-sec-fn-executed 1100 :scheduler-test-timed-out)))
-      (w/stop worker))))
+      (w/stop worker)))
+
+  (testing "[rmq] Scheduling beyond max_delay limit"
+    (is
+      (thrown-with-msg?
+        clojure.lang.ExceptionInfo
+        #"MAX_DELAY limit breached*"
+        (c/perform-in-sec tu/rmq-client-opts 4294968 `perform-in-sec-fn)))))
 
 ; ======= TEST: Absolute Scheduling (in-past) ==========
 (def perform-at-fn-executed (promise))
