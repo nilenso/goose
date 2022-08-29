@@ -1,6 +1,5 @@
 (ns goose.brokers.redis.cron.registry-test
-  (:require [clojure.test :refer :all]
-            [goose.brokers.broker :as broker]
+  (:require [clojure.test :refer [deftest is testing use-fixtures]]
             [goose.brokers.redis.cron.registry :as cron-registry]
             [goose.job :as j]
             [goose.defaults :as d]
