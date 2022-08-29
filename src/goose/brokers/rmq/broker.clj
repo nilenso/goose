@@ -3,6 +3,7 @@
     [goose.brokers.broker :as b]
     [goose.brokers.rmq.channel :as channels]
     [goose.brokers.rmq.commands :as rmq-cmds]
+    [goose.brokers.rmq.scheduler :as rmq-scheduler]
     [goose.brokers.rmq.worker :as rmq-worker]
     [goose.defaults :as d]
     [goose.utils :as u]
@@ -17,6 +18,8 @@
   b/Broker
   (enqueue [this job]
     (rmq-cmds/enqueue-back (u/random-element (:channels this)) job))
+  (schedule [this schedule job]
+    (rmq-scheduler/run-at (:channels this) schedule job))
   (start [this worker-opts]
     (rmq-worker/start (assoc worker-opts :rmq-conn (:conn this))))
 
