@@ -14,6 +14,9 @@
 
 (def rmq-default-url "amqp://guest:guest@localhost:5672")
 (def rmq-exchange "")
+(def rmq-delay-exchange "x-delayed-message")
+(def rmq-low-priority 0)
+(def rmq-high-priority 1)
 (def rmq-prefetch-limit 1)
 (def rmq-delay-limit-ms 4294967295) ; (2^32 - 1)
 

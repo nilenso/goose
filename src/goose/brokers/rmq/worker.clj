@@ -48,8 +48,7 @@
               :call                  (chain-middlewares middlewares)
               :prefixed-queue        prefixed-queue
               :channels              channels}]
-    (rmq-cmds/create-queue (first channels) prefixed-queue)
-
+    (rmq-cmds/create-queue-and-exchanges (first channels) prefixed-queue)
 
     (let [consumers (rmq-consumer/run opts)]
       #(internal-stop (assoc opts :ch+consumers consumers)))))
