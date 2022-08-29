@@ -16,7 +16,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
       rabbitmq:
-        image: rabbitmq:3.9
+        image: heidiks/rabbitmq-delayed-message-exchange:3.9.13-management
         env:
           RABBITMQ_DEFAULT_USER: goose
           RABBITMQ_DEFAULT_PASS: top-gun
