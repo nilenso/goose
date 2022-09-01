@@ -54,6 +54,10 @@
   (redis-cmds/with-transaction redis-conn
     (car/watch d/prefixed-cron-schedules-queue)
     (let [due-cron-entries (not-empty (car/with-replies (due-cron-entries-command)))]
+      ;; The `multi` call must be in this exact position.
+      ;; It cannot be before the call to `due-cron-entries-command`.
+      ;; It cannot be inside `when` or any conditional, because the transaction body
+      ;; must contain a call to `multi` in all code paths.
       (car/multi)
       (when due-cron-entries
         (let [jobs-to-enqueue (map (comp j/from-description :job-description) due-cron-entries)]
