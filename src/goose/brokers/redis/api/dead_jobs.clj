@@ -3,7 +3,7 @@
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]
-    [goose.brokers.redis.scheduler :as redis-scheduler]))
+    [goose.job :as job]))
 
 (defn size [conn]
   (redis-cmds/sorted-set-size conn d/prefixed-dead-queue))
@@ -19,7 +19,7 @@
 (defn re-enqueue-for-execution [conn job]
   (let [sorted-set d/prefixed-dead-queue]
     (when (redis-cmds/sorted-set-score conn sorted-set job)
-      (redis-cmds/enqueue-due-jobs-to-front conn sorted-set (list job) redis-scheduler/execution-queue))))
+      (redis-cmds/enqueue-due-jobs-to-front conn sorted-set (list job) job/execution-queue))))
 
 (defn delete [conn job]
   (= 1 (redis-cmds/del-from-sorted-set conn d/prefixed-dead-queue job)))

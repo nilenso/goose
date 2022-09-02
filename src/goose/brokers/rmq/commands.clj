@@ -2,10 +2,11 @@
   {:no-doc true}
   (:require
     [goose.defaults :as d]
-    [taoensso.nippy :as nippy]
+
     [langohr.basic :as lb]
     [langohr.exchange :as lex]
-    [langohr.queue :as lq]))
+    [langohr.queue :as lq]
+    [taoensso.nippy :as nippy]))
 
 (def common-properties
   {:durable     true
@@ -13,43 +14,44 @@
    :exclusive   false})
 
 (defn- memoized-create-queue-and-exchange
-  [ch prefixed-queue]
+  [ch queue]
   (lex/declare ch
-               d/prefixed-schedule-queue
                d/rmq-delay-exchange
+               d/rmq-delay-exchange-type
                (assoc common-properties :arguments {"x-delayed-type" "direct"}))
 
   (lq/declare ch
-              prefixed-queue
+              queue
               (assoc common-properties :arguments {"x-max-priority" d/rmq-high-priority}))
-  (lq/bind ch prefixed-queue d/prefixed-schedule-queue {:routing-key prefixed-queue}))
+  (lq/bind ch queue d/rmq-delay-exchange {:routing-key queue}))
 
 (defn create-queue-and-exchanges
-  [ch prefixed-queue]
-  (memoize (memoized-create-queue-and-exchange ch prefixed-queue)))
+  [ch queue]
+  (memoize (memoized-create-queue-and-exchange ch queue)))
 
 (defn- enqueue
-  [ch ex job {:keys [priority headers]}]
-  (let [prefixed-queue (:prefixed-queue job)]
-    (create-queue-and-exchanges ch prefixed-queue)
-    (lb/publish ch ex prefixed-queue
-                (nippy/freeze job)
-                {:priority     priority
-                 :persistent   true
-                 :mandatory    true
-                 :content-type "ptaoussanis/nippy"
-                 :headers      headers})))
+  [ch ex queue job {:keys [priority headers]}]
+  (create-queue-and-exchanges ch queue)
+  (lb/publish ch ex queue
+              (nippy/freeze job)
+              {:priority     priority
+               :persistent   true
+               :mandatory    true
+               :content-type "ptaoussanis/nippy"
+               :headers      headers}))
 
 (defn enqueue-back
-  [ch job]
-  (enqueue ch d/rmq-exchange job {:priority d/rmq-low-priority}))
+  [ch {:keys [prefixed-queue] :as job}]
+  (enqueue ch d/rmq-exchange prefixed-queue job {:priority d/rmq-low-priority}))
 
 (defn enqueue-front
-  [ch job]
-  (enqueue ch d/rmq-exchange job {:priority d/rmq-high-priority}))
+  [ch {:keys [prefixed-queue] :as job}]
+  (enqueue ch d/rmq-exchange prefixed-queue job {:priority d/rmq-high-priority}))
 
 (defn schedule
-  [ch job delay]
+  [ch queue job delay]
   (let [msg-properties {:priority d/rmq-high-priority
                         :headers  {"x-delay" delay}}]
-    (enqueue ch d/prefixed-schedule-queue job msg-properties)))
+    (when (< d/rmq-delay-limit-ms delay)
+      (throw (ex-info "MAX_DELAY limit breached: 2^32 ms(~49 days 17 hours)" {})))
+    (enqueue ch d/rmq-delay-exchange queue job msg-properties)))

@@ -4,6 +4,7 @@
     [goose.brokers.rmq.channel :as rmq-channel]
     [goose.brokers.rmq.commands :as rmq-cmds]
     [goose.brokers.rmq.consumer :as rmq-consumer]
+    [goose.brokers.rmq.retry :as rmq-retry]
     [goose.defaults :as d]
 
     [clojure.tools.logging :as log]
@@ -36,7 +37,8 @@
   (let [call (if middlewares
                (-> rmq-consumer/execute-job (middlewares))
                rmq-consumer/execute-job)]
-    call))
+    (-> call
+        (rmq-retry/wrap-failure))))
 
 (defn start
   [{:keys [rmq-conn queue threads middlewares graceful-shutdown-sec]}]

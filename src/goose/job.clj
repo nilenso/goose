@@ -14,6 +14,12 @@
    :retry-opts     retry-opts
    :enqueued-at    (u/epoch-time-ms)})
 
+(defn execution-queue
+  [job]
+  (if (get-in job [:state :error])
+    (or (get-in job [:retry-opts :prefixed-retry-queue]) (:prefixed-queue job))
+    (:prefixed-queue job)))
+
 (defn- calculate-latency
   [job]
   (cond

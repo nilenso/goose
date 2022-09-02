@@ -72,7 +72,7 @@
     (throw (ex-info "error" {})))
   (deliver succeeded-on-2nd-retry arg))
 (deftest retry-test
-  (testing "Goose retries an errorneous function"
+  (testing "Goose retries an erroneous function"
     (let [arg "retry-test"
           retry-opts (assoc retry/default-opts
                        :max-retries 2
