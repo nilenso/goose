@@ -109,8 +109,7 @@
 (s/def ::args-serializable?
   #(try (= % (nippy/thaw (nippy/freeze %)))
         (catch Exception _ false)))
-(s/def ::client-opts (s/keys :req-un [::broker ::queue]
-                             :opt-un [::retry-opts]))
+(s/def ::client-opts (s/keys :req-un [::broker ::queue ::retry-opts]))
 
 ; ============== Worker ==============
 (s/def ::threads pos-int?)

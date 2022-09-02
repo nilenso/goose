@@ -1,4 +1,5 @@
 (ns goose.brokers.redis.retry
+  {:no-doc true}
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]
@@ -34,7 +35,7 @@
     (when-not skip-dead-queue
       (redis-cmds/enqueue-sorted-set redis-conn d/prefixed-dead-queue dead-at job))))
 
-(defn ^:no-doc wrap-failure
+(defn wrap-failure
   [next]
   (fn [opts job]
     (try
