@@ -97,3 +97,28 @@
 
       (is (= arg (deref succeeded-on-2nd-retry 1100 :2nd-retry-timed-out)))
       (w/stop retry-worker))))
+
+; ======= TEST: Error handling dead-job using job queue ==========
+(def job-dead (promise))
+(defn dead-test-error-handler [_ _ _])
+(defn dead-test-death-handler [_ _ ex]
+  (deliver job-dead ex))
+
+(def dead-job-run-count (atom 0))
+(defn dead-fn []
+  (swap! dead-job-run-count inc)
+  (/ 1 0))
+
+(deftest dead-test
+  (testing "[rmq] Goose marks a job as dead upon reaching max retries"
+    (let [dead-job-opts (assoc retry/default-opts
+                          :max-retries 1
+                          :retry-delay-sec-fn-sym `immediate-retry
+                          :error-handler-fn-sym `dead-test-error-handler
+                          :death-handler-fn-sym `dead-test-death-handler)
+          worker (w/start tu/rmq-worker-opts)]
+      (c/perform-async (assoc tu/rmq-client-opts :retry-opts dead-job-opts) `dead-fn)
+
+      (is (= java.lang.ArithmeticException (type (deref job-dead 1100 :death-handler-timed-out))))
+      (is (= 2 @dead-job-run-count))
+      (w/stop worker))))

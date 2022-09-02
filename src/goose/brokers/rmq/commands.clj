@@ -2,6 +2,7 @@
   {:no-doc true}
   (:require
     [goose.defaults :as d]
+    [goose.job :as job]
 
     [langohr.basic :as lb]
     [langohr.exchange :as lex]
@@ -41,16 +42,19 @@
                :headers      headers}))
 
 (defn enqueue-back
-  [ch {:keys [prefixed-queue] :as job}]
-  (enqueue ch d/rmq-exchange prefixed-queue job {:priority d/rmq-low-priority}))
+  ([ch {:keys [prefixed-queue] :as job}]
+   (enqueue-back ch prefixed-queue job))
+  ([ch queue job]
+   (enqueue ch d/rmq-exchange queue job {:priority d/rmq-low-priority})))
 
 (defn enqueue-front
   [ch {:keys [prefixed-queue] :as job}]
   (enqueue ch d/rmq-exchange prefixed-queue job {:priority d/rmq-high-priority}))
 
 (defn schedule
-  [ch queue job delay]
-  (let [msg-properties {:priority d/rmq-high-priority
+  [ch job delay]
+  (let [queue (job/execution-queue job)
+        msg-properties {:priority d/rmq-high-priority
                         :headers  {"x-delay" delay}}]
     (when (< d/rmq-delay-limit-ms delay)
       (throw (ex-info "MAX_DELAY limit breached: 2^32 ms(~49 days 17 hours)" {})))
