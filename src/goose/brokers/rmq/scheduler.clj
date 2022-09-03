@@ -4,10 +4,9 @@
     [goose.utils :as u]))
 
 (defn run-at
-  [channels schedule job]
+  [ch confirms schedule job]
   (let [delay (- schedule (u/epoch-time-ms))
-        scheduled-job (assoc job :schedule schedule)
-        ch (u/random-element channels)]
+        scheduled-job (assoc job :schedule schedule)]
     (if (neg? delay)
-      (rmq-cmds/enqueue-front ch scheduled-job)
-      (rmq-cmds/schedule ch scheduled-job delay))))
+      (rmq-cmds/enqueue-front ch confirms scheduled-job)
+      (rmq-cmds/schedule ch confirms scheduled-job delay))))

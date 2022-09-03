@@ -10,7 +10,8 @@
     [goose.utils :as u]
 
     [langohr.queue :as lq]
-    [taoensso.carmine :as car]))
+    [taoensso.carmine :as car]
+    [goose.brokers.rmq.publisher-confirms :as rmq-publisher-confirms]))
 
 (defn my-fn [arg] arg)
 (def queue "test")
@@ -36,7 +37,7 @@
 
 (defn redis-fixture
   [f]
-  (specs/instrument)
+  (specs/unstrument)
   (clear-redis)
 
   (f)
@@ -49,7 +50,9 @@
         username (or (System/getenv "GOOSE_TEST_RABBITMQ_USERNAME") "guest")
         password (or (System/getenv "GOOSE_TEST_RABBITMQ_PASSWORD") "guest")]
     (str "amqp://" username ":" password "@" host ":" port)))
-(def rmq-opts {:settings {:uri rmq-url}})
+(def rmq-opts
+  {:settings           {:uri rmq-url}
+   :publisher-confirms rmq-publisher-confirms/sync-strategy})
 (def client-rmq-broker (rmq/new rmq-opts 1))
 (def worker-rmq-broker (rmq/new rmq-opts))
 (def rmq-client-opts (assoc client-opts :broker client-rmq-broker))
@@ -60,7 +63,7 @@
 
 (defn rmq-fixture
   [f]
-  (specs/instrument)
+  (specs/unstrument)
 
   (f)
 

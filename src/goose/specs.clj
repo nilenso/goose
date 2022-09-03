@@ -56,7 +56,7 @@
 
 (s/def ::rmq
   (s/keys :req-un [:goose.specs.rmq/settings]))
-(s/fdef rmq/new
+(s/fdef rmq/new-producer
         :args (s/alt :one (s/cat :opts ::rmq)
                      :two (s/cat :opts ::rmq
                                  :channel-pool-size nat-int?)))

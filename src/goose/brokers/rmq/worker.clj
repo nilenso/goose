@@ -41,10 +41,10 @@
         (rmq-retry/wrap-failure))))
 
 (defn start
-  [{:keys [rmq-conn queue threads middlewares] :as common-opts}]
+  [{:keys [rmq-conn publisher-confirms queue threads middlewares] :as common-opts}]
   (let [prefixed-queue (d/prefix-queue queue)
         thread-pool (cp/threadpool threads)
-        channels (rmq-channel/new-pool rmq-conn threads)
+        channels (rmq-channel/new-pool rmq-conn threads publisher-confirms)
         rmq-opts {:thread-pool    thread-pool
                   :call           (chain-middlewares middlewares)
                   :prefixed-queue prefixed-queue

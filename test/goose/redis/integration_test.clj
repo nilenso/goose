@@ -21,8 +21,8 @@
   (testing "Goose executes a function asynchronously"
     (let [arg "async-execute-test"
           worker (w/start tu/redis-worker-opts)]
-      (is (uuid? (UUID/fromString (c/perform-async tu/redis-client-opts `perform-async-fn arg))))
-      (is (= arg (deref perform-async-fn-executed 100 :e2e-test-timed-out)))
+      (is (uuid? (UUID/fromString (:id (c/perform-async tu/redis-client-opts `perform-async-fn arg)))))
+      (is (= arg (deref perform-async-fn-executed 200 :e2e-test-timed-out)))
       (w/stop worker))))
 
 ; ======= TEST: Relative Scheduling ==========
@@ -33,9 +33,9 @@
 (deftest perform-in-sec-test
   (testing "Goose executes a function scheduled in future"
     (let [arg "scheduling-test"
-          _ (c/perform-in-sec tu/redis-client-opts 1 `perform-in-sec-fn arg)
           scheduler (w/start tu/redis-worker-opts)]
-      (is (= arg (deref perform-in-sec-fn-executed 4100 :scheduler-test-timed-out)))
+      (is (uuid? (UUID/fromString (:id (c/perform-in-sec tu/redis-client-opts 1 `perform-in-sec-fn arg)))))
+      (is (= arg (deref perform-in-sec-fn-executed 4200 :scheduler-test-timed-out)))
       (w/stop scheduler))))
 
 ; ======= TEST: Absolute Scheduling (in-past) ==========
@@ -46,9 +46,9 @@
 (deftest perform-at-test
   (testing "Goose executes a function scheduled in past"
     (let [arg "scheduling-test"
-          _ (c/perform-at tu/redis-client-opts (java.time.Instant/now) `perform-at-fn arg)
           scheduler (w/start tu/redis-worker-opts)]
-      (is (= arg (deref perform-at-fn-executed 100 :scheduler-test-timed-out)))
+      (is (uuid? (UUID/fromString (:id (c/perform-at tu/redis-client-opts (java.time.Instant/now) `perform-at-fn arg)))))
+      (is (= arg (deref perform-at-fn-executed 200 :scheduler-test-timed-out)))
       (w/stop scheduler))))
 
 
@@ -83,12 +83,12 @@
           retry-worker (w/start (assoc tu/redis-worker-opts :queue retry-queue))]
       (c/perform-async (assoc tu/redis-client-opts :retry-opts retry-opts) `erroneous-fn arg)
 
-      (is (= java.lang.ArithmeticException (type (deref failed-on-execute 100 :retry-execute-timed-out))))
+      (is (= java.lang.ArithmeticException (type (deref failed-on-execute 200 :retry-execute-timed-out))))
       (w/stop worker)
 
-      (is (= clojure.lang.ExceptionInfo (type (deref failed-on-1st-retry 4100 :1st-retry-timed-out))))
+      (is (= clojure.lang.ExceptionInfo (type (deref failed-on-1st-retry 4200 :1st-retry-timed-out))))
 
-      (is (= arg (deref succeeded-on-2nd-retry 4100 :2nd-retry-timed-out)))
+      (is (= arg (deref succeeded-on-2nd-retry 4200 :2nd-retry-timed-out)))
       (w/stop retry-worker))))
 
 ; ======= TEST: Error handling dead-job using job queue ==========
