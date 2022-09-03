@@ -41,15 +41,15 @@
         (rmq-retry/wrap-failure))))
 
 (defn start
-  [{:keys [rmq-conn queue threads middlewares graceful-shutdown-sec]}]
+  [{:keys [rmq-conn queue threads middlewares] :as common-opts}]
   (let [prefixed-queue (d/prefix-queue queue)
         thread-pool (cp/threadpool threads)
         channels (rmq-channel/new-pool rmq-conn threads)
-        opts {:thread-pool           thread-pool
-              :graceful-shutdown-sec graceful-shutdown-sec
-              :call                  (chain-middlewares middlewares)
-              :prefixed-queue        prefixed-queue
-              :channels              channels}]
+        rmq-opts {:thread-pool    thread-pool
+                  :call           (chain-middlewares middlewares)
+                  :prefixed-queue prefixed-queue
+                  :channels       channels}
+        opts (merge rmq-opts common-opts)]
     (rmq-cmds/create-queue-and-exchanges (first channels) prefixed-queue)
 
     (let [consumers (rmq-consumer/run opts)]
