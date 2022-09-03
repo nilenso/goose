@@ -2,8 +2,9 @@
   {:no-doc true}
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
-    [goose.defaults :as d]
     [goose.brokers.redis.heartbeat :as heartbeat]
+    [goose.defaults :as d]
+    [goose.job :as job]
     [goose.utils :as u]
 
     [clojure.tools.logging :as log]))
@@ -16,12 +17,6 @@
       (redis-cmds/enqueue-front redis-conn prefixed-queue scheduled-job)
       (redis-cmds/enqueue-sorted-set redis-conn d/prefixed-schedule-queue epoch-ms scheduled-job))))
 
-(defn execution-queue
-  [job]
-  (if (get-in job [:state :error])
-    (or (get-in job [:retry-opts :prefixed-retry-queue]) (:prefixed-queue job))
-    (:prefixed-queue job)))
-
 (defn run
   [{:keys [internal-thread-pool redis-conn
            scheduler-polling-interval-sec]}]
@@ -32,7 +27,7 @@
       (if-let [jobs (redis-cmds/scheduled-jobs-due-now redis-conn d/prefixed-schedule-queue)]
         (redis-cmds/enqueue-due-jobs-to-front
           redis-conn d/prefixed-schedule-queue
-          jobs execution-queue)
+          jobs job/execution-queue)
         ; Instead of sleeping when due jobs are found,
         ; Goose immediately polls to check if more jobs are due.
         (let [total-process-count (heartbeat/total-process-count redis-conn)]

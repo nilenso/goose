@@ -45,8 +45,7 @@
 (defn ^:no-doc prefix-queue-if-present
   [opts]
   (->> opts
-       (prefix-retry-queue)
-       (merge default-opts)))
+       (prefix-retry-queue)))
 
 (defn- failure-state
   [{{:keys [retry-count first-failed-at]} :state} ex]

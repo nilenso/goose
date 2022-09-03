@@ -1,4 +1,5 @@
 (ns goose.brokers.redis.worker
+  {:no-doc true}
   (:require
     [goose.brokers.redis.consumer :as redis-consumer]
     [goose.brokers.redis.heartbeat :as redis-heartbeat]
@@ -55,29 +56,22 @@
         (redis-retry/wrap-failure))))
 
 (defn start
-  [{:keys [redis-conn threads metrics-plugin queue
-           error-service-cfg scheduler-polling-interval-sec
-           middlewares graceful-shutdown-sec]}]
+  [{:keys [threads queue middlewares] :as common-opts}]
   (let [thread-pool (cp/threadpool threads)
         ; Internal threadpool for scheduler, orphan-checker & heartbeat.
         internal-thread-pool (cp/threadpool d/redis-internal-thread-pool-size)
         random-str (subs (str (random-uuid)) 24 36) ; Take last 12 chars of UUID.
         id (str queue ":" (u/hostname) ":" random-str)
         call (chain-middlewares middlewares)
-        opts {:id                             id
-              :thread-pool                    thread-pool
-              :internal-thread-pool           internal-thread-pool
-              :redis-conn                     redis-conn
-              :call                           call
-              :error-service-cfg              error-service-cfg
-              :metrics-plugin                 metrics-plugin
+        redis-opts {:id                   id
+                    :thread-pool          thread-pool
+                    :internal-thread-pool internal-thread-pool
+                    :call                 call
 
-              :process-set                    (str d/process-prefix queue)
-              :prefixed-queue                 (d/prefix-queue queue)
-              :in-progress-queue              (redis-consumer/preservation-queue id)
-
-              :graceful-shutdown-sec          graceful-shutdown-sec
-              :scheduler-polling-interval-sec scheduler-polling-interval-sec}]
+                    :process-set          (str d/process-prefix queue)
+                    :prefixed-queue       (d/prefix-queue queue)
+                    :in-progress-queue    (redis-consumer/preservation-queue id)}
+        opts (merge redis-opts common-opts)]
 
     (cp/future internal-thread-pool (redis-metrics/run opts))
     (cp/future internal-thread-pool (redis-heartbeat/run opts))

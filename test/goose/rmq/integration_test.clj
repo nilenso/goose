@@ -1,6 +1,7 @@
 (ns goose.rmq.integration-test
   (:require
     [goose.client :as c]
+    [goose.retry :as retry]
     [goose.test-utils :as tu]
     [goose.worker :as w]
 
@@ -57,3 +58,67 @@
           scheduler (w/start tu/rmq-worker-opts)]
       (is (= arg (deref perform-at-fn-executed 100 :scheduler-test-timed-out)))
       (w/stop scheduler))))
+
+; ======= TEST: Error handling transient failure job using custom retry queue ==========
+(def retry-queue "test-retry")
+(defn immediate-retry [_] 1)
+
+(def failed-on-execute (promise))
+(def failed-on-1st-retry (promise))
+(def succeeded-on-2nd-retry (promise))
+
+(defn retry-test-error-handler [_ _ ex]
+  (if (realized? failed-on-execute)
+    (deliver failed-on-1st-retry ex)
+    (deliver failed-on-execute ex)))
+
+(defn erroneous-fn [arg]
+  (when-not (realized? failed-on-execute)
+    (/ 1 0))
+  (when-not (realized? failed-on-1st-retry)
+    (throw (ex-info "error" {})))
+  (deliver succeeded-on-2nd-retry arg))
+(deftest retry-test
+  (testing "[rmq] Goose retries an erroneous function"
+    (let [arg "retry-test"
+          retry-opts (assoc retry/default-opts
+                       :max-retries 2
+                       :retry-delay-sec-fn-sym `immediate-retry
+                       :retry-queue retry-queue
+                       :error-handler-fn-sym `retry-test-error-handler)
+          worker (w/start tu/rmq-worker-opts)
+          retry-worker (w/start (assoc tu/rmq-worker-opts :queue retry-queue))]
+      (c/perform-async (assoc tu/rmq-client-opts :retry-opts retry-opts) `erroneous-fn arg)
+
+      (is (= java.lang.ArithmeticException (type (deref failed-on-execute 100 :retry-execute-timed-out))))
+      (w/stop worker)
+
+      (is (= clojure.lang.ExceptionInfo (type (deref failed-on-1st-retry 1100 :1st-retry-timed-out))))
+
+      (is (= arg (deref succeeded-on-2nd-retry 1100 :2nd-retry-timed-out)))
+      (w/stop retry-worker))))
+
+; ======= TEST: Error handling dead-job using job queue ==========
+(def job-dead (promise))
+(defn dead-test-error-handler [_ _ _])
+(defn dead-test-death-handler [_ _ ex]
+  (deliver job-dead ex))
+
+(def dead-job-run-count (atom 0))
+(defn dead-fn []
+  (swap! dead-job-run-count inc)
+  (/ 1 0))
+
+(deftest dead-test
+  (testing "[rmq] Goose marks a job as dead upon reaching max retries"
+    (let [dead-job-opts (assoc retry/default-opts
+                          :max-retries 1
+                          :retry-delay-sec-fn-sym `immediate-retry
+                          :error-handler-fn-sym `dead-test-error-handler
+                          :death-handler-fn-sym `dead-test-death-handler)
+          worker (w/start tu/rmq-worker-opts)]
+      (c/perform-async (assoc tu/rmq-client-opts :retry-opts dead-job-opts) `dead-fn)
+
+      (is (= java.lang.ArithmeticException (type (deref job-dead 1100 :death-handler-timed-out))))
+      (is (= 2 @dead-job-run-count))
+      (w/stop worker))))
