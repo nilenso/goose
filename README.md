@@ -59,9 +59,11 @@ Please [open an issue](https://github.com/nilenso/goose/issues/new) or ping us o
 
 Why the name "Goose"?
 ---------
-> 🦆 Logo loading...
+<p align="center">
+  <img src="logo/goose-round@2x.png" width="360">
+</p>
 
-Goose library is named after [Nick 'Goose' Bradshaw](https://historica.fandom.com/wiki/Nick_Bradshaw), the sidekick
+Named after [Nick 'Goose' Bradshaw](https://historica.fandom.com/wiki/Nick_Bradshaw), the _sidekick_
 to [Captain Pete 'Maverick' Mitchell](https://topgun.fandom.com/wiki/Pete_Mitchell) in Top Gun.
 
 License
