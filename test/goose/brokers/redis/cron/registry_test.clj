@@ -76,7 +76,7 @@
       (with-redefs [u/epoch-time-ms (constantly
                                       (before-due-time
                                         "*/5 * * * *"))]
-        (is (nil? (cron-registry/due-cron-entries tu/redis-conn))
+        (is (empty? (cron-registry/due-cron-entries tu/redis-conn))
             "The cron entry is not due before the scheduled cron time")))))
 
 (deftest find-and-enqueue-cron-entries-test
@@ -102,7 +102,7 @@
       (is (cron-registry/enqueue-due-cron-entries tu/redis-conn)
           "find-and-enqueue-cron-entries returns truthy if due cron entries were found"))
 
-    (is (nil?
+    (is (empty?
           (with-redefs [u/epoch-time-ms (constantly
                                           (after-due-time
                                             "*/5 * * * *"))]
