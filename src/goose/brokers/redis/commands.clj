@@ -12,16 +12,39 @@
 
 ; ============ Utils =============
 
-(defn iterate-redis
-  ([conn iterate-fn match? stop? cursor]
-   (iterate-redis conn iterate-fn match? stop? cursor '()))
-  ([conn iterate-fn match? stop? cursor elements]
-   (let [[next scanned-elements] (iterate-fn cursor)
-         filtered-elements (filter match? scanned-elements)
-         elements (concat elements filtered-elements)]
-     (if (stop? next (count elements))
-       elements
-       #(iterate-redis conn iterate-fn match? stop? next elements)))))
+(defn- scan-database [conn _ cursor]
+  (wcar* conn (car/scan cursor "MATCH" "*" "COUNT" 1)))
+
+(defn- ensure-int
+  [v]
+  (if (string? v)
+    (Integer/parseInt v)
+    v))
+
+(defn scan-seq
+  "Returns a lazy seq of items scanned from Redis using a
+  scan command (one of SCAN, SSCAN, HSCAN or ZSCAN).
+  Passing just a connection will result in simply a SCAN over all keys.
+  Pass `scan-fn` and `redis-key` for one of SSCAN, HSCAN or ZSCAN.
+  `scan-fn` must take a connection, key name and cursor, call the appropriate
+  scan command and return a tuple of the next cursor and the items.
+  `redis-key` is the key in Redis at which the data structure is located.
+
+  Callers may limit the amount of scans on Redis by taking a limited number of items.
+  for ex: (take 5 (items-seq conn scan-sorted-set \"my-ss\"))"
+  ([conn]
+   (scan-seq conn scan-database nil 0))
+  ([conn scan-fn]
+   (scan-seq conn scan-fn nil 0))
+  ([conn scan-fn redis-key]
+   (scan-seq conn scan-fn redis-key 0))
+  ([conn scan-fn redis-key cursor]
+   (lazy-seq
+     (let [[new-cursor-string items] (scan-fn conn redis-key cursor)
+           new-cursor (ensure-int new-cursor-string)]
+       (concat items
+               (when-not (zero? new-cursor)
+                 (scan-seq conn scan-fn redis-key new-cursor)))))))
 
 (defn run-with-transaction
   "Runs fn inside a Carmine atomic block, and returns
@@ -67,17 +90,23 @@
 (defn- scan-for-sets [conn cursor match count]
   (wcar* conn (car/scan cursor "MATCH" match "COUNT" count "TYPE" "SET")))
 
+(defn set-seq [conn set-key]
+  (scan-seq conn
+            (fn [conn redis-key cursor]
+              (scan-set conn redis-key cursor 1))
+            set-key))
+
 (defn find-sets
   [conn match-str]
-  (let [iterate-fn (fn [cursor] (scan-for-sets conn cursor match-str 1))
-        stop? (fn [cursor _] (= cursor d/scan-initial-cursor))]
-    (trampoline iterate-redis conn iterate-fn identity stop? d/scan-initial-cursor)))
+  (let [scan-fn (fn [conn _ cursor]
+                   (scan-for-sets conn cursor match-str 1))]
+    (doall (scan-seq conn scan-fn))))
 
 (defn find-in-set
   [conn set match?]
-  (let [iterate-fn (fn [cursor] (scan-set conn set cursor 1))
-        stop? (fn [cursor _] (= cursor d/scan-initial-cursor))]
-    (trampoline iterate-redis conn iterate-fn match? stop? d/scan-initial-cursor)))
+  (->> (set-seq conn set)
+       (filter match?)
+       (doall)))
 
 ; ============== Lists ===============
 ; ===== FRONT/BACK -> RIGHT/LEFT =====
@@ -112,20 +141,33 @@
 
 (defn find-lists
   [conn match-str]
-  (let [iterate-fn (fn [cursor] (scan-for-lists conn cursor match-str 1))
-        stop? (fn [cursor _] (= cursor d/scan-initial-cursor))]
-    (trampoline iterate-redis conn iterate-fn identity stop? d/scan-initial-cursor)))
+  (let [scan-fn (fn [conn _ cursor]
+                  (scan-for-lists conn cursor match-str 1))]
+    (doall (scan-seq conn scan-fn))))
+
+(defn list-seq
+  "Returns a lazy sequence of a list which iterates
+  through its elements one at a time, from right to left."
+  [conn list-key]
+  (let [size    (list-size conn list-key)
+        scan-fn (fn [conn redis-key cursor]
+                  ;; We iterate from the end of the list down to index zero,
+                  ;; since lists in Goose represent queues,
+                  ;; and the front of a queue is the right side (the tail).
+                  [(if (zero? cursor)
+                     0
+                     (dec cursor))
+                   (wcar* conn (car/lrange redis-key
+                                           (dec cursor)
+                                           (dec cursor)))])]
+    (scan-seq conn scan-fn list-key size)))
 
 (defn find-in-list
-  ([conn queue match? limit]
-   (let [iterate-fn (fn [index]
-                      (when (< -1 index)
-                        [(dec index) (wcar* conn (car/lrange queue index index))]))
-         stop? (fn [index count]
-                 (if index
-                   (or (neg? index) (>= count limit))
-                   true))]
-     (trampoline iterate-redis conn iterate-fn match? stop? (dec (list-size conn queue))))))
+  [conn queue match? limit]
+  (->> (list-seq conn queue)
+       (take limit)
+       (filter match?)
+       (doall)))
 
 ; ============ Sorted-Sets ============
 (def sorted-set-min "-inf")
@@ -158,8 +200,13 @@
 (defn sorted-set-size [conn sorted-set]
   (wcar* conn (car/zcount sorted-set sorted-set-min sorted-set-max)))
 
-(defn scan-sorted-set [conn sorted-set cursor match count]
-  (wcar* conn (car/zscan sorted-set cursor "MATCH" match "COUNT" count)))
+(defn- scan-sorted-set [conn sorted-set cursor]
+  (let [[new-cursor-string replies] (wcar* conn (car/zscan sorted-set cursor "MATCH" "*" "COUNT" 1))]
+    [new-cursor-string
+     (map first (partition 2 replies))]))
+
+(defn sorted-set-seq [conn sorted-set-key]
+  (scan-seq conn scan-sorted-set sorted-set-key))
 
 (defn sorted-set-pop-from-head
   "Utility function to pop from head of dead-jobs queue.
@@ -168,15 +215,11 @@
   (wcar* conn (car/zpopmin sorted-set)))
 
 (defn find-in-sorted-set
-  ([conn sorted-set match? limit]
-   (let [iterate-fn (fn [cursor]
-                      (let [[next scanned-pairs] (scan-sorted-set conn sorted-set cursor "*" 1)
-                            scanned-jobs (take-nth 2 scanned-pairs)]
-                        [next scanned-jobs]))
-         stop? (fn [next count]
-                 (or (>= count limit)
-                     (= next d/scan-initial-cursor)))]
-     (trampoline iterate-redis conn iterate-fn match? stop? d/scan-initial-cursor))))
+  [conn sorted-set match? limit]
+  (->> (sorted-set-seq conn sorted-set)
+       (take limit)
+       (filter match?)
+       (doall)))
 
 (defn del-from-sorted-set [conn sorted-set member]
   (wcar* conn (car/zrem sorted-set member)))

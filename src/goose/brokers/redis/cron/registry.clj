@@ -6,22 +6,6 @@
             [goose.cron.parsing :as cron-parsing]
             [goose.utils :as u]))
 
-(defn- scan-sorted-set-command [sorted-set cursor]
-  (car/zscan sorted-set cursor "MATCH" "*" "COUNT" 1))
-
-;; TODO: Move this to redis-cmds
-(defn- items-seq
-  ([conn sorted-set]
-   (items-seq conn sorted-set 0))
-  ([conn sorted-set cursor]
-   (lazy-seq
-     (let [[new-cursor-string replies] (redis-cmds/wcar* conn (scan-sorted-set-command sorted-set cursor))
-           new-cursor (Integer/parseInt new-cursor-string)
-           items      (map first (partition 2 replies))]
-       (concat items
-               (when-not (zero? new-cursor)
-                 (items-seq conn sorted-set new-cursor)))))))
-
 (defn registry-entry [cron-name cron-schedule job-description]
   {:name            cron-name
    :cron-schedule   cron-schedule

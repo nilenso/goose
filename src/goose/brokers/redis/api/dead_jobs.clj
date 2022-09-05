@@ -17,7 +17,10 @@
   (redis-cmds/find-in-sorted-set conn d/prefixed-dead-queue match? limit))
 
 (defn find-by-id [conn id]
-  (let [limit 1
+  (let [
+        ;; TODO: Think about this limit more carefully. Why is it hardcoded?
+        ;; It used to be 1, which was breaking with the new scan implementation.
+        limit 10
         match? (fn [job] (= (:id job) id))]
     (first (find-by-pattern conn match? limit))))
 

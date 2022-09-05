@@ -80,6 +80,9 @@
       (let [match? (fn [job] (= (list 0) (:args job)))
             [dead-job] (dead-jobs/find-by-pattern tu/redis-broker match?)
             dead-at (get-in dead-job [:state :dead-at])]
+        ;; TODO: This test is flaky.
+        ;; It is possible for more than one job to be dead at the same time,
+        ;; in which case more than one job will be deleted on the next line.
         (is (true? (dead-jobs/delete-older-than tu/redis-broker dead-at))))
 
       (let [match? (fn [job] (= (list 1) (:args job)))
