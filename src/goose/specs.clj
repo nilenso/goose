@@ -28,7 +28,7 @@
 (s/def :goose.specs.redis/url string?)
 (s/def :goose.specs.redis/scheduler-polling-interval-sec (s/int-in 1 61))
 (s/def :goose.specs.redis/pool-opts
-  (s/or :none #(= :none %)
+  (s/or :none nil?
         :map map?
         :iconn-pool #(satisfies? IConnectionPool %)))
 
