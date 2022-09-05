@@ -17,8 +17,8 @@
     (select-keys job [:id]))
   (schedule [this schedule job]
     (redis-scheduler/run-at (:conn this) schedule job))
-  (register-cron [this cron-schedule job-description]
-    (cron-registry/register-cron (:conn this) cron-schedule job-description))
+  (register-cron [this cron-name cron-schedule job-description]
+    (cron-registry/register-cron (:conn this) cron-name cron-schedule job-description))
   (start [this worker-opts]
     (redis-worker/start
       (assoc worker-opts
@@ -91,7 +91,7 @@
 
 (defn new
   "Create a client for Redis broker."
-  ([opts] (goose.brokers.redis.broker/new opts nil))
+  ([opts] (goose.brokers.redis.broker/new opts nil))        ; why is this nil by default?
   ([{:keys [url pool-opts scheduler-polling-interval-sec]} thread-count]
    (let [pool-opts (or pool-opts (new-pool-opts thread-count))]
      (->Redis {:spec {:uri url} :pool pool-opts}

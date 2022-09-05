@@ -21,21 +21,50 @@
     (cron-parsing/next-run-epoch-ms
       cron-schedule)))
 
-(deftest cron-registry-test
-  (testing "Registering and checking cron entries"
-    (let [cron-entry (cron-registry/register-cron tu/redis-conn
-                                                  "*/5 * * * *"
-                                                  (j/description `foo-sym
-                                                                 [:a "b" 3]
-                                                                 "foo-queue"
-                                                                 (d/prefix-queue "foo-queue")
-                                                                 retry/default-opts))]
+(deftest cron-registration-test
+  (testing "Registering two cron entries with the same name"
+    (cron-registry/register-cron tu/redis-conn
+                                 "my-cron-name"
+                                 "*/5 * * * *"
+                                 (j/description `foo-sym
+                                                [:a "b" 3]
+                                                "foo-queue"
+                                                (d/prefix-queue "foo-queue")
+                                                retry/default-opts))
+    (cron-registry/register-cron tu/redis-conn
+                                 "my-cron-name"
+                                 "* * * * *"
+                                 (j/description `bar-sym
+                                                [:a "b" 3]
+                                                "foo-queue"
+                                                (d/prefix-queue "foo-queue")
+                                                retry/default-opts))
+    (is (= {:cron-schedule   "* * * * *"
+            :name            "my-cron-name"
+            :job-description {:args           [:a "b" 3]
+                              :execute-fn-sym `bar-sym
+                              :prefixed-queue (d/prefix-queue "foo-queue")
+                              :queue          "foo-queue"
+                              :retry-opts     retry/default-opts}}
+           (cron-registry/find-entry tu/redis-conn "my-cron-name"))
+        "The cron entry exists and was overwritten")))
+
+(deftest due-cron-entries-test
+  (testing "Checking if cron entries are due"
+    (let [_cron-entry (cron-registry/register-cron tu/redis-conn
+                                                   "my-cron-name"
+                                                   "*/5 * * * *"
+                                                   (j/description `foo-sym
+                                                                  [:a "b" 3]
+                                                                  "foo-queue"
+                                                                  (d/prefix-queue "foo-queue")
+                                                                  retry/default-opts))]
 
       (with-redefs [u/epoch-time-ms (constantly
                                       (after-due-time
                                         "*/5 * * * *"))]
         (is (= [{:cron-schedule   "*/5 * * * *"
-                 :id              (:id cron-entry)
+                 :name            "my-cron-name"
                  :job-description {:args           [:a "b" 3]
                                    :execute-fn-sym `foo-sym
                                    :prefixed-queue (d/prefix-queue "foo-queue")
@@ -56,6 +85,7 @@
         "find-and-enqueue-cron-entries returns falsey if due cron entries were not found")
 
     (cron-registry/register-cron tu/redis-conn
+                                 "my-cron-name"
                                  "*/5 * * * *"
                                  (j/description `foo-sym
                                                 [:a "b" 3]

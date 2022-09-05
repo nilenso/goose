@@ -36,6 +36,8 @@
 (def prefixed-dead-queue (prefix-queue dead-queue))
 (def prefixed-cron-schedules-queue (prefix-queue cron-schedules-queue))
 
+(def cron-entry-names-key "goose/cron-entry-names")
+
 (def redis-internal-thread-pool-size 4)
 (def redis-default-url "redis://localhost:6379")
 (def redis-client-pool-size 5)

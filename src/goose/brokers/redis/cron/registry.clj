@@ -6,20 +6,52 @@
             [goose.cron.parsing :as cron-parsing]
             [goose.utils :as u]))
 
-(defn registry-entry [cron-schedule job-description]
-  {:id              (str (random-uuid))
+(defn registry-entry [cron-name cron-schedule job-description]
+  {:name            cron-name
    :cron-schedule   cron-schedule
    :job-description job-description})
 
+(defn- scan-sorted-set-command [sorted-set cursor]
+  (car/zscan sorted-set cursor "MATCH" "*" "COUNT" 1))
+
+(defn- items-seq
+  ([conn sorted-set]
+   (items-seq conn sorted-set 0))
+  ([conn sorted-set cursor]
+   (lazy-seq
+     (let [[new-cursor-string replies] (redis-cmds/wcar* conn (scan-sorted-set-command sorted-set cursor))
+           new-cursor (Integer/parseInt new-cursor-string)
+           items      (map first (partition 2 replies))]
+       (concat items
+               (when-not (zero? new-cursor)
+                 (items-seq conn sorted-set new-cursor)))))))
+
+(defn find-entry
+  [conn cron-name]
+  (first (filter #(= cron-name (:name %))
+                 (items-seq conn d/prefixed-cron-schedules-queue))))
+
 (defn register-cron
-  [conn cron-schedule job-description]
-  (let [entry             (registry-entry cron-schedule job-description)
-        next-run-epoch-ms (cron-parsing/next-run-epoch-ms cron-schedule)]
-    (redis-cmds/enqueue-sorted-set conn
-                                   d/prefixed-cron-schedules-queue
-                                   next-run-epoch-ms
-                                   entry)
-    entry))
+  "Registers a cron entry in Redis.
+  If an entry already exists against the same name, it will be
+  overwritten."
+  [conn cron-name cron-schedule job-description]
+  (redis-cmds/with-transaction conn
+    (car/watch d/cron-entry-names-key)
+    (car/watch d/prefixed-cron-schedules-queue)
+    (let [name-exists?   (= 1 (car/with-replies (car/sismember d/cron-entry-names-key cron-name)))
+          existing-entry (when name-exists?
+                           (find-entry conn cron-name))]
+      (car/multi)
+      (when (and name-exists? existing-entry)
+        (car/zrem d/prefixed-cron-schedules-queue existing-entry))
+      (let [entry             (registry-entry cron-name cron-schedule job-description)
+            next-run-epoch-ms (cron-parsing/next-run-epoch-ms cron-schedule)]
+        (car/sadd d/cron-entry-names-key cron-name)
+        (car/zadd d/prefixed-cron-schedules-queue
+                  next-run-epoch-ms
+                  entry)
+        entry))))
 
 (defn- set-due-time [cron-entry]
   (car/zadd d/prefixed-cron-schedules-queue
