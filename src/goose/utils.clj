@@ -55,5 +55,5 @@
   "Randomly select an element from a list & return it."
   [list]
   (if (zero? (count list))
-    (throw (Exception. "List is empty."))
+    (throw (ex-info "List is empty." {:empty-list list}))
     (nth list (rand-int (count list)))))

@@ -57,5 +57,5 @@
         msg-properties {:priority d/rmq-high-priority
                         :headers  {"x-delay" delay}}]
     (when (< d/rmq-delay-limit-ms delay)
-      (throw (ex-info "MAX_DELAY limit breached: 2^32 ms(~49 days 17 hours)" {})))
+      (throw (ex-info "MAX_DELAY limit breached: 2^32 ms(~49 days 17 hours)" {:job job :delay delay})))
     (enqueue ch d/rmq-delay-exchange queue job msg-properties)))

@@ -7,7 +7,7 @@
   [conn]
   (or
     (lch/open conn)
-    (throw (Exception. "CHANNEL_MAX limit reached: cannot open new channels"))))
+    (throw (ex-info "CHANNEL_MAX limit reached: cannot open new channels" {:rmq-conn conn}))))
 
 (defn new-pool
   [conn size]
