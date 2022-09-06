@@ -13,7 +13,7 @@
   b/Broker
   (enqueue [this job]
     (redis-cmds/enqueue-back (:conn this) (:prefixed-queue job) job)
-    {:id (:id job)})
+    (select-keys job [:id]))
   (schedule [this schedule job]
     (redis-scheduler/run-at (:conn this) schedule job))
   (start [this worker-opts]

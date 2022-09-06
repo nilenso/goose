@@ -3,7 +3,7 @@
     [goose.brokers.broker :as b]
     [goose.brokers.rmq.channel :as channels]
     [goose.brokers.rmq.commands :as rmq-cmds]
-    [goose.brokers.rmq.publisher-confirms :as rmq-publisher-confirms]
+    [goose.brokers.rmq.publisher-confirms :as publisher-confirms]
     [goose.brokers.rmq.scheduler :as rmq-scheduler]
     [goose.brokers.rmq.worker :as rmq-worker]
     [goose.defaults :as d]
@@ -44,7 +44,7 @@
   Refer to http://clojurerabbitmq.info/articles/connecting.html
   for complete set of settings."
   {:settings           {:uri d/rmq-default-url}
-   :publisher-confirms rmq-publisher-confirms/sync-strategy})
+   :publisher-confirms publisher-confirms/sync-strategy})
 
 (defn new
   "Create a client for RabbitMQ broker.

@@ -80,5 +80,5 @@
     #(rmq/new {:settings :invalid})
     #(rmq/new (assoc rmq/default-opts :publisher-confirms {:strategy :invalid}))
     #(rmq/new (assoc rmq/default-opts :publisher-confirms {:strategy :sync :timeout 0}))
-    #(rmq/new (assoc rmq/default-opts :publisher-confirms {:strategy :async :ack-handler 'my-fn}))
+    #(rmq/new (assoc rmq/default-opts :publisher-confirms {:strategy :async :ack-handler 'invalid}))
     #(rmq/new (assoc rmq/default-opts :publisher-confirms {:strategy :async :nack-handler `my-fn}))))

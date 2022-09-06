@@ -23,9 +23,9 @@
 (deftest perform-async-test
   (testing "[rmq] Goose executes a function asynchronously"
     (let [arg "async-execute-test"
+          _ (is (uuid? (UUID/fromString (:id (c/perform-async tu/rmq-client-opts `perform-async-fn arg)))))
           worker (w/start tu/rmq-worker-opts)]
-      (is (uuid? (UUID/fromString (:id (c/perform-async tu/rmq-client-opts `perform-async-fn arg)))))
-      (is (= arg (deref perform-async-fn-executed 200 :e2e-test-timed-out)))
+      (is (= arg (deref perform-async-fn-executed 100 :e2e-test-timed-out)))
       (w/stop worker))))
 
 ; ======= TEST: Relative Scheduling ==========
@@ -36,9 +36,9 @@
 (deftest perform-in-sec-test
   (testing "[rmq] Goose executes a function scheduled in future"
     (let [arg "scheduling-test"
+          _ (is (uuid? (UUID/fromString (:id (c/perform-in-sec tu/rmq-client-opts 1 `perform-in-sec-fn arg)))))
           worker (w/start tu/rmq-worker-opts)]
-      (is (uuid? (UUID/fromString (:id (c/perform-in-sec tu/rmq-client-opts 1 `perform-in-sec-fn arg)))))
-      (is (= arg (deref perform-in-sec-fn-executed 1500 :scheduler-test-timed-out)))
+      (is (= arg (deref perform-in-sec-fn-executed 1100 :scheduler-test-timed-out)))
       (w/stop worker)))
 
   (testing "[rmq] Scheduling beyond max_delay limit"
@@ -56,9 +56,9 @@
 (deftest perform-at-test
   (testing "[rmq] Goose executes a function scheduled in past"
     (let [arg "scheduling-test"
+          _ (is (uuid? (UUID/fromString (:id (c/perform-at tu/rmq-client-opts (java.time.Instant/now) `perform-at-fn arg)))))
           scheduler (w/start tu/rmq-worker-opts)]
-      (is (uuid? (UUID/fromString (:id (c/perform-at tu/rmq-client-opts (java.time.Instant/now) `perform-at-fn arg)))))
-      (is (= arg (deref perform-at-fn-executed 200 :scheduler-test-timed-out)))
+      (is (= arg (deref perform-at-fn-executed 100 :scheduler-test-timed-out)))
       (w/stop scheduler))))
 
 ; ======= TEST: Publisher Confirms =======
@@ -121,16 +121,15 @@
                        :retry-delay-sec-fn-sym `immediate-retry
                        :retry-queue retry-queue
                        :error-handler-fn-sym `retry-test-error-handler)
+          _ (c/perform-async (assoc tu/rmq-client-opts :retry-opts retry-opts) `erroneous-fn arg)
           worker (w/start tu/rmq-worker-opts)
           retry-worker (w/start (assoc tu/rmq-worker-opts :queue retry-queue))]
-      (c/perform-async (assoc tu/rmq-client-opts :retry-opts retry-opts) `erroneous-fn arg)
-
-      (is (= java.lang.ArithmeticException (type (deref failed-on-execute 200 :retry-execute-timed-out))))
+      (is (= java.lang.ArithmeticException (type (deref failed-on-execute 100 :retry-execute-timed-out))))
       (w/stop worker)
 
-      (is (= clojure.lang.ExceptionInfo (type (deref failed-on-1st-retry 1200 :1st-retry-timed-out))))
+      (is (= clojure.lang.ExceptionInfo (type (deref failed-on-1st-retry 1100 :1st-retry-timed-out))))
 
-      (is (= arg (deref succeeded-on-2nd-retry 1200 :2nd-retry-timed-out)))
+      (is (= arg (deref succeeded-on-2nd-retry 1100 :2nd-retry-timed-out)))
       (w/stop retry-worker))))
 
 ; ======= TEST: Error handling dead-job using job queue ==========
@@ -151,9 +150,8 @@
                           :retry-delay-sec-fn-sym `immediate-retry
                           :error-handler-fn-sym `dead-test-error-handler
                           :death-handler-fn-sym `dead-test-death-handler)
+          _ (c/perform-async (assoc tu/rmq-client-opts :retry-opts dead-job-opts) `dead-fn)
           worker (w/start tu/rmq-worker-opts)]
-      (c/perform-async (assoc tu/rmq-client-opts :retry-opts dead-job-opts) `dead-fn)
-
-      (is (= java.lang.ArithmeticException (type (deref job-dead 1200 :death-handler-timed-out))))
+      (is (= java.lang.ArithmeticException (type (deref job-dead 1100 :death-handler-timed-out))))
       (is (= 2 @dead-job-run-count))
       (w/stop worker))))

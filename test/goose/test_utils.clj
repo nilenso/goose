@@ -3,6 +3,7 @@
     [goose.brokers.redis.broker :as redis]
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.brokers.rmq.broker :as rmq]
+    [goose.brokers.rmq.publisher-confirms :as rmq-publisher-confirms]
     [goose.defaults :as d]
     [goose.retry :as retry]
     [goose.specs :as specs]
@@ -10,8 +11,7 @@
     [goose.utils :as u]
 
     [langohr.queue :as lq]
-    [taoensso.carmine :as car]
-    [goose.brokers.rmq.publisher-confirms :as rmq-publisher-confirms]))
+    [taoensso.carmine :as car]))
 
 (defn my-fn [arg] arg)
 (def queue "test")
@@ -57,17 +57,21 @@
 (def worker-rmq-broker (rmq/new rmq-opts))
 (def rmq-client-opts (assoc client-opts :broker client-rmq-broker))
 (def rmq-worker-opts (assoc worker-opts :broker worker-rmq-broker))
-(defn rmq-purge-test-queue []
+(defn rmq-delete-test-queues []
   (let [ch (u/random-element (:channels client-rmq-broker))]
-    (lq/purge ch (d/prefix-queue queue))))
+    (lq/delete ch (d/prefix-queue queue))
+    (lq/delete ch (d/prefix-queue "test-retry"))
+    (lq/delete ch (d/prefix-queue "sync-publisher-confirms-test"))
+    (lq/delete ch (d/prefix-queue "async-publisher-confirms-test"))))
 
 (defn rmq-fixture
   [f]
   (specs/instrument)
+  (rmq-delete-test-queues)
 
   (f)
 
-  (rmq-purge-test-queue))
+  (rmq-delete-test-queues))
 
 (defn exit-cli
   "A utility function called by test-runner.
