@@ -37,7 +37,7 @@
 
 (defn redis-fixture
   [f]
-  (specs/unstrument)
+  (specs/instrument)
   (clear-redis)
 
   (f)
@@ -63,7 +63,7 @@
 
 (defn rmq-fixture
   [f]
-  (specs/unstrument)
+  (specs/instrument)
 
   (f)
 

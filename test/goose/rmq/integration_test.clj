@@ -36,7 +36,7 @@
     (let [arg "scheduling-test"
           worker (w/start tu/rmq-worker-opts)]
       (is (uuid? (UUID/fromString (:id (c/perform-in-sec tu/rmq-client-opts 1 `perform-in-sec-fn arg)))))
-      (is (= arg (deref perform-in-sec-fn-executed 1200 :scheduler-test-timed-out)))
+      (is (= arg (deref perform-in-sec-fn-executed 1500 :scheduler-test-timed-out)))
       (w/stop worker)))
 
   (testing "[rmq] Scheduling beyond max_delay limit"

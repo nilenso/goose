@@ -25,5 +25,5 @@
 
 (def async-strategy
   {:strategy     async
-   :ack-handler  default-ack-handler
-   :nack-handler default-nack-handler})
+   :ack-handler  `default-ack-handler
+   :nack-handler `default-nack-handler})

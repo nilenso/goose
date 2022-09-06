@@ -33,8 +33,8 @@
 (deftest perform-in-sec-test
   (testing "Goose executes a function scheduled in future"
     (let [arg "scheduling-test"
+          _ (is (uuid? (UUID/fromString (:id (c/perform-in-sec tu/redis-client-opts 1 `perform-in-sec-fn arg)))))
           scheduler (w/start tu/redis-worker-opts)]
-      (is (uuid? (UUID/fromString (:id (c/perform-in-sec tu/redis-client-opts 1 `perform-in-sec-fn arg)))))
       (is (= arg (deref perform-in-sec-fn-executed 4200 :scheduler-test-timed-out)))
       (w/stop scheduler))))
 
@@ -46,9 +46,9 @@
 (deftest perform-at-test
   (testing "Goose executes a function scheduled in past"
     (let [arg "scheduling-test"
+          _ (is (uuid? (UUID/fromString (:id (c/perform-at tu/redis-client-opts (java.time.Instant/now) `perform-at-fn arg)))))
           scheduler (w/start tu/redis-worker-opts)]
-      (is (uuid? (UUID/fromString (:id (c/perform-at tu/redis-client-opts (java.time.Instant/now) `perform-at-fn arg)))))
-      (is (= arg (deref perform-at-fn-executed 200 :scheduler-test-timed-out)))
+      (is (= arg (deref perform-at-fn-executed 500 :scheduler-test-timed-out)))
       (w/stop scheduler))))
 
 
