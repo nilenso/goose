@@ -1,5 +1,7 @@
 (ns goose.rmq.integration-test
   (:require
+    [goose.brokers.rmq.broker :as rmq]
+    [goose.brokers.rmq.publisher-confirms :as rmq-publisher-confirms]
     [goose.client :as c]
     [goose.retry :as retry]
     [goose.test-utils :as tu]
@@ -58,6 +60,39 @@
       (is (uuid? (UUID/fromString (:id (c/perform-at tu/rmq-client-opts (java.time.Instant/now) `perform-at-fn arg)))))
       (is (= arg (deref perform-at-fn-executed 200 :scheduler-test-timed-out)))
       (w/stop scheduler))))
+
+; ======= TEST: Publisher Confirms =======
+(def ack-handler-called (promise))
+(defn test-ack-handler [tag _]
+  (deliver ack-handler-called tag))
+(defn test-nack-handler [_ _])
+(deftest publisher-confirm-test
+  (testing "[rmq] Publish timed out"
+    (let [opts {:settings           {:uri tu/rmq-url}
+                :publisher-confirms {:strategy rmq-publisher-confirms/sync
+                                     :timeout  1}}
+          broker (rmq/new opts 1)
+          client-opts {:queue      "sync-publisher-confirms-test"
+                       :retry-opts retry/default-opts
+                       :broker     broker}]
+      (is
+        (thrown?
+          java.util.concurrent.TimeoutException
+          (c/perform-async client-opts `tu/my-fn)))
+      (rmq/close broker)))
+
+  (testing "[rmq] Ack handler called"
+    (let [opts {:settings           {:uri tu/rmq-url}
+                :publisher-confirms {:strategy     rmq-publisher-confirms/async
+                                     :ack-handler  `test-ack-handler
+                                     :nack-handler `test-nack-handler}}
+          broker (rmq/new opts 1)
+          client-opts {:queue      "async-publisher-confirms-test"
+                       :retry-opts retry/default-opts
+                       :broker     broker}
+          delivery-tag (:delivery-tag (c/perform-in-sec client-opts 1 `tu/my-fn))]
+      (is (= delivery-tag (deref ack-handler-called 100 :async-publisher-confirm-test-timed-out)))
+      (rmq/close broker))))
 
 ; ======= TEST: Error handling transient failure job using custom retry queue ==========
 (def retry-queue "test-retry")
