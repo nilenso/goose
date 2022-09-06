@@ -15,7 +15,8 @@
   (let [scheduled-job (assoc job :schedule epoch-ms)]
     (if (< epoch-ms (u/epoch-time-ms))
       (redis-cmds/enqueue-front redis-conn prefixed-queue scheduled-job)
-      (redis-cmds/enqueue-sorted-set redis-conn d/prefixed-schedule-queue epoch-ms scheduled-job))))
+      (redis-cmds/enqueue-sorted-set redis-conn d/prefixed-schedule-queue epoch-ms scheduled-job))
+    (select-keys job [:id])))
 
 (defn run
   [{:keys [internal-thread-pool redis-conn

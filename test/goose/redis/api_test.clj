@@ -15,7 +15,7 @@
 
 (deftest enqueued-jobs-test
   (testing "enqueued-jobs API"
-    (let [job-id (c/perform-async tu/redis-client-opts `tu/my-fn 1)
+    (let [job-id (:id (c/perform-async tu/redis-client-opts `tu/my-fn 1))
           _ (c/perform-async tu/redis-client-opts `tu/my-fn 2)]
       (is (= (list tu/queue) (enqueued-jobs/list-all-queues tu/redis-broker)))
       (is (= 2 (enqueued-jobs/size tu/redis-broker tu/queue)))
@@ -30,8 +30,8 @@
 
 (deftest scheduled-jobs-test
   (testing "scheduled-jobs API"
-    (let [job-id1 (c/perform-in-sec tu/redis-client-opts 10 `tu/my-fn 1)
-          job-id2 (c/perform-in-sec tu/redis-client-opts 10 `tu/my-fn 2)
+    (let [job-id1 (:id (c/perform-in-sec tu/redis-client-opts 10 `tu/my-fn 1))
+          job-id2 (:id (c/perform-in-sec tu/redis-client-opts 10 `tu/my-fn 2))
           _ (c/perform-in-sec tu/redis-client-opts 10 `tu/my-fn 3)]
       (is (= 3 (scheduled-jobs/size tu/redis-broker)))
       (let [match? (fn [job] (not= (list 1) (:args job)))]
@@ -60,7 +60,7 @@
                        :max-retries 0
                        :death-handler-fn-sym `death-handler)
           job-opts (assoc tu/redis-client-opts :retry-opts retry-opts)
-          dead-job-id (c/perform-async job-opts `dead-fn -1)
+          dead-job-id (:id (c/perform-async job-opts `dead-fn -1))
           _ (doseq [id (range 3)] (c/perform-async job-opts `dead-fn id))
           circuit-breaker (atom 0)]
       ; Wait until 4 jobs have died after execution.

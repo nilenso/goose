@@ -9,7 +9,7 @@
     [goose.defaults :as d]))
 
 (defn- retry-job
-  [{:keys [ch error-service-cfg]}
+  [{:keys [ch publisher-confirms error-service-cfg]}
    {{:keys [retry-delay-sec-fn-sym
             error-handler-fn-sym]} :retry-opts
     {:keys [retry-count]}          :state
@@ -20,10 +20,10 @@
         retry-at (+ retry-delay-ms (u/epoch-time-ms))
         job (assoc-in job [:state :retry-at] retry-at)]
     (u/log-on-exceptions (error-handler error-service-cfg job ex))
-    (rmq-cmds/schedule ch job retry-delay-ms)))
+    (rmq-cmds/schedule ch publisher-confirms job retry-delay-ms)))
 
 (defn- bury-job
-  [{:keys [ch error-service-cfg]}
+  [{:keys [ch publisher-confirms error-service-cfg]}
    {{:keys [skip-dead-queue
             death-handler-fn-sym]} :retry-opts
     {:keys [last-retried-at]}      :state
@@ -34,7 +34,7 @@
         job (assoc-in job [:state :dead-at] dead-at)]
     (u/log-on-exceptions (death-handler error-service-cfg job ex))
     (when-not skip-dead-queue
-      (rmq-cmds/enqueue-back ch d/prefixed-dead-queue job))))
+      (rmq-cmds/enqueue-back ch publisher-confirms d/prefixed-dead-queue job))))
 
 (defn wrap-failure
   [next]

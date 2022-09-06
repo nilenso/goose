@@ -3,6 +3,7 @@
     [goose.brokers.redis.broker :as redis]
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.brokers.rmq.broker :as rmq]
+    [goose.brokers.rmq.publisher-confirms :as rmq-publisher-confirms]
     [goose.defaults :as d]
     [goose.retry :as retry]
     [goose.specs :as specs]
@@ -49,22 +50,28 @@
         username (or (System/getenv "GOOSE_TEST_RABBITMQ_USERNAME") "guest")
         password (or (System/getenv "GOOSE_TEST_RABBITMQ_PASSWORD") "guest")]
     (str "amqp://" username ":" password "@" host ":" port)))
-(def rmq-opts {:settings {:uri rmq-url}})
+(def rmq-opts
+  {:settings           {:uri rmq-url}
+   :publisher-confirms rmq-publisher-confirms/sync-strategy})
 (def client-rmq-broker (rmq/new rmq-opts 1))
 (def worker-rmq-broker (rmq/new rmq-opts))
 (def rmq-client-opts (assoc client-opts :broker client-rmq-broker))
 (def rmq-worker-opts (assoc worker-opts :broker worker-rmq-broker))
-(defn rmq-purge-test-queue []
+(defn rmq-delete-test-queues []
   (let [ch (u/random-element (:channels client-rmq-broker))]
-    (lq/purge ch (d/prefix-queue queue))))
+    (lq/delete ch (d/prefix-queue queue))
+    (lq/delete ch (d/prefix-queue "test-retry"))
+    (lq/delete ch (d/prefix-queue "sync-publisher-confirms-test"))
+    (lq/delete ch (d/prefix-queue "async-publisher-confirms-test"))))
 
 (defn rmq-fixture
   [f]
   (specs/instrument)
+  (rmq-delete-test-queues)
 
   (f)
 
-  (rmq-purge-test-queue))
+  (rmq-delete-test-queues))
 
 (defn exit-cli
   "A utility function called by test-runner.

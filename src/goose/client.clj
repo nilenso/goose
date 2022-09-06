@@ -22,8 +22,7 @@
 
     (if schedule
       (b/schedule broker schedule job)
-      (b/enqueue broker job))
-    (:id job)))
+      (b/enqueue broker job))))
 
 (defn perform-async
   "Enqueue a function for async execution.

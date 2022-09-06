@@ -3,6 +3,7 @@
     [goose.brokers.broker :as b]
     [goose.brokers.redis.broker :as redis]
     [goose.brokers.rmq.broker :as rmq]
+    [goose.brokers.rmq.publisher-confirms :as rmq-publisher-confirms]
     [goose.client :as c]
     [goose.defaults :as d]
     [goose.metrics.protocol :as metrics-protocol]
@@ -54,8 +55,26 @@
                    :goose.specs.rmq/password
                    :goose.specs.rmq/vhost]))
 
+(s/def :goose.specs.sync/strategy #(= % rmq-publisher-confirms/sync))
+(s/def ::timeout pos-int?)
+(s/def ::sync-strategy
+  (s/keys :req-un [:goose.specs.sync/strategy ::timeout]))
+
+(s/def :goose.specs.async/strategy #(= % rmq-publisher-confirms/async))
+(s/def ::ack-handler
+  (s/and ::fn-sym #(some #{2} (u/arities %))))
+(s/def ::nack-handler
+  (s/and ::fn-sym #(some #{2} (u/arities %))))
+(s/def ::async-strategy
+  (s/keys :req-un [:goose.specs.async/strategy ::ack-handler ::nack-handler]))
+
+(s/def ::publisher-confirms
+  (s/or :sync ::sync-strategy
+        :async ::async-strategy))
+
 (s/def ::rmq
-  (s/keys :req-un [:goose.specs.rmq/settings]))
+  (s/keys :req-un [:goose.specs.rmq/settings
+                   ::publisher-confirms]))
 (s/fdef rmq/new
         :args (s/alt :one (s/cat :opts ::rmq)
                      :two (s/cat :opts ::rmq
@@ -141,8 +160,8 @@
 
 (def ^:private fns-with-specs
   [`redis/new
-   `statsd/new
    `rmq/new
+   `statsd/new
    `c/perform-async
    `c/perform-at
    `c/perform-in-sec
