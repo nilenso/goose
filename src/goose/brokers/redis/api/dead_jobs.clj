@@ -28,5 +28,5 @@
   (< 0 (redis-cmds/del-from-sorted-set-until
          conn d/prefixed-dead-queue epoch-time-ms)))
 
-(defn delete-all [conn]
+(defn purge [conn]
   (= 1 (redis-cmds/del-keys conn [d/prefixed-dead-queue])))

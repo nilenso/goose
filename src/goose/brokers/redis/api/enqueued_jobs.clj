@@ -27,6 +27,6 @@
   (let [prefixed-queue (:prefixed-queue job)]
     (= 1 (redis-cmds/del-from-list conn prefixed-queue job))))
 
-(defn delete-all [conn queue]
+(defn purge [conn queue]
   (let [prefixed-queue (d/prefix-queue queue)]
     (= 1 (redis-cmds/del-keys conn [prefixed-queue]))))

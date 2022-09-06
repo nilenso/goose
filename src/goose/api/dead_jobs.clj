@@ -37,7 +37,7 @@
   [broker epoch-time-ms]
   (b/dead-jobs-delete-older-than broker epoch-time-ms))
 
-(defn delete-all
+(defn purge
   "Delete all Dead Jobs."
   [broker]
-  (b/dead-jobs-delete-all broker))
+  (b/dead-jobs-purge broker))

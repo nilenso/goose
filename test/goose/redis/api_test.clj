@@ -26,7 +26,7 @@
         (is (some? (enqueued-jobs/prioritise-execution tu/redis-broker job)))
         (is (true? (enqueued-jobs/delete tu/redis-broker job))))
 
-      (is (true? (enqueued-jobs/delete-all tu/redis-broker tu/queue))))))
+      (is (true? (enqueued-jobs/purge tu/redis-broker tu/queue))))))
 
 (deftest scheduled-jobs-test
   (testing "scheduled-jobs API"
@@ -45,7 +45,7 @@
       (let [job (scheduled-jobs/find-by-id tu/redis-broker job-id2)]
         (is (true? (scheduled-jobs/delete tu/redis-broker job))))
 
-      (is (true? (scheduled-jobs/delete-all tu/redis-broker))))))
+      (is (true? (scheduled-jobs/purge tu/redis-broker))))))
 
 (defn death-handler [_ _ _])
 (def dead-fn-atom (atom 0))
@@ -84,4 +84,4 @@
             [dead-job] (dead-jobs/find-by-pattern tu/redis-broker match?)]
         (is (true? (dead-jobs/delete tu/redis-broker dead-job))))
 
-      (is (true? (dead-jobs/delete-all tu/redis-broker))))))
+      (is (true? (dead-jobs/purge tu/redis-broker))))))

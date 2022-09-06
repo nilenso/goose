@@ -35,8 +35,8 @@
     (enqueued-jobs/prioritise-execution (:conn this) job))
   (enqueued-jobs-delete [this job]
     (enqueued-jobs/delete (:conn this) job))
-  (enqueued-jobs-delete-all [this queue]
-    (enqueued-jobs/delete-all (:conn this) queue))
+  (enqueued-jobs-purge [this queue]
+    (enqueued-jobs/purge (:conn this) queue))
 
   ; scheduled-jobs API
   (scheduled-jobs-size [this]
@@ -49,8 +49,8 @@
     (scheduled-jobs/prioritise-execution (:conn this) job))
   (scheduled-jobs-delete [this job]
     (scheduled-jobs/delete (:conn this) job))
-  (scheduled-jobs-delete-all [this]
-    (scheduled-jobs/delete-all (:conn this)))
+  (scheduled-jobs-purge [this]
+    (scheduled-jobs/purge (:conn this)))
 
   ; dead-jobs API
   (dead-jobs-size [this]
@@ -65,8 +65,8 @@
     (dead-jobs/delete (:conn this) job))
   (dead-jobs-delete-older-than [this epoch-time-ms]
     (dead-jobs/delete-older-than (:conn this) epoch-time-ms))
-  (dead-jobs-delete-all [this]
-    (dead-jobs/delete-all (:conn this))))
+  (dead-jobs-purge [this]
+    (dead-jobs/purge (:conn this))))
 
 (def default-opts
   "Default config for Redis client."
