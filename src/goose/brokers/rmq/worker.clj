@@ -6,6 +6,8 @@
     [goose.brokers.rmq.consumer :as rmq-consumer]
     [goose.brokers.rmq.retry :as rmq-retry]
     [goose.defaults :as d]
+    [goose.job :as job]
+    [goose.metrics.middleware :as metrics-middleware]
 
     [clojure.tools.logging :as log]
     [com.climate.claypoole :as cp]
@@ -38,6 +40,8 @@
                (-> rmq-consumer/execute-job (middlewares))
                rmq-consumer/execute-job)]
     (-> call
+        (metrics-middleware/wrap-metrics)
+        (job/wrap-latency)
         (rmq-retry/wrap-failure))))
 
 (defn start

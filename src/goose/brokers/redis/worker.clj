@@ -58,7 +58,7 @@
 (defn start
   [{:keys [threads queue middlewares] :as common-opts}]
   (let [thread-pool (cp/threadpool threads)
-        ; Internal threadpool for scheduler, orphan-checker & heartbeat.
+        ; Internal threadpool for metrics, scheduler, orphan-checker & heartbeat.
         internal-thread-pool (cp/threadpool d/redis-internal-thread-pool-size)
         random-str (subs (str (random-uuid)) 24 36) ; Take last 12 chars of UUID.
         id (str queue ":" (u/hostname) ":" random-str)
