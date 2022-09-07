@@ -143,6 +143,12 @@
 (defn scan-sorted-set [conn sorted-set cursor match count]
   (wcar* conn (car/zscan sorted-set cursor "MATCH" match "COUNT" count)))
 
+(defn sorted-set-pop-from-head
+  "Utility function to pop from head of dead-jobs queue.
+  Job with lowest score will be considered as head of the queue."
+  [conn sorted-set]
+  (wcar* conn (car/zpopmin sorted-set)))
+
 (defn find-in-sorted-set
   ([conn sorted-set match? limit]
    (let [iterate-fn (fn [cursor]

@@ -36,7 +36,7 @@
   [broker job]
   (b/enqueued-jobs-delete broker job))
 
-(defn delete-all
+(defn purge
   "Delete entire Queue containing Enqueued Jobs."
   [broker queue]
-  (b/enqueued-jobs-delete-all broker queue))
+  (b/enqueued-jobs-purge broker queue))

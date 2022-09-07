@@ -31,7 +31,7 @@
   [broker job]
   (b/scheduled-jobs-delete broker job))
 
-(defn delete-all
+(defn purge
   "Delete all Scheduled Jobs."
   [broker]
-  (b/scheduled-jobs-delete-all broker))
+  (b/scheduled-jobs-purge broker))

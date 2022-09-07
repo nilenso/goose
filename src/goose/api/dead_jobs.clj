@@ -1,4 +1,5 @@
 (ns goose.api.dead-jobs
+  (:refer-clojure :exclude [pop])
   (:require
     [goose.brokers.broker :as b]))
 
@@ -6,6 +7,11 @@
   "Get size of Dead Jobs."
   [broker]
   (b/dead-jobs-size broker))
+
+(defn pop
+  "Return Job at head of Dead-queue."
+  [broker]
+  (b/dead-jobs-pop broker))
 
 (defn find-by-id
   "Find a Dead Job by ID."
@@ -37,7 +43,7 @@
   [broker epoch-time-ms]
   (b/dead-jobs-delete-older-than broker epoch-time-ms))
 
-(defn delete-all
+(defn purge
   "Delete all Dead Jobs."
   [broker]
-  (b/dead-jobs-delete-all broker))
+  (b/dead-jobs-purge broker))

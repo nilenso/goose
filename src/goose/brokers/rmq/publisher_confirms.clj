@@ -3,7 +3,6 @@
   (:require
     [clojure.tools.logging :as log]))
 
-
 (defn default-ack-handler
   [delivery-tag multiple]
   (if multiple
