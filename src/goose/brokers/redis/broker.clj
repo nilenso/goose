@@ -55,6 +55,8 @@
   ; dead-jobs API
   (dead-jobs-size [this]
     (dead-jobs/size (:conn this)))
+  (dead-jobs-pop [this]
+    (dead-jobs/pop (:conn this)))
   (dead-jobs-find-by-id [this id]
     (dead-jobs/find-by-id (:conn this) id))
   (dead-jobs-find-by-pattern [this match? limit]

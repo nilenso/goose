@@ -19,22 +19,28 @@
     (enqueued-jobs/purge tu/client-rmq-broker tu/queue)
     (is (= 0 (enqueued-jobs/size tu/client-rmq-broker tu/queue)))))
 
-(def job-dead (promise))
-(defn dead-fn []
-  (throw (Exception. "died!")))
-(defn dead-test-death-handler [_ _ ex]
-  (deliver job-dead ex))
+(defn death-handler [_ _ _])
+(def dead-fn-atom (atom 0))
+(defn dead-fn [id]
+  (swap! dead-fn-atom inc)
+  (throw (Exception. (str id " died!"))))
 
 (deftest dead-jobs-test
   (testing "[rmq] dead-jobs API"
-    (let [retry-opts (assoc retry/default-opts
+    (let [worker (w/start (assoc tu/rmq-worker-opts :threads 1))
+          retry-opts (assoc retry/default-opts
                        :max-retries 0
-                       :death-handler-fn-sym `dead-test-death-handler)
+                       :death-handler-fn-sym `death-handler)
           job-opts (assoc tu/rmq-client-opts :retry-opts retry-opts)
+          dead-job-id (:id (c/perform-async job-opts `dead-fn 1))
           _ (c/perform-async job-opts `dead-fn)
-          worker (w/start tu/rmq-worker-opts)]
-      (is (= java.lang.Exception (type (deref job-dead 100 :dead-jobs-api-test-timed-out))))
+          circuit-breaker (atom 0)]
+      ; Wait until 2 jobs have died after execution.
+      (while (and (> 2 @circuit-breaker) (not= 2 @dead-fn-atom))
+        (swap! circuit-breaker inc)
+        (Thread/sleep 40))
       (w/stop worker)
-      (is (= 1 (dead-jobs/size tu/client-rmq-broker)))
-      (dead-jobs/purge tu/client-rmq-broker)
+      (is (= 2 (dead-jobs/size tu/client-rmq-broker)))
+      (is (= dead-job-id (:id (dead-jobs/pop tu/client-rmq-broker))))
+      (is (true? (dead-jobs/purge tu/client-rmq-broker)))
       (is (= 0 (dead-jobs/size tu/client-rmq-broker))))))

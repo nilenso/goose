@@ -26,6 +26,7 @@
 
   ; dead-jobs API
   (dead-jobs-size [_])
+  (dead-jobs-pop [_])
   (dead-jobs-find-by-id [_ id])
   (dead-jobs-find-by-pattern [_ match? limit])
   (dead-jobs-re-enqueue-for-execution [_ job])

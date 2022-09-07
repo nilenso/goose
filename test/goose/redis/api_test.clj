@@ -60,18 +60,20 @@
                        :max-retries 0
                        :death-handler-fn-sym `death-handler)
           job-opts (assoc tu/redis-client-opts :retry-opts retry-opts)
-          dead-job-id (:id (c/perform-async job-opts `dead-fn -1))
+          dead-job-id-1 (:id (c/perform-async job-opts `dead-fn 11))
+          dead-job-id-2 (:id (c/perform-async job-opts `dead-fn 12))
           _ (doseq [id (range 3)] (c/perform-async job-opts `dead-fn id))
           circuit-breaker (atom 0)]
       ; Wait until 4 jobs have died after execution.
-      (while (and (> 4 @circuit-breaker) (not= 4 @dead-fn-atom))
+      (while (and (> 5 @circuit-breaker) (not= 5 @dead-fn-atom))
         (swap! circuit-breaker inc)
         (Thread/sleep 40))
       (w/stop worker)
 
-      (is (= 4 (dead-jobs/size tu/redis-broker)))
+      (is (= 5 (dead-jobs/size tu/redis-broker)))
 
-      (let [dead-job (dead-jobs/find-by-id tu/redis-broker dead-job-id)]
+      (is (= dead-job-id-1 (:id (dead-jobs/pop tu/redis-broker))))
+      (let [dead-job (dead-jobs/find-by-id tu/redis-broker dead-job-id-2)]
         (is some? (dead-jobs/re-enqueue-for-execution tu/redis-broker dead-job))
         (is true? (enqueued-jobs/delete tu/redis-broker dead-job)))
 

@@ -34,7 +34,6 @@
         job (assoc-in job [:state :dead-at] dead-at)]
     (u/log-on-exceptions (death-handler error-service-cfg job ex))
     (when-not skip-dead-queue
-      (println "deading a job")
       (rmq-cmds/enqueue-back ch publisher-confirms job d/prefixed-dead-queue))))
 
 (defn wrap-failure

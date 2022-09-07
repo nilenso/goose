@@ -45,6 +45,8 @@
   ; dead-jobs API
   (dead-jobs-size [this]
     (dead-jobs/size (u/random-element (:channels this))))
+  (dead-jobs-pop [this]
+    (dead-jobs/pop (u/random-element (:channels this))))
   (dead-jobs-purge [this]
     (dead-jobs/purge (u/random-element (:channels this))))
 

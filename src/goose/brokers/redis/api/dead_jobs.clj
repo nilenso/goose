@@ -1,5 +1,6 @@
 (ns goose.brokers.redis.api.dead-jobs
   {:no-doc true}
+  (:refer-clojure :exclude [pop])
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]
@@ -7,6 +8,10 @@
 
 (defn size [conn]
   (redis-cmds/sorted-set-size conn d/prefixed-dead-queue))
+
+(defn pop [conn]
+  (let [[job _] (redis-cmds/sorted-set-pop-from-head conn d/prefixed-dead-queue)]
+    job))
 
 (defn find-by-pattern [conn match? limit]
   (redis-cmds/find-in-sorted-set conn d/prefixed-dead-queue match? limit))
