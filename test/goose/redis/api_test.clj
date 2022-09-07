@@ -54,7 +54,7 @@
   (throw (Exception. (str id " died!"))))
 
 (deftest dead-jobs-test
-  (testing "dead-jobs API"
+  (testing "[redis] dead-jobs API"
     (let [worker (w/start tu/redis-worker-opts)
           retry-opts (assoc retry/default-opts
                        :max-retries 0
