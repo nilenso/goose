@@ -1,6 +1,7 @@
 (ns goose.brokers.rmq.broker
   (:require
     [goose.brokers.broker :as b]
+    [goose.brokers.rmq.api.enqueued-jobs :as enqueued-jobs]
     [goose.brokers.rmq.channel :as channels]
     [goose.brokers.rmq.commands :as rmq-cmds]
     [goose.brokers.rmq.publisher-confirms :as publisher-confirms]
@@ -33,6 +34,12 @@
     (rmq-worker/start (assoc worker-opts
                         :rmq-conn (:conn this)
                         :publisher-confirms (:publisher-confirms this))))
+
+  ; enqueued-jobs API
+  (enqueued-jobs-size [this queue]
+    (enqueued-jobs/size (u/random-element (:channels this)) queue))
+  (enqueued-jobs-purge [this queue]
+    (enqueued-jobs/purge (u/random-element (:channels this)) queue))
 
   Close
   (close [this]

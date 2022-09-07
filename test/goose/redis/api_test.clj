@@ -14,7 +14,7 @@
 (use-fixtures :once tu/redis-fixture)
 
 (deftest enqueued-jobs-test
-  (testing "enqueued-jobs API"
+  (testing "[redis] enqueued-jobs API"
     (let [job-id (:id (c/perform-async tu/redis-client-opts `tu/my-fn 1))
           _ (c/perform-async tu/redis-client-opts `tu/my-fn 2)]
       (is (= (list tu/queue) (enqueued-jobs/list-all-queues tu/redis-broker)))
