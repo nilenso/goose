@@ -67,6 +67,9 @@
   (deliver ack-handler-called tag))
 (defn test-nack-handler [_ _])
 (deftest publisher-confirm-test
+  ; This test fails quite rarely.
+  ; RMQ confirms in 1ms too sometimes ¯\_(ツ)_/¯
+  ; Remove this test if it happens often.
   (testing "[rmq] Publish timed out"
     (let [opts {:settings           {:uri tu/rmq-url}
                 :publisher-confirms {:strategy rmq-publisher-confirms/sync
