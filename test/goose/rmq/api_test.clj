@@ -7,10 +7,12 @@
     [goose.test-utils :as tu]
     [goose.worker :as w]
 
-    [clojure.test :refer [deftest is testing use-fixtures]]))
+    [clojure.test :refer [deftest is testing use-fixtures]])
+  (:import
+    [java.util UUID]))
 
 ; ======= Setup & Teardown ==========
-(use-fixtures :once tu/rmq-fixture)
+(use-fixtures :each tu/rmq-fixture)
 
 (deftest enqueued-jobs-test
   (testing "[rmq] enqueued-jobs API"
@@ -32,8 +34,7 @@
                        :max-retries 0
                        :death-handler-fn-sym `death-handler)
           job-opts (assoc tu/rmq-client-opts :retry-opts retry-opts)
-          dead-job-id (:id (c/perform-async job-opts `dead-fn 1))
-          _ (c/perform-async job-opts `dead-fn)
+          _ (doseq [id (range 2)] (c/perform-async job-opts `dead-fn id))
           circuit-breaker (atom 0)]
       ; Wait until 2 jobs have died after execution.
       (while (and (> 2 @circuit-breaker) (not= 2 @dead-fn-atom))
@@ -41,6 +42,6 @@
         (Thread/sleep 40))
       (w/stop worker)
       (is (= 2 (dead-jobs/size tu/client-rmq-broker)))
-      (is (= dead-job-id (:id (dead-jobs/pop tu/client-rmq-broker))))
+      (is (uuid? (UUID/fromString (:id (dead-jobs/pop tu/client-rmq-broker)))))
       (is (true? (dead-jobs/purge tu/client-rmq-broker)))
       (is (= 0 (dead-jobs/size tu/client-rmq-broker))))))

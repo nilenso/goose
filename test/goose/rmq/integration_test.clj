@@ -13,7 +13,7 @@
 
 
 ; ======= Setup & Teardown ==========
-(use-fixtures :once tu/rmq-fixture)
+(use-fixtures :each tu/rmq-fixture)
 
 ; ======= TEST: Async execution ==========
 (def perform-async-fn-executed (promise))

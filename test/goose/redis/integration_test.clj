@@ -10,7 +10,7 @@
     [java.util UUID]))
 
 ; ======= Setup & Teardown ==========
-(use-fixtures :once tu/redis-fixture)
+(use-fixtures :each tu/redis-fixture)
 
 ; ======= TEST: Async execution ==========
 (def perform-async-fn-executed (promise))
