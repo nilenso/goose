@@ -62,7 +62,9 @@
           job-opts (assoc tu/redis-client-opts :retry-opts retry-opts)
           dead-job-id-1 (:id (c/perform-async job-opts `dead-fn 11))
           dead-job-id-2 (:id (c/perform-async job-opts `dead-fn 12))
-          _ (doseq [id (range 3)] (c/perform-async job-opts `dead-fn id))
+          _ (doseq [id (range 3)]
+              (c/perform-async job-opts `dead-fn id)
+              (Thread/sleep (rand-int 15))) ; Prevent jobs from dying at the same time
           circuit-breaker (atom 0)]
       ; Wait until 4 jobs have died after execution.
       (while (and (> 5 @circuit-breaker) (not= 5 @dead-fn-atom))
@@ -80,9 +82,6 @@
       (let [match? (fn [job] (= (list 0) (:args job)))
             [dead-job] (dead-jobs/find-by-pattern tu/redis-broker match?)
             dead-at (get-in dead-job [:state :dead-at])]
-        ;; TODO: This test is flaky.
-        ;; It is possible for more than one job to be dead at the same time,
-        ;; in which case more than one job will be deleted on the next line.
         (is (true? (dead-jobs/delete-older-than tu/redis-broker dead-at))))
 
       (let [match? (fn [job] (= (list 1) (:args job)))
