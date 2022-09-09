@@ -27,3 +27,11 @@
           (.orElse nil)
           (.toInstant)
           (.toEpochMilli)))
+
+(defn previous-run-epoch-ms [cron-schedule]
+  (some-> (parse-cron cron-schedule)
+          (ExecutionTime/forCron)
+          (.lastExecution (ZonedDateTime/now))
+          (.orElse nil)
+          (.toInstant)
+          (.toEpochMilli)))

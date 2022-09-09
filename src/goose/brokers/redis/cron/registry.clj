@@ -67,6 +67,11 @@
       (redis-cmds/wcar* redis-conn
         (doall (map (partial car/hget d/cron-entries-hm-key) cron-names))))))
 
+(defn- create-job
+  [{:keys [cron-schedule job-description] :as _cron-entry}]
+  (-> (j/from-description job-description)
+      (assoc :cron-run-at (cron-parsing/previous-run-epoch-ms cron-schedule))))
+
 (defn enqueue-due-cron-entries
   "Returns truthy if due cron entries were found."
   [redis-conn]
@@ -77,7 +82,7 @@
       ;; The `multi` call cannot be inside `when` or any conditional,
       ;; because the transaction body must contain a call to `multi`
       ;; in all code paths.
-      (let [jobs-to-enqueue (map (comp j/from-description :job-description) due-cron-entries)]
+      (let [jobs-to-enqueue (map create-job due-cron-entries)]
         (enqueue-jobs-to-ready-on-priority jobs-to-enqueue)
         (doseq [cron-entry due-cron-entries]
           (set-due-time cron-entry)))

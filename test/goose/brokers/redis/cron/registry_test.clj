@@ -119,5 +119,5 @@
                                               (fn [{:keys [execute-fn-sym]}]
                                                 (= `foo-sym execute-fn-sym)))
                first
-               (dissoc :id :enqueued-at)))
+               (select-keys [:args :execute-fn-sym :prefixed-queue :queue :retry-opts])))
         "A job is created from the cron entry and enqueued")))

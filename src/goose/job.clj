@@ -43,6 +43,8 @@
     [metrics-keys/retry-latency (- (u/epoch-time-ms) (:retry-at (:state job)))]
     (:schedule job)
     [metrics-keys/schedule-latency (- (u/epoch-time-ms) (:schedule job))]
+    (:cron-run-at job)
+    [metrics-keys/cron-schedule-latency (- (u/epoch-time-ms) (:cron-run-at job))]
     :else
     [metrics-keys/execution-latency (- (u/epoch-time-ms) (:enqueued-at job))]))
 
