@@ -23,12 +23,13 @@
 
 ; ========== Cron ===============
 (s/def ::cron-string (s/and string? cron-parsing/valid-cron?))
+(s/valid? ::cron-string "* * * * *")
 
 ; ========== Redis ==============
 (s/def :goose.specs.redis/url string?)
 (s/def :goose.specs.redis/scheduler-polling-interval-sec (s/int-in 1 61))
 (s/def :goose.specs.redis/pool-opts
-  (s/or :none nil?
+  (s/or :none #(= :none %)
         :map map?
         :iconn-pool #(satisfies? IConnectionPool %)))
 
@@ -161,6 +162,7 @@
 
 (s/fdef c/perform-every
         :args (s/cat :opts ::client-opts
+                     :cron-name string?
                      :cron-schedule ::cron-string
                      :execute-fn-sym ::fn-sym
                      :args (s/* ::args-serializable?)))
@@ -175,6 +177,7 @@
    `c/perform-async
    `c/perform-at
    `c/perform-in-sec
+   `c/perform-every
    `w/start])
 
 (defn instrument []

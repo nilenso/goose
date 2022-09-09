@@ -96,7 +96,7 @@
     (c/perform-every tu/redis-client-opts
                      "my-cron-entry"
                      "* * * * *"
-                     `foo-bar-baz
+                     `tu/my-fn
                      :foo
                      "bar"
                      'baz)
@@ -105,7 +105,7 @@
            (:name (cron-entries/find-by-name tu/redis-broker "my-cron-entry"))))
     (is (= "* * * * *"
            (:cron-schedule (cron-entries/find-by-name tu/redis-broker "my-cron-entry"))))
-    (is (= {:execute-fn-sym `foo-bar-baz
+    (is (= {:execute-fn-sym `tu/my-fn
             :args           [:foo "bar" 'baz]}
            (-> (cron-entries/find-by-name tu/redis-broker "my-cron-entry")
                (:job-description)
@@ -121,14 +121,14 @@
     (c/perform-every tu/redis-client-opts
                      "my-cron-entry"
                      "* * * * *"
-                     `foo-bar-baz
+                     `tu/my-fn
                      :foo
                      "bar"
                      'baz)
     (c/perform-every tu/redis-client-opts
                      "my-other-cron-entry"
                      "* * * * *"
-                     `foo-bar-baz
+                     `tu/my-fn
                      :foo
                      "bar"
                      'baz)
@@ -144,7 +144,7 @@
       (c/perform-every tu/redis-client-opts
                        "my-cron-entry"
                        "* * * * *"
-                       `foo-bar-baz
+                       `tu/my-fn
                        :foo
                        "bar"
                        'baz)
@@ -152,7 +152,7 @@
              (:name (cron-entries/find-by-name tu/redis-broker "my-cron-entry"))))
       (is (= "* * * * *"
              (:cron-schedule (cron-entries/find-by-name tu/redis-broker "my-cron-entry"))))
-      (is (= {:execute-fn-sym `foo-bar-baz
+      (is (= {:execute-fn-sym `tu/my-fn
               :args           [:foo "bar" 'baz]}
              (-> (cron-entries/find-by-name tu/redis-broker "my-cron-entry")
                  (:job-description)

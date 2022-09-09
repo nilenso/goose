@@ -18,9 +18,7 @@
 
 (defn find-by-id [conn id]
   (let [
-        ;; TODO: Think about this limit more carefully. Why is it hardcoded?
-        ;; It used to be 1, which was breaking with the new scan implementation.
-        limit 10
+        limit 1
         match? (fn [job] (= (:id job) id))]
     (first (find-by-pattern conn match? limit))))
 
