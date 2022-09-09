@@ -31,7 +31,7 @@
   `redis-key` is the key in Redis at which the data structure is located.
 
   Callers may limit the amount of scans on Redis by taking a limited number of items.
-  for ex: (take 5 (items-seq conn scan-sorted-set \"my-ss\"))"
+  for ex: (take 5 (scan-seq conn scan-sorted-set \"my-ss\"))"
   ([conn]
    (scan-seq conn scan-database nil 0))
   ([conn scan-fn]
