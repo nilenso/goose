@@ -71,7 +71,15 @@
   (dead-jobs-delete-older-than [this epoch-time-ms]
     (dead-jobs/delete-older-than (:conn this) epoch-time-ms))
   (dead-jobs-purge [this]
-    (dead-jobs/purge (:conn this))))
+    (dead-jobs/purge (:conn this)))
+
+  ; cron entries API
+  (cron-entries-find-by-name [this entry-name]
+    (cron-registry/find-by-name (:conn this) entry-name))
+  (cron-entries-delete [this entry-name]
+    (cron-registry/delete (:conn this) entry-name))
+  (cron-entries-delete-all [this]
+    (cron-registry/delete-all (:conn this))))
 
 (def default-opts
   "Default config for Redis client."

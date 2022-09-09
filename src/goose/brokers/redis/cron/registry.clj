@@ -11,7 +11,7 @@
    :cron-schedule   cron-schedule
    :job-description job-description})
 
-(defn find-entry
+(defn find-by-name
   [conn cron-name]
   (redis-cmds/wcar* conn (car/hget d/cron-entries-hm-key cron-name)))
 
@@ -82,3 +82,15 @@
         (doseq [cron-entry due-cron-entries]
           (set-due-time cron-entry)))
       true)))
+
+(defn delete
+  [redis-conn entry-name]
+  (let [[_ atomic-results] (car/atomic redis-conn redis-cmds/atomic-lock-attempts
+                             (car/multi)
+                             (car/zrem d/cron-schedules-zset-key entry-name)
+                             (car/hdel d/cron-entries-hm-key entry-name))]
+    (= [1 1] atomic-results)))
+
+(defn delete-all
+  [redis-conn]
+  (= 2 (redis-cmds/del-keys redis-conn [d/cron-entries-hm-key d/cron-schedules-zset-key])))

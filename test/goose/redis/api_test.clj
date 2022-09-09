@@ -1,5 +1,6 @@
 (ns goose.redis.api-test
   (:require
+    [goose.api.cron-entries :as cron-entries]
     [goose.api.dead-jobs :as dead-jobs]
     [goose.api.enqueued-jobs :as enqueued-jobs]
     [goose.api.scheduled-jobs :as scheduled-jobs]
@@ -89,3 +90,70 @@
         (is (true? (dead-jobs/delete tu/redis-broker dead-job))))
 
       (is (true? (dead-jobs/purge tu/redis-broker))))))
+
+(deftest cron-entries-test
+  (testing "cron entries API"
+    (c/perform-every tu/redis-client-opts
+                     "my-cron-entry"
+                     "* * * * *"
+                     `foo-bar-baz
+                     :foo
+                     "bar"
+                     'baz)
+
+    (is (= "my-cron-entry"
+           (:name (cron-entries/find-by-name tu/redis-broker "my-cron-entry"))))
+    (is (= "* * * * *"
+           (:cron-schedule (cron-entries/find-by-name tu/redis-broker "my-cron-entry"))))
+    (is (= {:execute-fn-sym `foo-bar-baz
+            :args           [:foo "bar" 'baz]}
+           (-> (cron-entries/find-by-name tu/redis-broker "my-cron-entry")
+               (:job-description)
+               (select-keys [:execute-fn-sym :args]))))
+
+    (is (cron-entries/delete tu/redis-broker "my-cron-entry")
+        "delete returns truthy when an entry is deleted")
+    (is (nil? (cron-entries/find-by-name tu/redis-broker "my-cron-entry"))
+        "The deleted entry should be absent")
+    (is (not (cron-entries/delete tu/redis-broker "my-cron-entry"))
+        "delete returns falsey when an entry is not deleted")
+
+    (c/perform-every tu/redis-client-opts
+                     "my-cron-entry"
+                     "* * * * *"
+                     `foo-bar-baz
+                     :foo
+                     "bar"
+                     'baz)
+    (c/perform-every tu/redis-client-opts
+                     "my-other-cron-entry"
+                     "* * * * *"
+                     `foo-bar-baz
+                     :foo
+                     "bar"
+                     'baz)
+
+    (is (cron-entries/delete-all tu/redis-broker)
+        "delete-all returns truthy if the cron entry keys were deleted")
+    (is (nil? (cron-entries/find-by-name tu/redis-broker "my-cron-entry"))
+        "The deleted entry should be absent")
+    (is (nil? (cron-entries/find-by-name tu/redis-broker "my-other-cron-entry"))
+        "The deleted entry should be absent")
+
+    (testing "adding an entry after delete-all was called"
+      (c/perform-every tu/redis-client-opts
+                       "my-cron-entry"
+                       "* * * * *"
+                       `foo-bar-baz
+                       :foo
+                       "bar"
+                       'baz)
+      (is (= "my-cron-entry"
+             (:name (cron-entries/find-by-name tu/redis-broker "my-cron-entry"))))
+      (is (= "* * * * *"
+             (:cron-schedule (cron-entries/find-by-name tu/redis-broker "my-cron-entry"))))
+      (is (= {:execute-fn-sym `foo-bar-baz
+              :args           [:foo "bar" 'baz]}
+             (-> (cron-entries/find-by-name tu/redis-broker "my-cron-entry")
+                 (:job-description)
+                 (select-keys [:execute-fn-sym :args])))))))

@@ -46,7 +46,7 @@
                               :prefixed-queue (d/prefix-queue "foo-queue")
                               :queue          "foo-queue"
                               :retry-opts     retry/default-opts}}
-           (cron-registry/find-entry tu/redis-conn "my-cron-name"))
+           (cron-registry/find-by-name tu/redis-conn "my-cron-name"))
         "The cron entry exists and was overwritten")))
 
 (deftest due-cron-entries-test
