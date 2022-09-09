@@ -13,7 +13,7 @@
     [langohr.queue :as lq]
     [taoensso.carmine :as car]))
 
-(defn my-fn [arg] arg)
+(defn my-fn [arg & _] arg)
 (def queue "test")
 (def client-opts
   {:queue      queue
@@ -62,7 +62,8 @@
     (lq/delete ch (d/prefix-queue queue))
     (lq/delete ch (d/prefix-queue "test-retry"))
     (lq/delete ch (d/prefix-queue "sync-publisher-confirms-test"))
-    (lq/delete ch (d/prefix-queue "async-publisher-confirms-test"))))
+    (lq/delete ch (d/prefix-queue "async-publisher-confirms-test"))
+    (lq/delete ch d/prefixed-dead-queue)))
 
 (defn rmq-fixture
   [f]

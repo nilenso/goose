@@ -7,7 +7,8 @@
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.brokers.redis.scheduler :as redis-scheduler]
     [goose.brokers.redis.worker :as redis-worker]
-    [goose.defaults :as d]))
+    [goose.defaults :as d]
+    [goose.brokers.redis.cron.registry :as cron-registry]))
 
 (defrecord Redis [conn scheduler-polling-interval-sec]
   b/Broker
@@ -16,6 +17,8 @@
     (select-keys job [:id]))
   (schedule [this schedule job]
     (redis-scheduler/run-at (:conn this) schedule job))
+  (register-cron [this cron-name cron-schedule job-description]
+    (cron-registry/register-cron (:conn this) cron-name cron-schedule job-description))
   (start [this worker-opts]
     (redis-worker/start
       (assoc worker-opts
@@ -68,7 +71,15 @@
   (dead-jobs-delete-older-than [this epoch-time-ms]
     (dead-jobs/delete-older-than (:conn this) epoch-time-ms))
   (dead-jobs-purge [this]
-    (dead-jobs/purge (:conn this))))
+    (dead-jobs/purge (:conn this)))
+
+  ; cron entries API
+  (cron-entries-find-by-name [this entry-name]
+    (cron-registry/find-by-name (:conn this) entry-name))
+  (cron-entries-delete [this entry-name]
+    (cron-registry/delete (:conn this) entry-name))
+  (cron-entries-delete-all [this]
+    (cron-registry/delete-all (:conn this))))
 
 (def default-opts
   "Default config for Redis client."
@@ -88,7 +99,7 @@
 
 (defn new
   "Create a client for Redis broker."
-  ([opts] (goose.brokers.redis.broker/new opts nil))
+  ([opts] (goose.brokers.redis.broker/new opts nil))        ; why is this nil by default?
   ([{:keys [url pool-opts scheduler-polling-interval-sec]} thread-count]
    (let [pool-opts (or pool-opts (new-pool-opts thread-count))]
      (->Redis {:spec {:uri url} :pool pool-opts}

@@ -2,6 +2,7 @@
   {:no-doc true}
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
+    [goose.brokers.redis.cron.registry :as cron-registry]
     [goose.brokers.redis.heartbeat :as heartbeat]
     [goose.defaults :as d]
     [goose.job :as job]
@@ -18,6 +19,26 @@
       (redis-cmds/enqueue-sorted-set redis-conn d/prefixed-schedule-queue epoch-ms scheduled-job))
     (select-keys job [:id])))
 
+(defn- sleep-duration [redis-conn scheduler-polling-interval-sec]
+  (let [total-process-count (heartbeat/total-process-count redis-conn)]
+    ; Sleep for total-process-count * polling-interval + jitters
+    ; Regardless of number of processes,
+    ; On average, Goose checks for scheduled jobs
+    ; every polling interval configured to reduce load on Redis.
+    ; All worker processes must have same polling interval.
+    (* 1000 (+ (* scheduler-polling-interval-sec total-process-count)
+               (rand-int 3)))))
+
+(defn- enqueue-due-scheduled-jobs
+  "Returns truthy if due jobs were found."
+  [redis-conn]
+  (when-let [due-scheduled-jobs (redis-cmds/scheduled-jobs-due-now redis-conn d/prefixed-schedule-queue)]
+    (redis-cmds/enqueue-due-jobs-to-front redis-conn
+                                          d/prefixed-schedule-queue
+                                          due-scheduled-jobs
+                                          job/execution-queue)
+    true))
+
 (defn run
   [{:keys [internal-thread-pool redis-conn
            scheduler-polling-interval-sec]}]
@@ -25,18 +46,12 @@
   (u/log-on-exceptions
     (u/while-pool
       internal-thread-pool
-      (if-let [jobs (redis-cmds/scheduled-jobs-due-now redis-conn d/prefixed-schedule-queue)]
-        (redis-cmds/enqueue-due-jobs-to-front
-          redis-conn d/prefixed-schedule-queue
-          jobs job/execution-queue)
-        ; Instead of sleeping when due jobs are found,
-        ; Goose immediately polls to check if more jobs are due.
-        (let [total-process-count (heartbeat/total-process-count redis-conn)]
-          ; Sleep for total-process-count * polling-interval + jitters
-          ; Regardless of number of processes,
-          ; On average, Goose checks for scheduled jobs
-          ; every polling interval configured to reduce load on Redis.
-          ; All worker processes must have same polling interval.
-          (Thread/sleep (* 1000 (+ (* scheduler-polling-interval-sec total-process-count)
-                                   (rand-int 3))))))))
+      (let [scheduled-jobs-found? (enqueue-due-scheduled-jobs redis-conn)
+            cron-entries-found?   (cron-registry/enqueue-due-cron-entries redis-conn)]
+        (when-not (or scheduled-jobs-found?
+                      cron-entries-found?)
+          ; Goose only sleeps if no due jobs or cron entries are found.
+          ; If they are found, then Goose immediately polls to check
+          ; if more jobs are due.
+          (Thread/sleep (sleep-duration redis-conn scheduler-polling-interval-sec))))))
   (log/info "Stopped scheduler. Exiting gracefully..."))

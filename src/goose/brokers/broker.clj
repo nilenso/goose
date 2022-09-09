@@ -6,6 +6,7 @@
   (enqueue [_ job])
   (schedule [_ schedule job])
   (start [_ worker-opts])
+  (register-cron [_ cron-name cron-schedule job-description])
 
   ; enqueued-jobs API
   (enqueued-jobs-list-all-queues [_])
@@ -32,4 +33,9 @@
   (dead-jobs-re-enqueue-for-execution [_ job])
   (dead-jobs-delete [_ job])
   (dead-jobs-delete-older-than [_ epoch-time-ms])
-  (dead-jobs-purge [_]))
+  (dead-jobs-purge [_])
+
+  ; cron entries API
+  (cron-entries-find-by-name [_ entry-name])
+  (cron-entries-delete [_ entry-name])
+  (cron-entries-delete-all [_]))

@@ -17,7 +17,8 @@
   (redis-cmds/find-in-sorted-set conn d/prefixed-dead-queue match? limit))
 
 (defn find-by-id [conn id]
-  (let [limit 1
+  (let [
+        limit 1
         match? (fn [job] (= (:id job) id))]
     (first (find-by-pattern conn match? limit))))
 

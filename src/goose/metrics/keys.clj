@@ -11,6 +11,7 @@
 
 (defonce execution-latency "execution.latency")
 (defonce schedule-latency "scheduled.latency")
+(defonce cron-schedule-latency "cron_scheduled.latency")
 (defonce retry-latency "retry.latency")
 
 (defn queue-size [queue] (str "enqueued." (d/affix-queue queue) ".size"))

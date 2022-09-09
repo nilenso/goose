@@ -4,6 +4,7 @@
 
 (def long-polling-timeout-sec 1)
 (def scheduled-jobs-pop-limit 50)
+(def cron-names-pop-limit 50)
 (def heartbeat-sleep-sec 15)
 (def heartbeat-expire-sec 60)
 (def scan-initial-cursor "0")
@@ -32,6 +33,9 @@
 (def prefixed-schedule-queue (prefix-queue schedule-queue))
 (def prefixed-retry-schedule-queue (prefix-queue schedule-queue))
 (def prefixed-dead-queue (prefix-queue dead-queue))
+
+(def cron-schedules-zset-key "goose/cron-schedules")
+(def cron-entries-hm-key "goose/cron-entries")
 
 (def redis-internal-thread-pool-size 4)
 (def redis-default-url "redis://localhost:6379")

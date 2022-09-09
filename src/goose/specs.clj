@@ -10,6 +10,7 @@
     [goose.metrics.statsd :as statsd]
     [goose.utils :as u]
     [goose.worker :as w]
+    [goose.cron.parsing :as cron-parsing]
 
     [clojure.spec.alpha :as s]
     [clojure.spec.test.alpha :as st]
@@ -20,9 +21,13 @@
 ; ========== Qualified Function Symbols ==============
 (s/def ::fn-sym (s/and qualified-symbol? resolve #(fn? @(resolve %))))
 
+; ========== Cron ===============
+(s/def ::cron-string (s/and string? cron-parsing/valid-cron?))
+(s/valid? ::cron-string "* * * * *")
+
 ; ========== Redis ==============
 (s/def :goose.specs.redis/url string?)
-(s/def :goose.specs.redis/scheduler-polling-interval-sec pos-int?)
+(s/def :goose.specs.redis/scheduler-polling-interval-sec (s/int-in 1 61))
 (s/def :goose.specs.redis/pool-opts
   (s/or :none #(= :none %)
         :map map?
@@ -155,6 +160,13 @@
                      :execute-fn-sym ::fn-sym
                      :args (s/* ::args-serializable?)))
 
+(s/fdef c/perform-every
+        :args (s/cat :opts ::client-opts
+                     :cron-name string?
+                     :cron-schedule ::cron-string
+                     :execute-fn-sym ::fn-sym
+                     :args (s/* ::args-serializable?)))
+
 (s/fdef w/start
         :args (s/cat :opts ::worker-opts))
 
@@ -165,6 +177,7 @@
    `c/perform-async
    `c/perform-at
    `c/perform-in-sec
+   `c/perform-every
    `w/start])
 
 (defn instrument []
