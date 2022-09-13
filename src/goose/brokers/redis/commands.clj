@@ -99,7 +99,7 @@
 (defn find-sets
   [conn match-str]
   (let [scan-fn (fn [conn _ cursor]
-                   (scan-for-sets conn cursor match-str 1))]
+                  (scan-for-sets conn cursor match-str 1))]
     (doall (scan-seq conn scan-fn))))
 
 (defn find-in-set
@@ -149,7 +149,7 @@
   "Returns a lazy sequence of a list which iterates
   through its elements one at a time, from right to left."
   [conn list-key]
-  (let [size    (list-size conn list-key)
+  (let [size (list-size conn list-key)
         scan-fn (fn [conn redis-key cursor]
                   ;; We iterate from the end of the list down to index zero,
                   ;; since lists in Goose represent queues,
@@ -165,8 +165,8 @@
 (defn find-in-list
   [conn queue match? limit]
   (->> (list-seq conn queue)
-       (take limit)
        (filter match?)
+       (take limit)
        (doall)))
 
 ; ============ Sorted-Sets ============
@@ -217,8 +217,8 @@
 (defn find-in-sorted-set
   [conn sorted-set match? limit]
   (->> (sorted-set-seq conn sorted-set)
-       (take limit)
        (filter match?)
+       (take limit)
        (doall)))
 
 (defn del-from-sorted-set [conn sorted-set member]

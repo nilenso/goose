@@ -23,7 +23,6 @@
 
 ; ========== Cron ===============
 (s/def ::cron-string (s/and string? cron-parsing/valid-cron?))
-(s/valid? ::cron-string "* * * * *")
 
 ; ========== Redis ==============
 (s/def :goose.specs.redis/url string?)
