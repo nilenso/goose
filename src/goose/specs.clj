@@ -16,7 +16,9 @@
     [clojure.spec.test.alpha :as st]
     [clojure.string :as string]
     [taoensso.carmine.connections :refer [IConnectionPool]]
-    [taoensso.nippy :as nippy]))
+    [taoensso.nippy :as nippy])
+  (:import
+    (java.time Instant)))
 
 ; ========== Qualified Function Symbols ==============
 (s/def ::fn-sym (s/and qualified-symbol? resolve #(fn? @(resolve %))))
@@ -132,6 +134,7 @@
 (s/def ::args-serializable?
   #(try (= % (nippy/thaw (nippy/freeze %)))
         (catch Exception _ false)))
+(s/def ::instant #(instance? Instant %))
 (s/def ::client-opts (s/keys :req-un [::broker ::queue ::retry-opts]))
 
 ; ============== Worker ==============
@@ -149,7 +152,7 @@
 
 (s/fdef c/perform-at
         :args (s/cat :opts ::client-opts
-                     :date-time inst?
+                     :instant ::instant
                      :execute-fn-sym ::fn-sym
                      :args (s/* ::args-serializable?)))
 

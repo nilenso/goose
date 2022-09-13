@@ -35,7 +35,7 @@
     ; :sec
     #(c/perform-in-sec tu/redis-client-opts 0.2 `tu/my-fn)
 
-    ; :date-time
+    ; :instant
     #(c/perform-at tu/redis-client-opts "22-July-2022" `tu/my-fn)
 
     ; Worker specs

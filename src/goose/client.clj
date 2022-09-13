@@ -4,7 +4,9 @@
     [goose.defaults :as d]
     [goose.job :as j]
     [goose.retry :as retry]
-    [goose.utils :as u]))
+    [goose.utils :as u])
+  (:import
+    (java.time Instant)))
 
 (def default-opts
   "Default config for Goose client."
@@ -52,8 +54,8 @@
   "Schedule a function for execution at given date & time.
   `execute-fn-sym` should be a fully-qualified function symbol.
   `args` are variadic."
-  [opts date-time execute-fn-sym & args]
-  (enqueue opts (u/epoch-time-ms date-time) execute-fn-sym args))
+  [opts ^Instant instant execute-fn-sym & args]
+  (enqueue opts (u/epoch-time-ms instant) execute-fn-sym args))
 
 (defn perform-in-sec
   "Schedule a function for execution in given seconds.
