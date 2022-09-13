@@ -7,7 +7,6 @@
 (def cron-names-pop-limit 50)
 (def heartbeat-sleep-sec 15)
 (def heartbeat-expire-sec 60)
-(def scan-initial-cursor "0")
 
 (def queue-prefix "goose/queue:")
 (def in-progress-queue-prefix "goose/in-progress-jobs:")

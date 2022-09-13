@@ -7,6 +7,7 @@
     [taoensso.carmine :as car]))
 
 (def atomic-lock-attempts 100)
+(def ^:private initial-scan-cursor 0)
 
 (defmacro wcar* [conn & body] `(car/wcar ~conn ~@body))
 
@@ -33,18 +34,18 @@
   Callers may limit the amount of scans on Redis by taking a limited number of items.
   for ex: (take 5 (scan-seq conn scan-sorted-set \"my-ss\"))"
   ([conn]
-   (scan-seq conn scan-database nil 0))
+   (scan-seq conn scan-database nil initial-scan-cursor))
   ([conn scan-fn]
-   (scan-seq conn scan-fn nil 0))
+   (scan-seq conn scan-fn nil initial-scan-cursor))
   ([conn scan-fn redis-key]
-   (scan-seq conn scan-fn redis-key 0))
+   (scan-seq conn scan-fn redis-key initial-scan-cursor))
   ([conn scan-fn redis-key cursor]
    (lazy-seq
-     (let [[new-cursor-string items] (scan-fn conn redis-key cursor)
-           new-cursor (ensure-int new-cursor-string)]
+     (let [[next-cursor-string items] (scan-fn conn redis-key cursor)
+           next-cursor (ensure-int next-cursor-string)]
        (concat items
-               (when-not (zero? new-cursor)
-                 (scan-seq conn scan-fn redis-key new-cursor)))))))
+               (when-not (zero? next-cursor)
+                 (scan-seq conn scan-fn redis-key next-cursor)))))))
 
 (defn run-with-transaction
   "Runs fn inside a Carmine atomic block, and returns
@@ -93,13 +94,15 @@
 (defn set-seq [conn set-key]
   (scan-seq conn
             (fn [conn redis-key cursor]
-              (scan-set conn redis-key cursor 1))
+              (let [count 1]
+                (scan-set conn redis-key cursor count)))
             set-key))
 
 (defn find-sets
   [conn match-str]
   (let [scan-fn (fn [conn _ cursor]
-                  (scan-for-sets conn cursor match-str 1))]
+                  (let [count 1]
+                    (scan-for-sets conn cursor match-str count)))]
     (doall (scan-seq conn scan-fn))))
 
 (defn find-in-set
@@ -142,7 +145,8 @@
 (defn find-lists
   [conn match-str]
   (let [scan-fn (fn [conn _ cursor]
-                  (scan-for-lists conn cursor match-str 1))]
+                  (let [count 1]
+                    (scan-for-lists conn cursor match-str count)))]
     (doall (scan-seq conn scan-fn))))
 
 (defn list-seq
@@ -154,12 +158,10 @@
                   ;; We iterate from the end of the list down to index zero,
                   ;; since lists in Goose represent queues,
                   ;; and the front of a queue is the right side (the tail).
-                  [(if (zero? cursor)
-                     0
-                     (dec cursor))
-                   (wcar* conn (car/lrange redis-key
-                                           (dec cursor)
-                                           (dec cursor)))])]
+                  (let [next-cursor (dec cursor)
+                        elements (wcar* conn
+                                   (car/lrange redis-key (dec cursor) (dec cursor)))]
+                    [next-cursor elements]))]
     (scan-seq conn scan-fn list-key size)))
 
 (defn find-in-list
@@ -201,9 +203,8 @@
   (wcar* conn (car/zcount sorted-set sorted-set-min sorted-set-max)))
 
 (defn- scan-sorted-set [conn sorted-set cursor]
-  (let [[new-cursor-string replies] (wcar* conn (car/zscan sorted-set cursor "MATCH" "*" "COUNT" 1))]
-    [new-cursor-string
-     (map first (partition 2 replies))]))
+  (let [[next-cursor-string replies] (wcar* conn (car/zscan sorted-set cursor "MATCH" "*" "COUNT" 1))]
+    [next-cursor-string (map first (partition 2 replies))]))
 
 (defn sorted-set-seq [conn sorted-set-key]
   (scan-seq conn scan-sorted-set sorted-set-key))

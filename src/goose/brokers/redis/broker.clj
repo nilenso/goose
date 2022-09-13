@@ -5,10 +5,10 @@
     [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
     [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
     [goose.brokers.redis.commands :as redis-cmds]
+    [goose.brokers.redis.cron.registry :as cron-registry]
     [goose.brokers.redis.scheduler :as redis-scheduler]
     [goose.brokers.redis.worker :as redis-worker]
-    [goose.defaults :as d]
-    [goose.brokers.redis.cron.registry :as cron-registry]))
+    [goose.defaults :as d]))
 
 (defrecord Redis [conn scheduler-polling-interval-sec]
   b/Broker

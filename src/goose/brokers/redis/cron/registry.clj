@@ -1,10 +1,13 @@
 (ns goose.brokers.redis.cron.registry
-  (:require [goose.defaults :as d]
-            [goose.brokers.redis.commands :as redis-cmds]
-            [taoensso.carmine :as car]
-            [goose.job :as j]
-            [goose.cron.parsing :as cron-parsing]
-            [goose.utils :as u]))
+  {:no-doc true}
+  (:require
+    [goose.brokers.redis.commands :as redis-cmds]
+    [goose.cron.parsing :as cron-parsing]
+    [goose.defaults :as d]
+    [goose.job :as j]
+    [goose.utils :as u]
+
+    [taoensso.carmine :as car]))
 
 (defn registry-entry [cron-name cron-schedule job-description]
   {:name            cron-name

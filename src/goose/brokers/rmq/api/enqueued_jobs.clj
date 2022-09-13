@@ -1,7 +1,9 @@
 (ns goose.brokers.rmq.api.enqueued-jobs
   {:no-doc true}
-  (:require [langohr.queue :as lq]
-            [goose.defaults :as d]))
+  (:require
+    [goose.defaults :as d]
+
+    [langohr.queue :as lq]))
 
 (defn size [ch queue]
   (lq/message-count ch (d/prefix-queue queue)))

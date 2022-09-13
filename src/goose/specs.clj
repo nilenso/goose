@@ -5,12 +5,12 @@
     [goose.brokers.rmq.broker :as rmq]
     [goose.brokers.rmq.publisher-confirms :as rmq-publisher-confirms]
     [goose.client :as c]
+    [goose.cron.parsing :as cron-parsing]
     [goose.defaults :as d]
     [goose.metrics.protocol :as metrics-protocol]
     [goose.metrics.statsd :as statsd]
     [goose.utils :as u]
     [goose.worker :as w]
-    [goose.cron.parsing :as cron-parsing]
 
     [clojure.spec.alpha :as s]
     [clojure.spec.test.alpha :as st]

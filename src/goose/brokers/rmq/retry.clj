@@ -2,11 +2,11 @@
   {:no-doc true}
   (:require
     [goose.brokers.rmq.commands :as rmq-cmds]
+    [goose.defaults :as d]
     [goose.retry]
     [goose.utils :as u]
 
-    [langohr.basic :as lb]
-    [goose.defaults :as d]))
+    [langohr.basic :as lb]))
 
 (defn- retry-job
   [{:keys [ch publisher-confirms error-service-cfg]}

@@ -1,10 +1,10 @@
 (ns goose.cron.parsing
   (:import
-    (com.cronutils.model.definition CronDefinitionBuilder)
     (com.cronutils.model CronType)
+    (com.cronutils.model.definition CronDefinitionBuilder)
+    (com.cronutils.model.time ExecutionTime)
     (com.cronutils.parser CronParser)
-    (java.time ZonedDateTime)
-    (com.cronutils.model.time ExecutionTime)))
+    (java.time ZonedDateTime)))
 
 (defn parse-cron
   [cron-schedule]

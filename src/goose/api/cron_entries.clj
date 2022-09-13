@@ -2,7 +2,8 @@
   "Functions for working with cron entries.
   To update a cron entry, call goose.client/perform-every
   with the cron entry name."
-  (:require [goose.brokers.broker :as b]))
+  (:require
+    [goose.brokers.broker :as b]))
 
 (defn find-by-name
   "Look up a cron entry by name."

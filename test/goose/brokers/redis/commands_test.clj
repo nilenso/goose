@@ -1,9 +1,11 @@
 (ns goose.brokers.redis.commands-test
-  (:require [clojure.test :refer [deftest is testing use-fixtures]]
-            [goose.test-utils :as tu]
-            [goose.brokers.redis.commands :as redis-cmds]
-            [taoensso.carmine :as car]
-            [clojure.string :as string]))
+  (:require
+    [goose.brokers.redis.commands :as redis-cmds]
+    [goose.test-utils :as tu]
+
+    [clojure.string :as string]
+    [clojure.test :refer [deftest is testing use-fixtures]]
+    [taoensso.carmine :as car]))
 
 (use-fixtures :each tu/redis-fixture)
 
