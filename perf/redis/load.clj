@@ -53,6 +53,7 @@
 
 (defn bulk-enqueue
   [count]
+  (println "Enqueuing:" count "jobs.")
   (let [start-time (u/epoch-time-ms)]
     (dotimes [n count]
       (c/perform-async client-opts `my-fn n))

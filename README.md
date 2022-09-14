@@ -1,6 +1,7 @@
 Goose 🦆
 =========
 [![Test & Lint Workflow](https://github.com/nilenso/goose/actions/workflows/test_lint.yml/badge.svg)](https://github.com/nilenso/goose/actions/workflows/test_lint.yml)
+[![Clojars Project](https://img.shields.io/clojars/v/com.nilenso/goose.svg)](https://clojars.org/com.nilenso/goose)
 [![cljdoc badge](https://cljdoc.org/badge/com.nilenso/goose)](https://cljdoc.org/d/com.nilenso/goose)
 
 A *Reliable, Pluggable & Scalable* background job processing library for Clojure.
@@ -63,8 +64,7 @@ Why the name "Goose"?
   <img src="logo/goose-round@2x.png" width="360">
 </p>
 
-Named after [Nick 'Goose' Bradshaw](https://historica.fandom.com/wiki/Nick_Bradshaw), the _sidekick_
-to [Captain Pete 'Maverick' Mitchell](https://topgun.fandom.com/wiki/Pete_Mitchell) in Top Gun.
+Named after [LT Nick 'Goose' Bradshaw](https://topgun.fandom.com/wiki/Nick_Bradshaw), the _sidekick_ to [Captain Pete 'Maverick' Mitchell](https://topgun.fandom.com/wiki/Pete_Mitchell) in Top Gun.
 
 License
 ---------
