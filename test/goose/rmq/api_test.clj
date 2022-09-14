@@ -18,7 +18,7 @@
   (testing "[rmq] enqueued-jobs API"
     (c/perform-async tu/rmq-client-opts `tu/my-fn)
     (is (= 1 (enqueued-jobs/size tu/client-rmq-broker tu/queue)))
-    (enqueued-jobs/purge tu/client-rmq-broker tu/queue)
+    (is true? (enqueued-jobs/purge tu/client-rmq-broker tu/queue))
     (is (= 0 (enqueued-jobs/size tu/client-rmq-broker tu/queue)))))
 
 (defn death-handler [_ _ _])

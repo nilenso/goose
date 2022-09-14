@@ -42,15 +42,15 @@
 
 (defn start
   [{:keys [rmq-conn publisher-confirms queue threads middlewares] :as common-opts}]
-  (let [prefixed-queue (d/prefix-queue queue)
+  (let [ready-queue (d/prefix-queue queue)
         thread-pool (cp/threadpool threads)
         channels (rmq-channel/new-pool rmq-conn threads publisher-confirms)
-        rmq-opts {:thread-pool    thread-pool
-                  :call           (chain-middlewares middlewares)
-                  :prefixed-queue prefixed-queue
-                  :channels       channels}
+        rmq-opts {:thread-pool thread-pool
+                  :call        (chain-middlewares middlewares)
+                  :ready-queue ready-queue
+                  :channels    channels}
         opts (merge rmq-opts common-opts)]
-    (rmq-cmds/create-queue-and-exchanges (first channels) prefixed-queue)
+    (rmq-cmds/create-queue-and-exchanges (first channels) ready-queue)
 
     (let [consumers (rmq-consumer/run opts)]
       #(internal-stop (assoc opts :ch+consumers consumers)))))

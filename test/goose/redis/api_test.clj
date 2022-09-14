@@ -1,6 +1,6 @@
 (ns goose.redis.api-test
   (:require
-    [goose.api.cron-entries :as cron-entries]
+    [goose.api.cron-jobs :as cron-entries]
     [goose.api.dead-jobs :as dead-jobs]
     [goose.api.enqueued-jobs :as enqueued-jobs]
     [goose.api.scheduled-jobs :as scheduled-jobs]

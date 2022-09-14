@@ -16,8 +16,10 @@
 (def default-queue "default")
 (def schedule-queue "scheduled-jobs")
 (def dead-queue "dead-jobs")
+(def cron-queue "cron-schedules")
+(def cron-entries "cron-entries")
 
-(def protected-queues [schedule-queue dead-queue])
+(def protected-queues [schedule-queue dead-queue cron-queue cron-entries])
 
 (defn ^:no-doc prefix-queue
   [queue]
@@ -32,9 +34,8 @@
 (def prefixed-schedule-queue (prefix-queue schedule-queue))
 (def prefixed-retry-schedule-queue (prefix-queue schedule-queue))
 (def prefixed-dead-queue (prefix-queue dead-queue))
-
-(def cron-schedules-zset-key "goose/cron-schedules")
-(def cron-entries-hm-key "goose/cron-entries")
+(def prefixed-cron-queue (prefix-queue cron-queue))
+(def prefixed-cron-entries (str "goose/" cron-entries))
 
 (def redis-internal-thread-pool-size 4)
 (def redis-default-url "redis://localhost:6379")

@@ -19,15 +19,15 @@
    cron-schedule
    execute-fn-sym
    args]
-  (let [retry-opts     (retry/prefix-queue-if-present retry-opts)
-        prefixed-queue (d/prefix-queue queue)]
+  (let [retry-opts (retry/prefix-queue-if-present retry-opts)
+        ready-queue (d/prefix-queue queue)]
     (:id (b/register-cron broker
                           cron-name
                           cron-schedule
                           (j/description execute-fn-sym
                                          args
                                          queue
-                                         prefixed-queue
+                                         ready-queue
                                          retry-opts)))))
 
 (defn- enqueue
@@ -36,8 +36,8 @@
    execute-fn-sym
    args]
   (let [retry-opts (retry/prefix-queue-if-present retry-opts)
-        prefixed-queue (d/prefix-queue queue)
-        job (j/new execute-fn-sym args queue prefixed-queue retry-opts)]
+        ready-queue (d/prefix-queue queue)
+        job (j/new execute-fn-sym args queue ready-queue retry-opts)]
 
     (if schedule
       (b/schedule broker schedule job)

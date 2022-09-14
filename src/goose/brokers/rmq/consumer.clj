@@ -24,9 +24,9 @@
     (cp/future thread-pool (call opts job))))
 
 (defn run
-  [{:keys [channels prefixed-queue] :as opts}]
+  [{:keys [channels ready-queue] :as opts}]
   (doall ; Using `doall` to immediately start a consumer.
     (for [ch channels]
       (do
         (lb/qos ch d/rmq-prefetch-limit) ; Set prefetch-limit to 1.
-        [ch (lc/subscribe ch prefixed-queue (partial handler opts) {:auto-ack false})]))))
+        [ch (lc/subscribe ch ready-queue (partial handler opts) {:auto-ack false})]))))

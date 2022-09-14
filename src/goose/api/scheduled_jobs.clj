@@ -13,7 +13,8 @@
   (b/scheduled-jobs-find-by-id broker id))
 
 (defn find-by-pattern
-  "Find a Scheduled Job by pattern."
+  "Find a Scheduled Job by pattern.
+  If limit isn't mentioned, defaults to 10."
   ([broker match?]
    (find-by-pattern broker match? 10))
   ([broker match? limit]

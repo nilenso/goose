@@ -5,7 +5,7 @@
     [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
     [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
     [goose.brokers.redis.commands :as redis-cmds]
-    [goose.brokers.redis.cron.registry :as cron-registry]
+    [goose.brokers.redis.cron :as cron]
     [goose.brokers.redis.scheduler :as redis-scheduler]
     [goose.brokers.redis.worker :as redis-worker]
     [goose.defaults :as d]))
@@ -13,12 +13,12 @@
 (defrecord Redis [conn scheduler-polling-interval-sec]
   b/Broker
   (enqueue [this job]
-    (redis-cmds/enqueue-back (:conn this) (:prefixed-queue job) job)
+    (redis-cmds/enqueue-back (:conn this) (:ready-queue job) job)
     (select-keys job [:id]))
   (schedule [this schedule job]
     (redis-scheduler/run-at (:conn this) schedule job))
   (register-cron [this cron-name cron-schedule job-description]
-    (cron-registry/register-cron (:conn this) cron-name cron-schedule job-description))
+    (cron/register (:conn this) cron-name cron-schedule job-description))
   (start [this worker-opts]
     (redis-worker/start
       (assoc worker-opts
@@ -74,12 +74,12 @@
     (dead-jobs/purge (:conn this)))
 
   ; cron entries API
-  (cron-entries-find-by-name [this entry-name]
-    (cron-registry/find-by-name (:conn this) entry-name))
-  (cron-entries-delete [this entry-name]
-    (cron-registry/delete (:conn this) entry-name))
-  (cron-entries-delete-all [this]
-    (cron-registry/delete-all (:conn this))))
+  (cron-jobs-find-by-name [this entry-name]
+    (cron/find-by-name (:conn this) entry-name))
+  (cron-jobs-delete [this entry-name]
+    (cron/delete (:conn this) entry-name))
+  (cron-jobs-delete-all [this]
+    (cron/delete-all (:conn this))))
 
 (def default-opts
   "Default config for Redis client."
@@ -98,8 +98,13 @@
      :min-idle-per-key  1}))
 
 (defn new
-  "Create a client for Redis broker."
-  ([opts] (goose.brokers.redis.broker/new opts nil))        ; why is this nil by default?
+  "Create a client for Redis broker.
+  If pooling-opts aren't provided,
+  conneciton count will be derived from thread-count.
+  When initializing broker for a worker, thread-count
+  must be provided.
+  For a client, thread-count can be ignored if throughput is less."
+  ([opts] (goose.brokers.redis.broker/new opts nil))
   ([{:keys [url pool-opts scheduler-polling-interval-sec]} thread-count]
    (let [pool-opts (or pool-opts (new-pool-opts thread-count))]
      (->Redis {:spec {:uri url} :pool pool-opts}

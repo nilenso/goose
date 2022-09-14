@@ -69,7 +69,7 @@
                     :call                 call
 
                     :process-set          (str d/process-prefix queue)
-                    :prefixed-queue       (d/prefix-queue queue)
+                    :ready-queue          (d/prefix-queue queue)
                     :in-progress-queue    (redis-consumer/preservation-queue id)}
         opts (merge redis-opts common-opts)]
 

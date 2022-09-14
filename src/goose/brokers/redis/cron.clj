@@ -1,4 +1,4 @@
-(ns goose.brokers.redis.cron.registry
+(ns goose.brokers.redis.cron
   {:no-doc true}
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
@@ -16,26 +16,26 @@
 
 (defn find-by-name
   [conn cron-name]
-  (redis-cmds/wcar* conn (car/hget d/cron-entries-hm-key cron-name)))
+  (redis-cmds/wcar* conn (car/hget d/prefixed-cron-entries cron-name)))
 
 (defn- set-due-time [cron-entry]
-  (car/zadd d/cron-schedules-zset-key
+  (car/zadd d/prefixed-cron-queue
             (-> cron-entry
                 :cron-schedule
                 cron-parsing/next-run-epoch-ms)
             (:name cron-entry)))
 
 (defn- persist-to-hash-map [{:keys [name] :as cron-entry}]
-  (car/hmset d/cron-entries-hm-key name cron-entry))
+  (car/hmset d/prefixed-cron-entries name cron-entry))
 
-(defn register-cron
+(defn register
   "Registers a cron entry in Redis.
   If an entry already exists against the same name, it will be
   overwritten."
   [conn cron-name cron-schedule job-description]
   (redis-cmds/with-transaction conn
-    (car/watch d/cron-entries-hm-key)
-    (car/watch d/cron-schedules-zset-key)
+    (car/watch d/prefixed-cron-entries)
+    (car/watch d/prefixed-cron-queue)
     (let [new-entry (registry-entry cron-name cron-schedule job-description)]
       (car/multi)
       (persist-to-hash-map new-entry)
@@ -43,12 +43,12 @@
       new-entry)))
 
 (defn- enqueue-jobs-to-ready-on-priority [jobs]
-  (doseq [[queue-key grouped-jobs] (group-by :prefixed-queue jobs)]
+  (doseq [[queue-key grouped-jobs] (group-by :ready-queue jobs)]
     (apply car/rpush queue-key grouped-jobs)))
 
 (defn- due-cron-names [redis-conn]
   (redis-cmds/wcar* redis-conn
-    (car/zrangebyscore d/cron-schedules-zset-key
+    (car/zrangebyscore d/prefixed-cron-queue
                        redis-cmds/sorted-set-min
                        (u/epoch-time-ms)
                        "limit"
@@ -68,7 +68,7 @@
     ;; wcar* will return nil or a single item instead of an empty/singleton list.
     (ensure-sequential
       (redis-cmds/wcar* redis-conn
-        (doall (map (partial car/hget d/cron-entries-hm-key) cron-names))))))
+        (doall (map (partial car/hget d/prefixed-cron-entries) cron-names))))))
 
 (defn- create-job
   [{:keys [cron-schedule job-description] :as _cron-entry}]
@@ -79,7 +79,7 @@
   "Returns truthy if due cron entries were found."
   [redis-conn]
   (redis-cmds/with-transaction redis-conn
-    (car/watch d/cron-schedules-zset-key)
+    (car/watch d/prefixed-cron-queue)
     (car/multi)
     (when-let [due-cron-entries (not-empty (due-cron-entries redis-conn))]
       ;; The `multi` call cannot be inside `when` or any conditional,
@@ -95,10 +95,10 @@
   [redis-conn entry-name]
   (let [[_ atomic-results] (car/atomic redis-conn redis-cmds/atomic-lock-attempts
                              (car/multi)
-                             (car/zrem d/cron-schedules-zset-key entry-name)
-                             (car/hdel d/cron-entries-hm-key entry-name))]
+                             (car/zrem d/prefixed-cron-queue entry-name)
+                             (car/hdel d/prefixed-cron-entries entry-name))]
     (= [1 1] atomic-results)))
 
 (defn delete-all
   [redis-conn]
-  (= 2 (redis-cmds/del-keys redis-conn [d/cron-entries-hm-key d/cron-schedules-zset-key])))
+  (= 2 (redis-cmds/del-keys redis-conn [d/prefixed-cron-entries d/prefixed-cron-queue])))

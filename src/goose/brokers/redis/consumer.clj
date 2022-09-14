@@ -16,12 +16,12 @@
   (str d/in-progress-queue-prefix id))
 
 (defn run
-  [{:keys [thread-pool redis-conn prefixed-queue in-progress-queue call]
+  [{:keys [thread-pool redis-conn ready-queue in-progress-queue call]
     :as   opts}]
   (log/debug "Long-polling broker...")
   (u/while-pool
     thread-pool
     (u/log-on-exceptions
-      (when-let [job (redis-cmds/dequeue-and-preserve redis-conn prefixed-queue in-progress-queue)]
+      (when-let [job (redis-cmds/dequeue-and-preserve redis-conn ready-queue in-progress-queue)]
         (call opts job)
         (redis-cmds/del-from-list redis-conn in-progress-queue job)))))

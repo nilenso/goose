@@ -15,21 +15,19 @@
 
 (defn find-by-id [conn queue id]
   (let [
-        ;; TODO: Think about this limit more carefully. Why is it hardcoded?
-        ;; It used to be 1, which was breaking with the new scan implementation.
-        limit 10
+        limit 1
         match? (fn [job] (= (:id job) id))]
     (first (find-by-pattern conn queue match? limit))))
 
 (defn prioritise-execution [conn job]
-  (let [prefixed-queue (:prefixed-queue job)]
-    (when (redis-cmds/list-position conn prefixed-queue job)
-      (redis-cmds/del-from-list-and-enqueue-front conn prefixed-queue job))))
+  (let [ready-queue (:ready-queue job)]
+    (when (redis-cmds/list-position conn ready-queue job)
+      (redis-cmds/del-from-list-and-enqueue-front conn ready-queue job))))
 
 (defn delete [conn job]
-  (let [prefixed-queue (:prefixed-queue job)]
-    (= 1 (redis-cmds/del-from-list conn prefixed-queue job))))
+  (let [ready-queue (:ready-queue job)]
+    (= 1 (redis-cmds/del-from-list conn ready-queue job))))
 
 (defn purge [conn queue]
-  (let [prefixed-queue (d/prefix-queue queue)]
-    (= 1 (redis-cmds/del-keys conn [prefixed-queue]))))
+  (let [ready-queue (d/prefix-queue queue)]
+    (= 1 (redis-cmds/del-keys conn [ready-queue]))))

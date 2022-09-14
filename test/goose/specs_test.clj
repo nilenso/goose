@@ -60,6 +60,8 @@
     #(w/start (assoc tu/redis-worker-opts :queue (str (range 300))))
     #(c/perform-at (assoc tu/redis-client-opts :queue d/schedule-queue) now `tu/my-fn)
     #(c/perform-in-sec (assoc tu/redis-client-opts :queue d/dead-queue) 1 `tu/my-fn)
+    #(c/perform-async (assoc tu/redis-client-opts :queue d/cron-queue) `tu/my-fn)
+    #(c/perform-async (assoc tu/redis-client-opts :queue d/cron-entries) `tu/my-fn)
     #(c/perform-async (assoc tu/redis-client-opts :queue (str d/queue-prefix "olttwa")) `tu/my-fn)
 
     ; :retry-opts

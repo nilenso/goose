@@ -39,7 +39,7 @@
 (defn- prefix-retry-queue
   [retry-opts]
   (if-let [retry-queue (:retry-queue retry-opts)]
-    (assoc retry-opts :prefixed-retry-queue (d/prefix-queue retry-queue))
+    (assoc retry-opts :ready-retry-queue (d/prefix-queue retry-queue))
     retry-opts))
 
 (defn ^:no-doc prefix-queue-if-present

@@ -19,11 +19,9 @@
   (b/dead-jobs-find-by-id broker id))
 
 (defn find-by-pattern
-  "Find a Dead Job by pattern."
+  "Find a Dead Job by pattern.
+  If limit isn't mentioned, defaults to 10."
   ([broker match?]
-   ;; TODO: Either document this magic number or get rid of it
-   ;; When skipping the limit parameter, the intuitive assumption
-   ;; is that there is no limit, not that a default limit is used
    (find-by-pattern broker match? 10))
   ([broker match? limit]
    (b/dead-jobs-find-by-pattern broker match? limit)))

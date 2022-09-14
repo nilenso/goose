@@ -34,7 +34,7 @@
   (dead-jobs-delete-older-than [_ epoch-time-ms])
   (dead-jobs-purge [_])
 
-  ; cron entries API
-  (cron-entries-find-by-name [_ entry-name])
-  (cron-entries-delete [_ entry-name])
-  (cron-entries-delete-all [_]))
+  ; cron jobs API
+  (cron-jobs-find-by-name [_ entry-name])
+  (cron-jobs-delete [_ entry-name])
+  (cron-jobs-delete-all [_]))

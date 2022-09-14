@@ -5,29 +5,29 @@
     [goose.utils :as u]))
 
 (defn new
-  [execute-fn-sym args queue prefixed-queue retry-opts]
+  [execute-fn-sym args queue ready-queue retry-opts]
   {:id             (str (random-uuid))
    :execute-fn-sym execute-fn-sym
    :args           args
    :queue          queue
-   :prefixed-queue prefixed-queue
+   :ready-queue    ready-queue
    :retry-opts     retry-opts
    :enqueued-at    (u/epoch-time-ms)})
 
-(defn execution-queue
+(defn ready-queue
   [job]
   (if (get-in job [:state :error])
-    (or (get-in job [:retry-opts :prefixed-retry-queue]) (:prefixed-queue job))
-    (:prefixed-queue job)))
+    (or (get-in job [:retry-opts :ready-retry-queue]) (:ready-queue job))
+    (:ready-queue job)))
 
 (defn description
   "A job description is a description of how the job
   should be created. It's a job without the id or enqueued-at."
-  [execute-fn-sym args queue prefixed-queue retry-opts]
+  [execute-fn-sym args queue ready-queue retry-opts]
   {:execute-fn-sym execute-fn-sym
    :args           args
    :queue          queue
-   :prefixed-queue prefixed-queue
+   :ready-queue    ready-queue
    :retry-opts     retry-opts})
 
 (defn from-description

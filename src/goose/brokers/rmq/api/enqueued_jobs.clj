@@ -6,7 +6,9 @@
     [langohr.queue :as lq]))
 
 (defn size [ch queue]
-  (lq/message-count ch (d/prefix-queue queue)))
+  (let [ready-queue (d/prefix-queue queue)]
+    (lq/message-count ch ready-queue)))
 
 (defn purge [ch queue]
-  (lq/purge ch (d/prefix-queue queue)))
+  (let [ready-queue (d/prefix-queue queue)]
+    (< 0 (:message-count (lq/purge ch ready-queue)))))

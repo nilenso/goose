@@ -2,7 +2,7 @@
   {:no-doc true}
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
-    [goose.brokers.redis.cron.registry :as cron-registry]
+    [goose.brokers.redis.cron :as cron]
     [goose.brokers.redis.heartbeat :as heartbeat]
     [goose.defaults :as d]
     [goose.job :as job]
@@ -12,10 +12,10 @@
 
 (defn run-at
   [redis-conn epoch-ms
-   {:keys [prefixed-queue] :as job}]
+   {:keys [ready-queue] :as job}]
   (let [scheduled-job (assoc job :schedule epoch-ms)]
     (if (< epoch-ms (u/epoch-time-ms))
-      (redis-cmds/enqueue-front redis-conn prefixed-queue scheduled-job)
+      (redis-cmds/enqueue-front redis-conn ready-queue scheduled-job)
       (redis-cmds/enqueue-sorted-set redis-conn d/prefixed-schedule-queue epoch-ms scheduled-job))
     (select-keys job [:id])))
 
@@ -36,7 +36,7 @@
     (redis-cmds/enqueue-due-jobs-to-front redis-conn
                                           d/prefixed-schedule-queue
                                           due-scheduled-jobs
-                                          job/execution-queue)
+                                          job/ready-queue)
     true))
 
 (defn run
@@ -47,7 +47,7 @@
     (u/while-pool
       internal-thread-pool
       (let [scheduled-jobs-found? (enqueue-due-scheduled-jobs redis-conn)
-            cron-entries-found?   (cron-registry/enqueue-due-cron-entries redis-conn)]
+            cron-entries-found? (cron/enqueue-due-cron-entries redis-conn)]
         (when-not (or scheduled-jobs-found?
                       cron-entries-found?)
           ; Goose only sleeps if no due jobs or cron entries are found.

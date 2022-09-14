@@ -18,7 +18,8 @@
   (b/enqueued-jobs-find-by-id broker queue id))
 
 (defn find-by-pattern
-  "Find an Enqueued Job by pattern."
+  "Find an Enqueued Job by pattern.
+  If limit isn't mentioned, defaults to 10."
   ([broker queue match?]
    (find-by-pattern broker queue match? 10))
   ([broker queue match? limit]

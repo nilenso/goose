@@ -72,7 +72,7 @@
 
 (defn enqueue-back
   ([ch publisher-confirms job]
-   (enqueue-back ch publisher-confirms job (job/execution-queue job)))
+   (enqueue-back ch publisher-confirms job (job/ready-queue job)))
   ([ch publisher-confirms job queue]
    (enqueue ch publisher-confirms d/rmq-exchange queue job {:priority d/rmq-low-priority})))
 
@@ -82,14 +82,14 @@
     ch
     publisher-confirms
     d/rmq-exchange
-    (job/execution-queue job)
+    (job/ready-queue job)
     job
     {:priority d/rmq-high-priority}))
 
 (defn schedule
   [ch publisher-confirms job delay]
   (let [properties {:priority d/rmq-high-priority
-                        :headers  {"x-delay" delay}}]
+                    :headers  {"x-delay" delay}}]
     (when (< d/rmq-delay-limit-ms delay)
       (throw (ex-info "MAX_DELAY limit breached: 2^32 ms(~49 days 17 hours)" {:job job :delay delay})))
-    (enqueue ch publisher-confirms d/rmq-delay-exchange (job/execution-queue job) job properties)))
+    (enqueue ch publisher-confirms d/rmq-delay-exchange (job/ready-queue job) job properties)))

@@ -13,16 +13,14 @@
 
 (defn find-by-id [conn id]
   (let [
-        ;; TODO: Think about this limit more carefully. Why is it hardcoded?
-        ;; It used to be 1, which was breaking with the new scan implementation.
-        limit 10
+        limit 1
         match? (fn [job] (= (:id job) id))]
     (first (find-by-pattern conn match? limit))))
 
 (defn prioritise-execution [conn job]
   (let [sorted-set d/prefixed-schedule-queue]
     (when (redis-cmds/sorted-set-score conn sorted-set job)
-      (redis-cmds/enqueue-due-jobs-to-front conn sorted-set (list job) job/execution-queue))))
+      (redis-cmds/enqueue-due-jobs-to-front conn sorted-set (list job) job/ready-queue))))
 
 (defn delete [conn job]
   (= 1 (redis-cmds/del-from-sorted-set conn d/prefixed-schedule-queue job)))
