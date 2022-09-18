@@ -52,7 +52,7 @@
     (str "amqp://" username ":" password "@" host ":" port)))
 (def rmq-opts
   {:settings           {:uri rmq-url}
-   :publisher-confirms rmq-publisher-confirms/sync-strategy})
+   :publisher-confirms rmq-publisher-confirms/sync})
 (def client-rmq-broker (rmq/new rmq-opts 1))
 (def worker-rmq-broker (rmq/new rmq-opts))
 (def rmq-client-opts (assoc client-opts :broker client-rmq-broker))

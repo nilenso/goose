@@ -1,7 +1,6 @@
 (ns goose.rmq.integration-test
   (:require
     [goose.brokers.rmq.broker :as rmq]
-    [goose.brokers.rmq.publisher-confirms :as rmq-publisher-confirms]
     [goose.client :as c]
     [goose.defaults :as d]
     [goose.retry :as retry]
@@ -76,8 +75,8 @@
   ; Remove this test if it happens often.
   (testing "[rmq] Publish timed out"
     (let [opts {:settings           {:uri tu/rmq-url}
-                :publisher-confirms {:strategy rmq-publisher-confirms/sync
-                                     :timeout  1}}
+                :publisher-confirms {:strategy d/sync-confirms
+                                     :timeout-ms  1}}
           broker (rmq/new opts 1)
           client-opts {:queue      "sync-publisher-confirms-test"
                        :retry-opts retry/default-opts
@@ -91,7 +90,7 @@
   (testing "[rmq] Ack handler called"
     (reset! ack-handler-called (promise))
     (let [opts {:settings           {:uri tu/rmq-url}
-                :publisher-confirms {:strategy     rmq-publisher-confirms/async
+                :publisher-confirms {:strategy     d/async-confirms
                                      :ack-handler  `test-ack-handler
                                      :nack-handler `test-nack-handler}}
           broker (rmq/new opts 1)

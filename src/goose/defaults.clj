@@ -49,4 +49,6 @@
 (def rmq-low-priority 0)
 (def rmq-high-priority 1)
 (def rmq-prefetch-limit 1)
+(def sync-confirms :sync)
+(def async-confirms :async)
 (def rmq-delay-limit-ms 4294967295) ; (2^32 - 1)

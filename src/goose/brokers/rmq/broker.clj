@@ -60,7 +60,7 @@
   Refer to http://clojurerabbitmq.info/articles/connecting.html
   for complete set of settings."
   {:settings           {:uri d/rmq-default-url}
-   :publisher-confirms publisher-confirms/sync-strategy})
+   :publisher-confirms publisher-confirms/sync})
 
 (defn new
   "Create a client for RabbitMQ broker.

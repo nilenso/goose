@@ -1,7 +1,6 @@
 (ns goose.brokers.rmq.commands
   {:no-doc true}
   (:require
-    [goose.brokers.rmq.publisher-confirms :as publisher-confirms]
     [goose.defaults :as d]
     [goose.job :as job]
 
@@ -55,19 +54,19 @@
       {:delivery-tag seq :id (:id job)})))
 
 (defn- sync-enqueue
-  [ch ex queue job properties timeout]
+  [ch ex queue job properties timeout-ms]
   (publish ch ex queue job properties)
-  (lcnf/wait-for-confirms ch timeout)
+  (lcnf/wait-for-confirms ch timeout-ms)
   (select-keys job [:id]))
 
 (defn- enqueue
-  [ch {:keys [strategy timeout]} ex queue job properties]
+  [ch {:keys [strategy timeout-ms]} ex queue job properties]
   (create-queue-and-exchanges ch queue)
   (condp = strategy
-    publisher-confirms/sync
-    (sync-enqueue ch ex queue job properties timeout)
+    d/sync-confirms
+    (sync-enqueue ch ex queue job properties timeout-ms)
 
-    publisher-confirms/async
+    d/async-confirms
     (async-enqueue ch ex queue job properties)))
 
 (defn enqueue-back

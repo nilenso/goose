@@ -1,6 +1,8 @@
 (ns goose.brokers.rmq.publisher-confirms
   (:refer-clojure :exclude [sync])
   (:require
+    [goose.defaults :as d]
+
     [clojure.tools.logging :as log]))
 
 (defn default-ack-handler
@@ -15,14 +17,11 @@
     (log/error (format "Negative-ACK uptil delivery-tag: %d" delivery-tag))
     (log/error (format "Negative-ACK for delivery-tag: %d" delivery-tag))))
 
-(def sync :sync)
-(def async :async)
+(def sync
+  {:strategy d/sync-confirms
+   :timeout-ms  5000})
 
-(def sync-strategy
-  {:strategy sync
-   :timeout  5000})
-
-(def async-strategy
-  {:strategy     async
+(def async
+  {:strategy     d/async-confirms
    :ack-handler  `default-ack-handler
    :nack-handler `default-nack-handler})

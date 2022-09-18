@@ -1,7 +1,7 @@
 (ns goose.brokers.rmq.channel
   {:no-doc true}
   (:require
-    [goose.brokers.rmq.publisher-confirms :as publisher-confirms]
+    [goose.defaults :as d]
     [goose.utils :as u]
 
     [langohr.channel :as lch]
@@ -12,10 +12,10 @@
   (let [ch (lch/open conn)]
     (if ch
       (condp = strategy
-        publisher-confirms/sync
+        d/sync-confirms
         (lcnf/select ch)
 
-        publisher-confirms/async
+        d/async-confirms
         (lcnf/select ch (u/require-resolve ack-handler) (u/require-resolve nack-handler)))
 
       (throw (ex-info "CHANNEL_MAX limit reached: cannot open new channels" {:rmq-conn conn})))
