@@ -3,6 +3,7 @@
     [goose.brokers.rmq.broker :as rmq]
     [goose.brokers.rmq.publisher-confirms :as rmq-publisher-confirms]
     [goose.client :as c]
+    [goose.defaults :as d]
     [goose.retry :as retry]
     [goose.test-utils :as tu]
     [goose.worker :as w]
@@ -100,6 +101,23 @@
           delivery-tag (:delivery-tag (c/perform-in-sec client-opts 1 `tu/my-fn))]
       (is (= delivery-tag (deref @ack-handler-called 100 :async-publisher-confirm-test-timed-out)))
       (rmq/close broker))))
+
+; ======= TEST: Middleware & RMQ Metadata ==========
+(def middleware-called (atom (promise)))
+(defn test-middleware
+  [next]
+  (fn [{:keys [metadata] :as opts} job]
+    (deliver @middleware-called metadata)
+    (next opts job)))
+
+(deftest middleware-test
+  (testing "[rmq] Goose calls middleware & attaches RMQ metadata to opts"
+    (reset! middleware-called (promise))
+    (let [worker (w/start (assoc tu/rmq-worker-opts
+                            :middlewares test-middleware))
+          _ (c/perform-async tu/rmq-client-opts `tu/my-fn :arg1)]
+      (is (= d/content-type (:content-type (deref @middleware-called 100 :middleware-test-timed-out))))
+      (w/stop worker))))
 
 ; ======= TEST: Error handling transient failure job using custom retry queue ==========
 (def retry-queue "test-retry")

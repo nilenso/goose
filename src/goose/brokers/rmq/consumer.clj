@@ -10,17 +10,21 @@
     [taoensso.nippy :as nippy]))
 
 (defn execute-job
-  [{:keys [ch delivery-tag]} {:keys [execute-fn-sym args]}]
+  [{:keys                  [ch]
+    {:keys [delivery-tag]} :metadata}
+   {:keys [execute-fn-sym args]}]
   (apply (u/require-resolve execute-fn-sym) args)
   (lb/ack ch delivery-tag))
 
 (defn- handler
   [{:keys [call thread-pool] :as opts}
    ch
-   {:keys [delivery-tag]}
+   metadata
    ^bytes payload]
   (let [job (nippy/thaw payload)
-        opts (assoc opts :ch ch :delivery-tag delivery-tag)]
+        ; Attach RMQ message metadata for ACKing & middlewares.
+        ; https://www.rabbitmq.com/publishers.html#message-properties
+        opts (assoc opts :ch ch :metadata metadata)]
     (cp/future thread-pool (call opts job))))
 
 (defn run

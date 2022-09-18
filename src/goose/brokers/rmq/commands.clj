@@ -39,7 +39,7 @@
               {:priority     priority
                :persistent   true
                :mandatory    true
-               :content-type "ptaoussanis/nippy"
+               :content-type d/content-type
                :headers      headers}))
 
 (defn- async-enqueue

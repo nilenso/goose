@@ -38,7 +38,9 @@
 
 (defn wrap-failure
   [next]
-  (fn [{:keys [ch delivery-tag] :as opts} job]
+  (fn [{:keys                  [ch] :as opts
+        {:keys [delivery-tag]} :metadata}
+       job]
     (try
       (next opts job)
       (catch Exception ex
