@@ -20,10 +20,14 @@
   ([] (System/currentTimeMillis))
   ([date] (inst-ms date)))
 
+(defn ^:no-doc sec-to-ms
+  [sec]
+  (* 1000 sec))
+
 (defn ^:no-doc add-sec
   ([sec] (add-sec sec (epoch-time-ms)))
   ([sec epoch-time-millis]
-   (+ (* 1000 sec) epoch-time-millis)))
+   (+ (sec-to-ms sec) epoch-time-millis)))
 
 (defmacro ^:no-doc while-pool
   [pool & body]

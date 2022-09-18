@@ -26,8 +26,9 @@
     ; On average, Goose checks for scheduled jobs
     ; every polling interval configured to reduce load on Redis.
     ; All worker processes must have same polling interval.
-    (* 1000 (+ (* scheduler-polling-interval-sec total-process-count)
-               (rand-int 3)))))
+    (u/sec-to-ms
+      (+ (* scheduler-polling-interval-sec total-process-count)
+         (rand-int 3)))))
 
 (defn- enqueue-due-scheduled-jobs
   "Returns truthy if due jobs were found."

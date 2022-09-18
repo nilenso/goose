@@ -36,7 +36,7 @@
       ; aren't considered abandoned and double executions are avoided.
       (let [expiry (max d/heartbeat-expire-sec graceful-shutdown-sec)]
         (redis-cmds/set-key-val redis-conn (heartbeat-id id) "alive" expiry))
-      (Thread/sleep (* 1000 d/heartbeat-sleep-sec)))))
+      (Thread/sleep (u/sec-to-ms d/heartbeat-sleep-sec)))))
 
 (defn stop
   [{:keys [id redis-conn process-set in-progress-queue]}]

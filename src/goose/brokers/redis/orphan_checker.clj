@@ -43,5 +43,5 @@
       (let [process-count (heartbeat/process-count redis-conn process-set)]
         ; Sleep for (process-count) minutes + jitters.
         ; On average, Goose checks for orphan jobs every 1 minute.
-        (Thread/sleep (* 1000 (+ (* 60 process-count)
-                                 (rand-int process-count))))))))
+        (Thread/sleep (u/sec-to-ms (+ (* 60 process-count)
+                                      (rand-int process-count))))))))
