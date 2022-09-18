@@ -54,6 +54,23 @@
       (is (= arg (deref @perform-at-fn-executed 100 :scheduler-test-timed-out)))
       (w/stop scheduler))))
 
+; ======= TEST: Middleware ==========
+(def middleware-called (atom (promise)))
+(defn add-five [arg] (+ 5 arg))
+(defn test-middleware
+  [next]
+  (fn [opts job]
+    (let [result (next opts job)]
+      (deliver @middleware-called result))))
+
+(deftest middleware-test
+  (testing "[rmq] Goose calls middleware & attaches RMQ metadata to opts"
+    (reset! middleware-called (promise))
+    (let [worker (w/start (assoc tu/redis-worker-opts
+                            :middlewares test-middleware))
+          _ (c/perform-async tu/redis-client-opts `add-five 5)]
+      (is (= 10 (deref @middleware-called 100 :middleware-test-timed-out)))
+      (w/stop worker))))
 
 ; ======= TEST: Error handling transient failure job using custom retry queue ==========
 (def retry-queue "test-retry")
