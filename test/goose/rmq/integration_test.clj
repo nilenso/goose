@@ -1,6 +1,7 @@
 (ns goose.rmq.integration-test
   (:require
     [goose.brokers.rmq.broker :as rmq]
+    [goose.brokers.rmq.queue :as rmq-queue]
     [goose.client :as c]
     [goose.defaults :as d]
     [goose.retry :as retry]
@@ -15,7 +16,7 @@
 ; ======= Setup & Teardown ==========
 (use-fixtures :each tu/rmq-fixture)
 
-; ======= TEST: Async execution ==========
+; ======= TEST: Async execution (classic queue) ==========
 (def perform-async-fn-executed (atom (promise)))
 (defn perform-async-fn [arg]
   (deliver @perform-async-fn-executed arg))
@@ -28,6 +29,32 @@
           worker (w/start tu/rmq-worker-opts)]
       (is (= arg (deref @perform-async-fn-executed 100 :e2e-test-timed-out)))
       (w/stop worker))))
+
+; ======= TEST: Async execution (quorum queue) ==========
+(def quorum-fn-executed (atom (promise)))
+(defn quorum-fn [arg]
+  (deliver @quorum-fn-executed arg))
+
+(deftest quorum-queue-test
+  (testing "[rmq] Goose enqueues jobs to quorum queues"
+    (reset! quorum-fn-executed (promise))
+
+    (let [queue "quorum-test"
+          arg "quorum-arg"
+          opts (assoc tu/rmq-opts :queue-type rmq-queue/quorum)
+          broker (rmq/new opts 1)
+          client-opts {:queue      queue
+                       :retry-opts retry/default-opts
+                       :broker     broker}
+          worker-opts (assoc tu/worker-opts
+                        :broker broker
+                        :queue queue)
+
+          _ (is (uuid? (UUID/fromString (:id (c/perform-async client-opts `quorum-fn arg)))))
+          worker (w/start worker-opts)]
+      (is (= arg (deref @quorum-fn-executed 100 :quorum-test-timed-out)))
+      (w/stop worker)
+      (rmq/close broker))))
 
 ; ======= TEST: Relative Scheduling ==========
 (def perform-in-sec-fn-executed (atom (promise)))

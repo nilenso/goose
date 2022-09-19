@@ -10,7 +10,7 @@
     [langohr.queue :as lq]
     [taoensso.nippy :as nippy]))
 
-(defn- memoized-create-queue-and-exchange
+(defn create-queue-and-exchanges
   [ch {:keys [queue] :as queue-opts}]
   (lex/declare ch
                d/rmq-delay-exchange
@@ -27,10 +27,6 @@
                  :exclusive   false
                  :arguments   arguments}))
   (lq/bind ch queue d/rmq-delay-exchange {:routing-key queue}))
-
-(defn create-queue-and-exchanges
-  [ch queue-opts]
-  (memoize (memoized-create-queue-and-exchange ch queue-opts)))
 
 (defn- publish
   [ch exch queue job {:keys [priority headers]}]
@@ -81,6 +77,7 @@
             d/rmq-exchange queue-opts
             publisher-confirms
             job
+            ; Priority isn't supported by quorum queues.
             {:priority d/rmq-low-priority})))
 
 (defn enqueue-front
@@ -90,6 +87,7 @@
            queue-opts
            publisher-confirms
            job
+           ; Priority isn't supported by quorum queues.
            {:priority d/rmq-high-priority}))
 
 (defn schedule
@@ -101,5 +99,6 @@
            queue-opts
            publisher-confirms
            job
+           ; Priority isn't supported by quorum queues.
            {:priority d/rmq-high-priority
             :headers  {"x-delay" delay-ms}}))

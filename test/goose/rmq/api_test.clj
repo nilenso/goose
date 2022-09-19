@@ -17,9 +17,9 @@
 (deftest enqueued-jobs-test
   (testing "[rmq] enqueued-jobs API"
     (c/perform-async tu/rmq-client-opts `tu/my-fn)
-    (is (= 1 (enqueued-jobs/size tu/client-rmq-broker tu/queue)))
-    (is true? (enqueued-jobs/purge tu/client-rmq-broker tu/queue))
-    (is (= 0 (enqueued-jobs/size tu/client-rmq-broker tu/queue)))))
+    (is (= 1 (enqueued-jobs/size tu/rmq-client-broker tu/queue)))
+    (is true? (enqueued-jobs/purge tu/rmq-client-broker tu/queue))
+    (is (= 0 (enqueued-jobs/size tu/rmq-client-broker tu/queue)))))
 
 (defn death-handler [_ _ _])
 (def dead-fn-atom (atom 0))
@@ -41,7 +41,7 @@
         (swap! circuit-breaker inc)
         (Thread/sleep 40))
       (w/stop worker)
-      (is (= 2 (dead-jobs/size tu/client-rmq-broker)))
-      (is (uuid? (UUID/fromString (:id (dead-jobs/pop tu/client-rmq-broker)))))
-      (is (true? (dead-jobs/purge tu/client-rmq-broker)))
-      (is (= 0 (dead-jobs/size tu/client-rmq-broker))))))
+      (is (= 2 (dead-jobs/size tu/rmq-client-broker)))
+      (is (uuid? (UUID/fromString (:id (dead-jobs/pop tu/rmq-client-broker)))))
+      (is (true? (dead-jobs/purge tu/rmq-client-broker)))
+      (is (= 0 (dead-jobs/size tu/rmq-client-broker))))))

@@ -81,8 +81,14 @@
 (s/def ::classic-queue
   (s/keys :req-un [:goose.specs.classic/type]))
 
+(s/def :goose.specs.quorum/type #(= % d/quorum-queue))
+(s/def ::replication-factor pos-int?)
+(s/def ::quorum-queue
+  (s/keys :req-un [:goose.specs.quorum/type ::replication-factor]))
+
 (s/def :goose.specs.rmq/queue-type
-  (s/or :classic ::classic-queue))
+  (s/or :classic ::classic-queue
+        :quorum ::quorum-queue))
 
 (s/def ::rmq
   (s/keys :req-un [:goose.specs.rmq/settings

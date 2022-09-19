@@ -13,7 +13,8 @@
   [{:keys [type replication-factor]}]
   (condp = type
     d/classic-queue
-    {"x-max-priority" d/rmq-high-priority}
+    {"x-queue-type"   d/classic-queue
+     "x-max-priority" d/rmq-high-priority}
 
     d/quorum-queue
     {"x-queue-type"                d/quorum-queue
