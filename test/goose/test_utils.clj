@@ -4,6 +4,7 @@
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.brokers.rmq.broker :as rmq]
     [goose.brokers.rmq.publisher-confirms :as rmq-publisher-confirms]
+    [goose.brokers.rmq.queue :as rmq-queue]
     [goose.defaults :as d]
     [goose.retry :as retry]
     [goose.specs :as specs]
@@ -52,14 +53,16 @@
     (str "amqp://" username ":" password "@" host ":" port)))
 (def rmq-opts
   {:settings           {:uri rmq-url}
-   :publisher-confirms rmq-publisher-confirms/sync})
-(def client-rmq-broker (rmq/new rmq-opts 1))
-(def worker-rmq-broker (rmq/new rmq-opts))
-(def rmq-client-opts (assoc client-opts :broker client-rmq-broker))
-(def rmq-worker-opts (assoc worker-opts :broker worker-rmq-broker))
+   :publisher-confirms rmq-publisher-confirms/sync
+   :queue-type         rmq-queue/classic})
+(def rmq-client-broker (rmq/new rmq-opts 1))
+(def rmq-worker-broker (rmq/new rmq-opts))
+(def rmq-client-opts (assoc client-opts :broker rmq-client-broker))
+(def rmq-worker-opts (assoc worker-opts :broker rmq-worker-broker))
 (defn rmq-delete-test-queues []
-  (let [ch (u/random-element (:channels client-rmq-broker))]
+  (let [ch (u/random-element (:channels rmq-client-broker))]
     (lq/delete ch (d/prefix-queue queue))
+    (lq/delete ch (d/prefix-queue "quorum-test"))
     (lq/delete ch (d/prefix-queue "test-retry"))
     (lq/delete ch (d/prefix-queue "sync-publisher-confirms-test"))
     (lq/delete ch (d/prefix-queue "async-publisher-confirms-test"))
@@ -79,8 +82,8 @@
   Contains logic necessary to exit CLI.
   Not necessary to exit REPL."
   []
-  (rmq/close client-rmq-broker)
-  (rmq/close worker-rmq-broker)
+  (rmq/close rmq-client-broker)
+  (rmq/close rmq-worker-broker)
 
   ; clj-statsd uses agents.
   ; If not shutdown, program won't quit.

@@ -45,7 +45,7 @@
         (rmq-retry/wrap-failure))))
 
 (defn start
-  [{:keys [rmq-conn publisher-confirms queue threads middlewares] :as common-opts}]
+  [{:keys [rmq-conn queue-type publisher-confirms queue threads middlewares] :as common-opts}]
   (let [ready-queue (d/prefix-queue queue)
         thread-pool (cp/threadpool threads)
         channels (rmq-channel/new-pool rmq-conn threads publisher-confirms)
@@ -54,7 +54,9 @@
                   :ready-queue ready-queue
                   :channels    channels}
         opts (merge rmq-opts common-opts)]
-    (rmq-cmds/create-queue-and-exchanges (first channels) ready-queue)
+    ; A queue must exist before consumers can subscribe to it.
+    (let [queue-opts (assoc queue-type :queue ready-queue)]
+      (rmq-cmds/create-queue-and-exchanges (first channels) queue-opts))
 
     (let [consumers (rmq-consumer/run opts)]
       #(internal-stop (assoc opts :ch+consumers consumers)))))
