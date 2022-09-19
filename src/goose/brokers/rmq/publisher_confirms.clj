@@ -18,8 +18,8 @@
     (log/error (format "Negative-ACK for delivery-tag: %d" delivery-tag))))
 
 (def sync
-  {:strategy d/sync-confirms
-   :timeout-ms  5000})
+  {:strategy   d/sync-confirms
+   :timeout-ms 5000})
 
 (def async
   {:strategy     d/async-confirms

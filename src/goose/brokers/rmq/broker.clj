@@ -6,9 +6,11 @@
     [goose.brokers.rmq.channel :as channels]
     [goose.brokers.rmq.commands :as rmq-cmds]
     [goose.brokers.rmq.publisher-confirms :as publisher-confirms]
+    [goose.brokers.rmq.queue :as rmq-queue]
     [goose.brokers.rmq.scheduler :as rmq-scheduler]
     [goose.brokers.rmq.worker :as rmq-worker]
     [goose.defaults :as d]
+    [goose.job :as job]
     [goose.utils :as u]
 
     [langohr.core :as lcore]))
@@ -17,16 +19,18 @@
   "Close connections for RabbitMQ broker."
   (close [_]))
 
-(defrecord RabbitMQ [conn channels publisher-confirms]
+(defrecord RabbitMQ [conn channels publisher-confirms queue-type]
   b/Broker
 
   (enqueue [this job]
     (rmq-cmds/enqueue-back (u/random-element (:channels this))
+                           (assoc (:queue-type this) :queue (job/ready-queue job))
                            (:publisher-confirms this)
                            job))
 
   (schedule [this schedule job]
     (rmq-scheduler/run-at (u/random-element (:channels this))
+                          (assoc (:queue-type this) :queue (job/ready-queue job))
                           (:publisher-confirms this)
                           schedule
                           job))
@@ -34,6 +38,7 @@
   (start [this worker-opts]
     (rmq-worker/start (assoc worker-opts
                         :rmq-conn (:conn this)
+                        :queue-type (:queue-type this)
                         :publisher-confirms (:publisher-confirms this))))
 
   ; enqueued-jobs API
@@ -60,7 +65,8 @@
   Refer to http://clojurerabbitmq.info/articles/connecting.html
   for complete set of settings."
   {:settings           {:uri d/rmq-default-url}
-   :publisher-confirms publisher-confirms/sync})
+   :publisher-confirms publisher-confirms/sync
+   :queue-type         rmq-queue/classic})
 
 (defn new
   "Create a client for RabbitMQ broker.
@@ -69,7 +75,7 @@
   as worker creates channels equal to number of threads."
   ([opts]
    (goose.brokers.rmq.broker/new opts 0))
-  ([{:keys [settings publisher-confirms]} channel-pool-size]
+  ([{:keys [settings publisher-confirms queue-type]} channel-pool-size]
    (let [conn (lcore/connect settings)
          channel-pool (channels/new-pool conn channel-pool-size publisher-confirms)]
-     (->RabbitMQ conn channel-pool publisher-confirms))))
+     (->RabbitMQ conn channel-pool publisher-confirms queue-type))))

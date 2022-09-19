@@ -1,8 +1,8 @@
 (ns goose.brokers.rmq.commands
   {:no-doc true}
   (:require
+    [goose.brokers.rmq.queue :as rmq-queue]
     [goose.defaults :as d]
-    [goose.job :as job]
 
     [langohr.basic :as lb]
     [langohr.confirm :as lcnf]
@@ -11,7 +11,7 @@
     [taoensso.nippy :as nippy]))
 
 (defn- memoized-create-queue-and-exchange
-  [ch queue]
+  [ch {:keys [queue] :as queue-opts}]
   (lex/declare ch
                d/rmq-delay-exchange
                d/rmq-delay-exchange-type
@@ -19,21 +19,22 @@
                 :auto-delete false
                 :arguments   {"x-delayed-type" "direct"}})
 
-  (lq/declare ch
-              queue
-              {:durable     true
-               :auto-delete false
-               :exclusive   false
-               :arguments   {"x-max-priority" d/rmq-high-priority}})
+  (let [arguments (rmq-queue/arguments queue-opts)]
+    (lq/declare ch
+                queue
+                {:durable     true
+                 :auto-delete false
+                 :exclusive   false
+                 :arguments   arguments}))
   (lq/bind ch queue d/rmq-delay-exchange {:routing-key queue}))
 
 (defn create-queue-and-exchanges
-  [ch queue]
-  (memoize (memoized-create-queue-and-exchange ch queue)))
+  [ch queue-opts]
+  (memoize (memoized-create-queue-and-exchange ch queue-opts)))
 
 (defn- publish
-  [ch ex queue job {:keys [priority headers]}]
-  (lb/publish ch ex queue
+  [ch exch queue job {:keys [priority headers]}]
+  (lb/publish ch exch queue
               (nippy/freeze job)
               {:priority     priority
                :persistent   true
@@ -42,7 +43,7 @@
                :headers      headers}))
 
 (defn- async-enqueue
-  [ch ex queue job properties]
+  [ch exch queue job properties]
   ; ASYNC-enqueue is a 2-step process.
   ; Step 1: Get next sequence number.
   ; Step 2: Publish a message to queue.
@@ -50,45 +51,55 @@
   ; Acquire lock on a channle to avoid race conditions.
   (locking ch
     (let [seq (.getNextPublishSeqNo ch)]
-      (publish ch ex queue job properties)
+      (publish ch exch queue job properties)
       {:delivery-tag seq :id (:id job)})))
 
 (defn- sync-enqueue
-  [ch ex queue job properties timeout-ms]
-  (publish ch ex queue job properties)
+  [ch exch queue job properties timeout-ms]
+  (publish ch exch queue job properties)
   (lcnf/wait-for-confirms ch timeout-ms)
   (select-keys job [:id]))
 
 (defn- enqueue
-  [ch {:keys [strategy timeout-ms]} ex queue job properties]
-  (create-queue-and-exchanges ch queue)
+  [ch
+   exch
+   {:keys [queue] :as queue-opts}
+   {:keys [strategy timeout-ms]}
+   job
+   properties]
+  (create-queue-and-exchanges ch queue-opts)
   (condp = strategy
     d/sync-confirms
-    (sync-enqueue ch ex queue job properties timeout-ms)
+    (sync-enqueue ch exch queue job properties timeout-ms)
 
     d/async-confirms
-    (async-enqueue ch ex queue job properties)))
+    (async-enqueue ch exch queue job properties)))
 
 (defn enqueue-back
-  ([ch publisher-confirms job]
-   (enqueue-back ch publisher-confirms job (job/ready-queue job)))
-  ([ch publisher-confirms job queue]
-   (enqueue ch publisher-confirms d/rmq-exchange queue job {:priority d/rmq-low-priority})))
+  ([ch queue-opts publisher-confirms job]
+   (enqueue ch
+            d/rmq-exchange queue-opts
+            publisher-confirms
+            job
+            {:priority d/rmq-low-priority})))
 
 (defn enqueue-front
-  [ch publisher-confirms job]
-  (enqueue
-    ch
-    publisher-confirms
-    d/rmq-exchange
-    (job/ready-queue job)
-    job
-    {:priority d/rmq-high-priority}))
+  [ch queue-opts publisher-confirms job]
+  (enqueue ch
+           d/rmq-exchange
+           queue-opts
+           publisher-confirms
+           job
+           {:priority d/rmq-high-priority}))
 
 (defn schedule
-  [ch publisher-confirms job delay]
-  (let [properties {:priority d/rmq-high-priority
-                    :headers  {"x-delay" delay}}]
-    (when (< d/rmq-delay-limit-ms delay)
-      (throw (ex-info "MAX_DELAY limit breached: 2^32 ms(~49 days 17 hours)" {:job job :delay delay})))
-    (enqueue ch publisher-confirms d/rmq-delay-exchange (job/ready-queue job) job properties)))
+  [ch queue-opts publisher-confirms job delay-ms]
+  (when (< d/rmq-delay-limit-ms delay-ms)
+    (throw (ex-info "MAX_DELAY limit breached: 2^32 ms(~49 days 17 hours)" {:job job :delay delay-ms})))
+  (enqueue ch
+           d/rmq-delay-exchange
+           queue-opts
+           publisher-confirms
+           job
+           {:priority d/rmq-high-priority
+            :headers  {"x-delay" delay-ms}}))

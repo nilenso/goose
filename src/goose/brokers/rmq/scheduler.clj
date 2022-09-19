@@ -4,9 +4,9 @@
     [goose.utils :as u]))
 
 (defn run-at
-  [ch publisher-confirms schedule job]
-  (let [delay (- schedule (u/epoch-time-ms))
+  [ch queue-opts publisher-confirms schedule job]
+  (let [delay-ms (- schedule (u/epoch-time-ms))
         scheduled-job (assoc job :schedule schedule)]
-    (if (neg? delay)
-      (rmq-cmds/enqueue-front ch publisher-confirms scheduled-job)
-      (rmq-cmds/schedule ch publisher-confirms scheduled-job delay))))
+    (if (neg? delay-ms)
+      (rmq-cmds/enqueue-front ch queue-opts publisher-confirms scheduled-job)
+      (rmq-cmds/schedule ch queue-opts publisher-confirms scheduled-job delay-ms))))

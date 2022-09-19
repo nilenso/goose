@@ -77,9 +77,17 @@
   (s/or :sync ::sync-strategy
         :async ::async-strategy))
 
+(s/def :goose.specs.classic/type #(= % d/classic-queue))
+(s/def ::classic-queue
+  (s/keys :req-un [:goose.specs.classic/type]))
+
+(s/def :goose.specs.rmq/queue-type
+  (s/or :classic ::classic-queue))
+
 (s/def ::rmq
   (s/keys :req-un [:goose.specs.rmq/settings
-                   ::publisher-confirms]))
+                   ::publisher-confirms
+                   :goose.specs.rmq/queue-type]))
 (s/fdef rmq/new
         :args (s/alt :one (s/cat :opts ::rmq)
                      :two (s/cat :opts ::rmq

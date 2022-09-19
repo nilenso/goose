@@ -74,9 +74,7 @@
   ; RMQ confirms in 1ms too sometimes ¯\_(ツ)_/¯
   ; Remove this test if it happens often.
   (testing "[rmq] Publish timed out"
-    (let [opts {:settings           {:uri tu/rmq-url}
-                :publisher-confirms {:strategy d/sync-confirms
-                                     :timeout-ms  1}}
+    (let [opts (assoc-in tu/rmq-opts [:publisher-confirms :timeout-ms] 1)
           broker (rmq/new opts 1)
           client-opts {:queue      "sync-publisher-confirms-test"
                        :retry-opts retry/default-opts
@@ -89,10 +87,10 @@
 
   (testing "[rmq] Ack handler called"
     (reset! ack-handler-called (promise))
-    (let [opts {:settings           {:uri tu/rmq-url}
-                :publisher-confirms {:strategy     d/async-confirms
-                                     :ack-handler  `test-ack-handler
-                                     :nack-handler `test-nack-handler}}
+    (let [opts (assoc tu/rmq-opts
+                 :publisher-confirms {:strategy     d/async-confirms
+                                      :ack-handler  `test-ack-handler
+                                      :nack-handler `test-nack-handler})
           broker (rmq/new opts 1)
           client-opts {:queue      "async-publisher-confirms-test"
                        :retry-opts retry/default-opts

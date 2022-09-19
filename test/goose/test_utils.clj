@@ -4,6 +4,7 @@
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.brokers.rmq.broker :as rmq]
     [goose.brokers.rmq.publisher-confirms :as rmq-publisher-confirms]
+    [goose.brokers.rmq.queue :as rmq-queue]
     [goose.defaults :as d]
     [goose.retry :as retry]
     [goose.specs :as specs]
@@ -52,7 +53,8 @@
     (str "amqp://" username ":" password "@" host ":" port)))
 (def rmq-opts
   {:settings           {:uri rmq-url}
-   :publisher-confirms rmq-publisher-confirms/sync})
+   :publisher-confirms rmq-publisher-confirms/sync
+   :queue-type         rmq-queue/classic})
 (def client-rmq-broker (rmq/new rmq-opts 1))
 (def worker-rmq-broker (rmq/new rmq-opts))
 (def rmq-client-opts (assoc client-opts :broker client-rmq-broker))
