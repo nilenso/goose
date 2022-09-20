@@ -27,5 +27,5 @@ Notes
 
 - Brokers have a latency of 1ms
 - Performance testing code can be found here:
-  - [Redis](https://github.com/nilenso/goose/tree/main/perf/redis)
+    - [Redis](https://github.com/nilenso/goose/tree/main/perf/redis)
 - VM setup code can be found at [setup.sh](https://github.com/nilenso/goose/blob/main/perf/setup.sh)

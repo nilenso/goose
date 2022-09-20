@@ -6,6 +6,7 @@
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.client :as c]
     [goose.defaults :as d]
+    [goose.metrics.statsd :as statsd]
     [goose.utils :as u]
     [goose.worker :as w]
 
@@ -22,19 +23,25 @@
 (defn latency [enqueue-time]
   (println "Latency:" (- (u/epoch-time-ms) enqueue-time) "ms"))
 
-(defn dummy-handler [_ _])
+(defn dummy-error-handler [_ _ _])
 
 (def redis-broker (redis/new redis/default-opts))
 (def redis-proxy "localhost:6380")
-(def redis-broker-with-latency (redis/new {:url (str "redis://" redis-proxy)}))
+(def redis-broker-with-latency
+  (redis/new
+    {:url                            (str "redis://" redis-proxy)
+     :scheduler-polling-interval-sec 10}
+    25))
 
+(defn retry-delay-sec [_] 1)
 (def client-opts
   (assoc c/default-opts
     :broker redis-broker
-    :retry-opts {:max-retries          1
-                 :skip-dead-queue      true
-                 :error-handler-fn-sym `dummy-handler
-                 :death-handler-fn-sym `dummy-handler}))
+    :retry-opts {:max-retries            1
+                 :skip-dead-queue        true
+                 :error-handler-fn-sym   `dummy-error-handler
+                 :death-handler-fn-sym   `dummy-error-handler
+                 :retry-delay-sec-fn-sym `retry-delay-sec}))
 
 (defn- flush-redis []
   (redis-cmds/wcar* redis-broker (car/flushdb "sync")))
@@ -63,10 +70,11 @@
   [count]
   (let [worker-opts (assoc w/default-opts
                       :broker redis-broker-with-latency
-                      :threads 25)
+                      :threads 25
+                      :metrics-plugin (statsd/new {:enabled? false}))
         start-time (u/epoch-time-ms)
         worker (w/start worker-opts)]
-    (while (not (= 0 (enqueued-jobs/size redis/default-opts d/default-queue)))
+    (while (not (= 0 (enqueued-jobs/size redis-broker d/default-queue)))
       (Thread/sleep 200))
     (println "Jobs processed:" count "Milliseconds taken:" (- (u/epoch-time-ms) start-time))
 
@@ -87,11 +95,12 @@
 
 (defn benchmark
   [_]
-  (println "====================================
-Benchmark runs beyond 60 minutes.
-We're using criterium to warm-up JVM & pre-run GC.
-Exit using ctrl-C after recording ~10 samples.
-====================================")
+  (println
+    "====================================
+    Benchmark runs beyond 60 minutes.
+    We're using criterium to warm-up JVM & pre-run GC.
+    Exit using ctrl-C after recording ~10 samples.
+    ====================================")
   (let [toxiproxy (add-latency-to-redis)]
     (.addShutdownHook (Runtime/getRuntime) (Thread. #(shutdown-fn toxiproxy)))
     (criterium/bench (enqueue-dequeue (* 100 1000)))

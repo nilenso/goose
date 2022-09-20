@@ -6,7 +6,6 @@
     [goose.defaults :as d]
     [criterium.core :as criterium]
     [goose.client :as c]
-    [goose.specs :as specs]
     [goose.worker :as w]
     [goose.brokers.rmq.broker :as rmq]
     [goose.api.enqueued-jobs :as enqueued-jobs]
@@ -44,8 +43,7 @@
 (def rmq-client-broker
   (rmq/new (assoc rmq-opts :settings {:uri rmq-client-url}) 10))
 
-(defn retry-delay-sec
-  [_] 1)
+(defn retry-delay-sec [_] 1)
 (def client-opts
   {:queue      queue
    :broker     rmq-client-broker
@@ -99,7 +97,6 @@
 
 (defn enqueue-dequeue
   [count]
-  (specs/unstrument)
   (purge-rmq)
 
   (bulk-enqueue count)
@@ -113,11 +110,12 @@
 
 (defn benchmark
   [_]
-  (println "====================================
-Benchmark runs beyond 60 minutes.
-We're using criterium to warm-up JVM & pre-run GC.
-Exit using ctrl-C after recording ~10 samples.
-====================================")
+  (println
+    "====================================
+    Benchmark runs beyond 60 minutes.
+    We're using criterium to warm-up JVM & pre-run GC.
+    Exit using ctrl-C after recording ~10 samples.
+    ====================================")
   (let [toxiproxy (add-latency-to-rmq)]
     (.addShutdownHook (Runtime/getRuntime) (Thread. #(shutdown-fn toxiproxy)))
 
