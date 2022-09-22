@@ -3,12 +3,12 @@
   (:require
     [goose.brokers.rmq.queue :as rmq-queue]
     [goose.defaults :as d]
+    [goose.utils :as u]
 
     [langohr.basic :as lb]
     [langohr.confirm :as lcnf]
     [langohr.exchange :as lex]
-    [langohr.queue :as lq]
-    [taoensso.nippy :as nippy]))
+    [langohr.queue :as lq]))
 
 (defn create-queue-and-exchanges
   [ch {:keys [queue] :as queue-opts}]
@@ -31,7 +31,7 @@
 (defn- publish
   [ch exch queue job {:keys [priority headers]}]
   (lb/publish ch exch queue
-              (nippy/freeze job)
+              (u/encode job)
               {:priority     priority
                :persistent   true
                :mandatory    true

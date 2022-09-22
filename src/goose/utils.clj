@@ -3,7 +3,14 @@
   (:require
     [clojure.string :as str]
     [clojure.tools.logging :as log]
-    [com.climate.claypoole :as cp]))
+    [com.climate.claypoole :as cp]
+    [taoensso.nippy :as nippy]))
+
+(defn encode [x]
+  (nippy/freeze x))
+
+(defn decode [o]
+  (nippy/thaw o))
 
 (defmacro ^:no-doc log-on-exceptions
   "Catch any Exception from the body and log it."

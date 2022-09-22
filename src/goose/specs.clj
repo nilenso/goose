@@ -14,8 +14,7 @@
     [clojure.spec.alpha :as s]
     [clojure.spec.test.alpha :as st]
     [clojure.string :as string]
-    [taoensso.carmine.connections :refer [IConnectionPool]]
-    [taoensso.nippy :as nippy])
+    [taoensso.carmine.connections :refer [IConnectionPool]])
   (:import
     (java.time Instant)))
 
@@ -146,7 +145,7 @@
 
 ; ============== Client ==============
 (s/def ::args-serializable?
-  #(try (= % (nippy/thaw (nippy/freeze %)))
+  #(try (= % (u/decode (u/encode %)))
         (catch Exception _ false)))
 (s/def ::instant #(instance? Instant %))
 (s/def ::client-opts (s/keys :req-un [::broker ::queue ::retry-opts]))

@@ -6,8 +6,7 @@
 
     [com.climate.claypoole :as cp]
     [langohr.basic :as lb]
-    [langohr.consumers :as lc]
-    [taoensso.nippy :as nippy]))
+    [langohr.consumers :as lc]))
 
 (defn execute-job
   [{:keys                  [ch]
@@ -21,7 +20,7 @@
    ch
    metadata
    ^bytes payload]
-  (let [job (nippy/thaw payload)
+  (let [job (u/decode payload)
         ; Attach RMQ message metadata for ACKing & middlewares.
         ; https://www.rabbitmq.com/publishers.html#message-properties
         opts (assoc opts :ch ch :metadata metadata)]
