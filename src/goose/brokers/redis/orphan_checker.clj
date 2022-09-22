@@ -10,8 +10,9 @@
 
 (defn- increment-job-recovery-metric
   [metrics-plugin {:keys [execute-fn-sym queue]}]
-  (let [tags {:function execute-fn-sym :queue queue}]
-    (metrics-protocol/increment metrics-plugin metrics-keys/jobs-recovered 1 tags)))
+  (when (metrics-protocol/enabled? metrics-plugin)
+    (let [tags {:function execute-fn-sym :queue queue}]
+      (metrics-protocol/increment metrics-plugin metrics-keys/jobs-recovered 1 tags))))
 
 (defn- reenqueue-orphan-jobs
   [{:keys [redis-conn ready-queue metrics-plugin] :as opts}
