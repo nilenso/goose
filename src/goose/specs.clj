@@ -62,8 +62,10 @@
 
 (s/def :goose.specs.sync/strategy #(= % d/sync-confirms))
 (s/def ::timeout-ms pos-int?)
+(s/def ::retry-delay-ms pos-int?)
 (s/def ::sync-strategy
-  (s/keys :req-un [:goose.specs.sync/strategy ::timeout-ms]))
+  (s/keys :req-un [:goose.specs.sync/strategy ::timeout-ms]
+          :opt-un [::max-retries ::retry-delay-ms]))
 
 (s/def :goose.specs.async/strategy #(= % d/async-confirms))
 (s/def ::ack-handler

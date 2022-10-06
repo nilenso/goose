@@ -8,7 +8,9 @@
     [langohr.basic :as lb]
     [langohr.confirm :as lcnf]
     [langohr.exchange :as lex]
-    [langohr.queue :as lq]))
+    [langohr.queue :as lq])
+  (:import
+    (java.io IOException)))
 
 (defn create-queue-and-exchanges
   [ch {:keys [queue] :as queue-opts}]
@@ -40,33 +42,45 @@
 
 (defn- async-enqueue
   [ch exch queue job properties]
-  ; ASYNC-enqueue is a 2-step process.
-  ; Step 1: Get next sequence number.
-  ; Step 2: Publish a message to queue.
+  ; ASYNC-enqueue is a 2-step process:
+  ; 1. Get next sequence number.
+  ; 2. Publish a message to queue.
   ; Multiple threads might be using the same channel.
-  ; Acquire lock on a channle to avoid race conditions.
+  ; Acquire lock on a channel to avoid race conditions.
   (locking ch
     (let [seq (.getNextPublishSeqNo ch)]
       (publish ch exch queue job properties)
       {:delivery-tag seq :id (:id job)})))
 
 (defn- sync-enqueue
-  [ch exch queue job properties timeout-ms]
-  (publish ch exch queue job properties)
-  (lcnf/wait-for-confirms ch timeout-ms)
+  [ch
+   exch
+   queue
+   {:keys [timeout-ms max-retries retry-delay-ms]
+    :or   {max-retries 0 retry-delay-ms 10}}
+   job
+   properties]
+  (u/with-retry {:count max-retries :retry-delay-ms retry-delay-ms}
+    (publish ch exch queue job properties)
+    ; (wait-for-confirms-or-die) closes a channel on Negative-ACK.
+    ; Since we're maintaining a pool of channels,
+    ; throw an exception if wait-for-confirms returns false.
+    (when-not (lcnf/wait-for-confirms ch timeout-ms)
+      (throw (IOException. "rmq nack'd a msg"))))
+
   (select-keys job [:id]))
 
 (defn- enqueue
   [ch
    exch
    {:keys [queue] :as queue-opts}
-   {:keys [strategy timeout-ms]}
+   {:keys [strategy] :as publisher-confirms}
    job
    properties]
   (create-queue-and-exchanges ch queue-opts)
   (condp = strategy
     d/sync-confirms
-    (sync-enqueue ch exch queue job properties timeout-ms)
+    (sync-enqueue ch exch queue publisher-confirms job properties)
 
     d/async-confirms
     (async-enqueue ch exch queue job properties)))

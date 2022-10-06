@@ -14,12 +14,14 @@
 (defn default-nack-handler
   [delivery-tag multiple]
   (if multiple
-    (log/error (format "Negative-ACK uptil delivery-tag: %d" delivery-tag))
+    (log/error (format "Negative-ACK until delivery-tag: %d" delivery-tag))
     (log/error (format "Negative-ACK for delivery-tag: %d" delivery-tag))))
 
 (def sync
-  {:strategy   d/sync-confirms
-   :timeout-ms 5000})
+  {:strategy       d/sync-confirms
+   :timeout-ms     1000
+   :max-retries    3
+   :retry-delay-ms 100})
 
 (def async
   {:strategy     d/async-confirms

@@ -100,7 +100,7 @@
 (defn new
   "Create a client for Redis broker.
   If pooling-opts aren't provided,
-  conneciton count will be derived from thread-count.
+  connection count will be derived from thread-count.
   When initializing broker for a worker, thread-count
   must be provided.
   For a client, thread-count can be ignored if throughput is less."

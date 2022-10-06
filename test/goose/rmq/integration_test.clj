@@ -10,7 +10,10 @@
 
     [clojure.test :refer [deftest is testing use-fixtures]])
   (:import
-    [java.util UUID]))
+    (clojure.lang ExceptionInfo)
+    [java.util UUID]
+    (java.util.concurrent TimeoutException)
+    (java.time Instant)))
 
 
 ; ======= Setup & Teardown ==========
@@ -73,7 +76,7 @@
   (testing "[rmq] Scheduling beyond max_delay limit"
     (is
       (thrown-with-msg?
-        clojure.lang.ExceptionInfo
+        ExceptionInfo
         #"MAX_DELAY limit breached*"
         (c/perform-in-sec tu/rmq-client-opts 4294968 `perform-in-sec-fn)))))
 
@@ -86,7 +89,7 @@
   (testing "[rmq] Goose executes a function scheduled in past"
     (reset! perform-at-fn-executed (promise))
     (let [arg "scheduling-test"
-          _ (is (uuid? (UUID/fromString (:id (c/perform-at tu/rmq-client-opts (java.time.Instant/now) `perform-at-fn arg)))))
+          _ (is (uuid? (UUID/fromString (:id (c/perform-at tu/rmq-client-opts (Instant/now) `perform-at-fn arg)))))
           scheduler (w/start tu/rmq-worker-opts)]
       (is (= arg (deref @perform-at-fn-executed 100 :scheduler-test-timed-out)))
       (w/stop scheduler))))
@@ -100,19 +103,20 @@
   ; This test fails quite rarely.
   ; RMQ confirms in 1ms too sometimes ¯\_(ツ)_/¯
   ; Remove this test if it happens often.
-  (testing "[rmq] Publish timed out"
-    (let [opts (assoc-in tu/rmq-opts [:publisher-confirms :timeout-ms] 1)
+  (testing "[rmq][sync-confirms] Publish timed out"
+    (let [opts (assoc tu/rmq-opts
+                 :publisher-confirms {:strategy d/sync-confirms :timeout-ms 1})
           broker (rmq/new opts 1)
           client-opts {:queue      "sync-publisher-confirms-test"
                        :retry-opts retry/default-opts
                        :broker     broker}]
       (is
         (thrown?
-          java.util.concurrent.TimeoutException
+          TimeoutException
           (c/perform-async client-opts `tu/my-fn)))
       (rmq/close broker)))
 
-  (testing "[rmq] Ack handler called"
+  (testing "[rmq][async-confirms] Ack handler called"
     (reset! ack-handler-called (promise))
     (let [opts (assoc tu/rmq-opts
                  :publisher-confirms {:strategy     d/async-confirms
@@ -176,10 +180,10 @@
           _ (c/perform-async (assoc tu/rmq-client-opts :retry-opts retry-opts) `erroneous-fn arg)
           worker (w/start tu/rmq-worker-opts)
           retry-worker (w/start (assoc tu/rmq-worker-opts :queue retry-queue))]
-      (is (= java.lang.ArithmeticException (type (deref @failed-on-execute 100 :retry-execute-timed-out))))
+      (is (= ArithmeticException (type (deref @failed-on-execute 100 :retry-execute-timed-out))))
       (w/stop worker)
 
-      (is (= clojure.lang.ExceptionInfo (type (deref @failed-on-1st-retry 1100 :1st-retry-timed-out))))
+      (is (= ExceptionInfo (type (deref @failed-on-1st-retry 1100 :1st-retry-timed-out))))
 
       (is (= arg (deref @succeeded-on-2nd-retry 1100 :2nd-retry-timed-out)))
       (w/stop retry-worker))))
@@ -206,6 +210,6 @@
                           :death-handler-fn-sym `dead-test-death-handler)
           _ (c/perform-async (assoc tu/rmq-client-opts :retry-opts dead-job-opts) `dead-fn)
           worker (w/start tu/rmq-worker-opts)]
-      (is (= java.lang.ArithmeticException (type (deref @job-dead 1100 :death-handler-timed-out))))
+      (is (= ArithmeticException (type (deref @job-dead 1100 :death-handler-timed-out))))
       (is (= 2 @dead-job-run-count))
       (w/stop worker))))

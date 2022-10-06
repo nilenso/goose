@@ -68,3 +68,21 @@
   (if (zero? (count list))
     (throw (ex-info "List is empty." {:empty-list list}))
     (nth list (rand-int (count list)))))
+
+(defn with-retry* [retry-count retry-delay-ms fn-to-retry]
+  (let [res (try
+              (fn-to-retry)
+              (catch Exception e
+                (if (< 0 retry-count)
+                  e
+                  (throw e))))]
+    (if (instance? Throwable res)
+      (do
+        (log/warn (format "Exception caught: %s. Retrying in %dms." res retry-delay-ms))
+        (Thread/sleep retry-delay-ms)
+        (recur (dec retry-count) retry-delay-ms fn-to-retry))
+      res)))
+
+(defmacro with-retry
+  [{:keys [count retry-delay-ms]} & body]
+  `(with-retry* ~count ~retry-delay-ms (fn [] ~@body)))

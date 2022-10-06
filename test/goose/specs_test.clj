@@ -84,6 +84,8 @@
     ; :rmq-opts :publisher-confirms
     #(rmq/new (assoc rmq/default-opts :publisher-confirms {:strategy :invalid}))
     #(rmq/new (assoc rmq/default-opts :publisher-confirms {:strategy d/sync-confirms :timeout-ms 0}))
+    #(rmq/new (assoc rmq/default-opts :publisher-confirms {:strategy d/sync-confirms :timeout-ms 10 :max-retries -1}))
+    #(rmq/new (assoc rmq/default-opts :publisher-confirms {:strategy d/sync-confirms :timeout-ms 10 :retry-delay-ms 0}))
     #(rmq/new (assoc rmq/default-opts :publisher-confirms {:strategy d/async-confirms :ack-handler 'invalid}))
     #(rmq/new (assoc rmq/default-opts :publisher-confirms {:strategy d/async-confirms :nack-handler `my-fn}))
 
