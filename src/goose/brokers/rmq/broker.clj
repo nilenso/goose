@@ -6,6 +6,7 @@
     [goose.brokers.rmq.channel :as channels]
     [goose.brokers.rmq.commands :as rmq-cmds]
     [goose.brokers.rmq.publisher-confirms :as publisher-confirms]
+    [goose.brokers.rmq.return-listener :as return-listener]
     [goose.brokers.rmq.queue :as rmq-queue]
     [goose.brokers.rmq.scheduler :as rmq-scheduler]
     [goose.brokers.rmq.worker :as rmq-worker]
@@ -19,7 +20,7 @@
   "Close connections for RabbitMQ broker."
   (close [_]))
 
-(defrecord RabbitMQ [conn channels publisher-confirms queue-type]
+(defrecord RabbitMQ [conn channels publisher-confirms return-listener-fn queue-type]
   b/Broker
 
   (enqueue [this job]
@@ -39,7 +40,8 @@
     (rmq-worker/start (assoc worker-opts
                         :rmq-conn (:conn this)
                         :queue-type (:queue-type this)
-                        :publisher-confirms (:publisher-confirms this))))
+                        :publisher-confirms (:publisher-confirms this)
+                        :return-listener-fn (:return-listener-fn this))))
 
   ; enqueued-jobs API
   (enqueued-jobs-size [this queue]
@@ -66,6 +68,7 @@
   for complete set of settings."
   {:settings           {:uri d/rmq-default-url}
    :publisher-confirms publisher-confirms/sync
+   :return-listener-fn return-listener/default
    :queue-type         rmq-queue/classic})
 
 (defn new
@@ -75,7 +78,7 @@
   as worker creates channels equal to number of threads."
   ([opts]
    (goose.brokers.rmq.broker/new opts 0))
-  ([{:keys [settings publisher-confirms queue-type]} channel-pool-size]
+  ([{:keys [settings publisher-confirms return-listener-fn queue-type]} channel-pool-size]
    (let [conn (lcore/connect settings)
-         channel-pool (channels/new-pool conn channel-pool-size publisher-confirms)]
-     (->RabbitMQ conn channel-pool publisher-confirms queue-type))))
+         channel-pool (channels/new-pool conn channel-pool-size publisher-confirms return-listener-fn)]
+     (->RabbitMQ conn channel-pool publisher-confirms return-listener-fn queue-type))))

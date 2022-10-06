@@ -4,6 +4,7 @@
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.brokers.rmq.broker :as rmq]
     [goose.brokers.rmq.publisher-confirms :as rmq-publisher-confirms]
+    [goose.brokers.rmq.return-listener :as return-listener]
     [goose.brokers.rmq.queue :as rmq-queue]
     [goose.defaults :as d]
     [goose.retry :as retry]
@@ -54,6 +55,7 @@
 (def rmq-opts
   {:settings           {:uri rmq-url}
    :publisher-confirms rmq-publisher-confirms/sync
+   :return-listener-fn return-listener/default
    :queue-type         rmq-queue/classic})
 (def rmq-client-broker (rmq/new rmq-opts 1))
 (def rmq-worker-broker (rmq/new rmq-opts))

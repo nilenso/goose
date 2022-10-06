@@ -45,10 +45,10 @@
         (rmq-retry/wrap-failure))))
 
 (defn start
-  [{:keys [rmq-conn queue-type publisher-confirms queue threads middlewares] :as common-opts}]
+  [{:keys [rmq-conn queue-type publisher-confirms return-listener-fn queue threads middlewares] :as common-opts}]
   (let [ready-queue (d/prefix-queue queue)
         thread-pool (cp/threadpool threads)
-        channels (rmq-channel/new-pool rmq-conn threads publisher-confirms)
+        channels (rmq-channel/new-pool rmq-conn threads publisher-confirms return-listener-fn)
         rmq-opts {:thread-pool thread-pool
                   :call        (chain-middlewares middlewares)
                   :ready-queue ready-queue

@@ -22,7 +22,7 @@ sudo systemctl start redis-server.service
 # https://www.rabbitmq.com/install-debian.html#apt-quick-start-packagecloud
 systemctl start rabbitmq-server
 
-# Install rabbitmq-delayed-message-exchange
+# Install rabbitmq-delayed-message-plugin
 wget https://github.com/rabbitmq/rabbitmq-delayed-message-exchange/releases/download/3.10.2/rabbitmq_delayed_message_exchange-3.10.2.ez
 mv rabbitmq_delayed_message_exchange-3.10.2 /usr/lib/rabbitmq/lib/rabbitmq_server-3.10.7/plugins
 

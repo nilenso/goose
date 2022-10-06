@@ -31,12 +31,13 @@
   (lq/bind ch queue d/rmq-delay-exchange {:routing-key queue}))
 
 (defn- publish
-  [ch exch queue job {:keys [priority headers]}]
+  [ch exch queue job {:keys [mandatory priority headers]}]
   (lb/publish ch exch queue
               (u/encode job)
-              {:priority     priority
+              {:mandatory    mandatory
+               ; Priority isn't supported by quorum queues.
+               :priority     priority
                :persistent   true
-               :mandatory    true
                :content-type d/content-type
                :headers      headers}))
 
@@ -91,8 +92,8 @@
             d/rmq-exchange queue-opts
             publisher-confirms
             job
-            ; Priority isn't supported by quorum queues.
-            {:priority d/rmq-low-priority})))
+            {:mandatory true
+             :priority  d/rmq-low-priority})))
 
 (defn enqueue-front
   [ch queue-opts publisher-confirms job]
@@ -101,8 +102,8 @@
            queue-opts
            publisher-confirms
            job
-           ; Priority isn't supported by quorum queues.
-           {:priority d/rmq-high-priority}))
+           {:mandatory true
+            :priority  d/rmq-high-priority}))
 
 (defn schedule
   [ch queue-opts publisher-confirms job delay-ms]
@@ -113,6 +114,8 @@
            queue-opts
            publisher-confirms
            job
-           ; Priority isn't supported by quorum queues.
-           {:priority d/rmq-high-priority
-            :headers  {"x-delay" delay-ms}}))
+           ; delayed-message-plugin doesn't support mandatory flag.
+           ; https://github.com/rabbitmq/discussions/issues/106#issuecomment-635931866
+           {:mandatory false
+            :priority  d/rmq-high-priority
+            :headers   {"x-delay" delay-ms}}))

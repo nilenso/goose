@@ -89,6 +89,9 @@
     #(rmq/new (assoc rmq/default-opts :publisher-confirms {:strategy d/async-confirms :ack-handler 'invalid}))
     #(rmq/new (assoc rmq/default-opts :publisher-confirms {:strategy d/async-confirms :nack-handler `my-fn}))
 
+    ; :rmq-opts :return-listener-fn
+    #(rmq/new (assoc rmq/default-opts :return-listener-fn :non-fn))
+
     ; :rmq-opts :queue-type
     #(rmq/new (assoc rmq/default-opts :queue-type {:type :invalid}))
     #(rmq/new (assoc rmq/default-opts :queue-type {:type d/quorum-queue :replication-factor 0}))
