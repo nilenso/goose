@@ -33,6 +33,11 @@
   [broker job]
   (b/dead-jobs-replay-job broker job))
 
+(defn replay-n-jobs
+  "Replay n jobs from dead queue by moving them to ready queue"
+  [broker n]
+  (b/dead-jobs-replay-n-jobs broker n))
+
 (defn delete
   "Delete a Dead Job."
   [broker job]

@@ -26,6 +26,13 @@
     (when (redis-cmds/sorted-set-score conn sorted-set job)
       (redis-cmds/move-jobs-from-sorted-set-to-ready-queue conn sorted-set (list job) job/ready-queue))))
 
+(defn replay-n-jobs [conn n]
+  (let [sorted-set d/prefixed-dead-queue
+        jobs (redis-cmds/sorted-set-peek-jobs conn sorted-set n)]
+    (when (< 0 (count jobs))
+      (redis-cmds/move-jobs-from-sorted-set-to-ready-queue conn sorted-set jobs job/ready-queue))
+    (count jobs)))
+
 (defn delete [conn job]
   (= 1 (redis-cmds/del-from-sorted-set conn d/prefixed-dead-queue job)))
 

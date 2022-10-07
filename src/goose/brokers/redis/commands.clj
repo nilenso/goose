@@ -218,6 +218,11 @@
   [conn sorted-set]
   (wcar* conn (car/zpopmin sorted-set)))
 
+(defn sorted-set-peek-jobs
+  "Return n jobs with lowest score"
+  [conn sorted-set n]
+  (wcar* conn (car/zrange sorted-set 0 (dec n))))
+
 (defn find-in-sorted-set
   [conn sorted-set match? limit]
   (->> (sorted-set-seq conn sorted-set)
