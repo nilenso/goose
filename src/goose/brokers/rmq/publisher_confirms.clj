@@ -8,14 +8,14 @@
 (defn default-ack-handler
   [delivery-tag multiple]
   (if multiple
-    (log/info (format "ACK until delivery-tag: %d" delivery-tag))
-    (log/info (format "ACK for delivery-tag: %d" delivery-tag))))
+    (log/infof "ACK until delivery-tag: %d" delivery-tag)
+    (log/infof "ACK for delivery-tag: %d" delivery-tag)))
 
 (defn default-nack-handler
   [delivery-tag multiple]
   (if multiple
-    (log/error (format "Negative-ACK until delivery-tag: %d" delivery-tag))
-    (log/error (format "Negative-ACK for delivery-tag: %d" delivery-tag))))
+    (log/errorf "Negative-ACK until delivery-tag: %d" delivery-tag)
+    (log/errorf "Negative-ACK for delivery-tag: %d" delivery-tag)))
 
 (def sync
   {:strategy       d/sync-confirms

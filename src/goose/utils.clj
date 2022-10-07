@@ -78,7 +78,7 @@
                   (throw e))))]
     (if (instance? Throwable res)
       (do
-        (log/warn (format "Exception caught: %s. Retrying in %dms." res retry-delay-ms))
+        (log/warnf "Exception caught: %s. Retrying in %dms." res retry-delay-ms)
         (Thread/sleep retry-delay-ms)
         (recur (dec retry-count) retry-delay-ms fn-to-retry))
       res)))

@@ -14,7 +14,10 @@
     [goose.job :as job]
     [goose.utils :as u]
 
-    [langohr.core :as lcore]))
+    [clojure.tools.logging :as log]
+    [langohr.core :as lcore])
+  (:import
+    [com.rabbitmq.client ShutdownListener]))
 
 (defprotocol Close
   "Close connections for RabbitMQ broker."
@@ -81,4 +84,9 @@
   ([{:keys [settings publisher-confirms return-listener-fn queue-type]} channel-pool-size]
    (let [conn (lcore/connect settings)
          channel-pool (channels/new-pool conn channel-pool-size publisher-confirms return-listener-fn)]
+     (.addShutdownListener conn
+                           (reify ShutdownListener
+                             (shutdownCompleted [_ cause]
+                               (when-not (.isInitiatedByApplication cause)
+                                 (log/error cause "RMQ connection shut down due to error")))))
      (->RabbitMQ conn channel-pool publisher-confirms return-listener-fn queue-type))))
