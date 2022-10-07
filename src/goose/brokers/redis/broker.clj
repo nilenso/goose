@@ -64,8 +64,8 @@
     (dead-jobs/find-by-id (:conn this) id))
   (dead-jobs-find-by-pattern [this match? limit]
     (dead-jobs/find-by-pattern (:conn this) match? limit))
-  (dead-jobs-re-enqueue-for-execution [this job]
-    (dead-jobs/re-enqueue-for-execution (:conn this) job))
+  (dead-jobs-replay-job [this job]
+    (dead-jobs/replay-job (:conn this) job))
   (dead-jobs-delete [this job]
     (dead-jobs/delete (:conn this) job))
   (dead-jobs-delete-older-than [this epoch-time-ms]

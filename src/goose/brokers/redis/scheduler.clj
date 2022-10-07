@@ -34,10 +34,10 @@
   "Returns truthy if due jobs were found."
   [redis-conn]
   (when-let [due-scheduled-jobs (redis-cmds/scheduled-jobs-due-now redis-conn d/prefixed-schedule-queue)]
-    (redis-cmds/enqueue-due-jobs-to-front redis-conn
-                                          d/prefixed-schedule-queue
-                                          due-scheduled-jobs
-                                          job/ready-queue)
+    (redis-cmds/move-jobs-from-sorted-set-to-ready-queue redis-conn
+                                                         d/prefixed-schedule-queue
+                                                         due-scheduled-jobs
+                                                         job/ready-queue)
     true))
 
 (defn run

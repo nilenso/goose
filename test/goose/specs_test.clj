@@ -94,7 +94,7 @@
 
     ; :rmq-opts :queue-type
     #(rmq/new (assoc rmq/default-opts :queue-type {:type :invalid}))
-    #(rmq/new (assoc rmq/default-opts :queue-type {:type d/quorum-queue :replication-factor 0}))
+    #(rmq/new (assoc rmq/default-opts :queue-type {:type d/rmq-quorum-queue :replication-factor 0}))
 
     ; :rmq-opts channel-pool-size
     #(rmq/new rmq/default-opts -1)))

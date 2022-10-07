@@ -77,7 +77,7 @@
 
       (is (= dead-job-id-1 (:id (dead-jobs/pop tu/redis-broker))))
       (let [dead-job (dead-jobs/find-by-id tu/redis-broker dead-job-id-2)]
-        (is some? (dead-jobs/re-enqueue-for-execution tu/redis-broker dead-job))
+        (is some? (dead-jobs/replay-job tu/redis-broker dead-job))
         (is true? (enqueued-jobs/delete tu/redis-broker dead-job)))
 
       (let [match? (fn [job] (= (list 0) (:args job)))

@@ -81,11 +81,11 @@
 
 (s/def ::return-listener-fn fn?)
 
-(s/def :goose.specs.classic/type #(= % d/classic-queue))
+(s/def :goose.specs.classic/type #(= % d/rmq-classic-queue))
 (s/def ::classic-queue
   (s/keys :req-un [:goose.specs.classic/type]))
 
-(s/def :goose.specs.quorum/type #(= % d/quorum-queue))
+(s/def :goose.specs.quorum/type #(= % d/rmq-quorum-queue))
 (s/def ::replication-factor pos-int?)
 (s/def ::quorum-queue
   (s/keys :req-un [:goose.specs.quorum/type ::replication-factor]))

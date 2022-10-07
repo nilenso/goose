@@ -3,19 +3,19 @@
     [goose.defaults :as d]))
 
 (def classic
-  {:type d/classic-queue})
+  {:type d/rmq-classic-queue})
 
 (def quorum
-  {:type               d/quorum-queue
+  {:type               d/rmq-quorum-queue
    :replication-factor 5})
 
 (defn ^:no-doc arguments
   [{:keys [type replication-factor]}]
   (condp = type
-    d/classic-queue
-    {"x-queue-type"   d/classic-queue
+    d/rmq-classic-queue
+    {"x-queue-type"   d/rmq-classic-queue
      "x-max-priority" d/rmq-high-priority}
 
-    d/quorum-queue
-    {"x-queue-type"                d/quorum-queue
+    d/rmq-quorum-queue
+    {"x-queue-type"                d/rmq-quorum-queue
      "x-quorum-initial-group-size" replication-factor}))
