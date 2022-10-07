@@ -57,6 +57,11 @@
     (dead-jobs/size (u/random-element (:channels this))))
   (dead-jobs-pop [this]
     (dead-jobs/pop (u/random-element (:channels this))))
+  (dead-jobs-replay-n-jobs [this n]
+    (dead-jobs/replay-n-jobs (u/random-element (:channels this))
+                             (:queue-type this)
+                             (:publisher-confirms this)
+                             n))
   (dead-jobs-purge [this]
     (dead-jobs/purge (u/random-element (:channels this))))
 

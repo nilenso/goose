@@ -3,8 +3,10 @@
   (:require
     [goose.brokers.rmq.queue :as rmq-queue]
     [goose.defaults :as d]
+    [goose.job :as job]
     [goose.utils :as u]
 
+    [clojure.tools.logging :as log]
     [langohr.basic :as lb]
     [langohr.confirm :as lcnf]
     [langohr.exchange :as lex]
@@ -119,3 +121,20 @@
            {:mandatory false
             :priority  d/rmq-high-priority
             :headers   {"x-delay" delay-ms}}))
+
+(defn replay-dead-job
+  [ch queue-type publisher-confirms]
+  (let [[{:keys [delivery-tag]} payload] (lb/get ch d/prefixed-dead-queue false)]
+    (when (some? payload)
+      (let [job (u/decode payload)]
+        (try
+          (enqueue-front ch
+                         (assoc queue-type :queue (job/ready-queue job))
+                         publisher-confirms
+                         job)
+          (lb/ack ch delivery-tag)
+          true
+          (catch Exception e
+            (log/error e "Error enqueuing dead-job to ready queue.")
+            (lb/reject ch delivery-tag true)
+            (throw e)))))))
