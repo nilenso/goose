@@ -1,13 +1,18 @@
 Goose Architecture Decisions
 ==========
 
-Philosophy
+Vision & Philosophy
 ----------
+
+- **Reliable**: Code/Hardware/Network failure shouldn't cause Job/Data loss
 - Cloud-native Architecture
-- **Reliability**: Code/Hardware/Network failure shouldn't cause Job/Data loss
-- Deployments shouldn't cause downtime
-- Plug-and-play with minimal code/setup & sane defaults
-- Job performance should be auditable/queryable
+    - Deployments shouldn't cause downtime
+- Pluggable
+- Multi-broker
+- Scalable
+- Concurrency-friendly
+- Configurable, *with sane defaults*
+- Auditable/Queryable (WRT job management & performance tracking)
 
 Index
 ----------

@@ -34,14 +34,19 @@
                        :max-retries 0
                        :death-handler-fn-sym `death-handler)
           job-opts (assoc tu/rmq-client-opts :retry-opts retry-opts)
-          _ (doseq [id (range 2)] (c/perform-async job-opts `dead-fn id))
+          _ (doseq [id (range 4)] (c/perform-async job-opts `dead-fn id))
           circuit-breaker (atom 0)]
       ; Wait until 2 jobs have died after execution.
-      (while (and (> 2 @circuit-breaker) (not= 2 @dead-fn-atom))
+      (while (and (> 4 @circuit-breaker) (not= 4 @dead-fn-atom))
         (swap! circuit-breaker inc)
         (Thread/sleep 40))
       (w/stop worker)
-      (is (= 2 (dead-jobs/size tu/rmq-client-broker)))
+      (is (= 4 (dead-jobs/size tu/rmq-client-broker)))
       (is (uuid? (UUID/fromString (:id (dead-jobs/pop tu/rmq-client-broker)))))
+
+      (is (= 2 (dead-jobs/replay-n-jobs tu/rmq-client-broker 2)))
+      (is (= 2 (enqueued-jobs/size tu/rmq-client-broker (:queue job-opts))))
+
       (is (true? (dead-jobs/purge tu/rmq-client-broker)))
-      (is (= 0 (dead-jobs/size tu/rmq-client-broker))))))
+      (is (= 0 (dead-jobs/size tu/rmq-client-broker)))
+      (is (= 0 (dead-jobs/replay-n-jobs tu/rmq-client-broker 5))))))

@@ -63,17 +63,17 @@
           job-opts (assoc tu/redis-client-opts :retry-opts retry-opts)
           dead-job-id-1 (:id (c/perform-async job-opts `dead-fn 11))
           dead-job-id-2 (:id (c/perform-async job-opts `dead-fn 12))
-          _ (doseq [id (range 3)]
+          _ (doseq [id (range 5)]
               (c/perform-async job-opts `dead-fn id)
               (Thread/sleep (rand-int 15))) ; Prevent jobs from dying at the same time
           circuit-breaker (atom 0)]
       ; Wait until 4 jobs have died after execution.
-      (while (and (> 5 @circuit-breaker) (not= 5 @dead-fn-atom))
+      (while (and (> 7 @circuit-breaker) (not= 7 @dead-fn-atom))
         (swap! circuit-breaker inc)
         (Thread/sleep 40))
       (w/stop worker)
 
-      (is (= 5 (dead-jobs/size tu/redis-broker)))
+      (is (= 7 (dead-jobs/size tu/redis-broker)))
 
       (is (= dead-job-id-1 (:id (dead-jobs/pop tu/redis-broker))))
       (let [dead-job (dead-jobs/find-by-id tu/redis-broker dead-job-id-2)]
@@ -88,8 +88,11 @@
       (let [match? (fn [job] (= (list 1) (:args job)))
             [dead-job] (dead-jobs/find-by-pattern tu/redis-broker match?)]
         (is (true? (dead-jobs/delete tu/redis-broker dead-job))))
+      (is (= 2 (dead-jobs/replay-n-jobs tu/redis-broker 2)))
+      (is (= 2 (enqueued-jobs/size tu/redis-broker (:queue job-opts))))
 
-      (is (true? (dead-jobs/purge tu/redis-broker))))))
+      (is (true? (dead-jobs/purge tu/redis-broker)))
+      (is (= 0 (dead-jobs/replay-n-jobs tu/redis-broker 5))))))
 
 (deftest cron-entries-test
   (testing "cron entries API"
