@@ -8,29 +8,9 @@
 
     [clojure.tools.logging :as log]
     [langohr.basic :as lb]
-    [langohr.confirm :as lcnf]
-    [langohr.exchange :as lex]
-    [langohr.queue :as lq])
+    [langohr.confirm :as lcnf])
   (:import
     (java.io IOException)))
-
-(defn create-queue-and-exchanges
-  [ch {:keys [queue] :as queue-opts}]
-  (lex/declare ch
-               d/rmq-delay-exchange
-               d/rmq-delay-exchange-type
-               {:durable     true
-                :auto-delete false
-                :arguments   {"x-delayed-type" "direct"}})
-
-  (let [arguments (rmq-queue/arguments queue-opts)]
-    (lq/declare ch
-                queue
-                {:durable     true
-                 :auto-delete false
-                 :exclusive   false
-                 :arguments   arguments}))
-  (lq/bind ch queue d/rmq-delay-exchange {:routing-key queue}))
 
 (defn- publish
   [ch exch queue job {:keys [mandatory priority headers]}]
@@ -80,7 +60,7 @@
    {:keys [strategy] :as publisher-confirms}
    job
    properties]
-  (create-queue-and-exchanges ch queue-opts)
+  (rmq-queue/declare ch queue-opts)
   (condp = strategy
     d/sync-confirms
     (sync-enqueue ch exch queue publisher-confirms job properties)

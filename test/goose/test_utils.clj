@@ -74,6 +74,7 @@
   [f]
   (specs/instrument)
   (rmq-delete-test-queues)
+  (rmq-queue/clear-cache)
 
   (f)
 

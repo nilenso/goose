@@ -2,8 +2,8 @@
   {:no-doc true}
   (:require
     [goose.brokers.rmq.channel :as rmq-channel]
-    [goose.brokers.rmq.commands :as rmq-cmds]
     [goose.brokers.rmq.consumer :as rmq-consumer]
+    [goose.brokers.rmq.queue :as rmq-queue]
     [goose.brokers.rmq.retry :as rmq-retry]
     [goose.defaults :as d]
     [goose.job :as job]
@@ -56,7 +56,7 @@
         opts (merge rmq-opts common-opts)]
     ; A queue must exist before consumers can subscribe to it.
     (let [queue-opts (assoc queue-type :queue ready-queue)]
-      (rmq-cmds/create-queue-and-exchanges (first channels) queue-opts))
+      (rmq-queue/declare (first channels) queue-opts))
 
     (let [consumers (rmq-consumer/run opts)]
       #(internal-stop (assoc opts :ch+consumers consumers)))))
