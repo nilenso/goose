@@ -6,18 +6,16 @@
     [goose.brokers.rmq.channel :as channels]
     [goose.brokers.rmq.commands :as rmq-cmds]
     [goose.brokers.rmq.publisher-confirms :as publisher-confirms]
-    [goose.brokers.rmq.return-listener :as return-listener]
     [goose.brokers.rmq.queue :as rmq-queue]
+    [goose.brokers.rmq.return-listener :as return-listener]
     [goose.brokers.rmq.scheduler :as rmq-scheduler]
+    [goose.brokers.rmq.shutdown-listener :as shutdown-listener]
     [goose.brokers.rmq.worker :as rmq-worker]
     [goose.defaults :as d]
     [goose.job :as job]
     [goose.utils :as u]
 
-    [clojure.tools.logging :as log]
-    [langohr.core :as lcore])
-  (:import
-    [com.rabbitmq.client ShutdownListener]))
+    [langohr.core :as lcore]))
 
 (defprotocol Close
   "Close connections for RabbitMQ broker."
@@ -74,10 +72,11 @@
   "Default config for RabbitMQ client.
   Refer to http://clojurerabbitmq.info/articles/connecting.html
   for complete set of settings."
-  {:settings           {:uri d/rmq-default-url}
-   :publisher-confirms publisher-confirms/sync
-   :return-listener-fn return-listener/default
-   :queue-type         rmq-queue/classic})
+  {:settings             {:uri d/rmq-default-url}
+   :queue-type           rmq-queue/classic
+   :publisher-confirms   publisher-confirms/sync
+   :return-listener-fn   return-listener/default
+   :shutdown-listener-fn shutdown-listener/default})
 
 (defn new
   "Create a client for RabbitMQ broker.
@@ -86,12 +85,14 @@
   as worker creates channels equal to number of threads."
   ([opts]
    (goose.brokers.rmq.broker/new opts 0))
-  ([{:keys [settings publisher-confirms return-listener-fn queue-type]} channel-pool-size]
+  ([{:keys [settings
+            queue-type
+            publisher-confirms
+            return-listener-fn
+            shutdown-listener-fn]}
+    channel-pool-size]
    (let [conn (lcore/connect settings)
          channel-pool (channels/new-pool conn channel-pool-size publisher-confirms return-listener-fn)]
-     (.addShutdownListener conn
-                           (reify ShutdownListener
-                             (shutdownCompleted [_ cause]
-                               (when-not (.isInitiatedByApplication cause)
-                                 (log/error cause "RMQ connection shut down due to error")))))
+     (lcore/add-shutdown-listener conn shutdown-listener-fn)
+
      (->RabbitMQ conn channel-pool publisher-confirms return-listener-fn queue-type))))

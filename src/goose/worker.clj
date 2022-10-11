@@ -19,8 +19,5 @@
 
 (defn start
   "Starts a threadpool for worker."
-  [{:keys [broker]
-    :as   opts}]
-  (let [shutdown-fn (b/start broker opts)]
-    (reify Shutdown
-      (stop [_] (shutdown-fn)))))
+  [{:keys [broker] :as opts}]
+  (b/start broker opts))

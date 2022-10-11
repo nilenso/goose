@@ -78,8 +78,12 @@
     #(redis/new (assoc redis/default-opts :pool-opts :invalid-pool-opts))
     #(redis/new (assoc redis/default-opts :scheduler-polling-interval-sec 0))
 
-    ; :rmq-opts
+    ; :rmq-opts :settings
     #(rmq/new {:settings :invalid})
+
+    ; :rmq-opts :queue-type
+    #(rmq/new (assoc rmq/default-opts :queue-type {:type :invalid}))
+    #(rmq/new (assoc rmq/default-opts :queue-type {:type d/rmq-quorum-queue :replication-factor 0}))
 
     ; :rmq-opts :publisher-confirms
     #(rmq/new (assoc rmq/default-opts :publisher-confirms {:strategy :invalid}))
@@ -92,9 +96,8 @@
     ; :rmq-opts :return-listener-fn
     #(rmq/new (assoc rmq/default-opts :return-listener-fn :non-fn))
 
-    ; :rmq-opts :queue-type
-    #(rmq/new (assoc rmq/default-opts :queue-type {:type :invalid}))
-    #(rmq/new (assoc rmq/default-opts :queue-type {:type d/rmq-quorum-queue :replication-factor 0}))
+    ; :rmq-opts :shutdown-listener-fn
+    #(rmq/new (assoc rmq/default-opts :shutdown-listener-fn :non-fn))
 
     ; :rmq-opts channel-pool-size
     #(rmq/new rmq/default-opts -1)))

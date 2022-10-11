@@ -11,6 +11,7 @@
     [goose.job :as job]
     [goose.metrics.middleware :as metrics-middleware]
     [goose.utils :as u]
+    [goose.worker :as goose-worker]
 
     [clojure.tools.logging :as log]
     [com.climate.claypoole :as cp])
@@ -81,4 +82,5 @@
     (dotimes [_ threads]
       (cp/future thread-pool (redis-consumer/run opts)))
 
-    #(internal-stop opts)))
+    (reify goose-worker/Shutdown
+      (stop [_] (internal-stop opts)))))

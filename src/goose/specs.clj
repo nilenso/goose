@@ -75,12 +75,6 @@
 (s/def ::async-strategy
   (s/keys :req-un [:goose.specs.async/strategy ::ack-handler ::nack-handler]))
 
-(s/def ::publisher-confirms
-  (s/or :sync ::sync-strategy
-        :async ::async-strategy))
-
-(s/def ::return-listener-fn fn?)
-
 (s/def :goose.specs.classic/type #(= % d/rmq-classic-queue))
 (s/def ::classic-queue
   (s/keys :req-un [:goose.specs.classic/type]))
@@ -94,11 +88,19 @@
   (s/or :classic ::classic-queue
         :quorum ::quorum-queue))
 
+(s/def ::publisher-confirms
+  (s/or :sync ::sync-strategy
+        :async ::async-strategy))
+
+(s/def ::return-listener-fn fn?)
+(s/def ::shutdown-listener-fn fn?)
+
 (s/def ::rmq
   (s/keys :req-un [:goose.specs.rmq/settings
+                   :goose.specs.rmq/queue-type
                    ::publisher-confirms
                    ::return-listener-fn
-                   :goose.specs.rmq/queue-type]))
+                   ::shutdown-listener-fn]))
 (s/fdef rmq/new
         :args (s/alt :one (s/cat :opts ::rmq)
                      :two (s/cat :opts ::rmq

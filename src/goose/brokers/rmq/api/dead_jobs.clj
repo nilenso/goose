@@ -13,7 +13,7 @@
   (lq/message-count ch d/prefixed-dead-queue))
 
 (defn pop [ch]
-  (let [[_ payload] (lb/get ch d/prefixed-dead-queue)]
+  (let [[_ payload] (lb/get ch d/prefixed-dead-queue true)]
     (u/decode payload)))
 
 (defn replay-n-jobs [ch queue-type publisher-confirms n]

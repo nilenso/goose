@@ -8,6 +8,7 @@
     [goose.defaults :as d]
     [goose.job :as job]
     [goose.metrics.middleware :as metrics-middleware]
+    [goose.worker :as goose-worker]
 
     [clojure.tools.logging :as log]
     [com.climate.claypoole :as cp]
@@ -59,4 +60,5 @@
       (rmq-queue/declare (first channels) queue-opts))
 
     (let [consumers (rmq-consumer/run opts)]
-      #(internal-stop (assoc opts :ch+consumers consumers)))))
+      (reify goose-worker/Shutdown
+        (stop [_] (internal-stop (assoc opts :ch+consumers consumers)))))))
