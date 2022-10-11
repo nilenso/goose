@@ -3,8 +3,8 @@
     [goose.brokers.broker :as b]
     [goose.brokers.rmq.api.dead-jobs :as dead-jobs]
     [goose.brokers.rmq.api.enqueued-jobs :as enqueued-jobs]
-    [goose.brokers.rmq.channel :as rmq-channel]
     [goose.brokers.rmq.commands :as rmq-cmds]
+    [goose.brokers.rmq.connection :as rmq-connection]
     [goose.brokers.rmq.publisher-confirms :as publisher-confirms]
     [goose.brokers.rmq.queue :as rmq-queue]
     [goose.brokers.rmq.return-listener :as return-listener]
@@ -13,15 +13,13 @@
     [goose.brokers.rmq.worker :as rmq-worker]
     [goose.defaults :as d]
     [goose.job :as job]
-    [goose.utils :as u]
-
-    [langohr.core :as lcore]))
+    [goose.utils :as u]))
 
 (defprotocol Close
   "Close connections for RabbitMQ broker."
   (close [_]))
 
-(defrecord RabbitMQ [conn channels queue-type publisher-confirms opts]
+(defrecord RabbitMQ [rmq-conn channels queue-type publisher-confirms opts]
   b/Broker
 
   (enqueue [this job]
@@ -61,18 +59,7 @@
 
   Close
   (close [this]
-    ; Channels get closed automatically when connection is closed.
-    (when (:conn this)
-      (lcore/close (:conn this)))))
-
-(defn- new-broker
-  [{:keys [settings queue-type channel-pool-size publisher-confirms return-listener-fn shutdown-listener-fn]
-    :as   opts}]
-  (let [conn (lcore/connect settings)
-        channel-pool (rmq-channel/new-pool conn channel-pool-size publisher-confirms return-listener-fn)]
-    (lcore/add-shutdown-listener conn shutdown-listener-fn)
-
-    (->RabbitMQ conn channel-pool queue-type publisher-confirms opts)))
+    (rmq-connection/close (:rmq-conn this))))
 
 (def default-opts
   "Default config for RabbitMQ client.
@@ -86,8 +73,11 @@
 
 (defn new-producer
   "Create a client that produce messages to RabbitMQ broker."
-  ([opts channels]
-   (new-broker (assoc opts :channel-pool-size channels))))
+  ([{:keys [queue-type publisher-confirms]
+     :as   opts}
+    channels]
+   (let [[rmq-conn channels] (rmq-connection/open opts channels)]
+     (->RabbitMQ rmq-conn channels queue-type publisher-confirms nil))))
 
 (defn new-consumer
   "Create a RabbitMQ broker implementation for worker.

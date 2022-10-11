@@ -133,6 +133,26 @@
       (is (= delivery-tag (deref @ack-handler-called 100 :async-publisher-confirm-test-timed-out)))
       (rmq/close producer))))
 
+; ======= TEST: Graceful shutdown ==========
+(def sleepy-fn-called (atom (promise)))
+(def sleepy-fn-completed (atom (promise)))
+(defn sleepy-fn
+  [arg]
+  (deliver @sleepy-fn-called arg)
+  (Thread/sleep 2000)
+  (deliver @sleepy-fn-completed arg))
+
+(deftest graceful-shutdown-test
+  (testing "[rmq] Goose shuts down a worker gracefully"
+    (reset! sleepy-fn-called (promise))
+    (reset! sleepy-fn-completed (promise))
+    (let [arg "graceful-shutdown-test"
+          _ (c/perform-async tu/rmq-client-opts `sleepy-fn arg)
+          worker (w/start (assoc tu/rmq-worker-opts :graceful-shutdown-sec 2))]
+      (is (= arg (deref @sleepy-fn-called 100 :graceful-shutdown-test-timed-out)))
+      (w/stop worker)
+      (is (= arg (deref @sleepy-fn-completed 100 :non-graceful-shutdown))))))
+
 ; ======= TEST: Middleware & RMQ Metadata ==========
 (def middleware-called (atom (promise)))
 (defn test-middleware

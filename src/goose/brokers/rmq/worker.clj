@@ -1,7 +1,7 @@
 (ns goose.brokers.rmq.worker
   {:no-doc true}
   (:require
-    [goose.brokers.rmq.channel :as rmq-channel]
+    [goose.brokers.rmq.connection :as rmq-connection]
     [goose.brokers.rmq.consumer :as rmq-consumer]
     [goose.brokers.rmq.queue :as rmq-queue]
     [goose.brokers.rmq.retry :as rmq-retry]
@@ -12,8 +12,7 @@
 
     [clojure.tools.logging :as log]
     [com.climate.claypoole :as cp]
-    [langohr.basic :as lb]
-    [langohr.core :as lcore]))
+    [langohr.basic :as lb]))
 
 (defn- await-execution
   [thread-pool graceful-shutdown-sec]
@@ -40,7 +39,7 @@
 
   ; Channels get closed automatically when connection is closed.
   (log/warn "Closing RabbitMQ connection")
-  (lcore/close rmq-conn)
+  (rmq-connection/close rmq-conn)
 
   (log/warn "Sending InterruptedException to close threads.")
   (cp/shutdown! thread-pool))
@@ -56,22 +55,20 @@
         (rmq-retry/wrap-failure))))
 
 (defn start
-  [{:keys [threads settings queue queue-type middlewares publisher-confirms return-listener-fn shutdown-listener-fn]
+  [{:keys [threads queue queue-type middlewares]
     :as   common-opts}]
   (let [thread-pool (cp/threadpool threads)
-        settings (assoc settings :executor thread-pool)
-        conn (lcore/connect settings)
-        channels (rmq-channel/new-pool conn threads publisher-confirms return-listener-fn)
+        common-opts (assoc-in common-opts [:settings :executor] thread-pool)
+        [rmq-conn channels] (rmq-connection/open common-opts threads)
         ready-queue (d/prefix-queue queue)
 
-        rmq-opts {:rmq-conn    conn
+        rmq-opts {:rmq-conn    rmq-conn
                   :channels    channels
                   :thread-pool thread-pool
                   :call        (chain-middlewares middlewares)
                   :ready-queue ready-queue}
         opts (merge rmq-opts common-opts)
-        opts (dissoc opts :return-listener-fn :queue :middlewares :broker :settings)]
-    (lcore/add-shutdown-listener conn shutdown-listener-fn)
+        opts (dissoc opts :threads :queue :middlewares :broker :return-listener-fn :shutdown-listener-fn :settings)]
 
     ; A queue must exist before consumers can subscribe to it.
     (let [queue-opts (assoc queue-type :queue ready-queue)]
