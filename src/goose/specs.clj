@@ -101,10 +101,13 @@
                    ::publisher-confirms
                    ::return-listener-fn
                    ::shutdown-listener-fn]))
-(s/fdef rmq/new
-        :args (s/alt :one (s/cat :opts ::rmq)
-                     :two (s/cat :opts ::rmq
-                                 :channel-pool-size nat-int?)))
+
+(s/fdef rmq/new-producer
+        :args (s/cat :opts ::rmq
+                     :channels pos-int?))
+
+(s/fdef rmq/new-consumer
+        :args (s/cat :opts ::rmq))
 
 ; ============== Brokers ==============
 (s/def ::broker #(satisfies? b/Broker %))
@@ -194,7 +197,8 @@
 
 (def ^:private fns-with-specs
   [`redis/new
-   `rmq/new
+   `rmq/new-producer
+   `rmq/new-consumer
    `statsd/new
    `c/perform-async
    `c/perform-at

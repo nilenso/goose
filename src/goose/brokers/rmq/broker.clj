@@ -3,7 +3,7 @@
     [goose.brokers.broker :as b]
     [goose.brokers.rmq.api.dead-jobs :as dead-jobs]
     [goose.brokers.rmq.api.enqueued-jobs :as enqueued-jobs]
-    [goose.brokers.rmq.channel :as channels]
+    [goose.brokers.rmq.channel :as rmq-channel]
     [goose.brokers.rmq.commands :as rmq-cmds]
     [goose.brokers.rmq.publisher-confirms :as publisher-confirms]
     [goose.brokers.rmq.queue :as rmq-queue]
@@ -21,7 +21,7 @@
   "Close connections for RabbitMQ broker."
   (close [_]))
 
-(defrecord RabbitMQ [conn channels publisher-confirms return-listener-fn queue-type]
+(defrecord RabbitMQ [conn channels queue-type publisher-confirms opts]
   b/Broker
 
   (enqueue [this job]
@@ -38,11 +38,7 @@
                           job))
 
   (start [this worker-opts]
-    (rmq-worker/start (assoc worker-opts
-                        :rmq-conn (:conn this)
-                        :queue-type (:queue-type this)
-                        :publisher-confirms (:publisher-confirms this)
-                        :return-listener-fn (:return-listener-fn this))))
+    (rmq-worker/start (merge worker-opts (:opts this))))
 
   ; enqueued-jobs API
   (enqueued-jobs-size [this queue]
@@ -66,7 +62,17 @@
   Close
   (close [this]
     ; Channels get closed automatically when connection is closed.
-    (lcore/close (:conn this))))
+    (when (:conn this)
+      (lcore/close (:conn this)))))
+
+(defn- new-broker
+  [{:keys [settings queue-type channel-pool-size publisher-confirms return-listener-fn shutdown-listener-fn]
+    :as   opts}]
+  (let [conn (lcore/connect settings)
+        channel-pool (rmq-channel/new-pool conn channel-pool-size publisher-confirms return-listener-fn)]
+    (lcore/add-shutdown-listener conn shutdown-listener-fn)
+
+    (->RabbitMQ conn channel-pool queue-type publisher-confirms opts)))
 
 (def default-opts
   "Default config for RabbitMQ client.
@@ -78,21 +84,16 @@
    :return-listener-fn   return-listener/default
    :shutdown-listener-fn shutdown-listener/default})
 
-(defn new
-  "Create a client for RabbitMQ broker.
-  When enqueuing jobs, channel-pool-size MUST be defined.
-  When executing jobs, channel-pool-size should not be given
-  as worker creates channels equal to number of threads."
-  ([opts]
-   (goose.brokers.rmq.broker/new opts 0))
-  ([{:keys [settings
-            queue-type
-            publisher-confirms
-            return-listener-fn
-            shutdown-listener-fn]}
-    channel-pool-size]
-   (let [conn (lcore/connect settings)
-         channel-pool (channels/new-pool conn channel-pool-size publisher-confirms return-listener-fn)]
-     (lcore/add-shutdown-listener conn shutdown-listener-fn)
+(defn new-producer
+  "Create a client that produce messages to RabbitMQ broker."
+  ([opts channels]
+   (new-broker (assoc opts :channel-pool-size channels))))
 
-     (->RabbitMQ conn channel-pool publisher-confirms return-listener-fn queue-type))))
+(defn new-consumer
+  "Create a RabbitMQ broker implementation for worker.
+  The connection is opened & closed with start & stop of worker.
+  Job-execution thread-pool must be given when starting RMQ connection.
+  To avoid duplication & mis-match in `threads` config,
+  we decided to delegate connection creation at start time of worker."
+  [opts]
+  (->RabbitMQ nil nil nil nil opts))

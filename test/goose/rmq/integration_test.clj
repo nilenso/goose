@@ -45,19 +45,22 @@
     (let [queue "quorum-test"
           arg "quorum-arg"
           opts (assoc tu/rmq-opts :queue-type rmq-queue/quorum)
-          broker (rmq/new opts 1)
+          producer (rmq/new-producer opts 1)
           client-opts {:queue      queue
                        :retry-opts retry/default-opts
-                       :broker     broker}
+                       :broker     producer}
+
+          consumer (rmq/new-consumer opts)
           worker-opts (assoc tu/worker-opts
-                        :broker broker
+                        :broker consumer
                         :queue queue)
 
           _ (is (uuid? (UUID/fromString (:id (c/perform-async client-opts `quorum-fn arg)))))
           worker (w/start worker-opts)]
       (is (= arg (deref @quorum-fn-executed 100 :quorum-test-timed-out)))
       (w/stop worker)
-      (rmq/close broker))))
+      (rmq/close producer)
+      (rmq/close consumer))))
 
 ; ======= TEST: Relative Scheduling ==========
 (def perform-in-sec-fn-executed (atom (promise)))
@@ -106,15 +109,15 @@
   (testing "[rmq][sync-confirms] Publish timed out"
     (let [opts (assoc tu/rmq-opts
                  :publisher-confirms {:strategy d/sync-confirms :timeout-ms 1})
-          broker (rmq/new opts 1)
+          producer (rmq/new-producer opts 1)
           client-opts {:queue      "sync-publisher-confirms-test"
                        :retry-opts retry/default-opts
-                       :broker     broker}]
+                       :broker     producer}]
       (is
         (thrown?
           TimeoutException
           (c/perform-async client-opts `tu/my-fn)))
-      (rmq/close broker)))
+      (rmq/close producer)))
 
   (testing "[rmq][async-confirms] Ack handler called"
     (reset! ack-handler-called (promise))
@@ -122,13 +125,13 @@
                  :publisher-confirms {:strategy     d/async-confirms
                                       :ack-handler  `test-ack-handler
                                       :nack-handler `test-nack-handler})
-          broker (rmq/new opts 1)
+          producer (rmq/new-producer opts 1)
           client-opts {:queue      "async-publisher-confirms-test"
                        :retry-opts retry/default-opts
-                       :broker     broker}
+                       :broker     producer}
           delivery-tag (:delivery-tag (c/perform-in-sec client-opts 1 `tu/my-fn))]
       (is (= delivery-tag (deref @ack-handler-called 100 :async-publisher-confirm-test-timed-out)))
-      (rmq/close broker))))
+      (rmq/close producer))))
 
 ; ======= TEST: Middleware & RMQ Metadata ==========
 (def middleware-called (atom (promise)))

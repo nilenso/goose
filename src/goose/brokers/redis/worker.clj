@@ -32,13 +32,9 @@
   ; max(graceful-shutdown-sec, sleep time)
   (cp/shutdown! internal-thread-pool)
 
-  ; Give jobs executing grace time to complete.
-  (log/warn "Awaiting executing jobs to complete.")
-
-  (.awaitTermination
-    thread-pool
-    graceful-shutdown-sec
-    TimeUnit/SECONDS)
+  ; Give in-progress jobs grace time to complete.
+  (log/warn "Awaiting in-progress jobs to complete.")
+  (.awaitTermination thread-pool graceful-shutdown-sec TimeUnit/SECONDS)
 
   (redis-heartbeat/stop opts)
 
