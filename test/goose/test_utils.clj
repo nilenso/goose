@@ -5,6 +5,8 @@
     [goose.brokers.rmq.broker :as rmq]
     [goose.brokers.rmq.publisher-confirms :as rmq-publisher-confirms]
     [goose.brokers.rmq.queue :as rmq-queue]
+    [goose.brokers.rmq.return-listener :as return-listener]
+    [goose.brokers.rmq.shutdown-listener :as shutdown-listener]
     [goose.defaults :as d]
     [goose.retry :as retry]
     [goose.specs :as specs]
@@ -29,11 +31,12 @@
   (let [host (or (System/getenv "GOOSE_TEST_REDIS_HOST") "localhost")
         port (or (System/getenv "GOOSE_TEST_REDIS_PORT") "6379")]
     (str "redis://" host ":" port)))
-(def redis-opts {:url redis-url :scheduler-polling-interval-sec 1})
+(def redis-opts {:url redis-url})
 (def redis-conn {:spec {:uri (:url redis-opts)}})
-(def redis-broker (redis/new redis-opts 1))
-(def redis-client-opts (assoc client-opts :broker redis-broker))
-(def redis-worker-opts (assoc worker-opts :broker redis-broker))
+(def redis-producer (redis/new-producer redis-opts))
+(def redis-consumer (redis/new-consumer redis-opts 1))
+(def redis-client-opts (assoc client-opts :broker redis-producer))
+(def redis-worker-opts (assoc worker-opts :broker redis-consumer))
 (defn clear-redis [] (redis-cmds/wcar* redis-conn (car/flushdb "SYNC")))
 
 (defn redis-fixture
@@ -52,15 +55,17 @@
         password (or (System/getenv "GOOSE_TEST_RABBITMQ_PASSWORD") "guest")]
     (str "amqp://" username ":" password "@" host ":" port)))
 (def rmq-opts
-  {:settings           {:uri rmq-url}
-   :publisher-confirms rmq-publisher-confirms/sync
-   :queue-type         rmq-queue/classic})
-(def rmq-client-broker (rmq/new rmq-opts 1))
-(def rmq-worker-broker (rmq/new rmq-opts))
-(def rmq-client-opts (assoc client-opts :broker rmq-client-broker))
-(def rmq-worker-opts (assoc worker-opts :broker rmq-worker-broker))
+  {:settings             {:uri rmq-url}
+   :queue-type           rmq-queue/classic
+   :publisher-confirms   rmq-publisher-confirms/sync
+   :return-listener   return-listener/default
+   :shutdown-listener shutdown-listener/default})
+(def rmq-producer (rmq/new-producer rmq-opts 1))
+(def rmq-consumer (rmq/new-consumer rmq-opts))
+(def rmq-client-opts (assoc client-opts :broker rmq-producer))
+(def rmq-worker-opts (assoc worker-opts :broker rmq-consumer))
 (defn rmq-delete-test-queues []
-  (let [ch (u/random-element (:channels rmq-client-broker))]
+  (let [ch (u/random-element (:channels rmq-producer))]
     (lq/delete ch (d/prefix-queue queue))
     (lq/delete ch (d/prefix-queue "quorum-test"))
     (lq/delete ch (d/prefix-queue "test-retry"))
@@ -72,6 +77,7 @@
   [f]
   (specs/instrument)
   (rmq-delete-test-queues)
+  (rmq-queue/clear-cache)
 
   (f)
 
@@ -82,8 +88,8 @@
   Contains logic necessary to exit CLI.
   Not necessary to exit REPL."
   []
-  (rmq/close rmq-client-broker)
-  (rmq/close rmq-worker-broker)
+  (rmq/close rmq-producer)
+  (rmq/close rmq-consumer)
 
   ; clj-statsd uses agents.
   ; If not shutdown, program won't quit.

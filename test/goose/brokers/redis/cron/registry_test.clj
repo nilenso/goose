@@ -117,7 +117,7 @@
             :ready-queue    (d/prefix-queue "foo-queue")
             :queue          "foo-queue"
             :retry-opts     retry/default-opts}
-           (-> (enqueued-jobs/find-by-pattern tu/redis-broker
+           (-> (enqueued-jobs/find-by-pattern tu/redis-producer
                                               "foo-queue"
                                               (fn [{:keys [execute-fn-sym]}]
                                                 (= `foo-sym execute-fn-sym)))

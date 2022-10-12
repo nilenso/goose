@@ -7,10 +7,6 @@
 
     [clojure.tools.logging :as log]))
 
-(defn execute-job
-  [_ {:keys [execute-fn-sym args]}]
-  (apply (u/require-resolve execute-fn-sym) args))
-
 (defn preservation-queue
   [id]
   (str d/in-progress-queue-prefix id))

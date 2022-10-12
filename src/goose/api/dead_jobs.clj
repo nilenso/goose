@@ -26,12 +26,17 @@
   ([broker match? limit]
    (b/dead-jobs-find-by-pattern broker match? limit)))
 
-(defn re-enqueue-for-execution
+(defn replay-job
   "Move a job from dead-jobs to it's queue
   after verification of existence.
   Hence, this accepts only 1 job instead of multiple."
   [broker job]
-  (b/dead-jobs-re-enqueue-for-execution broker job))
+  (b/dead-jobs-replay-job broker job))
+
+(defn replay-n-jobs
+  "Replay n jobs from dead queue by moving them to ready queue"
+  [broker n]
+  (b/dead-jobs-replay-n-jobs broker n))
 
 (defn delete
   "Delete a Dead Job."

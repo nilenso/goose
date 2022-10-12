@@ -5,9 +5,7 @@
     [goose.defaults :as d]
     [goose.retry]
     [goose.job :as job]
-    [goose.utils :as u]
-
-    [langohr.basic :as lb]))
+    [goose.utils :as u]))
 
 (defn- retry-job
   [{:keys [ch queue-type publisher-confirms error-service-cfg]}
@@ -41,9 +39,7 @@
 
 (defn wrap-failure
   [next]
-  (fn [{:keys                  [ch] :as opts
-        {:keys [delivery-tag]} :metadata}
-       job]
+  (fn [opts job]
     (try
       (next opts job)
       (catch Exception ex
@@ -52,5 +48,4 @@
               max-retries (get-in failed-job [:retry-opts :max-retries] 0)]
           (if (< retry-count max-retries)
             (retry-job opts failed-job ex)
-            (bury-job opts failed-job ex))
-          (lb/ack ch delivery-tag))))))
+            (bury-job opts failed-job ex)))))))

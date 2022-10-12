@@ -74,22 +74,30 @@
     #(c/perform-async (assoc-in tu/redis-client-opts [:retry-opts :extra-key] :foo-bar) `tu/my-fn)
 
     ; :redis-opts
-    #(redis/new (assoc redis/default-opts :url :invalid-url))
-    #(redis/new (assoc redis/default-opts :pool-opts :invalid-pool-opts))
-    #(redis/new (assoc redis/default-opts :scheduler-polling-interval-sec 0))
+    #(redis/new-producer (assoc redis/default-opts :url :invalid-url))
+    #(redis/new-consumer (assoc redis/default-opts :pool-opts :invalid-pool-opts))
+    #(redis/new-consumer redis/default-opts 61)
 
-    ; :rmq-opts
-    #(rmq/new {:settings :invalid})
+    ; rmq-broker :settings
+    #(rmq/new-consumer {:settings :invalid})
 
-    ; :rmq-opts :publisher-confirms
-    #(rmq/new (assoc rmq/default-opts :publisher-confirms {:strategy :invalid}))
-    #(rmq/new (assoc rmq/default-opts :publisher-confirms {:strategy d/sync-confirms :timeout-ms 0}))
-    #(rmq/new (assoc rmq/default-opts :publisher-confirms {:strategy d/async-confirms :ack-handler 'invalid}))
-    #(rmq/new (assoc rmq/default-opts :publisher-confirms {:strategy d/async-confirms :nack-handler `my-fn}))
+    ; rmq-broker :queue-type
+    #(rmq/new-producer (assoc rmq/default-opts :queue-type {:type :invalid}))
+    #(rmq/new-consumer (assoc rmq/default-opts :queue-type {:type d/rmq-quorum-queue :replication-factor 0}))
 
-    ; :rmq-opts :queue-type
-    #(rmq/new (assoc rmq/default-opts :queue-type {:type :invalid}))
-    #(rmq/new (assoc rmq/default-opts :queue-type {:type d/quorum-queue :replication-factor 0}))
+    ; rmq-broker :publisher-confirms
+    #(rmq/new-producer (assoc rmq/default-opts :publisher-confirms {:strategy :invalid}))
+    #(rmq/new-consumer (assoc rmq/default-opts :publisher-confirms {:strategy d/sync-confirms :timeout-ms 0}))
+    #(rmq/new-producer (assoc rmq/default-opts :publisher-confirms {:strategy d/sync-confirms :timeout-ms 10 :max-retries -1}))
+    #(rmq/new-consumer (assoc rmq/default-opts :publisher-confirms {:strategy d/sync-confirms :timeout-ms 10 :retry-delay-ms 0}))
+    #(rmq/new-producer (assoc rmq/default-opts :publisher-confirms {:strategy d/async-confirms :ack-handler 'invalid}))
+    #(rmq/new-consumer (assoc rmq/default-opts :publisher-confirms {:strategy d/async-confirms :nack-handler `my-fn}))
 
-    ; :rmq-opts channel-pool-size
-    #(rmq/new rmq/default-opts -1)))
+    ; rmq-broker :return-listener
+    #(rmq/new-producer (assoc rmq/default-opts :return-listener :non-fn))
+
+    ; rmq-broker :shutdown-listener
+    #(rmq/new-consumer (assoc rmq/default-opts :shutdown-listener :non-fn))
+
+    ; rmq-broker channel-pool-size
+    #(rmq/new-producer rmq/default-opts -1)))

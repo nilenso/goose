@@ -17,9 +17,9 @@
 (deftest enqueued-jobs-test
   (testing "[rmq] enqueued-jobs API"
     (c/perform-async tu/rmq-client-opts `tu/my-fn)
-    (is (= 1 (enqueued-jobs/size tu/rmq-client-broker tu/queue)))
-    (is true? (enqueued-jobs/purge tu/rmq-client-broker tu/queue))
-    (is (= 0 (enqueued-jobs/size tu/rmq-client-broker tu/queue)))))
+    (is (= 1 (enqueued-jobs/size tu/rmq-producer tu/queue)))
+    (is true? (enqueued-jobs/purge tu/rmq-producer tu/queue))
+    (is (= 0 (enqueued-jobs/size tu/rmq-producer tu/queue)))))
 
 (defn death-handler [_ _ _])
 (def dead-fn-atom (atom 0))
@@ -34,14 +34,21 @@
                        :max-retries 0
                        :death-handler-fn-sym `death-handler)
           job-opts (assoc tu/rmq-client-opts :retry-opts retry-opts)
-          _ (doseq [id (range 2)] (c/perform-async job-opts `dead-fn id))
+          _ (doseq [id (range 4)]
+              (c/perform-async job-opts `dead-fn id)
+              (Thread/sleep (rand-int 15))) ; Prevent jobs from dying at the same time
           circuit-breaker (atom 0)]
       ; Wait until 2 jobs have died after execution.
-      (while (and (> 2 @circuit-breaker) (not= 2 @dead-fn-atom))
+      (while (and (> 4 @circuit-breaker) (not= 4 @dead-fn-atom))
         (swap! circuit-breaker inc)
         (Thread/sleep 40))
       (w/stop worker)
-      (is (= 2 (dead-jobs/size tu/rmq-client-broker)))
-      (is (uuid? (UUID/fromString (:id (dead-jobs/pop tu/rmq-client-broker)))))
-      (is (true? (dead-jobs/purge tu/rmq-client-broker)))
-      (is (= 0 (dead-jobs/size tu/rmq-client-broker))))))
+      (is (= 4 (dead-jobs/size tu/rmq-producer)))
+      (is (uuid? (UUID/fromString (:id (dead-jobs/pop tu/rmq-producer)))))
+
+      (is (= 2 (dead-jobs/replay-n-jobs tu/rmq-producer 2)))
+      (is (= 2 (enqueued-jobs/size tu/rmq-producer (:queue job-opts))))
+
+      (is (true? (dead-jobs/purge tu/rmq-producer)))
+      (is (= 0 (dead-jobs/size tu/rmq-producer)))
+      (is (= 0 (dead-jobs/replay-n-jobs tu/rmq-producer 5))))))

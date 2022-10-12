@@ -14,7 +14,7 @@
     (let [tags {:function execute-fn-sym :queue queue}]
       (metrics-protocol/increment metrics-plugin metrics-keys/jobs-recovered 1 tags))))
 
-(defn- reenqueue-orphan-jobs
+(defn- replay-orphan-jobs
   [{:keys [redis-conn ready-queue metrics-plugin] :as opts}
    orphan-queue]
   ; Enqueuing in-progress jobs to front of queue isn't possible
@@ -22,14 +22,14 @@
   ; https://github.com/nilenso/goose/issues/14
   (when-let [job (redis-cmds/dequeue-and-preserve redis-conn orphan-queue ready-queue)]
     (increment-job-recovery-metric metrics-plugin job)
-    #(reenqueue-orphan-jobs opts orphan-queue)))
+    #(replay-orphan-jobs opts orphan-queue)))
 
 (defn- check-liveness
   [{:keys [redis-conn process-set] :as opts} processes]
   (doseq [process processes]
     (when-not (heartbeat/alive? redis-conn process)
       (trampoline
-        reenqueue-orphan-jobs
+        replay-orphan-jobs
         opts (redis-consumer/preservation-queue process))
       (redis-cmds/del-from-set redis-conn process-set process))))
 

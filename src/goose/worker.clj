@@ -10,17 +10,14 @@
 
 (def default-opts
   "Default config for Goose worker."
-  {:threads               1
+  {:threads               d/worker-threads
    :queue                 d/default-queue
-   :graceful-shutdown-sec 30
+   :graceful-shutdown-sec d/graceful-shutdown-sec
    :middlewares           nil
    :error-service-cfg     nil
    :metrics-plugin        (statsd/new statsd/default-opts)})
 
 (defn start
   "Starts a threadpool for worker."
-  [{:keys [broker]
-    :as   opts}]
-  (let [shutdown-fn (b/start broker opts)]
-    (reify Shutdown
-      (stop [_] (shutdown-fn)))))
+  [{:keys [broker] :as opts}]
+  (b/start broker opts))

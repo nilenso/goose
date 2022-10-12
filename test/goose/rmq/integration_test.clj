@@ -1,5 +1,6 @@
 (ns goose.rmq.integration-test
   (:require
+    [goose.api.enqueued-jobs :as enqueued-jobs]
     [goose.brokers.rmq.broker :as rmq]
     [goose.brokers.rmq.queue :as rmq-queue]
     [goose.client :as c]
@@ -10,7 +11,10 @@
 
     [clojure.test :refer [deftest is testing use-fixtures]])
   (:import
-    [java.util UUID]))
+    (clojure.lang ExceptionInfo)
+    [java.util UUID]
+    (java.util.concurrent TimeoutException)
+    (java.time Instant)))
 
 
 ; ======= Setup & Teardown ==========
@@ -28,7 +32,9 @@
           _ (is (uuid? (UUID/fromString (:id (c/perform-async tu/rmq-client-opts `perform-async-fn arg)))))
           worker (w/start tu/rmq-worker-opts)]
       (is (= arg (deref @perform-async-fn-executed 100 :e2e-test-timed-out)))
-      (w/stop worker))))
+      (w/stop worker)
+      ; This tests if msg was ACK'd upon successful completion.
+      (is (zero? (enqueued-jobs/size tu/rmq-producer (:queue tu/rmq-client-opts)))))))
 
 ; ======= TEST: Async execution (quorum queue) ==========
 (def quorum-fn-executed (atom (promise)))
@@ -42,19 +48,22 @@
     (let [queue "quorum-test"
           arg "quorum-arg"
           opts (assoc tu/rmq-opts :queue-type rmq-queue/quorum)
-          broker (rmq/new opts 1)
+          producer (rmq/new-producer opts)
           client-opts {:queue      queue
                        :retry-opts retry/default-opts
-                       :broker     broker}
+                       :broker     producer}
+
+          consumer (rmq/new-consumer opts)
           worker-opts (assoc tu/worker-opts
-                        :broker broker
+                        :broker consumer
                         :queue queue)
 
           _ (is (uuid? (UUID/fromString (:id (c/perform-async client-opts `quorum-fn arg)))))
           worker (w/start worker-opts)]
       (is (= arg (deref @quorum-fn-executed 100 :quorum-test-timed-out)))
       (w/stop worker)
-      (rmq/close broker))))
+      (rmq/close producer)
+      (rmq/close consumer))))
 
 ; ======= TEST: Relative Scheduling ==========
 (def perform-in-sec-fn-executed (atom (promise)))
@@ -73,7 +82,7 @@
   (testing "[rmq] Scheduling beyond max_delay limit"
     (is
       (thrown-with-msg?
-        clojure.lang.ExceptionInfo
+        ExceptionInfo
         #"MAX_DELAY limit breached*"
         (c/perform-in-sec tu/rmq-client-opts 4294968 `perform-in-sec-fn)))))
 
@@ -86,7 +95,7 @@
   (testing "[rmq] Goose executes a function scheduled in past"
     (reset! perform-at-fn-executed (promise))
     (let [arg "scheduling-test"
-          _ (is (uuid? (UUID/fromString (:id (c/perform-at tu/rmq-client-opts (java.time.Instant/now) `perform-at-fn arg)))))
+          _ (is (uuid? (UUID/fromString (:id (c/perform-at tu/rmq-client-opts (Instant/now) `perform-at-fn arg)))))
           scheduler (w/start tu/rmq-worker-opts)]
       (is (= arg (deref @perform-at-fn-executed 100 :scheduler-test-timed-out)))
       (w/stop scheduler))))
@@ -100,31 +109,52 @@
   ; This test fails quite rarely.
   ; RMQ confirms in 1ms too sometimes ¯\_(ツ)_/¯
   ; Remove this test if it happens often.
-  (testing "[rmq] Publish timed out"
-    (let [opts (assoc-in tu/rmq-opts [:publisher-confirms :timeout-ms] 1)
-          broker (rmq/new opts 1)
+  (testing "[rmq][sync-confirms] Publish timed out"
+    (let [opts (assoc tu/rmq-opts
+                 :publisher-confirms {:strategy d/sync-confirms :timeout-ms 1})
+          producer (rmq/new-producer opts 1)
           client-opts {:queue      "sync-publisher-confirms-test"
                        :retry-opts retry/default-opts
-                       :broker     broker}]
+                       :broker     producer}]
       (is
         (thrown?
-          java.util.concurrent.TimeoutException
+          TimeoutException
           (c/perform-async client-opts `tu/my-fn)))
-      (rmq/close broker)))
+      (rmq/close producer)))
 
-  (testing "[rmq] Ack handler called"
+  (testing "[rmq][async-confirms] Ack handler called"
     (reset! ack-handler-called (promise))
     (let [opts (assoc tu/rmq-opts
                  :publisher-confirms {:strategy     d/async-confirms
-                                      :ack-handler  `test-ack-handler
-                                      :nack-handler `test-nack-handler})
-          broker (rmq/new opts 1)
+                                      :ack-handler  test-ack-handler
+                                      :nack-handler test-nack-handler})
+          producer (rmq/new-producer opts 1)
           client-opts {:queue      "async-publisher-confirms-test"
                        :retry-opts retry/default-opts
-                       :broker     broker}
+                       :broker     producer}
           delivery-tag (:delivery-tag (c/perform-in-sec client-opts 1 `tu/my-fn))]
       (is (= delivery-tag (deref @ack-handler-called 100 :async-publisher-confirm-test-timed-out)))
-      (rmq/close broker))))
+      (rmq/close producer))))
+
+; ======= TEST: Graceful shutdown ==========
+(def sleepy-fn-called (atom (promise)))
+(def sleepy-fn-completed (atom (promise)))
+(defn sleepy-fn
+  [arg]
+  (deliver @sleepy-fn-called arg)
+  (Thread/sleep 2000)
+  (deliver @sleepy-fn-completed arg))
+
+(deftest graceful-shutdown-test
+  (testing "[rmq] Goose shuts down a worker gracefully"
+    (reset! sleepy-fn-called (promise))
+    (reset! sleepy-fn-completed (promise))
+    (let [arg "graceful-shutdown-test"
+          _ (c/perform-async tu/rmq-client-opts `sleepy-fn arg)
+          worker (w/start (assoc tu/rmq-worker-opts :graceful-shutdown-sec 2))]
+      (is (= arg (deref @sleepy-fn-called 100 :graceful-shutdown-test-timed-out)))
+      (w/stop worker)
+      (is (= arg (deref @sleepy-fn-completed 100 :non-graceful-shutdown))))))
 
 ; ======= TEST: Middleware & RMQ Metadata ==========
 (def middleware-called (atom (promise)))
@@ -176,10 +206,10 @@
           _ (c/perform-async (assoc tu/rmq-client-opts :retry-opts retry-opts) `erroneous-fn arg)
           worker (w/start tu/rmq-worker-opts)
           retry-worker (w/start (assoc tu/rmq-worker-opts :queue retry-queue))]
-      (is (= java.lang.ArithmeticException (type (deref @failed-on-execute 100 :retry-execute-timed-out))))
+      (is (= ArithmeticException (type (deref @failed-on-execute 100 :retry-execute-timed-out))))
       (w/stop worker)
 
-      (is (= clojure.lang.ExceptionInfo (type (deref @failed-on-1st-retry 1100 :1st-retry-timed-out))))
+      (is (= ExceptionInfo (type (deref @failed-on-1st-retry 1100 :1st-retry-timed-out))))
 
       (is (= arg (deref @succeeded-on-2nd-retry 1100 :2nd-retry-timed-out)))
       (w/stop retry-worker))))
@@ -206,6 +236,6 @@
                           :death-handler-fn-sym `dead-test-death-handler)
           _ (c/perform-async (assoc tu/rmq-client-opts :retry-opts dead-job-opts) `dead-fn)
           worker (w/start tu/rmq-worker-opts)]
-      (is (= java.lang.ArithmeticException (type (deref @job-dead 1100 :death-handler-timed-out))))
+      (is (= ArithmeticException (type (deref @job-dead 1100 :death-handler-timed-out))))
       (is (= 2 @dead-job-run-count))
       (w/stop worker))))

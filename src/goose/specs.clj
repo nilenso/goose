@@ -14,8 +14,7 @@
     [clojure.spec.alpha :as s]
     [clojure.spec.test.alpha :as st]
     [clojure.string :as string]
-    [taoensso.carmine.connections :refer [IConnectionPool]]
-    [taoensso.nippy :as nippy])
+    [taoensso.carmine.connections :refer [IConnectionPool]])
   (:import
     (java.time Instant)))
 
@@ -27,7 +26,6 @@
 
 ; ========== Redis ==============
 (s/def :goose.specs.redis/url string?)
-(s/def :goose.specs.redis/scheduler-polling-interval-sec (s/int-in 1 61))
 (s/def :goose.specs.redis/pool-opts
   (s/or :nil nil?
         :none #(= :none %)
@@ -35,13 +33,16 @@
         :iconn-pool #(satisfies? IConnectionPool %)))
 
 (s/def ::redis
-  (s/keys :req-un [:goose.specs.redis/url
-                   :goose.specs.redis/scheduler-polling-interval-sec]
+  (s/keys :req-un [:goose.specs.redis/url]
           :opt-un [:goose.specs.redis/pool-opts]))
-(s/fdef redis/new
+
+(s/fdef redis/new-producer
+        :args (s/cat :redis ::redis))
+
+(s/fdef redis/new-consumer
         :args (s/alt :one (s/cat :redis ::redis)
                      :two (s/cat :redis ::redis
-                                 :thread-count (s/or :nil nil? :int pos-int?))))
+                                 :scheduler-polling-interval-sec (s/int-in 1 61))))
 
 ; ========== RabbitMQ ==============
 (s/def :goose.specs.rmq/uri string?)
@@ -63,26 +64,22 @@
 
 (s/def :goose.specs.sync/strategy #(= % d/sync-confirms))
 (s/def ::timeout-ms pos-int?)
+(s/def ::retry-delay-ms pos-int?)
 (s/def ::sync-strategy
-  (s/keys :req-un [:goose.specs.sync/strategy ::timeout-ms]))
+  (s/keys :req-un [:goose.specs.sync/strategy ::timeout-ms]
+          :opt-un [::max-retries ::retry-delay-ms]))
 
 (s/def :goose.specs.async/strategy #(= % d/async-confirms))
-(s/def ::ack-handler
-  (s/and ::fn-sym #(some #{2} (u/arities %))))
-(s/def ::nack-handler
-  (s/and ::fn-sym #(some #{2} (u/arities %))))
+(s/def ::ack-handler fn?)
+(s/def ::nack-handler fn?)
 (s/def ::async-strategy
   (s/keys :req-un [:goose.specs.async/strategy ::ack-handler ::nack-handler]))
 
-(s/def ::publisher-confirms
-  (s/or :sync ::sync-strategy
-        :async ::async-strategy))
-
-(s/def :goose.specs.classic/type #(= % d/classic-queue))
+(s/def :goose.specs.classic/type #(= % d/rmq-classic-queue))
 (s/def ::classic-queue
   (s/keys :req-un [:goose.specs.classic/type]))
 
-(s/def :goose.specs.quorum/type #(= % d/quorum-queue))
+(s/def :goose.specs.quorum/type #(= % d/rmq-quorum-queue))
 (s/def ::replication-factor pos-int?)
 (s/def ::quorum-queue
   (s/keys :req-un [:goose.specs.quorum/type ::replication-factor]))
@@ -91,14 +88,27 @@
   (s/or :classic ::classic-queue
         :quorum ::quorum-queue))
 
+(s/def ::publisher-confirms
+  (s/or :sync ::sync-strategy
+        :async ::async-strategy))
+
+(s/def ::return-listener fn?)
+(s/def ::shutdown-listener fn?)
+
 (s/def ::rmq
   (s/keys :req-un [:goose.specs.rmq/settings
+                   :goose.specs.rmq/queue-type
                    ::publisher-confirms
-                   :goose.specs.rmq/queue-type]))
-(s/fdef rmq/new
+                   ::return-listener
+                   ::shutdown-listener]))
+
+(s/fdef rmq/new-producer
         :args (s/alt :one (s/cat :opts ::rmq)
                      :two (s/cat :opts ::rmq
-                                 :channel-pool-size nat-int?)))
+                                 :channels pos-int?)))
+
+(s/fdef rmq/new-consumer
+        :args (s/cat :opts ::rmq))
 
 ; ============== Brokers ==============
 (s/def ::broker #(satisfies? b/Broker %))
@@ -146,7 +156,7 @@
 
 ; ============== Client ==============
 (s/def ::args-serializable?
-  #(try (= % (nippy/thaw (nippy/freeze %)))
+  #(try (= % (u/decode (u/encode %)))
         (catch Exception _ false)))
 (s/def ::instant #(instance? Instant %))
 (s/def ::client-opts (s/keys :req-un [::broker ::queue ::retry-opts]))
@@ -187,8 +197,10 @@
         :args (s/cat :opts ::worker-opts))
 
 (def ^:private fns-with-specs
-  [`redis/new
-   `rmq/new
+  [`redis/new-producer
+   `redis/new-consumer
+   `rmq/new-producer
+   `rmq/new-consumer
    `statsd/new
    `c/perform-async
    `c/perform-at

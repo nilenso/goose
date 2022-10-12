@@ -2,6 +2,8 @@
   (:require
     [clojure.string :as string]))
 
+(def worker-threads 5)
+(def graceful-shutdown-sec 30)
 (def long-polling-timeout-sec 1)
 (def scheduled-jobs-pop-limit 50)
 (def cron-names-pop-limit 50)
@@ -38,19 +40,29 @@
 (def prefixed-cron-queue (prefix-queue cron-queue))
 (def prefixed-cron-entries (str "goose/" cron-entries))
 
-(def redis-internal-thread-pool-size 4)
+(def redis-internal-threads 4)
 (def redis-default-url "redis://localhost:6379")
-(def redis-client-pool-size 5)
+(def redis-scheduler-polling-interval-sec 5)
+(def redis-producer-pool-opts
+  {:max-total-per-key 5
+   :max-idle-per-key  5
+   :min-idle-per-key  1})
+(defn redis-consumer-pool-opts
+  [threads]
+  {:max-total-per-key (+ redis-internal-threads threads)
+   :max-idle-per-key  (+ redis-internal-threads threads)
+   :min-idle-per-key  (inc redis-internal-threads)})
 
 (def rmq-default-url "amqp://guest:guest@localhost:5672")
+(def rmq-producer-channels 5)
 (def rmq-exchange "")
 (def rmq-delay-exchange (prefix-queue schedule-queue))
 (def rmq-delay-exchange-type "x-delayed-message")
 (def rmq-low-priority 0)
 (def rmq-high-priority 1)
 (def rmq-prefetch-limit 1)
-(def classic-queue "classic")
-(def quorum-queue "quorum")
+(def rmq-delay-limit-ms 4294967295) ; (2^32 - 1)
+(def rmq-classic-queue "classic")
+(def rmq-quorum-queue "quorum")
 (def sync-confirms :sync)
 (def async-confirms :async)
-(def rmq-delay-limit-ms 4294967295) ; (2^32 - 1)

@@ -21,10 +21,17 @@
         match? (fn [job] (= (:id job) id))]
     (first (find-by-pattern conn match? limit))))
 
-(defn re-enqueue-for-execution [conn job]
+(defn replay-job [conn job]
   (let [sorted-set d/prefixed-dead-queue]
     (when (redis-cmds/sorted-set-score conn sorted-set job)
-      (redis-cmds/enqueue-due-jobs-to-front conn sorted-set (list job) job/ready-queue))))
+      (redis-cmds/move-jobs-from-sorted-set-to-ready-queue conn sorted-set (list job) job/ready-queue))))
+
+(defn replay-n-jobs [conn n]
+  (let [sorted-set d/prefixed-dead-queue
+        jobs (redis-cmds/sorted-set-peek-jobs conn sorted-set n)]
+    (when (< 0 (count jobs))
+      (redis-cmds/move-jobs-from-sorted-set-to-ready-queue conn sorted-set jobs job/ready-queue))
+    (count jobs)))
 
 (defn delete [conn job]
   (= 1 (redis-cmds/del-from-sorted-set conn d/prefixed-dead-queue job)))

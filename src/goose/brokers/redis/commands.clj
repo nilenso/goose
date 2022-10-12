@@ -121,6 +121,9 @@
   (wcar* conn (car/rpush list element)))
 
 (defn dequeue-and-preserve [conn src dst]
+  ; `RPOPLPUSH` will be deprecated soon.
+  ; Switch to `LMOVE` as soon as Carmine supports that.
+  ; https://github.com/ptaoussanis/carmine/issues/268
   (wcar* conn (car/brpoplpush src dst d/long-polling-timeout-sec)))
 
 (defn list-position [conn list element]
@@ -188,13 +191,13 @@
           sorted-set sorted-set-min (u/epoch-time-ms)
           limit offset d/scheduled-jobs-pop-limit)))))
 
-(defn enqueue-due-jobs-to-front [conn sorted-set jobs grouping-fn]
+(defn move-jobs-from-sorted-set-to-ready-queue [conn sorted-set jobs grouping-fn]
   (car/atomic
     conn atomic-lock-attempts
     (car/multi)
-    (apply car/zrem sorted-set jobs)
     (doseq [[queue jobs] (group-by grouping-fn jobs)]
-      (apply car/rpush queue jobs))))
+      (apply car/rpush queue jobs))
+    (apply car/zrem sorted-set jobs)))
 
 (defn sorted-set-score [conn sorted-set element]
   (wcar* conn (car/zscore sorted-set element)))
@@ -214,6 +217,11 @@
   Job with lowest score will be considered as head of the queue."
   [conn sorted-set]
   (wcar* conn (car/zpopmin sorted-set)))
+
+(defn sorted-set-peek-jobs
+  "Return n jobs with lowest score"
+  [conn sorted-set n]
+  (wcar* conn (car/zrange sorted-set 0 (dec n))))
 
 (defn find-in-sorted-set
   [conn sorted-set match? limit]
