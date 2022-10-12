@@ -8,9 +8,9 @@
   (log/error "Message returned from rabbitmq" msg))
 
 (defn wrapper
-  [return-listener-fn]
+  [return-listener]
   (fn [reply-code reply-text exchange routing-key properties body]
-    (return-listener-fn {:reply-code  reply-code
+    (return-listener {:reply-code  reply-code
                          :reply-text  reply-text
                          :exchange    exchange
                          :routing-key routing-key

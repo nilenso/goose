@@ -68,13 +68,13 @@
   {:settings             {:uri d/rmq-default-url}
    :queue-type           rmq-queue/classic
    :publisher-confirms   publisher-confirms/sync
-   :return-listener-fn   return-listener/default
-   :shutdown-listener-fn shutdown-listener/default})
+   :return-listener   return-listener/default
+   :shutdown-listener shutdown-listener/default})
 
 (defn new-producer
   "Create a client that produce messages to RabbitMQ broker."
   ([opts]
-   (new-producer opts d/rmq-channels))
+   (new-producer opts d/rmq-producer-channels))
   ([{:keys [queue-type publisher-confirms] :as opts}
     channels]
    (let [[rmq-conn channels] (rmq-connection/open opts channels)]

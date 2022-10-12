@@ -58,8 +58,8 @@
   {:settings             {:uri rmq-url}
    :queue-type           rmq-queue/classic
    :publisher-confirms   rmq-publisher-confirms/sync
-   :return-listener-fn   return-listener/default
-   :shutdown-listener-fn shutdown-listener/default})
+   :return-listener   return-listener/default
+   :shutdown-listener shutdown-listener/default})
 (def rmq-producer (rmq/new-producer rmq-opts 1))
 (def rmq-consumer (rmq/new-consumer rmq-opts))
 (def rmq-client-opts (assoc client-opts :broker rmq-producer))

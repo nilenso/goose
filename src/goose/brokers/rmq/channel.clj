@@ -3,7 +3,6 @@
   (:require
     [goose.brokers.rmq.return-listener :as return-listener]
     [goose.defaults :as d]
-    [goose.utils :as u]
 
     [langohr.basic :as lb]
     [langohr.channel :as lch]
@@ -11,7 +10,7 @@
 
 
 (defn open
-  [conn {:keys [strategy ack-handler nack-handler]} return-listener-fn]
+  [conn {:keys [strategy ack-handler nack-handler]} return-listener]
   (let [ch (lch/open conn)]
     (if ch
       (do
@@ -20,13 +19,13 @@
           (lcnf/select ch)
 
           d/async-confirms
-          (lcnf/select ch (u/require-resolve ack-handler) (u/require-resolve nack-handler)))
-        (lb/add-return-listener ch (return-listener/wrapper return-listener-fn))
+          (lcnf/select ch ack-handler nack-handler))
+        (lb/add-return-listener ch (return-listener/wrapper return-listener))
         ch)
 
       (throw (ex-info "CHANNEL_MAX limit reached: cannot open new channels" {:rmq-conn conn})))))
 
 (defn new-pool
-  [conn size publisher-confirms return-listener-fn]
+  [conn size publisher-confirms return-listener]
   ; Since `for` returns a lazy-seq; using `doall` to force execution.
-  (doall (for [_ (range size)] (open conn publisher-confirms return-listener-fn))))
+  (doall (for [_ (range size)] (open conn publisher-confirms return-listener))))

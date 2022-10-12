@@ -58,7 +58,7 @@
   [{:keys [threads queue middlewares pool-opts url] :as common-opts}]
   (let [thread-pool (cp/threadpool threads)
         ; Internal threadpool for metrics, scheduler, orphan-checker & heartbeat.
-        internal-thread-pool (cp/threadpool d/redis-internal-thread-pool-size)
+        internal-thread-pool (cp/threadpool d/redis-internal-threads)
 
         pool-opts (or pool-opts (d/redis-consumer-pool-opts threads))
         redis-conn (redis-connection/new url pool-opts)

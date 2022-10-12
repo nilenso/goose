@@ -70,7 +70,7 @@
                   :call        (chain-middlewares middlewares)
                   :ready-queue ready-queue}
         opts (merge rmq-opts common-opts)
-        opts (dissoc opts :threads :queue :middlewares :broker :return-listener-fn :shutdown-listener-fn :settings)]
+        opts (dissoc opts :threads :queue :middlewares :broker :return-listener :shutdown-listener :settings)]
 
     ; A queue must exist before consumers can subscribe to it.
     (let [queue-opts (assoc queue-type :queue ready-queue)]

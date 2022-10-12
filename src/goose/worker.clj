@@ -10,7 +10,7 @@
 
 (def default-opts
   "Default config for Goose worker."
-  {:threads               d/threads
+  {:threads               d/worker-threads
    :queue                 d/default-queue
    :graceful-shutdown-sec d/graceful-shutdown-sec
    :middlewares           nil

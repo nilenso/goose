@@ -25,5 +25,5 @@
 
 (def async
   {:strategy     d/async-confirms
-   :ack-handler  `default-ack-handler
-   :nack-handler `default-nack-handler})
+   :ack-handler  default-ack-handler
+   :nack-handler default-nack-handler})

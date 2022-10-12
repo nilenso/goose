@@ -1,5 +1,6 @@
 (ns goose.rmq.integration-test
   (:require
+    [goose.api.enqueued-jobs :as enqueued-jobs]
     [goose.brokers.rmq.broker :as rmq]
     [goose.brokers.rmq.queue :as rmq-queue]
     [goose.client :as c]
@@ -31,7 +32,9 @@
           _ (is (uuid? (UUID/fromString (:id (c/perform-async tu/rmq-client-opts `perform-async-fn arg)))))
           worker (w/start tu/rmq-worker-opts)]
       (is (= arg (deref @perform-async-fn-executed 100 :e2e-test-timed-out)))
-      (w/stop worker))))
+      (w/stop worker)
+      ; This tests if msg was ACK'd upon successful completion.
+      (is (zero? (enqueued-jobs/size tu/rmq-producer (:queue tu/rmq-client-opts)))))))
 
 ; ======= TEST: Async execution (quorum queue) ==========
 (def quorum-fn-executed (atom (promise)))
@@ -123,8 +126,8 @@
     (reset! ack-handler-called (promise))
     (let [opts (assoc tu/rmq-opts
                  :publisher-confirms {:strategy     d/async-confirms
-                                      :ack-handler  `test-ack-handler
-                                      :nack-handler `test-nack-handler})
+                                      :ack-handler  test-ack-handler
+                                      :nack-handler test-nack-handler})
           producer (rmq/new-producer opts 1)
           client-opts {:queue      "async-publisher-confirms-test"
                        :retry-opts retry/default-opts

@@ -93,11 +93,11 @@
     #(rmq/new-producer (assoc rmq/default-opts :publisher-confirms {:strategy d/async-confirms :ack-handler 'invalid}))
     #(rmq/new-consumer (assoc rmq/default-opts :publisher-confirms {:strategy d/async-confirms :nack-handler `my-fn}))
 
-    ; rmq-broker :return-listener-fn
-    #(rmq/new-producer (assoc rmq/default-opts :return-listener-fn :non-fn))
+    ; rmq-broker :return-listener
+    #(rmq/new-producer (assoc rmq/default-opts :return-listener :non-fn))
 
-    ; rmq-broker :shutdown-listener-fn
-    #(rmq/new-consumer (assoc rmq/default-opts :shutdown-listener-fn :non-fn))
+    ; rmq-broker :shutdown-listener
+    #(rmq/new-consumer (assoc rmq/default-opts :shutdown-listener :non-fn))
 
     ; rmq-broker channel-pool-size
     #(rmq/new-producer rmq/default-opts -1)))

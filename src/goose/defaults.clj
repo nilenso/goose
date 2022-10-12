@@ -2,7 +2,7 @@
   (:require
     [clojure.string :as string]))
 
-(def threads 5)
+(def worker-threads 5)
 (def graceful-shutdown-sec 30)
 (def long-polling-timeout-sec 1)
 (def scheduled-jobs-pop-limit 50)
@@ -40,7 +40,7 @@
 (def prefixed-cron-queue (prefix-queue cron-queue))
 (def prefixed-cron-entries (str "goose/" cron-entries))
 
-(def redis-internal-thread-pool-size 4)
+(def redis-internal-threads 4)
 (def redis-default-url "redis://localhost:6379")
 (def redis-scheduler-polling-interval-sec 5)
 (def redis-producer-pool-opts
@@ -49,12 +49,12 @@
    :min-idle-per-key  1})
 (defn redis-consumer-pool-opts
   [threads]
-  {:max-total-per-key (+ redis-internal-thread-pool-size threads)
-   :max-idle-per-key  (+ redis-internal-thread-pool-size threads)
-   :min-idle-per-key  (inc redis-internal-thread-pool-size)})
+  {:max-total-per-key (+ redis-internal-threads threads)
+   :max-idle-per-key  (+ redis-internal-threads threads)
+   :min-idle-per-key  (inc redis-internal-threads)})
 
 (def rmq-default-url "amqp://guest:guest@localhost:5672")
-(def rmq-channels 5)
+(def rmq-producer-channels 5)
 (def rmq-exchange "")
 (def rmq-delay-exchange (prefix-queue schedule-queue))
 (def rmq-delay-exchange-type "x-delayed-message")

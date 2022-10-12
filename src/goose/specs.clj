@@ -70,10 +70,8 @@
           :opt-un [::max-retries ::retry-delay-ms]))
 
 (s/def :goose.specs.async/strategy #(= % d/async-confirms))
-(s/def ::ack-handler
-  (s/and ::fn-sym #(some #{2} (u/arities %))))
-(s/def ::nack-handler
-  (s/and ::fn-sym #(some #{2} (u/arities %))))
+(s/def ::ack-handler fn?)
+(s/def ::nack-handler fn?)
 (s/def ::async-strategy
   (s/keys :req-un [:goose.specs.async/strategy ::ack-handler ::nack-handler]))
 
@@ -94,15 +92,15 @@
   (s/or :sync ::sync-strategy
         :async ::async-strategy))
 
-(s/def ::return-listener-fn fn?)
-(s/def ::shutdown-listener-fn fn?)
+(s/def ::return-listener fn?)
+(s/def ::shutdown-listener fn?)
 
 (s/def ::rmq
   (s/keys :req-un [:goose.specs.rmq/settings
                    :goose.specs.rmq/queue-type
                    ::publisher-confirms
-                   ::return-listener-fn
-                   ::shutdown-listener-fn]))
+                   ::return-listener
+                   ::shutdown-listener]))
 
 (s/fdef rmq/new-producer
         :args (s/alt :one (s/cat :opts ::rmq)
