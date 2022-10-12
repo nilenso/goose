@@ -42,7 +42,16 @@
 
 (def redis-internal-thread-pool-size 4)
 (def redis-default-url "redis://localhost:6379")
-(def redis-client-pool-size 5)
+(def redis-scheduler-polling-interval-sec 5)
+(def redis-producer-pool-opts
+  {:max-total-per-key 5
+   :max-idle-per-key  5
+   :min-idle-per-key  1})
+(defn redis-consumer-pool-opts
+  [threads]
+  {:max-total-per-key (+ redis-internal-thread-pool-size threads)
+   :max-idle-per-key  (+ redis-internal-thread-pool-size threads)
+   :min-idle-per-key  (inc redis-internal-thread-pool-size)})
 
 (def rmq-default-url "amqp://guest:guest@localhost:5672")
 (def rmq-channels 5)

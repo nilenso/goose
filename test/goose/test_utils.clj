@@ -33,9 +33,10 @@
     (str "redis://" host ":" port)))
 (def redis-opts {:url redis-url :scheduler-polling-interval-sec 1})
 (def redis-conn {:spec {:uri (:url redis-opts)}})
-(def redis-broker (redis/new redis-opts 1))
-(def redis-client-opts (assoc client-opts :broker redis-broker))
-(def redis-worker-opts (assoc worker-opts :broker redis-broker))
+(def redis-producer (redis/new-producer redis-opts))
+(def redis-consumer (redis/new-consumer redis-opts 1))
+(def redis-client-opts (assoc client-opts :broker redis-producer))
+(def redis-worker-opts (assoc worker-opts :broker redis-consumer))
 (defn clear-redis [] (redis-cmds/wcar* redis-conn (car/flushdb "SYNC")))
 
 (defn redis-fixture

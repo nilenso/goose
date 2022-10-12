@@ -74,9 +74,9 @@
     #(c/perform-async (assoc-in tu/redis-client-opts [:retry-opts :extra-key] :foo-bar) `tu/my-fn)
 
     ; :redis-opts
-    #(redis/new (assoc redis/default-opts :url :invalid-url))
-    #(redis/new (assoc redis/default-opts :pool-opts :invalid-pool-opts))
-    #(redis/new (assoc redis/default-opts :scheduler-polling-interval-sec 0))
+    #(redis/new-producer (assoc redis/default-opts :url :invalid-url))
+    #(redis/new-consumer (assoc redis/default-opts :pool-opts :invalid-pool-opts))
+    #(redis/new-consumer redis/default-opts 0)
 
     ; rmq-broker :settings
     #(rmq/new-consumer {:settings :invalid})

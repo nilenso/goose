@@ -1,6 +1,7 @@
 (ns goose.brokers.redis.worker
   {:no-doc true}
   (:require
+    [goose.brokers.redis.connection :as redis-connection]
     [goose.brokers.redis.consumer :as redis-consumer]
     [goose.brokers.redis.heartbeat :as redis-heartbeat]
     [goose.brokers.redis.metrics :as redis-metrics]
@@ -53,22 +54,28 @@
         (redis-retry/wrap-failure))))
 
 (defn start
-  [{:keys [threads queue middlewares] :as common-opts}]
+  [{:keys [threads queue middlewares pool-opts url] :as common-opts}]
   (let [thread-pool (cp/threadpool threads)
         ; Internal threadpool for metrics, scheduler, orphan-checker & heartbeat.
         internal-thread-pool (cp/threadpool d/redis-internal-thread-pool-size)
+
+        pool-opts (or pool-opts (d/redis-consumer-pool-opts threads))
+        redis-conn (redis-connection/new url pool-opts)
+
         random-str (subs (str (random-uuid)) 24 36) ; Take last 12 chars of UUID.
         id (str queue ":" (u/hostname) ":" random-str)
-        call (chain-middlewares middlewares)
+
         redis-opts {:id                   id
+                    :redis-conn           redis-conn
                     :thread-pool          thread-pool
                     :internal-thread-pool internal-thread-pool
-                    :call                 call
+                    :call                 (chain-middlewares middlewares)
 
                     :process-set          (str d/process-prefix queue)
                     :ready-queue          (d/prefix-queue queue)
                     :in-progress-queue    (redis-consumer/preservation-queue id)}
-        opts (merge redis-opts common-opts)]
+        opts (merge redis-opts common-opts)
+        opts (dissoc opts :threads :queue :middlewares :broker :url :pool-opts)]
 
     (cp/future internal-thread-pool (redis-metrics/run opts))
     (cp/future internal-thread-pool (redis-heartbeat/run opts))

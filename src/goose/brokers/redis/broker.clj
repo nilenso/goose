@@ -5,25 +5,23 @@
     [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
     [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
     [goose.brokers.redis.commands :as redis-cmds]
+    [goose.brokers.redis.connection :as redis-connection]
     [goose.brokers.redis.cron :as cron]
     [goose.brokers.redis.scheduler :as redis-scheduler]
     [goose.brokers.redis.worker :as redis-worker]
     [goose.defaults :as d]))
 
-(defrecord Redis [conn scheduler-polling-interval-sec]
+(defrecord Redis [redis-conn opts]
   b/Broker
   (enqueue [this job]
-    (redis-cmds/enqueue-back (:conn this) (:ready-queue job) job)
+    (redis-cmds/enqueue-back (:redis-conn this) (:ready-queue job) job)
     (select-keys job [:id]))
   (schedule [this schedule job]
-    (redis-scheduler/run-at (:conn this) schedule job))
+    (redis-scheduler/run-at (:redis-conn this) schedule job))
   (register-cron [this cron-name cron-schedule job-description]
-    (cron/register (:conn this) cron-name cron-schedule job-description))
+    (cron/register (:redis-conn this) cron-name cron-schedule job-description))
   (start [this worker-opts]
-    (redis-worker/start
-      (assoc worker-opts
-        :redis-conn (:conn this)
-        :scheduler-polling-interval-sec (:scheduler-polling-interval-sec this))))
+    (redis-worker/start (merge worker-opts (:opts this))))
 
   ; enqueued-jobs API
   (enqueued-jobs-list-all-queues [this]
@@ -86,28 +84,23 @@
 (def default-opts
   "Default config for Redis client."
   {:url                            d/redis-default-url
-   :pool-opts                      nil
-   :scheduler-polling-interval-sec 5})
+   :pool-opts                      nil})
 
-(defn- new-pool-opts
-  [thread-count]
-  (if thread-count
-    {:max-total-per-key (+ d/redis-internal-thread-pool-size thread-count)
-     :max-idle-per-key  (+ d/redis-internal-thread-pool-size thread-count)
-     :min-idle-per-key  (inc d/redis-internal-thread-pool-size)}
-    {:max-total-per-key d/redis-client-pool-size
-     :max-idle-per-key  d/redis-client-pool-size
-     :min-idle-per-key  1}))
+(defn new-producer
+  "Create a client that produce messages to Redis broker."
+  [{:keys [url pool-opts]}]
+  (let [pool-opts (or pool-opts d/redis-producer-pool-opts)
+        redis-conn (redis-connection/new url pool-opts )]
+    (->Redis redis-conn nil)))
 
-(defn new
-  "Create a client for Redis broker.
-  If pooling-opts aren't provided,
-  connection count will be derived from thread-count.
-  When initializing broker for a worker, thread-count
-  must be provided.
-  For a client, thread-count can be ignored if throughput is less."
-  ([opts] (goose.brokers.redis.broker/new opts nil))
-  ([{:keys [url pool-opts scheduler-polling-interval-sec]} thread-count]
-   (let [pool-opts (or pool-opts (new-pool-opts thread-count))]
-     (->Redis {:spec {:uri url} :pool pool-opts}
-              scheduler-polling-interval-sec))))
+(defn new-consumer
+  "Create a Redis broker implementation for worker.
+  The connection is opened & closed with start & stop of worker.
+  To avoid duplication & mis-match in `threads` config,
+  we decided to delegate connection creation at start time of worker."
+  ([conn-opts]
+   (new-consumer conn-opts d/redis-scheduler-polling-interval-sec))
+  ([conn-opts scheduler-polling-interval-sec]
+   (let [opts (assoc conn-opts
+                :scheduler-polling-interval-sec scheduler-polling-interval-sec)]
+     (->Redis nil opts))))

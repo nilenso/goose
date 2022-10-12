@@ -26,7 +26,6 @@
 
 ; ========== Redis ==============
 (s/def :goose.specs.redis/url string?)
-(s/def :goose.specs.redis/scheduler-polling-interval-sec (s/int-in 1 61))
 (s/def :goose.specs.redis/pool-opts
   (s/or :nil nil?
         :none #(= :none %)
@@ -34,13 +33,16 @@
         :iconn-pool #(satisfies? IConnectionPool %)))
 
 (s/def ::redis
-  (s/keys :req-un [:goose.specs.redis/url
-                   :goose.specs.redis/scheduler-polling-interval-sec]
+  (s/keys :req-un [:goose.specs.redis/url]
           :opt-un [:goose.specs.redis/pool-opts]))
-(s/fdef redis/new
+
+(s/fdef redis/new-producer
+        :args (s/cat :redis ::redis))
+
+(s/fdef redis/new-consumer
         :args (s/alt :one (s/cat :redis ::redis)
                      :two (s/cat :redis ::redis
-                                 :thread-count (s/or :nil nil? :int pos-int?))))
+                                 :scheduler-polling-interval-sec pos-int?)))
 
 ; ========== RabbitMQ ==============
 (s/def :goose.specs.rmq/uri string?)
@@ -197,7 +199,8 @@
         :args (s/cat :opts ::worker-opts))
 
 (def ^:private fns-with-specs
-  [`redis/new
+  [`redis/new-producer
+   `redis/new-consumer
    `rmq/new-producer
    `rmq/new-consumer
    `statsd/new
