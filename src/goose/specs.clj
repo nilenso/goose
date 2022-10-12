@@ -42,7 +42,7 @@
 (s/fdef redis/new-consumer
         :args (s/alt :one (s/cat :redis ::redis)
                      :two (s/cat :redis ::redis
-                                 :scheduler-polling-interval-sec pos-int?)))
+                                 :scheduler-polling-interval-sec (s/int-in 1 61))))
 
 ; ========== RabbitMQ ==============
 (s/def :goose.specs.rmq/uri string?)

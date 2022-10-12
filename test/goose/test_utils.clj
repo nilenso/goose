@@ -31,7 +31,7 @@
   (let [host (or (System/getenv "GOOSE_TEST_REDIS_HOST") "localhost")
         port (or (System/getenv "GOOSE_TEST_REDIS_PORT") "6379")]
     (str "redis://" host ":" port)))
-(def redis-opts {:url redis-url :scheduler-polling-interval-sec 1})
+(def redis-opts {:url redis-url})
 (def redis-conn {:spec {:uri (:url redis-opts)}})
 (def redis-producer (redis/new-producer redis-opts))
 (def redis-consumer (redis/new-consumer redis-opts 1))

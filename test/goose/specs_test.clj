@@ -76,7 +76,7 @@
     ; :redis-opts
     #(redis/new-producer (assoc redis/default-opts :url :invalid-url))
     #(redis/new-consumer (assoc redis/default-opts :pool-opts :invalid-pool-opts))
-    #(redis/new-consumer redis/default-opts 0)
+    #(redis/new-consumer redis/default-opts 61)
 
     ; rmq-broker :settings
     #(rmq/new-consumer {:settings :invalid})

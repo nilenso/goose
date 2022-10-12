@@ -25,72 +25,72 @@
 
   ; enqueued-jobs API
   (enqueued-jobs-list-all-queues [this]
-    (enqueued-jobs/list-all-queues (:conn this)))
+    (enqueued-jobs/list-all-queues (:redis-conn this)))
   (enqueued-jobs-size [this queue]
-    (enqueued-jobs/size (:conn this) queue))
+    (enqueued-jobs/size (:redis-conn this) queue))
   (enqueued-jobs-find-by-id [this queue id]
-    (enqueued-jobs/find-by-id (:conn this) queue id))
+    (enqueued-jobs/find-by-id (:redis-conn this) queue id))
   (enqueued-jobs-find-by-pattern [this queue match? limit]
-    (enqueued-jobs/find-by-pattern (:conn this) queue match? limit))
+    (enqueued-jobs/find-by-pattern (:redis-conn this) queue match? limit))
   (enqueued-jobs-prioritise-execution [this job]
-    (enqueued-jobs/prioritise-execution (:conn this) job))
+    (enqueued-jobs/prioritise-execution (:redis-conn this) job))
   (enqueued-jobs-delete [this job]
-    (enqueued-jobs/delete (:conn this) job))
+    (enqueued-jobs/delete (:redis-conn this) job))
   (enqueued-jobs-purge [this queue]
-    (enqueued-jobs/purge (:conn this) queue))
+    (enqueued-jobs/purge (:redis-conn this) queue))
 
   ; scheduled-jobs API
   (scheduled-jobs-size [this]
-    (scheduled-jobs/size (:conn this)))
+    (scheduled-jobs/size (:redis-conn this)))
   (scheduled-jobs-find-by-id [this id]
-    (scheduled-jobs/find-by-id (:conn this) id))
+    (scheduled-jobs/find-by-id (:redis-conn this) id))
   (scheduled-jobs-find-by-pattern [this match? limit]
-    (scheduled-jobs/find-by-pattern (:conn this) match? limit))
+    (scheduled-jobs/find-by-pattern (:redis-conn this) match? limit))
   (scheduled-jobs-prioritise-execution [this job]
-    (scheduled-jobs/prioritise-execution (:conn this) job))
+    (scheduled-jobs/prioritise-execution (:redis-conn this) job))
   (scheduled-jobs-delete [this job]
-    (scheduled-jobs/delete (:conn this) job))
+    (scheduled-jobs/delete (:redis-conn this) job))
   (scheduled-jobs-purge [this]
-    (scheduled-jobs/purge (:conn this)))
+    (scheduled-jobs/purge (:redis-conn this)))
 
   ; dead-jobs API
   (dead-jobs-size [this]
-    (dead-jobs/size (:conn this)))
+    (dead-jobs/size (:redis-conn this)))
   (dead-jobs-pop [this]
-    (dead-jobs/pop (:conn this)))
+    (dead-jobs/pop (:redis-conn this)))
   (dead-jobs-find-by-id [this id]
-    (dead-jobs/find-by-id (:conn this) id))
+    (dead-jobs/find-by-id (:redis-conn this) id))
   (dead-jobs-find-by-pattern [this match? limit]
-    (dead-jobs/find-by-pattern (:conn this) match? limit))
+    (dead-jobs/find-by-pattern (:redis-conn this) match? limit))
   (dead-jobs-replay-job [this job]
-    (dead-jobs/replay-job (:conn this) job))
+    (dead-jobs/replay-job (:redis-conn this) job))
   (dead-jobs-replay-n-jobs [this n]
-    (dead-jobs/replay-n-jobs (:conn this) n))
+    (dead-jobs/replay-n-jobs (:redis-conn this) n))
   (dead-jobs-delete [this job]
-    (dead-jobs/delete (:conn this) job))
+    (dead-jobs/delete (:redis-conn this) job))
   (dead-jobs-delete-older-than [this epoch-time-ms]
-    (dead-jobs/delete-older-than (:conn this) epoch-time-ms))
+    (dead-jobs/delete-older-than (:redis-conn this) epoch-time-ms))
   (dead-jobs-purge [this]
-    (dead-jobs/purge (:conn this)))
+    (dead-jobs/purge (:redis-conn this)))
 
   ; cron entries API
   (cron-jobs-find-by-name [this entry-name]
-    (cron/find-by-name (:conn this) entry-name))
+    (cron/find-by-name (:redis-conn this) entry-name))
   (cron-jobs-delete [this entry-name]
-    (cron/delete (:conn this) entry-name))
+    (cron/delete (:redis-conn this) entry-name))
   (cron-jobs-delete-all [this]
-    (cron/delete-all (:conn this))))
+    (cron/delete-all (:redis-conn this))))
 
 (def default-opts
   "Default config for Redis client."
-  {:url                            d/redis-default-url
-   :pool-opts                      nil})
+  {:url       d/redis-default-url
+   :pool-opts nil})
 
 (defn new-producer
   "Create a client that produce messages to Redis broker."
   [{:keys [url pool-opts]}]
   (let [pool-opts (or pool-opts d/redis-producer-pool-opts)
-        redis-conn (redis-connection/new url pool-opts )]
+        redis-conn (redis-connection/new url pool-opts)]
     (->Redis redis-conn nil)))
 
 (defn new-consumer
