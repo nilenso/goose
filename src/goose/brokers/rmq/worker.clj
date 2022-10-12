@@ -5,10 +5,11 @@
     [goose.brokers.rmq.consumer :as rmq-consumer]
     [goose.brokers.rmq.queue :as rmq-queue]
     [goose.brokers.rmq.retry :as rmq-retry]
+    [goose.consumer :as consumer]
     [goose.defaults :as d]
     [goose.job :as job]
     [goose.metrics.middleware :as metrics-middleware]
-    [goose.worker :as goose-worker]
+    [goose.worker :as worker]
 
     [clojure.tools.logging :as log]
     [com.climate.claypoole :as cp]
@@ -47,12 +48,13 @@
 (defn- chain-middlewares
   [middlewares]
   (let [call (if middlewares
-               (-> rmq-consumer/execute-job (middlewares))
-               rmq-consumer/execute-job)]
+               (-> consumer/execute-job (middlewares))
+               consumer/execute-job)]
     (-> call
         (metrics-middleware/wrap-metrics)
         (job/wrap-latency)
-        (rmq-retry/wrap-failure))))
+        (rmq-retry/wrap-failure)
+        (rmq-consumer/wrap-acks))))
 
 (defn start
   [{:keys [threads queue queue-type middlewares]
@@ -75,5 +77,5 @@
       (rmq-queue/declare (first channels) queue-opts))
 
     (let [consumers (rmq-consumer/run opts)]
-      (reify goose-worker/Shutdown
+      (reify worker/Shutdown
         (stop [_] (internal-stop (assoc opts :ch+consumers consumers)))))))

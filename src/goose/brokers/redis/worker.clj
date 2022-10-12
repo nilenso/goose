@@ -8,11 +8,12 @@
     [goose.brokers.redis.orphan-checker :as redis-orphan-checker]
     [goose.brokers.redis.retry :as redis-retry]
     [goose.brokers.redis.scheduler :as redis-scheduler]
+    [goose.consumer :as consumer]
     [goose.defaults :as d]
     [goose.job :as job]
     [goose.metrics.middleware :as metrics-middleware]
     [goose.utils :as u]
-    [goose.worker :as goose-worker]
+    [goose.worker :as worker]
 
     [clojure.tools.logging :as log]
     [com.climate.claypoole :as cp])
@@ -46,8 +47,8 @@
 (defn- chain-middlewares
   [middlewares]
   (let [call (if middlewares
-               (-> redis-consumer/execute-job (middlewares))
-               redis-consumer/execute-job)]
+               (-> consumer/execute-job (middlewares))
+               consumer/execute-job)]
     (-> call
         (metrics-middleware/wrap-metrics)
         (job/wrap-latency)
@@ -85,5 +86,5 @@
     (dotimes [_ threads]
       (cp/future thread-pool (redis-consumer/run opts)))
 
-    (reify goose-worker/Shutdown
+    (reify worker/Shutdown
       (stop [_] (internal-stop opts)))))

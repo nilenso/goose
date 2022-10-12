@@ -8,12 +8,13 @@
     [langohr.basic :as lb]
     [langohr.consumers :as lc]))
 
-(defn execute-job
-  [{:keys                  [ch]
-    {:keys [delivery-tag]} :metadata}
-   {:keys [execute-fn-sym args]}]
-  (apply (u/require-resolve execute-fn-sym) args)
-  (lb/ack ch delivery-tag))
+(defn wrap-acks
+  [next]
+  (fn [{:keys                  [ch] :as opts
+        {:keys [delivery-tag]} :metadata}
+       job]
+    (next opts job)
+    (lb/ack ch delivery-tag)))
 
 (defn- handler
   [{:keys [call] :as opts}
