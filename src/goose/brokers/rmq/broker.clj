@@ -73,8 +73,9 @@
 
 (defn new-producer
   "Create a client that produce messages to RabbitMQ broker."
-  ([{:keys [queue-type publisher-confirms]
-     :as   opts}
+  ([opts]
+   (new-producer opts d/rmq-channels))
+  ([{:keys [queue-type publisher-confirms] :as opts}
     channels]
    (let [[rmq-conn channels] (rmq-connection/open opts channels)]
      (->RabbitMQ rmq-conn channels queue-type publisher-confirms nil))))

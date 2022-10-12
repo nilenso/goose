@@ -2,6 +2,8 @@
   (:require
     [clojure.string :as string]))
 
+(def threads 5)
+(def graceful-shutdown-sec 30)
 (def long-polling-timeout-sec 1)
 (def scheduled-jobs-pop-limit 50)
 (def cron-names-pop-limit 50)
@@ -43,6 +45,7 @@
 (def redis-client-pool-size 5)
 
 (def rmq-default-url "amqp://guest:guest@localhost:5672")
+(def rmq-channels 5)
 (def rmq-exchange "")
 (def rmq-delay-exchange (prefix-queue schedule-queue))
 (def rmq-delay-exchange-type "x-delayed-message")

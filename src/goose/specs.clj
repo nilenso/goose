@@ -103,8 +103,9 @@
                    ::shutdown-listener-fn]))
 
 (s/fdef rmq/new-producer
-        :args (s/cat :opts ::rmq
-                     :channels pos-int?))
+        :args (s/alt :one (s/cat :opts ::rmq)
+                     :two (s/cat :opts ::rmq
+                                 :channels pos-int?)))
 
 (s/fdef rmq/new-consumer
         :args (s/cat :opts ::rmq))

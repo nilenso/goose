@@ -78,26 +78,26 @@
     #(redis/new (assoc redis/default-opts :pool-opts :invalid-pool-opts))
     #(redis/new (assoc redis/default-opts :scheduler-polling-interval-sec 0))
 
-    ; :rmq-opts :settings
+    ; rmq-broker :settings
     #(rmq/new-consumer {:settings :invalid})
 
-    ; :rmq-opts :queue-type
-    #(rmq/new-consumer (assoc rmq/default-opts :queue-type {:type :invalid}))
+    ; rmq-broker :queue-type
+    #(rmq/new-producer (assoc rmq/default-opts :queue-type {:type :invalid}))
     #(rmq/new-consumer (assoc rmq/default-opts :queue-type {:type d/rmq-quorum-queue :replication-factor 0}))
 
-    ; :rmq-opts :publisher-confirms
-    #(rmq/new-consumer (assoc rmq/default-opts :publisher-confirms {:strategy :invalid}))
+    ; rmq-broker :publisher-confirms
+    #(rmq/new-producer (assoc rmq/default-opts :publisher-confirms {:strategy :invalid}))
     #(rmq/new-consumer (assoc rmq/default-opts :publisher-confirms {:strategy d/sync-confirms :timeout-ms 0}))
-    #(rmq/new-consumer (assoc rmq/default-opts :publisher-confirms {:strategy d/sync-confirms :timeout-ms 10 :max-retries -1}))
+    #(rmq/new-producer (assoc rmq/default-opts :publisher-confirms {:strategy d/sync-confirms :timeout-ms 10 :max-retries -1}))
     #(rmq/new-consumer (assoc rmq/default-opts :publisher-confirms {:strategy d/sync-confirms :timeout-ms 10 :retry-delay-ms 0}))
-    #(rmq/new-consumer (assoc rmq/default-opts :publisher-confirms {:strategy d/async-confirms :ack-handler 'invalid}))
+    #(rmq/new-producer (assoc rmq/default-opts :publisher-confirms {:strategy d/async-confirms :ack-handler 'invalid}))
     #(rmq/new-consumer (assoc rmq/default-opts :publisher-confirms {:strategy d/async-confirms :nack-handler `my-fn}))
 
-    ; :rmq-opts :return-listener-fn
-    #(rmq/new-consumer (assoc rmq/default-opts :return-listener-fn :non-fn))
+    ; rmq-broker :return-listener-fn
+    #(rmq/new-producer (assoc rmq/default-opts :return-listener-fn :non-fn))
 
-    ; :rmq-opts :shutdown-listener-fn
+    ; rmq-broker :shutdown-listener-fn
     #(rmq/new-consumer (assoc rmq/default-opts :shutdown-listener-fn :non-fn))
 
-    ; :rmq-opts channel-pool-size
+    ; rmq-broker channel-pool-size
     #(rmq/new-producer rmq/default-opts -1)))

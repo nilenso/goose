@@ -45,7 +45,7 @@
     (let [queue "quorum-test"
           arg "quorum-arg"
           opts (assoc tu/rmq-opts :queue-type rmq-queue/quorum)
-          producer (rmq/new-producer opts 1)
+          producer (rmq/new-producer opts)
           client-opts {:queue      queue
                        :retry-opts retry/default-opts
                        :broker     producer}

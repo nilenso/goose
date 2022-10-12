@@ -10,9 +10,9 @@
 
 (def default-opts
   "Default config for Goose worker."
-  {:threads               5
+  {:threads               d/threads
    :queue                 d/default-queue
-   :graceful-shutdown-sec 30
+   :graceful-shutdown-sec d/graceful-shutdown-sec
    :middlewares           nil
    :error-service-cfg     nil
    :metrics-plugin        (statsd/new statsd/default-opts)})
