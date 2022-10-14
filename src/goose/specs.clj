@@ -13,7 +13,7 @@
 
     [clojure.spec.alpha :as s]
     [clojure.spec.test.alpha :as st]
-    [clojure.string :as string]
+    [clojure.string :as str]
     [taoensso.carmine.connections :refer [IConnectionPool]])
   (:import
     (java.time Instant)))
@@ -114,8 +114,8 @@
 (s/def ::broker #(satisfies? b/Broker %))
 
 ; ============== Queue ==============
-(defn- unprefixed? [queue] (not (string/starts-with? queue d/queue-prefix)))
-(defn- not-protected? [queue] (not (string/includes? d/protected-queues queue)))
+(defn- unprefixed? [queue] (not (str/starts-with? queue d/queue-prefix)))
+(defn- not-protected? [queue] (not (str/includes? d/protected-queues queue)))
 ; RMQ queue names cannot be longer than 255 bytes.
 (s/def ::queue (s/and string? #(< (count %) 200) unprefixed? not-protected?))
 

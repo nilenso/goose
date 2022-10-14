@@ -62,6 +62,7 @@
                        :death-handler-fn-sym `death-handler)
           job-opts (assoc tu/redis-client-opts :retry-opts retry-opts)
           dead-job-id-1 (:id (c/perform-async job-opts `dead-fn 11))
+          _ (Thread/sleep (rand-int 15))
           dead-job-id-2 (:id (c/perform-async job-opts `dead-fn 12))
           _ (doseq [id (range 5)]
               (c/perform-async job-opts `dead-fn id)

@@ -3,7 +3,7 @@
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.test-utils :as tu]
 
-    [clojure.string :as string]
+    [clojure.string :as str]
     [clojure.test :refer [deftest is testing use-fixtures]]
     [taoensso.carmine :as car]))
 
@@ -55,7 +55,7 @@
       (is (= (set foo-members)
              (set (redis-cmds/find-in-set tu/redis-conn
                                           "my-set"
-                                          #(string/starts-with? % "foo"))))))))
+                                          #(str/starts-with? % "foo"))))))))
 
 (deftest list-seq-test
   (testing "iterating over a list from right to left"
@@ -76,7 +76,7 @@
       (is (= bar-members
              (redis-cmds/find-in-list tu/redis-conn
                                       "my-list"
-                                      #(string/starts-with? % "bar")
+                                      #(str/starts-with? % "bar")
                                       2000))))))
 
 (deftest find-in-sorted-set-test
@@ -90,7 +90,7 @@
       (is (= bar-members
              (set (redis-cmds/find-in-sorted-set tu/redis-conn
                                                  "my-zset"
-                                                 #(string/starts-with? % "bar")
+                                                 #(str/starts-with? % "bar")
                                                  2000))))))
 
   (testing "limiting the number of sorted set members scanned"
@@ -102,5 +102,5 @@
       (is (= 500
              (count (redis-cmds/find-in-sorted-set tu/redis-conn
                                                    "my-other-zset"
-                                                   #(string/starts-with? % "foo")
+                                                   #(str/starts-with? % "foo")
                                                    500)))))))

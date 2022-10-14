@@ -1,6 +1,6 @@
 (ns goose.defaults
   (:require
-    [clojure.string :as string]))
+    [clojure.string :as str]))
 
 (def worker-threads 5)
 (def graceful-shutdown-sec 30)
@@ -31,7 +31,7 @@
 (defn ^:no-doc affix-queue
   [queue]
   (-> queue
-      (string/split (re-pattern (str queue-prefix "*")))
+      (str/split (re-pattern (str queue-prefix "*")))
       (second)))
 
 (def prefixed-schedule-queue (prefix-queue schedule-queue))
