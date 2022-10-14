@@ -6,7 +6,7 @@
 
 (defprotocol Shutdown
   "Shutdown a worker object."
-  (stop [_]))
+  (stop [this]))
 
 (def default-opts
   "Default config for Goose worker."

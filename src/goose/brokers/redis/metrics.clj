@@ -42,7 +42,7 @@
           ; Sleep for total-process-count minutes + jitters.
           ; On average, Goose sends queue level stats every 1 minute.
           (Thread/sleep
-            (u/sec-to-ms
+            (u/sec->ms
               (+ (* 60 total-process-count)
                  (rand-int total-process-count)))))))))
 

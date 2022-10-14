@@ -191,7 +191,7 @@
           sorted-set sorted-set-min (u/epoch-time-ms)
           limit offset d/scheduled-jobs-pop-limit)))))
 
-(defn move-jobs-from-sorted-set-to-ready-queue [conn sorted-set jobs grouping-fn]
+(defn sorted-set->ready-queue [conn sorted-set jobs grouping-fn]
   (car/atomic
     conn atomic-lock-attempts
     (car/multi)

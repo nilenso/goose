@@ -9,14 +9,14 @@
   "Default error handler of a Job.
   Called when a job fails.
   Logs exception & job details."
-  [_ job ex]
+  [_error-service-cfg job ex]
   (log/error ex "Job execution failed." job))
 
 (defn default-death-handler
   "Default death handler of a Job
   Called when a job fails & has exhausted retries.
   Logs exception & job details."
-  [_ job ex]
+  [_error-service-cfg job ex]
   (log/error ex "Job retries exhausted." job))
 
 (defn default-retry-delay-sec

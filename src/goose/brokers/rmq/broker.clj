@@ -17,7 +17,7 @@
 
 (defprotocol Close
   "Close connections for RabbitMQ broker."
-  (close [_]))
+  (close [this]))
 
 (defrecord RabbitMQ [rmq-conn channels queue-type publisher-confirms opts]
   b/Broker

@@ -2,7 +2,7 @@
   "StatsD is the default & specimen plugin for Goose.
   Plugins can be customized by implementing Metrics protocol."
   (:require
-    [goose.metrics.protocol :as protocol]
+    [goose.metrics.protocol :as metrics-protocol]
 
     [clj-statsd]))
 
@@ -16,7 +16,7 @@
      (~f ~metric ~value ~sample-rate tags#)))
 
 (defrecord StatsD [enabled? sample-rate tags]
-  protocol/Protocol
+  metrics-protocol/Protocol
   (enabled? [this] (:enabled? this))
   (gauge [this key value additional-tags]
     (with-merged-tags clj-statsd/gauge key value (:sample-rate this) (:tags this) additional-tags))
