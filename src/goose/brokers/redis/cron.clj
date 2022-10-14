@@ -68,7 +68,7 @@
     ;; wcar* will return nil or a single item instead of an empty/singleton list.
     (ensure-sequential
       (redis-cmds/wcar* redis-conn
-        (doall (map (partial car/hget d/prefixed-cron-entries) cron-names))))))
+        (doall (map #(car/hget d/prefixed-cron-entries %) cron-names))))))
 
 (defn- create-job
   [{:keys [cron-schedule job-description] :as _cron-entry}]

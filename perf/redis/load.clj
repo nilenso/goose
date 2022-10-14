@@ -74,7 +74,7 @@
                       :metrics-plugin (statsd/new {:enabled? false}))
         start-time (u/epoch-time-ms)
         worker (w/start worker-opts)]
-    (while (not (= 0 (enqueued-jobs/size redis-broker d/default-queue)))
+    (while (not= 0 (enqueued-jobs/size redis-broker d/default-queue))
       (Thread/sleep 200))
     (println "Jobs processed:" count "Milliseconds taken:" (- (u/epoch-time-ms) start-time))
 

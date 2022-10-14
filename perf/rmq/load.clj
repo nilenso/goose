@@ -88,7 +88,7 @@
                       :threads 25)
         start-time (u/epoch-time-ms)
         worker (w/start worker-opts)]
-    (while (not (= 0 (enqueued-jobs/size rmq-worker-broker queue)))
+    (while (not= 0 (enqueued-jobs/size rmq-worker-broker queue))
       (Thread/sleep 200))
     (println "Jobs processed:" count "Milliseconds taken:" (- (u/epoch-time-ms) start-time))
 

@@ -50,8 +50,8 @@
       (do
         (lb/qos ch d/rmq-prefetch-limit) ; Set prefetch-limit to 1.
         (let [subscriber-opts {:auto-ack               false
-                               :handle-cancel-ok       (partial cancel-ok ready-queue)
-                               :handle-consume-ok      (partial consume-ok ready-queue)
-                               :handle-recover-ok      (partial recover-ok ready-queue)
+                               :handle-cancel-ok       #(cancel-ok ready-queue %)
+                               :handle-consume-ok      #(consume-ok ready-queue %)
+                               :handle-recover-ok      #(recover-ok ready-queue)
                                :handle-shutdown-signal shutdown-signal}]
-          [ch (lc/subscribe ch ready-queue (partial handler opts) subscriber-opts)])))))
+          [ch (lc/subscribe ch ready-queue #(handler opts %1 %2 %3) subscriber-opts)])))))
