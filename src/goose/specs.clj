@@ -28,7 +28,7 @@
 (s/def :goose.specs.redis/url string?)
 (s/def :goose.specs.redis/pool-opts
   (s/or :nil nil?
-        :none #(= :none %)
+        :none #{:none}
         :map map?
         :iconn-pool #(satisfies? IConnectionPool %)))
 
@@ -62,24 +62,24 @@
                    :goose.specs.rmq/password
                    :goose.specs.rmq/vhost]))
 
-(s/def :goose.specs.sync/strategy #(= % d/sync-confirms))
+(s/def :goose.specs.sync/strategy #{d/sync-confirms})
 (s/def ::timeout-ms pos-int?)
 (s/def ::retry-delay-ms pos-int?)
 (s/def ::sync-strategy
   (s/keys :req-un [:goose.specs.sync/strategy ::timeout-ms]
           :opt-un [::max-retries ::retry-delay-ms]))
 
-(s/def :goose.specs.async/strategy #(= % d/async-confirms))
+(s/def :goose.specs.async/strategy #{d/async-confirms})
 (s/def ::ack-handler fn?)
 (s/def ::nack-handler fn?)
 (s/def ::async-strategy
   (s/keys :req-un [:goose.specs.async/strategy ::ack-handler ::nack-handler]))
 
-(s/def :goose.specs.classic/type #(= % d/rmq-classic-queue))
+(s/def :goose.specs.classic/type #{d/rmq-classic-queue})
 (s/def ::classic-queue
   (s/keys :req-un [:goose.specs.classic/type]))
 
-(s/def :goose.specs.quorum/type #(= % d/rmq-quorum-queue))
+(s/def :goose.specs.quorum/type #{d/rmq-quorum-queue})
 (s/def ::replication-factor pos-int?)
 (s/def ::quorum-queue
   (s/keys :req-un [:goose.specs.quorum/type ::replication-factor]))
