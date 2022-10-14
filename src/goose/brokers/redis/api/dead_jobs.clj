@@ -1,5 +1,5 @@
 (ns goose.brokers.redis.api.dead-jobs
-  {:no-doc true}
+  ^:no-doc
   (:refer-clojure :exclude [pop])
   (:require
     [goose.brokers.redis.commands :as redis-cmds]

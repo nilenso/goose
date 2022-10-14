@@ -1,5 +1,5 @@
 (ns goose.brokers.rmq.api.dead-jobs
-  {:no-doc true}
+  ^:no-doc
   (:refer-clojure :exclude [pop])
   (:require
     [goose.brokers.rmq.commands :as rmq-cmds]

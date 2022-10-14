@@ -1,5 +1,5 @@
 (ns goose.brokers.rmq.api.enqueued-jobs
-  {:no-doc true}
+  ^:no-doc
   (:require
     [goose.defaults :as d]
 

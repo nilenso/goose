@@ -1,5 +1,5 @@
 (ns goose.brokers.redis.worker
-  {:no-doc true}
+  ^:no-doc
   (:require
     [goose.brokers.redis.connection :as redis-connection]
     [goose.brokers.redis.consumer :as redis-consumer]

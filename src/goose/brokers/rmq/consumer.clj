@@ -1,5 +1,5 @@
 (ns goose.brokers.rmq.consumer
-  {:no-doc true}
+  ^:no-doc
   (:require
     [goose.defaults :as d]
     [goose.utils :as u]

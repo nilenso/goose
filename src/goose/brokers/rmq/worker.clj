@@ -1,5 +1,5 @@
 (ns goose.brokers.rmq.worker
-  {:no-doc true}
+  ^:no-doc
   (:require
     [goose.brokers.rmq.connection :as rmq-connection]
     [goose.brokers.rmq.consumer :as rmq-consumer]

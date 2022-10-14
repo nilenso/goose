@@ -1,5 +1,5 @@
 (ns goose.job
-  {:no-doc true}
+  ^:no-doc
   (:require
     [goose.metrics.keys :as metrics-keys]
     [goose.utils :as u]))

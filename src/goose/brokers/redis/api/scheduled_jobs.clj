@@ -1,5 +1,5 @@
 (ns goose.brokers.redis.api.scheduled-jobs
-  {:no-doc true}
+  ^:no-doc
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]

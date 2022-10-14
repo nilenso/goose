@@ -1,5 +1,5 @@
 (ns goose.brokers.rmq.retry
-  {:no-doc true}
+  ^:no-doc
   (:require
     [goose.brokers.rmq.commands :as rmq-cmds]
     [goose.defaults :as d]
