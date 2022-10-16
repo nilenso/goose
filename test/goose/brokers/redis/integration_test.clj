@@ -1,4 +1,4 @@
-(ns goose.redis.integration-test
+(ns goose.brokers.redis.integration-test
   (:require
     [goose.client :as c]
     [goose.retry :as retry]

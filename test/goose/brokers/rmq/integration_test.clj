@@ -1,4 +1,4 @@
-(ns goose.rmq.integration-test
+(ns goose.brokers.rmq.integration-test
   (:require
     [goose.api.enqueued-jobs :as enqueued-jobs]
     [goose.brokers.rmq.broker :as rmq]

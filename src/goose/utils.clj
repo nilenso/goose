@@ -4,7 +4,9 @@
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [com.climate.claypoole :as cp]
-    [taoensso.nippy :as nippy]))
+    [taoensso.nippy :as nippy])
+  (:import
+    (java.net InetAddress)))
 
 (defn encode [x]
   (nippy/freeze x))
@@ -60,7 +62,7 @@
        (map count)))
 
 (defn ^:no-doc hostname []
-  (.getHostName (java.net.InetAddress/getLocalHost)))
+  (.getHostName (InetAddress/getLocalHost)))
 
 (defn ^:no-doc random-element
   "Randomly select an element from a list & return it."

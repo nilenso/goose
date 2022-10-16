@@ -1,4 +1,4 @@
-(ns goose.rmq.api-test
+(ns goose.brokers.rmq.api-test
   (:require
     [goose.api.dead-jobs :as dead-jobs]
     [goose.api.enqueued-jobs :as enqueued-jobs]

@@ -1,4 +1,4 @@
-(ns goose.redis.api-test
+(ns goose.brokers.redis.api-test
   (:require
     [goose.api.cron-jobs :as cron-entries]
     [goose.api.dead-jobs :as dead-jobs]
