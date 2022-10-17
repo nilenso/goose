@@ -4,16 +4,15 @@
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.brokers.redis.consumer :as redis-consumer]
     [goose.brokers.redis.heartbeat :as heartbeat]
-    [goose.metrics.keys :as metrics-keys]
-    [goose.metrics.protocol :as metrics-protocol]
+    [goose.metrics :as m]
     [goose.utils :as u]))
 
 (defn- increment-job-recovery-metric
   [metrics-plugin
    {:keys [execute-fn-sym queue]}]
-  (when (metrics-protocol/enabled? metrics-plugin)
+  (when (m/enabled? metrics-plugin)
     (let [tags {:function execute-fn-sym :queue queue}]
-      (metrics-protocol/increment metrics-plugin metrics-keys/jobs-recovered 1 tags))))
+      (m/increment metrics-plugin m/jobs-recovered 1 tags))))
 
 (defn- replay-orphan-jobs
   [{:keys [redis-conn ready-queue metrics-plugin] :as opts}

@@ -8,7 +8,7 @@
     [goose.consumer :as consumer]
     [goose.defaults :as d]
     [goose.job :as job]
-    [goose.metrics.middleware :as metrics-middleware]
+    [goose.metrics :as m]
     [goose.worker :as worker]
 
     [clojure.tools.logging :as log]
@@ -50,7 +50,7 @@
                (-> consumer/execute-job (middlewares))
                consumer/execute-job)]
     (-> call
-        (metrics-middleware/wrap-metrics)
+        (m/wrap-metrics)
         (job/wrap-latency)
         (rmq-retry/wrap-failure)
         (rmq-consumer/wrap-acks))))

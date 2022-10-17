@@ -6,7 +6,7 @@
     [goose.client :as c]
     [goose.cron.parsing :as cron-parsing]
     [goose.defaults :as d]
-    [goose.metrics.protocol :as metrics-protocol]
+    [goose.metrics :as m]
     [goose.metrics.statsd :as statsd]
     [goose.utils :as u]
     [goose.worker :as w]
@@ -172,7 +172,7 @@
 ;;; ============== Worker ==============
 (s/def ::threads pos-int?)
 (s/def ::graceful-shutdown-sec pos-int?)
-(s/def ::metrics-plugin #(satisfies? metrics-protocol/Protocol %))
+(s/def ::metrics-plugin #(satisfies? m/Metrics %))
 (s/def ::middlewares fn?)
 (s/def ::error-service-cfg any?) ; This varies by error services.
 (s/def ::worker-opts
