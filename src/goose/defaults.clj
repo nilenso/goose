@@ -58,7 +58,7 @@
 (def rmq-default-url "amqp://guest:guest@localhost:5672")
 (def rmq-producer-channels 5)
 (def rmq-exchange "")
-(def rmq-delay-exchange (prefix-queue schedule-queue))
+(def rmq-delay-exchange prefixed-schedule-queue)
 (def rmq-delay-exchange-type "x-delayed-message")
 (def rmq-low-priority 0)
 (def rmq-high-priority 1)

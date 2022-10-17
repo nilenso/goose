@@ -30,8 +30,8 @@
     :as                                            job}
    ex]
   (let [death-handler (u/require-resolve death-handler-fn-sym)
-        dead-at (or last-retried-at (u/epoch-time-ms))
-        job (assoc-in job [:state :dead-at] dead-at)
+        died-at (or last-retried-at (u/epoch-time-ms))
+        job (assoc-in job [:state :died-at] died-at)
         queue-opts (assoc queue-type :queue d/prefixed-dead-queue)]
     (u/log-on-exceptions (death-handler error-service-cfg job ex))
     (when-not skip-dead-queue

@@ -45,8 +45,8 @@
   (cond
     (:retry-at (:state job))
     [metrics-keys/retry-latency (- (u/epoch-time-ms) (:retry-at (:state job)))]
-    (:schedule job)
-    [metrics-keys/schedule-latency (- (u/epoch-time-ms) (:schedule job))]
+    (:schedule-run-at job)
+    [metrics-keys/schedule-latency (- (u/epoch-time-ms) (:schedule-run-at job))]
     (:cron-run-at job)
     [metrics-keys/cron-schedule-latency (- (u/epoch-time-ms) (:cron-run-at job))]
     :else

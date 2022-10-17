@@ -84,8 +84,8 @@
 
       (let [match? (fn [job] (= (list 0) (:args job)))
             [dead-job] (dead-jobs/find-by-pattern tu/redis-producer match?)
-            dead-at (get-in dead-job [:state :dead-at])]
-        (is (true? (dead-jobs/delete-older-than tu/redis-producer dead-at))))
+            died-at (get-in dead-job [:state :died-at])]
+        (is (true? (dead-jobs/delete-older-than tu/redis-producer died-at))))
 
       (let [match? (fn [job] (= (list 1) (:args job)))
             [dead-job] (dead-jobs/find-by-pattern tu/redis-producer match?)]
