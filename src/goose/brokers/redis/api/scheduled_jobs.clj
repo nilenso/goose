@@ -5,25 +5,25 @@
     [goose.defaults :as d]
     [goose.job :as job]))
 
-(defn size [conn]
-  (redis-cmds/sorted-set-size conn d/prefixed-schedule-queue))
+(defn size [redis-conn]
+  (redis-cmds/sorted-set-size redis-conn d/prefixed-schedule-queue))
 
-(defn find-by-pattern [conn match? limit]
-  (redis-cmds/find-in-sorted-set conn d/prefixed-schedule-queue match? limit))
+(defn find-by-pattern [redis-conn match? limit]
+  (redis-cmds/find-in-sorted-set redis-conn d/prefixed-schedule-queue match? limit))
 
-(defn find-by-id [conn id]
+(defn find-by-id [redis-conn id]
   (let [
         limit 1
         match? (fn [job] (= (:id job) id))]
-    (first (find-by-pattern conn match? limit))))
+    (first (find-by-pattern redis-conn match? limit))))
 
-(defn prioritise-execution [conn job]
+(defn prioritise-execution [redis-conn job]
   (let [sorted-set d/prefixed-schedule-queue]
-    (when (redis-cmds/sorted-set-score conn sorted-set job)
-      (redis-cmds/sorted-set->ready-queue conn sorted-set (list job) job/ready-queue))))
+    (when (redis-cmds/sorted-set-score redis-conn sorted-set job)
+      (redis-cmds/sorted-set->ready-queue redis-conn sorted-set (list job) job/ready-queue))))
 
-(defn delete [conn job]
-  (= 1 (redis-cmds/del-from-sorted-set conn d/prefixed-schedule-queue job)))
+(defn delete [redis-conn job]
+  (= 1 (redis-cmds/del-from-sorted-set redis-conn d/prefixed-schedule-queue job)))
 
-(defn purge [conn]
-  (= 1 (redis-cmds/del-keys conn [d/prefixed-schedule-queue])))
+(defn purge [redis-conn]
+  (= 1 (redis-cmds/del-keys redis-conn [d/prefixed-schedule-queue])))

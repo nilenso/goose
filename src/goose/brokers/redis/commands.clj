@@ -50,9 +50,9 @@
 (defn run-with-transaction
   "Runs fn inside a Carmine atomic block, and returns
   whatever fn returns."
-  [redis-conn f]
+  [conn f]
   (let [return-value (atom nil)]
-    (car/atomic redis-conn atomic-lock-attempts
+    (car/atomic conn atomic-lock-attempts
       ;; This ugliness is necessary because car/atomic does not return the value
       ;; of the last expression inside it.
       (reset! return-value (f)))
@@ -61,8 +61,8 @@
 (defmacro with-transaction
   "Runs `body` inside a Carmine `atomic` block.
   `body` must call `car/multi`."
-  [redis-conn & body]
-  `(run-with-transaction ~redis-conn
+  [conn & body]
+  `(run-with-transaction ~conn
                          (fn [] ~@body)))
 
 ; ============ Key-Value =============

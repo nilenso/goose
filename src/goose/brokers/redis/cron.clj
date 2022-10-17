@@ -15,8 +15,8 @@
    :cron-schedule   cron-schedule
    :job-description job-description})
 
-(defn find-by-name [conn cron-name]
-  (redis-cmds/wcar* conn (car/hget d/prefixed-cron-entries cron-name)))
+(defn find-by-name [redis-conn cron-name]
+  (redis-cmds/wcar* redis-conn (car/hget d/prefixed-cron-entries cron-name)))
 
 (defn- set-due-time
   [cron-entry]
@@ -33,8 +33,8 @@
   "Registers a cron entry in Redis.
   If an entry already exists against the same name, it will be
   overwritten."
-  [conn cron-name cron-schedule job-description]
-  (redis-cmds/with-transaction conn
+  [redis-conn cron-name cron-schedule job-description]
+  (redis-cmds/with-transaction redis-conn
     (car/watch d/prefixed-cron-entries)
     (car/watch d/prefixed-cron-queue)
     (let [new-entry (registry-entry cron-name cron-schedule job-description)]
