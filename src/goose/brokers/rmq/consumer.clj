@@ -22,8 +22,8 @@
    metadata
    ^bytes payload]
   (let [job (u/decode payload)
-        ; Attach RMQ message metadata for ACKing & middlewares.
-        ; https://www.rabbitmq.com/publishers.html#message-properties
+        ;; Attach RMQ message metadata for ACKing & middlewares.
+        ;; https://www.rabbitmq.com/publishers.html#message-properties
         opts (assoc opts :ch ch :metadata metadata)]
     (call opts job)))
 

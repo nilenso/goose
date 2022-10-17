@@ -11,7 +11,7 @@
 
 (defmacro wcar* [conn & body] `(car/wcar ~conn ~@body))
 
-; ============ Utils =============
+;;; ============ Utils =============
 
 (defn- scan-database [conn _ cursor]
   (wcar* conn (car/scan cursor "MATCH" "*" "COUNT" 1)))
@@ -53,8 +53,8 @@
   [conn f]
   (let [return-value (atom nil)]
     (car/atomic conn atomic-lock-attempts
-      ;; This ugliness is necessary because car/atomic does not return the value
-      ;; of the last expression inside it.
+      ;; This ugliness is necessary because car/atomic does not
+      ;; return the value of the last expression inside it.
       (reset! return-value (f)))
     @return-value))
 
@@ -65,7 +65,7 @@
   `(run-with-transaction ~conn
                          (fn [] ~@body)))
 
-; ============ Key-Value =============
+;;; ============ Key-Value =============
 (defn set-key-val [conn key value expire-sec]
   (wcar* conn (car/set key value "EX" expire-sec)))
 
@@ -75,7 +75,7 @@
 (defn del-keys [conn keys]
   (wcar* conn (apply car/del keys)))
 
-; ============== Sets ===============
+;;; ============== Sets ===============
 (defn add-to-set [conn set member]
   (wcar* conn (car/sadd set member)))
 
@@ -111,8 +111,8 @@
        (filter match?)
        (doall)))
 
-; ============== Lists ===============
-; ===== FRONT/BACK -> RIGHT/LEFT =====
+;;; ============== Lists ===============
+;;; ===== FRONT/BACK -> RIGHT/LEFT =====
 (defn enqueue-back [conn list element]
   (wcar* conn (car/lpush list element)))
 
@@ -120,9 +120,9 @@
   (wcar* conn (car/rpush list element)))
 
 (defn dequeue-and-preserve [conn src dst]
-  ; `RPOPLPUSH` will be deprecated soon.
-  ; Switch to `LMOVE` as soon as Carmine supports that.
-  ; https://github.com/ptaoussanis/carmine/issues/268
+  ;; `RPOPLPUSH` will be deprecated soon.
+  ;; Switch to `LMOVE` as soon as Carmine supports that.
+  ;; https://github.com/ptaoussanis/carmine/issues/268
   (wcar* conn (car/brpoplpush src dst d/redis-long-polling-timeout-sec)))
 
 (defn list-position [conn list element]
@@ -173,7 +173,7 @@
        (take limit)
        (doall)))
 
-; ============ Sorted-Sets ============
+;;; ============ Sorted-Sets ============
 (def sorted-set-min "-inf")
 (def sorted-set-max "+inf")
 

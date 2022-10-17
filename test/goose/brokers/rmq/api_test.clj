@@ -11,7 +11,7 @@
   (:import
     [java.util UUID]))
 
-; ======= Setup & Teardown ==========
+;;; ======= Setup & Teardown ==========
 (use-fixtures :each tu/rmq-fixture)
 
 (deftest enqueued-jobs-test

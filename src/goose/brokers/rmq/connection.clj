@@ -15,6 +15,6 @@
 
 (defn close
   [rmq-conn]
-  ; Channels get closed automatically when connection is closed.
+  ;; Channels get closed automatically when connection is closed.
   (when rmq-conn
     (lcore/close rmq-conn)))

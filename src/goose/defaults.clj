@@ -35,7 +35,7 @@
 (def prefixed-cron-queue (prefix-queue cron-queue))
 (def prefixed-cron-entries (str "goose/" cron-entries))
 
-; ======== Redis defaults ========
+;;; ======== Redis defaults ========
 (def redis-internal-threads 4)
 (def redis-default-url "redis://localhost:6379")
 (def redis-long-polling-timeout-sec 1)
@@ -54,7 +54,7 @@
    :max-idle-per-key  (+ redis-internal-threads threads)
    :min-idle-per-key  (inc redis-internal-threads)})
 
-; ======== RabbitMQ defaults ========
+;;; ======== RabbitMQ defaults ========
 (def rmq-default-url "amqp://guest:guest@localhost:5672")
 (def rmq-producer-channels 5)
 (def rmq-exchange "")

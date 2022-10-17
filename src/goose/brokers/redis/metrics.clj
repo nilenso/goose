@@ -40,12 +40,12 @@
         internal-thread-pool
         (let [protected-queues->size (get-size-of-protected-queues redis-conn)
               queues->size (get-size-of-all-queues redis-conn)]
-          ; Using doseq instead of map, because map is lazy.
+          ;; Using doseq instead of map, because map is lazy.
           (doseq [[k v] (merge protected-queues->size queues->size)]
             (metrics-protocol/gauge metrics-plugin k v {})))
         (let [total-process-count (heartbeat/total-process-count redis-conn)]
-          ; Sleep for total-process-count minutes + jitters.
-          ; On average, Goose sends queue level stats every 1 minute.
+          ;; Sleep for total-process-count minutes + jitters.
+          ;; On average, Goose sends queue level stats every 1 minute.
           (Thread/sleep
             (u/sec->ms
               (+ (* 60 total-process-count)

@@ -1,4 +1,4 @@
-(ns goose.brokers.broker)
+(ns goose.broker)
 
 (defprotocol Broker
   "Protocol for all Goose brokers."
@@ -7,7 +7,7 @@
   (start [this worker-opts])
   (register-cron [this cron-name cron-schedule job-description])
 
-  ; enqueued-jobs API
+  ;; enqueued-jobs API
   (enqueued-jobs-list-all-queues [this])
   (enqueued-jobs-size [this queue])
   (enqueued-jobs-find-by-id [this queue id])
@@ -16,7 +16,7 @@
   (enqueued-jobs-delete [this job])
   (enqueued-jobs-purge [this queue])
 
-  ; scheduled-jobs API
+  ;; scheduled-jobs API
   (scheduled-jobs-size [this])
   (scheduled-jobs-find-by-id [this id])
   (scheduled-jobs-find-by-pattern [this match? limit])
@@ -24,7 +24,7 @@
   (scheduled-jobs-delete [this job])
   (scheduled-jobs-purge [this])
 
-  ; dead-jobs API
+  ;; dead-jobs API
   (dead-jobs-size [this])
   (dead-jobs-pop [this])
   (dead-jobs-find-by-id [this id])
@@ -35,7 +35,7 @@
   (dead-jobs-delete-older-than [this epoch-time-ms])
   (dead-jobs-purge [this])
 
-  ; cron jobs API
+  ;; cron jobs API
   (cron-jobs-find-by-name [this entry-name])
   (cron-jobs-delete [this entry-name])
   (cron-jobs-delete-all [this]))

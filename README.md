@@ -35,8 +35,8 @@ For details, refer to [Goose Wiki](https://github.com/nilenso/goose/wiki).
   [arg1 arg2]
   (println "my-fn called with" arg1 arg2))
 
-; Supply a fully-qualified function symbol for enqueuing.
-; Args to perform-async are variadic.
+;;; Supply a fully-qualified function symbol for enqueuing.
+;;; Args to perform-async are variadic.
 (c/perform-async c/default-opts `my-fn "foo" :bar)
 ```
 
@@ -46,9 +46,9 @@ For details, refer to [Goose Wiki](https://github.com/nilenso/goose/wiki).
 (ns my-worker
   (:require [goose.worker :as w]))
 
-; my-app namespace should be resolvable.
+;;; `my-app` namespace should be resolvable.
 (let [worker (w/start w/default-opts)]
-  ; ... listen for SIGINT or SIGTERM ...
+  ;; Listen for SIGINT or SIGTERM...
   (w/stop worker))
 ```
 

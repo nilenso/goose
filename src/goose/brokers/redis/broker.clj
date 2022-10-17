@@ -1,6 +1,6 @@
 (ns goose.brokers.redis.broker
   (:require
-    [goose.brokers.broker :as b]
+    [goose.broker :as b]
     [goose.brokers.redis.api.dead-jobs :as dead-jobs]
     [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
     [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
@@ -24,7 +24,7 @@
   (start [this worker-opts]
     (redis-worker/start (merge worker-opts (:opts this))))
 
-  ; enqueued-jobs API
+  ;; enqueued-jobs API
   (enqueued-jobs-list-all-queues [this]
     (enqueued-jobs/list-all-queues (:redis-conn this)))
   (enqueued-jobs-size [this queue]
@@ -40,7 +40,7 @@
   (enqueued-jobs-purge [this queue]
     (enqueued-jobs/purge (:redis-conn this) queue))
 
-  ; scheduled-jobs API
+  ;; scheduled-jobs API
   (scheduled-jobs-size [this]
     (scheduled-jobs/size (:redis-conn this)))
   (scheduled-jobs-find-by-id [this id]
@@ -54,7 +54,7 @@
   (scheduled-jobs-purge [this]
     (scheduled-jobs/purge (:redis-conn this)))
 
-  ; dead-jobs API
+  ;; dead-jobs API
   (dead-jobs-size [this]
     (dead-jobs/size (:redis-conn this)))
   (dead-jobs-pop [this]
@@ -74,7 +74,7 @@
   (dead-jobs-purge [this]
     (dead-jobs/purge (:redis-conn this)))
 
-  ; cron entries API
+  ;; cron entries API
   (cron-jobs-find-by-name [this entry-name]
     (cron/find-by-name (:redis-conn this) entry-name))
   (cron-jobs-delete [this entry-name]

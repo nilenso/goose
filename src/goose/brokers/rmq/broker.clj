@@ -1,6 +1,6 @@
 (ns goose.brokers.rmq.broker
   (:require
-    [goose.brokers.broker :as b]
+    [goose.broker :as b]
     [goose.brokers.rmq.api.dead-jobs :as dead-jobs]
     [goose.brokers.rmq.api.enqueued-jobs :as enqueued-jobs]
     [goose.brokers.rmq.commands :as rmq-cmds]
@@ -40,13 +40,13 @@
   (start [this worker-opts]
     (rmq-worker/start (merge worker-opts (:opts this))))
 
-  ; enqueued-jobs API
+  ;; enqueued-jobs API
   (enqueued-jobs-size [this queue]
     (enqueued-jobs/size (u/random-element (:channels this)) queue))
   (enqueued-jobs-purge [this queue]
     (enqueued-jobs/purge (u/random-element (:channels this)) queue))
 
-  ; dead-jobs API
+  ;; dead-jobs API
   (dead-jobs-size [this]
     (dead-jobs/size (u/random-element (:channels this))))
   (dead-jobs-pop [this]

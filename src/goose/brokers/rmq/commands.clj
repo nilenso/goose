@@ -17,7 +17,7 @@
   (lb/publish ch exch queue
               (u/encode job)
               {:mandatory    mandatory
-               ; Priority isn't supported by quorum queues.
+               ;; Priority isn't supported by quorum queues.
                :priority     priority
                :persistent   true
                :content-type d/content-type
@@ -25,11 +25,11 @@
 
 (defn- async-enqueue
   [ch exch queue job properties]
-  ; ASYNC-enqueue is a 2-step process:
-  ; 1. Get next sequence number.
-  ; 2. Publish a message to queue.
-  ; Multiple threads might be using the same channel.
-  ; Acquire lock on a channel to avoid race conditions.
+  ;; ASYNC-enqueue is a 2-step process:
+  ;; 1. Get next sequence number.
+  ;; 2. Publish a message to queue.
+  ;; Multiple threads might be using the same channel.
+  ;; Acquire lock on a channel to avoid race conditions.
   (locking ch
     (let [seq (.getNextPublishSeqNo ch)]
       (publish ch exch queue job properties)
@@ -45,9 +45,9 @@
    properties]
   (u/with-retry {:count max-retries :retry-delay-ms retry-delay-ms}
     (publish ch exch queue job properties)
-    ; (wait-for-confirms-or-die) closes a channel on Negative-ACK.
-    ; Since we're maintaining a pool of channels,
-    ; throw an exception if wait-for-confirms returns false.
+    ;; (wait-for-confirms-or-die) closes a channel on Negative-ACK.
+    ;; Since we're maintaining a pool of channels,
+    ;; throw an exception if wait-for-confirms returns false.
     (when-not (lcnf/wait-for-confirms ch timeout-ms)
       (throw (IOException. "rmq nack'd a msg"))))
 
@@ -96,8 +96,8 @@
            queue-opts
            publisher-confirms
            job
-           ; delayed-message-plugin doesn't support mandatory flag.
-           ; https://github.com/rabbitmq/discussions/issues/106#issuecomment-635931866
+           ;; delayed-message-plugin doesn't support mandatory flag.
+           ;; https://github.com/rabbitmq/discussions/issues/106#issuecomment-635931866
            {:mandatory false
             :priority  d/rmq-high-priority
             :headers   {"x-delay" delay-ms}}))

@@ -14,7 +14,7 @@
       (let [tags {:function execute-fn-sym :queue queue}
             start (u/epoch-time-ms)]
         (try
-          ; When a job is executed using API, latency might be negative.
+          ;; When a job is executed using API, latency might be negative.
           (when (pos? latency)
             (metrics-protocol/timing metrics-plugin job-type latency tags))
           (next opts job)

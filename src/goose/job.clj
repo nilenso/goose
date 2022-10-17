@@ -9,8 +9,8 @@
   {:id             (str (random-uuid))
    :execute-fn-sym execute-fn-sym
    :args           args
-   ; Since ready-queue is an internal implementation detail,
-   ; we store queue as well for find-by-pattern API queries.
+   ;; Since ready-queue is an internal implementation detail,
+   ;; we store queue as well for find-by-pattern API queries.
    :queue          queue
    :ready-queue    ready-queue
    :retry-opts     retry-opts
@@ -28,8 +28,8 @@
   [execute-fn-sym args queue ready-queue retry-opts]
   {:execute-fn-sym execute-fn-sym
    :args           args
-   ; Since ready-queue is an internal implementation detail,
-   ; we store queue as well for find-by-pattern API queries.
+   ;; Since ready-queue is an internal implementation detail,
+   ;; we store queue as well for find-by-pattern API queries.
    :queue          queue
    :ready-queue    ready-queue
    :retry-opts     retry-opts})

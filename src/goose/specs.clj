@@ -1,6 +1,6 @@
 (ns goose.specs
   (:require
-    [goose.brokers.broker :as b]
+    [goose.broker :as b]
     [goose.brokers.redis.broker :as redis]
     [goose.brokers.rmq.broker :as rmq]
     [goose.client :as c]
@@ -18,13 +18,13 @@
   (:import
     (java.time Instant)))
 
-; ========== Qualified Function Symbols ==============
+;;; ========== Qualified Function Symbols ==============
 (s/def ::fn-sym (s/and qualified-symbol? resolve #(fn? @(resolve %))))
 
-; ========== Cron ===============
+;;; ========== Cron ===============
 (s/def ::cron-string (s/and string? cron-parsing/valid-cron?))
 
-; ========== Redis ==============
+;;; ========== Redis ==============
 (s/def :goose.specs.redis/url string?)
 (s/def :goose.specs.redis/pool-opts
   (s/or :nil nil?
@@ -44,16 +44,16 @@
                      :two (s/cat :redis ::redis
                                  :scheduler-polling-interval-sec (s/int-in 1 61))))
 
-; ========== RabbitMQ ==============
+;;; ========== RabbitMQ ==============
 (s/def :goose.specs.rmq/uri string?)
 (s/def :goose.specs.rmq/host string?)
 (s/def :goose.specs.rmq/port int?)
 (s/def :goose.specs.rmq/username string?)
 (s/def :goose.specs.rmq/password string?)
 (s/def :goose.specs.rmq/vhost string?)
-; A non-exhaustive list of RabbitMQ settings.
-; Full list of settings can be found here:
-; http://clojurerabbitmq.info/articles/connecting.html
+;;; A non-exhaustive list of RabbitMQ settings.
+;;; Full list of settings can be found here:
+;;; http://clojurerabbitmq.info/articles/connecting.html
 (s/def :goose.specs.rmq/settings
   (s/keys :opt-un [:goose.specs.rmq/uri
                    :goose.specs.rmq/host
@@ -110,16 +110,16 @@
 (s/fdef rmq/new-consumer
         :args (s/cat :opts ::rmq))
 
-; ============== Brokers ==============
+;;; ============== Brokers ==============
 (s/def ::broker #(satisfies? b/Broker %))
 
-; ============== Queue ==============
+;;; ============== Queue ==============
 (defn- unprefixed? [queue] (not (str/starts-with? queue d/queue-prefix)))
 (defn- not-protected? [queue] (not (str/includes? d/protected-queues queue)))
-; RMQ queue names cannot be longer than 255 bytes.
+;;; RMQ queue names cannot be longer than 255 bytes.
 (s/def ::queue (s/and string? #(< (count %) 200) unprefixed? not-protected?))
 
-; ============== Retry Opts ==============
+;;; ============== Retry Opts ==============
 (s/def ::max-retries nat-int?)
 (s/def ::retry-queue (s/nilable ::queue))
 (s/def ::skip-dead-queue boolean?)
@@ -145,7 +145,7 @@
                      ::death-handler-fn-sym]
             :opt-un [::retry-queue])))
 
-; ============== StatsD Metrics ==============
+;;; ============== StatsD Metrics ==============
 (s/def :goose.specs.statsd/enabled? boolean?)
 (s/def :goose.specs.statsd/host string?)
 (s/def :goose.specs.statsd/port pos-int?)
@@ -162,19 +162,19 @@
 (s/fdef statsd/new
         :args (s/cat :opts ::statsd-opts))
 
-; ============== Client ==============
+;;; ============== Client ==============
 (s/def ::args-serializable?
   #(try (= % (u/decode (u/encode %)))
         (catch Exception _ false)))
 (s/def ::instant #(instance? Instant %))
 (s/def ::client-opts (s/keys :req-un [::broker ::queue ::retry-opts]))
 
-; ============== Worker ==============
+;;; ============== Worker ==============
 (s/def ::threads pos-int?)
 (s/def ::graceful-shutdown-sec pos-int?)
 (s/def ::metrics-plugin #(satisfies? metrics-protocol/Protocol %))
 (s/def ::middlewares fn?)
-(s/def ::error-service-cfg any?) ; This depends on
+(s/def ::error-service-cfg any?) ; This varies by error services.
 (s/def ::worker-opts
   (s/keys :req-un [::broker
                    ::threads
@@ -184,7 +184,7 @@
           :opt-un [::middlewares
                    ::error-service-cfg]))
 
-; ============== FDEFs ==============
+;;; ============== FDEFs ==============
 (s/fdef c/perform-async
         :args (s/cat :opts ::client-opts
                      :execute-fn-sym ::fn-sym

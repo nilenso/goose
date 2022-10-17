@@ -23,11 +23,11 @@
 (defn- sleep-duration
   [redis-conn scheduler-polling-interval-sec]
   (let [total-process-count (heartbeat/total-process-count redis-conn)]
-    ; Sleep for total-process-count * polling-interval + jitters
-    ; Regardless of number of processes,
-    ; On average, Goose checks for scheduled jobs
-    ; every polling interval configured to reduce load on Redis.
-    ; All worker processes must have same polling interval.
+    ;; Sleep for total-process-count * polling-interval + jitters
+    ;; Regardless of number of processes,
+    ;; On average, Goose checks for scheduled jobs
+    ;; every polling interval configured to reduce load on Redis.
+    ;; All worker processes must have same polling interval.
     (u/sec->ms
       (+ (* scheduler-polling-interval-sec total-process-count)
          (rand-int 3)))))
@@ -53,8 +53,8 @@
             cron-entries-found? (cron/enqueue-due-cron-entries redis-conn)]
         (when-not (or scheduled-jobs-found?
                       cron-entries-found?)
-          ; Goose only sleeps if no due jobs or cron entries are found.
-          ; If they are found, then Goose immediately polls to check
-          ; if more jobs are due.
+          ;; Goose only sleeps if no due jobs or cron entries are found.
+          ;; If they are found, then Goose immediately polls to check
+          ;; if more jobs are due.
           (Thread/sleep (sleep-duration redis-conn scheduler-polling-interval-sec))))))
   (log/info "Stopped scheduler. Exiting gracefully..."))

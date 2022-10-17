@@ -94,7 +94,7 @@
   (rmq/close rmq-producer)
   (rmq/close rmq-consumer)
 
-  ; clj-statsd uses agents.
-  ; If not shutdown, program won't quit.
-  ; https://stackoverflow.com/questions/38504056/program-wont-end-when-using-clj-statsd
+  ;; clj-statsd uses agents.
+  ;; If not shutdown, program won't quit.
+  ;; https://stackoverflow.com/questions/38504056/program-wont-end-when-using-clj-statsd
   (shutdown-agents))

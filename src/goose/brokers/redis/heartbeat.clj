@@ -26,9 +26,9 @@
   (u/log-on-exceptions
     (u/while-pool
       internal-thread-pool
-      ; Goose stops sending heartbeat when shutdown is initialized.
-      ; Set expiry beyond graceful-shutdown time so in-progress jobs
-      ; aren't considered abandoned and double executions are avoided.
+      ;; Goose stops sending heartbeat when shutdown is initialized.
+      ;; Set expiry beyond graceful-shutdown time so in-progress jobs
+      ;; aren't considered abandoned and double executions are avoided.
       (let [expiry (max d/redis-heartbeat-expire-sec graceful-shutdown-sec)]
         (redis-cmds/set-key-val redis-conn (heartbeat-id id) "alive" expiry))
       (Thread/sleep (u/sec->ms d/redis-heartbeat-sleep-sec)))))
@@ -36,8 +36,11 @@
 (defn stop
   [{:keys [id redis-conn process-set in-progress-queue]}]
   (redis-cmds/del-keys redis-conn [(str d/heartbeat-prefix id)])
-  ; If job has swallowed thread-interrupted exception,
-  ; don't del the process from the queue.
-  ; Job/process get recovered/cleaned-up by orphan-checker.
+  ;; `(redis-cmds/list-size in-progress-queue)` won't be empty
+  ;; when jobs swallow thread-interrupted exception;
+  ;; and don't exit in-time for graceful shutdown.
+  ;; In such scenarios, don't delete process from set.
+  ;; Orphan checker will recover half-executed job &
+  ;; will delete process after all jobs have been recovered.
   (when (= 0 (redis-cmds/list-size redis-conn in-progress-queue))
     (redis-cmds/del-from-set redis-conn process-set id)))

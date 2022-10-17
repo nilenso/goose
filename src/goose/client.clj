@@ -1,6 +1,6 @@
 (ns goose.client
   (:require
-    [goose.brokers.broker :as b]
+    [goose.broker :as b]
     [goose.defaults :as d]
     [goose.job :as j]
     [goose.retry :as retry]

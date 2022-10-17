@@ -1,6 +1,6 @@
 (ns goose.worker
   (:require
-    [goose.brokers.broker :as b]
+    [goose.broker :as b]
     [goose.defaults :as d]
     [goose.metrics.statsd :as statsd]))
 

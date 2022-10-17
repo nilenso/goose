@@ -18,9 +18,9 @@
 (defn- replay-orphan-jobs
   [{:keys [redis-conn ready-queue metrics-plugin] :as opts}
    orphan-queue]
-  ; Enqueuing in-progress jobs to front of queue isn't possible
-  ; because Carmine doesn't support `LMOVE` function.
-  ; https://github.com/nilenso/goose/issues/14
+  ;; Enqueuing in-progress jobs to front of queue isn't possible
+  ;; because Carmine doesn't support `LMOVE` function.
+  ;; https://github.com/nilenso/goose/issues/14
   (when-let [job (redis-cmds/dequeue-and-preserve redis-conn orphan-queue ready-queue)]
     (increment-job-recovery-metric metrics-plugin job)
     #(replay-orphan-jobs opts orphan-queue)))
@@ -43,7 +43,7 @@
       (let [processes (redis-cmds/find-in-set redis-conn process-set identity)]
         (check-liveness opts (remove #{id} processes)))
       (let [process-count (heartbeat/process-count redis-conn process-set)]
-        ; Sleep for (process-count) minutes + jitters.
-        ; On average, Goose checks for orphan jobs every 1 minute.
+        ;; Sleep for (process-count) minutes + jitters.
+        ;; On average, Goose checks for orphan jobs every 1 minute.
         (Thread/sleep (u/sec->ms (+ (* 60 process-count)
                                     (rand-int process-count))))))))
