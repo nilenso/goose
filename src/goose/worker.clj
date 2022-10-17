@@ -20,4 +20,4 @@
 (defn start
   "Starts a threadpool for worker."
   [{:keys [broker] :as opts}]
-  (b/start broker opts))
+  (b/start-worker broker opts))

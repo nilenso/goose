@@ -37,7 +37,7 @@
                           schedule
                           job))
 
-  (start [this worker-opts]
+  (start-worker [this worker-opts]
     (rmq-worker/start (merge worker-opts (:opts this))))
 
   ;; enqueued-jobs API

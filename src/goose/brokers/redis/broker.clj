@@ -21,7 +21,7 @@
     (redis-scheduler/run-at (:redis-conn this) schedule job))
   (register-cron [this cron-name cron-schedule job-description]
     (cron/register (:redis-conn this) cron-name cron-schedule job-description))
-  (start [this worker-opts]
+  (start-worker [this worker-opts]
     (redis-worker/start (merge worker-opts (:opts this))))
 
   ;; enqueued-jobs API

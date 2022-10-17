@@ -4,7 +4,7 @@
   "Protocol for all Goose brokers."
   (enqueue [this job])
   (schedule [this schedule job])
-  (start [this worker-opts])
+  (start-worker [this worker-opts])
   (register-cron [this cron-name cron-schedule job-description])
 
   ;; enqueued-jobs API
