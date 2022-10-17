@@ -113,9 +113,8 @@
 
 ; ============== Lists ===============
 ; ===== FRONT/BACK -> RIGHT/LEFT =====
-(defn enqueue-back
-  ([conn list element]
-   (wcar* conn (car/lpush list element))))
+(defn enqueue-back [conn list element]
+  (wcar* conn (car/lpush list element)))
 
 (defn enqueue-front [conn list element]
   (wcar* conn (car/rpush list element)))
@@ -124,7 +123,7 @@
   ; `RPOPLPUSH` will be deprecated soon.
   ; Switch to `LMOVE` as soon as Carmine supports that.
   ; https://github.com/ptaoussanis/carmine/issues/268
-  (wcar* conn (car/brpoplpush src dst d/long-polling-timeout-sec)))
+  (wcar* conn (car/brpoplpush src dst d/redis-long-polling-timeout-sec)))
 
 (defn list-position [conn list element]
   (wcar* conn (car/lpos list element) "COUNT" 1))
@@ -181,7 +180,8 @@
 (defn enqueue-sorted-set [conn sorted-set score element]
   (wcar* conn (car/zadd sorted-set score element)))
 
-(defn scheduled-jobs-due-now [conn sorted-set]
+(defn scheduled-jobs-due-now
+  [conn sorted-set]
   (let [limit "limit"
         offset 0]
     (not-empty
@@ -189,9 +189,10 @@
         conn
         (car/zrangebyscore
           sorted-set sorted-set-min (u/epoch-time-ms)
-          limit offset d/scheduled-jobs-pop-limit)))))
+          limit offset d/redis-scheduled-jobs-pop-limit)))))
 
-(defn sorted-set->ready-queue [conn sorted-set jobs grouping-fn]
+(defn sorted-set->ready-queue
+  [conn sorted-set jobs grouping-fn]
   (car/atomic
     conn atomic-lock-attempts
     (car/multi)
@@ -205,7 +206,8 @@
 (defn sorted-set-size [conn sorted-set]
   (wcar* conn (car/zcount sorted-set sorted-set-min sorted-set-max)))
 
-(defn- scan-sorted-set [conn sorted-set cursor]
+(defn- scan-sorted-set
+  [conn sorted-set cursor]
   (let [[next-cursor-string replies] (wcar* conn (car/zscan sorted-set cursor "MATCH" "*" "COUNT" 1))]
     [next-cursor-string (map first (partition 2 replies))]))
 

@@ -22,13 +22,15 @@
 (defrecord RabbitMQ [rmq-conn channels queue-type publisher-confirms opts]
   b/Broker
 
-  (enqueue [this job]
+  (enqueue
+    [this job]
     (rmq-cmds/enqueue-back (u/random-element (:channels this))
                            (assoc (:queue-type this) :queue (job/ready-queue job))
                            (:publisher-confirms this)
                            job))
 
-  (schedule [this schedule job]
+  (schedule
+    [this schedule job]
     (rmq-scheduler/run-at (u/random-element (:channels this))
                           (assoc (:queue-type this) :queue (job/ready-queue job))
                           (:publisher-confirms this)
@@ -49,7 +51,8 @@
     (dead-jobs/size (u/random-element (:channels this))))
   (dead-jobs-pop [this]
     (dead-jobs/pop (u/random-element (:channels this))))
-  (dead-jobs-replay-n-jobs [this n]
+  (dead-jobs-replay-n-jobs
+    [this n]
     (dead-jobs/replay-n-jobs (u/random-element (:channels this))
                              (:queue-type this)
                              (:publisher-confirms this)
@@ -65,11 +68,11 @@
   "Default config for RabbitMQ client.
   Refer to http://clojurerabbitmq.info/articles/connecting.html
   for complete set of settings."
-  {:settings             {:uri d/rmq-default-url}
-   :queue-type           rmq-queue/classic
-   :publisher-confirms   publisher-confirms/sync
-   :return-listener   return-listener/default
-   :shutdown-listener shutdown-listener/default})
+  {:settings           {:uri d/rmq-default-url}
+   :queue-type         rmq-queue/classic
+   :publisher-confirms publisher-confirms/sync
+   :return-listener    return-listener/default
+   :shutdown-listener  shutdown-listener/default})
 
 (defn new-producer
   "Create a client that produce messages to RabbitMQ broker."

@@ -7,8 +7,7 @@
 
     [clojure.tools.logging :as log]))
 
-(defn preservation-queue
-  [id]
+(defn preservation-queue [id]
   (str d/in-progress-queue-prefix id))
 
 (defn run

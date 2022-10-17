@@ -13,7 +13,8 @@
 
 (defrecord Redis [redis-conn opts]
   b/Broker
-  (enqueue [this job]
+  (enqueue
+    [this job]
     (redis-cmds/enqueue-back (:redis-conn this) (:ready-queue job) job)
     (select-keys job [:id]))
   (schedule [this schedule job]

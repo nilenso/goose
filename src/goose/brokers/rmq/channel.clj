@@ -10,7 +10,9 @@
 
 
 (defn open
-  [conn {:keys [strategy ack-handler nack-handler]} return-listener]
+  [conn
+   {:keys [strategy ack-handler nack-handler]}
+   return-listener]
   (let [ch (lch/open conn)]
     (if ch
       (do

@@ -12,11 +12,13 @@
 (defn size [ch]
   (lq/message-count ch d/prefixed-dead-queue))
 
-(defn pop [ch]
+(defn pop
+  [ch]
   (let [[_ payload] (lb/get ch d/prefixed-dead-queue true)]
     (u/decode payload)))
 
-(defn replay-n-jobs [ch queue-type publisher-confirms n]
+(defn replay-n-jobs
+  [ch queue-type publisher-confirms n]
   (when (pos-int? n)
     (loop [replayed? (rmq-cmds/replay-dead-job ch queue-type publisher-confirms)
            iterations 1]

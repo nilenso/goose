@@ -40,8 +40,9 @@
 
     ; Worker specs
     #(w/start (assoc tu/redis-worker-opts :threads -1.1))
-    #(w/start (assoc tu/redis-worker-opts :graceful-shutdown-sec -2))
+    #(w/start (assoc tu/rmq-worker-opts :graceful-shutdown-sec -2))
     #(w/start (assoc tu/redis-worker-opts :metrics-plugin :invalid))
+    #(w/start (assoc tu/rmq-worker-opts :middlewares "non-fn"))
 
     ; :statad-opts
     #(statsd/new (assoc statsd/default-opts :enabled? 1))

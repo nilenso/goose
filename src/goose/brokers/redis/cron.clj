@@ -9,16 +9,17 @@
 
     [taoensso.carmine :as car]))
 
-(defn registry-entry [cron-name cron-schedule job-description]
+(defn registry-entry
+  [cron-name cron-schedule job-description]
   {:name            cron-name
    :cron-schedule   cron-schedule
    :job-description job-description})
 
-(defn find-by-name
-  [conn cron-name]
+(defn find-by-name [conn cron-name]
   (redis-cmds/wcar* conn (car/hget d/prefixed-cron-entries cron-name)))
 
-(defn- set-due-time [cron-entry]
+(defn- set-due-time
+  [cron-entry]
   (car/zadd d/prefixed-cron-queue
             (-> cron-entry
                 :cron-schedule
@@ -42,20 +43,23 @@
       (set-due-time new-entry)
       new-entry)))
 
-(defn- enqueue-jobs-to-ready-on-priority [jobs]
+(defn- enqueue-jobs-to-ready-on-priority
+  [jobs]
   (doseq [[queue-key grouped-jobs] (group-by :ready-queue jobs)]
     (apply car/rpush queue-key grouped-jobs)))
 
-(defn- due-cron-names [redis-conn]
+(defn- due-cron-names
+  [redis-conn]
   (redis-cmds/wcar* redis-conn
     (car/zrangebyscore d/prefixed-cron-queue
                        redis-cmds/sorted-set-min
                        (u/epoch-time-ms)
                        "limit"
                        0
-                       d/cron-names-pop-limit)))
+                       d/redis-cron-names-pop-limit)))
 
-(defn- ensure-sequential [thing]
+(defn- ensure-sequential
+  [thing]
   (cond
     (sequential? thing) thing
     (nil? thing) []
@@ -71,7 +75,8 @@
         (doall (map #(car/hget d/prefixed-cron-entries %) cron-names))))))
 
 (defn- create-job
-  [{:keys [cron-schedule job-description] :as _cron-entry}]
+  [{:keys [cron-schedule job-description]
+    :as   _cron-entry}]
   (-> (j/from-description job-description)
       (assoc :cron-run-at (cron-parsing/previous-run-epoch-ms cron-schedule))))
 
@@ -99,6 +104,5 @@
                              (car/hdel d/prefixed-cron-entries entry-name))]
     (= [1 1] atomic-results)))
 
-(defn delete-all
-  [redis-conn]
+(defn delete-all [redis-conn]
   (= 2 (redis-cmds/del-keys redis-conn [d/prefixed-cron-entries d/prefixed-cron-queue])))

@@ -29,8 +29,7 @@
   ([] (System/currentTimeMillis))
   ([date] (inst-ms date)))
 
-(defn ^:no-doc sec->ms
-  [sec]
+(defn ^:no-doc sec->ms [sec]
   (* 1000 sec))
 
 (defn ^:no-doc add-sec
@@ -85,6 +84,5 @@
         (recur (dec retry-count) retry-delay-ms fn-to-retry))
       res)))
 
-(defmacro with-retry
-  [{:keys [count retry-delay-ms]} & body]
+(defmacro with-retry [{:keys [count retry-delay-ms]} & body]
   `(with-retry* ~count ~retry-delay-ms (fn [] ~@body)))

@@ -9,7 +9,8 @@
     [goose.utils :as u]))
 
 (defn- increment-job-recovery-metric
-  [metrics-plugin {:keys [execute-fn-sym queue]}]
+  [metrics-plugin
+   {:keys [execute-fn-sym queue]}]
   (when (metrics-protocol/enabled? metrics-plugin)
     (let [tags {:function execute-fn-sym :queue queue}]
       (metrics-protocol/increment metrics-plugin metrics-keys/jobs-recovered 1 tags))))
@@ -25,7 +26,8 @@
     #(replay-orphan-jobs opts orphan-queue)))
 
 (defn- check-liveness
-  [{:keys [redis-conn process-set] :as opts} processes]
+  [{:keys [redis-conn process-set] :as opts}
+   processes]
   (doseq [process processes]
     (when-not (heartbeat/alive? redis-conn process)
       (trampoline
@@ -34,8 +36,7 @@
       (redis-cmds/del-from-set redis-conn process-set process))))
 
 (defn run
-  [{:keys [id internal-thread-pool redis-conn process-set]
-    :as   opts}]
+  [{:keys [id internal-thread-pool redis-conn process-set] :as opts}]
   (u/log-on-exceptions
     (u/while-pool
       internal-thread-pool

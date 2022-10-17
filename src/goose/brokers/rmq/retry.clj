@@ -8,11 +8,11 @@
     [goose.utils :as u]))
 
 (defn- retry-job
-  [{:keys [ch queue-type publisher-confirms error-service-cfg]}
-   {{:keys [retry-delay-sec-fn-sym
-            error-handler-fn-sym]} :retry-opts
-    {:keys [retry-count]}          :state
-    :as                            job}
+  [{:keys [ch queue-type publisher-confirms error-service-cfg]
+    :as   _opts}
+   {{:keys [retry-delay-sec-fn-sym error-handler-fn-sym]} :retry-opts
+    {:keys [retry-count]}                                 :state
+    :as                                                   job}
    ex]
   (let [error-handler (u/require-resolve error-handler-fn-sym)
         retry-delay-ms (* ((u/require-resolve retry-delay-sec-fn-sym) retry-count) 1000)
@@ -23,11 +23,11 @@
     (rmq-cmds/schedule ch queue-opts publisher-confirms job retry-delay-ms)))
 
 (defn- bury-job
-  [{:keys [ch queue-type publisher-confirms error-service-cfg]}
-   {{:keys [skip-dead-queue
-            death-handler-fn-sym]} :retry-opts
-    {:keys [last-retried-at]}      :state
-    :as                            job}
+  [{:keys [ch queue-type publisher-confirms error-service-cfg]
+    :as   _opts}
+   {{:keys [skip-dead-queue death-handler-fn-sym]} :retry-opts
+    {:keys [last-retried-at]}                      :state
+    :as                                            job}
    ex]
   (let [death-handler (u/require-resolve death-handler-fn-sym)
         dead-at (or last-retried-at (u/epoch-time-ms))

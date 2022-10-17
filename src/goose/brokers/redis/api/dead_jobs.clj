@@ -9,7 +9,8 @@
 (defn size [conn]
   (redis-cmds/sorted-set-size conn d/prefixed-dead-queue))
 
-(defn pop [conn]
+(defn pop
+  [conn]
   (let [[job _] (redis-cmds/sorted-set-pop-from-head conn d/prefixed-dead-queue)]
     job))
 

@@ -5,16 +5,13 @@
     [goose.defaults :as d]
     [goose.utils :as u]))
 
-(defn heartbeat-id
-  [id]
+(defn heartbeat-id [id]
   (str d/heartbeat-prefix id))
 
-(defn alive?
-  [redis-conn id]
+(defn alive? [redis-conn id]
   (boolean (redis-cmds/get-key redis-conn (heartbeat-id id))))
 
-(defn process-count
-  [redis-conn process-set]
+(defn process-count [redis-conn process-set]
   (redis-cmds/set-size redis-conn process-set))
 
 (defn total-process-count
@@ -24,9 +21,7 @@
     (reduce + process-counts)))
 
 (defn run
-  [{:keys [internal-thread-pool
-           id redis-conn process-set
-           graceful-shutdown-sec]}]
+  [{:keys [internal-thread-pool id redis-conn process-set graceful-shutdown-sec]}]
   (redis-cmds/add-to-set redis-conn process-set id)
   (u/log-on-exceptions
     (u/while-pool
@@ -34,9 +29,9 @@
       ; Goose stops sending heartbeat when shutdown is initialized.
       ; Set expiry beyond graceful-shutdown time so in-progress jobs
       ; aren't considered abandoned and double executions are avoided.
-      (let [expiry (max d/heartbeat-expire-sec graceful-shutdown-sec)]
+      (let [expiry (max d/redis-heartbeat-expire-sec graceful-shutdown-sec)]
         (redis-cmds/set-key-val redis-conn (heartbeat-id id) "alive" expiry))
-      (Thread/sleep (u/sec->ms d/heartbeat-sleep-sec)))))
+      (Thread/sleep (u/sec->ms d/redis-heartbeat-sleep-sec)))))
 
 (defn stop
   [{:keys [id redis-conn process-set in-progress-queue]}]

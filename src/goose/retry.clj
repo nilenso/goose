@@ -48,7 +48,9 @@
        (prefix-retry-queue)))
 
 (defn- failure-state
-  [{{:keys [retry-count first-failed-at]} :state} ex]
+  [{{:keys [retry-count first-failed-at]} :state
+    :as                                   _job}
+   ex]
   {:error           (str ex)
    :last-retried-at (when first-failed-at (u/epoch-time-ms))
    :first-failed-at (or first-failed-at (u/epoch-time-ms))

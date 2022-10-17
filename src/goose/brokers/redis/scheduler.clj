@@ -11,7 +11,8 @@
     [clojure.tools.logging :as log]))
 
 (defn run-at
-  [redis-conn epoch-ms
+  [redis-conn
+   epoch-ms
    {:keys [ready-queue] :as job}]
   (let [scheduled-job (assoc job :schedule epoch-ms)]
     (if (< epoch-ms (u/epoch-time-ms))
@@ -19,7 +20,8 @@
       (redis-cmds/enqueue-sorted-set redis-conn d/prefixed-schedule-queue epoch-ms scheduled-job))
     (select-keys job [:id])))
 
-(defn- sleep-duration [redis-conn scheduler-polling-interval-sec]
+(defn- sleep-duration
+  [redis-conn scheduler-polling-interval-sec]
   (let [total-process-count (heartbeat/total-process-count redis-conn)]
     ; Sleep for total-process-count * polling-interval + jitters
     ; Regardless of number of processes,
@@ -42,8 +44,7 @@
     true))
 
 (defn run
-  [{:keys [internal-thread-pool redis-conn
-           scheduler-polling-interval-sec]}]
+  [{:keys [internal-thread-pool redis-conn scheduler-polling-interval-sec]}]
   (log/info "Polling scheduled jobs...")
   (u/log-on-exceptions
     (u/while-pool

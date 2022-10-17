@@ -27,16 +27,21 @@
         total-size (reduce + (vals queues->size))]
     (assoc queues->size metrics-keys/total-enqueued-size total-size)))
 
+(defn- get-size-of-protected-queues
+  [redis-conn]
+  {metrics-keys/schedule-queue-size (redis-cmds/sorted-set-size redis-conn d/prefixed-schedule-queue)
+   metrics-keys/dead-queue-size     (redis-cmds/sorted-set-size redis-conn d/prefixed-dead-queue)})
+
 (defn run
   [{:keys [internal-thread-pool redis-conn metrics-plugin]}]
   (u/log-on-exceptions
     (when (metrics-protocol/enabled? metrics-plugin)
       (u/while-pool
         internal-thread-pool
-        (let [protected-queues->size {metrics-keys/schedule-queue-size (redis-cmds/sorted-set-size redis-conn d/prefixed-schedule-queue)
-                                      metrics-keys/dead-queue-size     (redis-cmds/sorted-set-size redis-conn d/prefixed-dead-queue)}]
+        (let [protected-queues->size (get-size-of-protected-queues redis-conn)
+              queues->size (get-size-of-all-queues redis-conn)]
           ; Using doseq instead of map, because map is lazy.
-          (doseq [[k v] (merge protected-queues->size (get-size-of-all-queues redis-conn))]
+          (doseq [[k v] (merge protected-queues->size queues->size)]
             (metrics-protocol/gauge metrics-plugin k v {})))
         (let [total-process-count (heartbeat/total-process-count redis-conn)]
           ; Sleep for total-process-count minutes + jitters.

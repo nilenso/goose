@@ -131,10 +131,18 @@
   (s/and ::fn-sym #(some #{3} (u/arities %))))
 (s/def ::retry-opts
   (s/and
-    (s/map-of #{:max-retries :retry-delay-sec-fn-sym :skip-dead-queue
-                :retry-queue :error-handler-fn-sym :death-handler-fn-sym} any?)
-    (s/keys :req-un [::max-retries ::retry-delay-sec-fn-sym ::skip-dead-queue
-                     ::error-handler-fn-sym ::death-handler-fn-sym]
+    (s/map-of #{:max-retries
+                :retry-delay-sec-fn-sym
+                :skip-dead-queue
+                :retry-queue
+                :error-handler-fn-sym
+                :death-handler-fn-sym}
+              any?)
+    (s/keys :req-un [::max-retries
+                     ::retry-delay-sec-fn-sym
+                     ::skip-dead-queue
+                     ::error-handler-fn-sym
+                     ::death-handler-fn-sym]
             :opt-un [::retry-queue])))
 
 ; ============== StatsD Metrics ==============
@@ -165,8 +173,16 @@
 (s/def ::threads pos-int?)
 (s/def ::graceful-shutdown-sec pos-int?)
 (s/def ::metrics-plugin #(satisfies? metrics-protocol/Protocol %))
-(s/def ::worker-opts (s/keys :req-un [::broker ::queue ::threads
-                                      ::graceful-shutdown-sec ::metrics-plugin]))
+(s/def ::middlewares fn?)
+(s/def ::error-service-cfg any?) ; This depends on
+(s/def ::worker-opts
+  (s/keys :req-un [::broker
+                   ::threads
+                   ::queue
+                   ::graceful-shutdown-sec
+                   ::metrics-plugin]
+          :opt-un [::middlewares
+                   ::error-service-cfg]))
 
 ; ============== FDEFs ==============
 (s/fdef c/perform-async

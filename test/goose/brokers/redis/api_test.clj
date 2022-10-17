@@ -50,7 +50,8 @@
 
 (defn death-handler [_ _ _])
 (def dead-fn-atom (atom 0))
-(defn dead-fn [id]
+(defn dead-fn
+  [id]
   (swap! dead-fn-atom inc)
   (throw (Exception. (str id " died!"))))
 

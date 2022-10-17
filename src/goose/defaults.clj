@@ -4,11 +4,6 @@
 
 (def worker-threads 5)
 (def graceful-shutdown-sec 30)
-(def long-polling-timeout-sec 1)
-(def scheduled-jobs-pop-limit 50)
-(def cron-names-pop-limit 50)
-(def heartbeat-sleep-sec 15)
-(def heartbeat-expire-sec 60)
 (def content-type "ptaoussanis/nippy")
 
 (def queue-prefix "goose/queue:")
@@ -40,9 +35,15 @@
 (def prefixed-cron-queue (prefix-queue cron-queue))
 (def prefixed-cron-entries (str "goose/" cron-entries))
 
+; ======== Redis defaults ========
 (def redis-internal-threads 4)
 (def redis-default-url "redis://localhost:6379")
+(def redis-long-polling-timeout-sec 1)
 (def redis-scheduler-polling-interval-sec 5)
+(def redis-scheduled-jobs-pop-limit 50)
+(def redis-cron-names-pop-limit 50)
+(def redis-heartbeat-sleep-sec 15)
+(def redis-heartbeat-expire-sec 60)
 (def redis-producer-pool-opts
   {:max-total-per-key 5
    :max-idle-per-key  5
@@ -53,6 +54,7 @@
    :max-idle-per-key  (+ redis-internal-threads threads)
    :min-idle-per-key  (inc redis-internal-threads)})
 
+; ======== RabbitMQ defaults ========
 (def rmq-default-url "amqp://guest:guest@localhost:5672")
 (def rmq-producer-channels 5)
 (def rmq-exchange "")
