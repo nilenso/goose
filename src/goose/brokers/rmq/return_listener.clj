@@ -11,8 +11,8 @@
   [return-listener]
   (fn [reply-code reply-text exchange routing-key properties body]
     (return-listener {:reply-code  reply-code
-                         :reply-text  reply-text
-                         :exchange    exchange
-                         :routing-key routing-key
-                         :properties  properties
-                         :body        (u/decode body)})))
+                      :reply-text  reply-text
+                      :exchange    exchange
+                      :routing-key routing-key
+                      :properties  properties
+                      :body        (u/decode body)})))

@@ -1,33 +1,33 @@
 (ns goose.brokers.redis.api.enqueued-jobs
-  {:no-doc true}
+  ^:no-doc
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]))
 
-(defn list-all-queues [conn]
-  (map d/affix-queue (redis-cmds/find-lists conn (str d/queue-prefix "*"))))
+(defn list-all-queues [redis-conn]
+  (map d/affix-queue (redis-cmds/find-lists redis-conn (str d/queue-prefix "*"))))
 
-(defn size [conn queue]
-  (redis-cmds/list-size conn (d/prefix-queue queue)))
+(defn size [redis-conn queue]
+  (redis-cmds/list-size redis-conn (d/prefix-queue queue)))
 
-(defn find-by-pattern [conn queue match? limit]
-  (redis-cmds/find-in-list conn (d/prefix-queue queue) match? limit))
+(defn find-by-pattern [redis-conn queue match? limit]
+  (redis-cmds/find-in-list redis-conn (d/prefix-queue queue) match? limit))
 
-(defn find-by-id [conn queue id]
+(defn find-by-id [redis-conn queue id]
   (let [
         limit 1
         match? (fn [job] (= (:id job) id))]
-    (first (find-by-pattern conn queue match? limit))))
+    (first (find-by-pattern redis-conn queue match? limit))))
 
-(defn prioritise-execution [conn job]
+(defn prioritise-execution [redis-conn job]
   (let [ready-queue (:ready-queue job)]
-    (when (redis-cmds/list-position conn ready-queue job)
-      (redis-cmds/del-from-list-and-enqueue-front conn ready-queue job))))
+    (when (redis-cmds/list-position redis-conn ready-queue job)
+      (redis-cmds/del-from-list-and-enqueue-front redis-conn ready-queue job))))
 
-(defn delete [conn job]
+(defn delete [redis-conn job]
   (let [ready-queue (:ready-queue job)]
-    (= 1 (redis-cmds/del-from-list conn ready-queue job))))
+    (= 1 (redis-cmds/del-from-list redis-conn ready-queue job))))
 
-(defn purge [conn queue]
+(defn purge [redis-conn queue]
   (let [ready-queue (d/prefix-queue queue)]
-    (= 1 (redis-cmds/del-keys conn [ready-queue]))))
+    (= 1 (redis-cmds/del-keys redis-conn [ready-queue]))))

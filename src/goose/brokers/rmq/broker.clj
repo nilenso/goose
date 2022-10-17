@@ -1,6 +1,6 @@
 (ns goose.brokers.rmq.broker
   (:require
-    [goose.brokers.broker :as b]
+    [goose.broker :as b]
     [goose.brokers.rmq.api.dead-jobs :as dead-jobs]
     [goose.brokers.rmq.api.enqueued-jobs :as enqueued-jobs]
     [goose.brokers.rmq.commands :as rmq-cmds]
@@ -17,18 +17,20 @@
 
 (defprotocol Close
   "Close connections for RabbitMQ broker."
-  (close [_]))
+  (close [this]))
 
 (defrecord RabbitMQ [rmq-conn channels queue-type publisher-confirms opts]
   b/Broker
 
-  (enqueue [this job]
+  (enqueue
+    [this job]
     (rmq-cmds/enqueue-back (u/random-element (:channels this))
                            (assoc (:queue-type this) :queue (job/ready-queue job))
                            (:publisher-confirms this)
                            job))
 
-  (schedule [this schedule job]
+  (schedule
+    [this schedule job]
     (rmq-scheduler/run-at (u/random-element (:channels this))
                           (assoc (:queue-type this) :queue (job/ready-queue job))
                           (:publisher-confirms this)
@@ -38,18 +40,19 @@
   (start [this worker-opts]
     (rmq-worker/start (merge worker-opts (:opts this))))
 
-  ; enqueued-jobs API
+  ;; enqueued-jobs API
   (enqueued-jobs-size [this queue]
     (enqueued-jobs/size (u/random-element (:channels this)) queue))
   (enqueued-jobs-purge [this queue]
     (enqueued-jobs/purge (u/random-element (:channels this)) queue))
 
-  ; dead-jobs API
+  ;; dead-jobs API
   (dead-jobs-size [this]
     (dead-jobs/size (u/random-element (:channels this))))
   (dead-jobs-pop [this]
     (dead-jobs/pop (u/random-element (:channels this))))
-  (dead-jobs-replay-n-jobs [this n]
+  (dead-jobs-replay-n-jobs
+    [this n]
     (dead-jobs/replay-n-jobs (u/random-element (:channels this))
                              (:queue-type this)
                              (:publisher-confirms this)
@@ -65,11 +68,11 @@
   "Default config for RabbitMQ client.
   Refer to http://clojurerabbitmq.info/articles/connecting.html
   for complete set of settings."
-  {:settings             {:uri d/rmq-default-url}
-   :queue-type           rmq-queue/classic
-   :publisher-confirms   publisher-confirms/sync
-   :return-listener   return-listener/default
-   :shutdown-listener shutdown-listener/default})
+  {:settings           {:uri d/rmq-default-url}
+   :queue-type         rmq-queue/classic
+   :publisher-confirms publisher-confirms/sync
+   :return-listener    return-listener/default
+   :shutdown-listener  shutdown-listener/default})
 
 (defn new-producer
   "Create a client that produce messages to RabbitMQ broker."

@@ -1,4 +1,4 @@
-(ns goose.rmq.integration-test
+(ns goose.brokers.rmq.integration-test
   (:require
     [goose.api.enqueued-jobs :as enqueued-jobs]
     [goose.brokers.rmq.broker :as rmq]
@@ -17,10 +17,10 @@
     (java.time Instant)))
 
 
-; ======= Setup & Teardown ==========
+;;; ======= Setup & Teardown ==========
 (use-fixtures :each tu/rmq-fixture)
 
-; ======= TEST: Async execution (classic queue) ==========
+;;; ======= TEST: Async execution (classic queue) ==========
 (def perform-async-fn-executed (atom (promise)))
 (defn perform-async-fn [arg]
   (deliver @perform-async-fn-executed arg))
@@ -36,7 +36,7 @@
       ; This tests if msg was ACK'd upon successful completion.
       (is (zero? (enqueued-jobs/size tu/rmq-producer (:queue tu/rmq-client-opts)))))))
 
-; ======= TEST: Async execution (quorum queue) ==========
+;;; ======= TEST: Async execution (quorum queue) ==========
 (def quorum-fn-executed (atom (promise)))
 (defn quorum-fn [arg]
   (deliver @quorum-fn-executed arg))
@@ -65,7 +65,7 @@
       (rmq/close producer)
       (rmq/close consumer))))
 
-; ======= TEST: Relative Scheduling ==========
+;;; ======= TEST: Relative Scheduling ==========
 (def perform-in-sec-fn-executed (atom (promise)))
 (defn perform-in-sec-fn [arg]
   (deliver @perform-in-sec-fn-executed arg))
@@ -86,7 +86,7 @@
         #"MAX_DELAY limit breached*"
         (c/perform-in-sec tu/rmq-client-opts 4294968 `perform-in-sec-fn)))))
 
-; ======= TEST: Absolute Scheduling (in-past) ==========
+;;; ======= TEST: Absolute Scheduling (in-past) ==========
 (def perform-at-fn-executed (atom (promise)))
 (defn perform-at-fn [arg]
   (deliver @perform-at-fn-executed arg))
@@ -100,15 +100,15 @@
       (is (= arg (deref @perform-at-fn-executed 100 :scheduler-test-timed-out)))
       (w/stop scheduler))))
 
-; ======= TEST: Publisher Confirms =======
+;;; ======= TEST: Publisher Confirms =======
 (def ack-handler-called (atom (promise)))
 (defn test-ack-handler [tag _]
   (deliver @ack-handler-called tag))
 (defn test-nack-handler [_ _])
 (deftest publisher-confirm-test
-  ; This test fails quite rarely.
-  ; RMQ confirms in 1ms too sometimes ¯\_(ツ)_/¯
-  ; Remove this test if it happens often.
+  ;; This test fails quite rarely.
+  ;; RMQ confirms in 1ms too sometimes ¯\_(ツ)_/¯
+  ;; Remove this test if it happens often.
   (testing "[rmq][sync-confirms] Publish timed out"
     (let [opts (assoc tu/rmq-opts
                  :publisher-confirms {:strategy d/sync-confirms :timeout-ms 1})
@@ -136,7 +136,7 @@
       (is (= delivery-tag (deref @ack-handler-called 100 :async-publisher-confirm-test-timed-out)))
       (rmq/close producer))))
 
-; ======= TEST: Graceful shutdown ==========
+;;; ======= TEST: Graceful shutdown ==========
 (def sleepy-fn-called (atom (promise)))
 (def sleepy-fn-completed (atom (promise)))
 (defn sleepy-fn
@@ -156,7 +156,7 @@
       (w/stop worker)
       (is (= arg (deref @sleepy-fn-completed 100 :non-graceful-shutdown))))))
 
-; ======= TEST: Middleware & RMQ Metadata ==========
+;;; ======= TEST: Middleware & RMQ Metadata ==========
 (def middleware-called (atom (promise)))
 (defn test-middleware
   [next]
@@ -173,7 +173,7 @@
       (is (= d/content-type (:content-type (deref @middleware-called 100 :middleware-test-timed-out))))
       (w/stop worker))))
 
-; ======= TEST: Error handling transient failure job using custom retry queue ==========
+;;; ======= TEST: Error handling transient failure job using custom retry queue ==========
 (def retry-queue "test-retry")
 (defn immediate-retry [_] 1)
 
@@ -214,7 +214,7 @@
       (is (= arg (deref @succeeded-on-2nd-retry 1100 :2nd-retry-timed-out)))
       (w/stop retry-worker))))
 
-; ======= TEST: Error handling dead-job using job queue ==========
+;;; ======= TEST: Error handling dead-job using job queue ==========
 (def job-dead (atom (promise)))
 (defn dead-test-error-handler [_ _ _])
 (defn dead-test-death-handler [_ _ ex]

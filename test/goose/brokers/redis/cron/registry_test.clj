@@ -14,12 +14,14 @@
 
 (use-fixtures :each tu/redis-fixture)
 
-(defn- after-due-time [cron-schedule]
+(defn- after-due-time
+  [cron-schedule]
   (inc
     (cron-parsing/next-run-epoch-ms
       cron-schedule)))
 
-(defn- before-due-time [cron-schedule]
+(defn- before-due-time
+  [cron-schedule]
   (dec
     (cron-parsing/next-run-epoch-ms
       cron-schedule)))

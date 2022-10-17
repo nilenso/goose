@@ -1,7 +1,7 @@
 (ns goose.metrics.protocol)
 
 (defprotocol Protocol
-  (enabled? [_])
-  (gauge [_ key value tags])
-  (increment [_ key value tags])
-  (timing [_ key duration tags]))
+  (enabled? [this])
+  (gauge [this key value tags])
+  (increment [this key value tags])
+  (timing [this key duration tags]))

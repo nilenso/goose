@@ -21,7 +21,8 @@
       false)))
 
 
-(defn next-run-epoch-ms [cron-schedule]
+(defn next-run-epoch-ms
+  [cron-schedule]
   (some-> (parse-cron cron-schedule)
           (ExecutionTime/forCron)
           (.nextExecution (ZonedDateTime/now))
@@ -29,7 +30,8 @@
           (.toInstant)
           (.toEpochMilli)))
 
-(defn previous-run-epoch-ms [cron-schedule]
+(defn previous-run-epoch-ms
+  [cron-schedule]
   (some-> (parse-cron cron-schedule)
           (ExecutionTime/forCron)
           (.lastExecution (ZonedDateTime/now))

@@ -1,5 +1,5 @@
 (ns goose.brokers.redis.consumer
-  {:no-doc true}
+  ^:no-doc
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]
@@ -7,8 +7,7 @@
 
     [clojure.tools.logging :as log]))
 
-(defn preservation-queue
-  [id]
+(defn preservation-queue [id]
   (str d/in-progress-queue-prefix id))
 
 (defn run

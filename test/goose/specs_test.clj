@@ -23,27 +23,28 @@
         #"Call to goose.* did not conform to spec."
         (sut)))
 
-    ; Client specs
-    ; :execute-fn-sym
+    ;; Client specs
+    ;; :execute-fn-sym
     #(c/perform-async tu/redis-client-opts 'my-fn)
     #(c/perform-async tu/redis-client-opts `my-fn)
     #(c/perform-async tu/redis-client-opts `tu/redis-client-opts)
 
-    ; :args
+    ;; :args
     #(c/perform-async tu/redis-client-opts `tu/my-fn specs-test)
 
-    ; :sec
+    ;; :sec
     #(c/perform-in-sec tu/redis-client-opts 0.2 `tu/my-fn)
 
-    ; :instant
+    ;; :instant
     #(c/perform-at tu/redis-client-opts "22-July-2022" `tu/my-fn)
 
-    ; Worker specs
+    ;; Worker specs
     #(w/start (assoc tu/redis-worker-opts :threads -1.1))
-    #(w/start (assoc tu/redis-worker-opts :graceful-shutdown-sec -2))
+    #(w/start (assoc tu/rmq-worker-opts :graceful-shutdown-sec -2))
     #(w/start (assoc tu/redis-worker-opts :metrics-plugin :invalid))
+    #(w/start (assoc tu/rmq-worker-opts :middlewares "non-fn"))
 
-    ; :statad-opts
+    ;; :statad-opts
     #(statsd/new (assoc statsd/default-opts :enabled? 1))
     #(statsd/new (assoc statsd/default-opts :host 127.0))
     #(statsd/new (assoc statsd/default-opts :port "8125"))
@@ -51,11 +52,11 @@
     #(statsd/new (assoc statsd/default-opts :sample-rate 1))
     #(statsd/new (assoc statsd/default-opts :tags '("service:maverick")))
 
-    ; Common specs
-    ; :broker
+    ;; Common specs
+    ;; :broker
     #(c/perform-async (assoc tu/redis-client-opts :broker :invalid) `tu/my-fn)
 
-    ; :queue
+    ;; :queue
     #(c/perform-async (assoc tu/redis-client-opts :queue :non-string) `tu/my-fn)
     #(w/start (assoc tu/redis-worker-opts :queue (str (range 300))))
     #(c/perform-at (assoc tu/redis-client-opts :queue d/schedule-queue) now `tu/my-fn)
@@ -64,7 +65,7 @@
     #(c/perform-async (assoc tu/redis-client-opts :queue d/cron-entries) `tu/my-fn)
     #(c/perform-async (assoc tu/redis-client-opts :queue (str d/queue-prefix "olttwa")) `tu/my-fn)
 
-    ; :retry-opts
+    ;; :retry-opts
     #(c/perform-async (assoc-in tu/redis-client-opts [:retry-opts :max-retries] -1) `tu/my-fn)
     #(c/perform-at (assoc-in tu/redis-client-opts [:retry-opts :retry-queue] :invalid) now `tu/my-fn)
     #(c/perform-in-sec (assoc-in tu/redis-client-opts [:retry-opts :error-handler-fn-sym] `single-arity-fn) 1 `tu/my-fn)
@@ -73,19 +74,19 @@
     #(c/perform-in-sec (assoc-in tu/redis-client-opts [:retry-opts :skip-dead-queue] 1) 1 `tu/my-fn)
     #(c/perform-async (assoc-in tu/redis-client-opts [:retry-opts :extra-key] :foo-bar) `tu/my-fn)
 
-    ; :redis-opts
+    ;; :redis-opts
     #(redis/new-producer (assoc redis/default-opts :url :invalid-url))
     #(redis/new-consumer (assoc redis/default-opts :pool-opts :invalid-pool-opts))
     #(redis/new-consumer redis/default-opts 61)
 
-    ; rmq-broker :settings
+    ;; rmq-broker :settings
     #(rmq/new-consumer {:settings :invalid})
 
-    ; rmq-broker :queue-type
+    ;; rmq-broker :queue-type
     #(rmq/new-producer (assoc rmq/default-opts :queue-type {:type :invalid}))
     #(rmq/new-consumer (assoc rmq/default-opts :queue-type {:type d/rmq-quorum-queue :replication-factor 0}))
 
-    ; rmq-broker :publisher-confirms
+    ;; rmq-broker :publisher-confirms
     #(rmq/new-producer (assoc rmq/default-opts :publisher-confirms {:strategy :invalid}))
     #(rmq/new-consumer (assoc rmq/default-opts :publisher-confirms {:strategy d/sync-confirms :timeout-ms 0}))
     #(rmq/new-producer (assoc rmq/default-opts :publisher-confirms {:strategy d/sync-confirms :timeout-ms 10 :max-retries -1}))
@@ -93,11 +94,11 @@
     #(rmq/new-producer (assoc rmq/default-opts :publisher-confirms {:strategy d/async-confirms :ack-handler 'invalid}))
     #(rmq/new-consumer (assoc rmq/default-opts :publisher-confirms {:strategy d/async-confirms :nack-handler `my-fn}))
 
-    ; rmq-broker :return-listener
+    ;; rmq-broker :return-listener
     #(rmq/new-producer (assoc rmq/default-opts :return-listener :non-fn))
 
-    ; rmq-broker :shutdown-listener
+    ;; rmq-broker :shutdown-listener
     #(rmq/new-consumer (assoc rmq/default-opts :shutdown-listener :non-fn))
 
-    ; rmq-broker channel-pool-size
+    ;; rmq-broker channel-pool-size
     #(rmq/new-producer rmq/default-opts -1)))

@@ -1,4 +1,4 @@
-(ns goose.redis.api-test
+(ns goose.brokers.redis.api-test
   (:require
     [goose.api.cron-jobs :as cron-entries]
     [goose.api.dead-jobs :as dead-jobs]
@@ -11,7 +11,7 @@
 
     [clojure.test :refer [deftest is testing use-fixtures]]))
 
-; ======= Setup & Teardown ==========
+;;; ======= Setup & Teardown ==========
 (use-fixtures :each tu/redis-fixture)
 
 (deftest enqueued-jobs-test
@@ -50,7 +50,8 @@
 
 (defn death-handler [_ _ _])
 (def dead-fn-atom (atom 0))
-(defn dead-fn [id]
+(defn dead-fn
+  [id]
   (swap! dead-fn-atom inc)
   (throw (Exception. (str id " died!"))))
 
@@ -62,6 +63,7 @@
                        :death-handler-fn-sym `death-handler)
           job-opts (assoc tu/redis-client-opts :retry-opts retry-opts)
           dead-job-id-1 (:id (c/perform-async job-opts `dead-fn 11))
+          _ (Thread/sleep (rand-int 15))
           dead-job-id-2 (:id (c/perform-async job-opts `dead-fn 12))
           _ (doseq [id (range 5)]
               (c/perform-async job-opts `dead-fn id)

@@ -1,6 +1,8 @@
 (ns goose.brokers.rmq.connection
-  (:require [langohr.core :as lcore]
-            [goose.brokers.rmq.channel :as rmq-channel]))
+  (:require
+    [goose.brokers.rmq.channel :as rmq-channel]
+
+    [langohr.core :as lcore]))
 
 (defn open
   [{:keys [settings publisher-confirms return-listener shutdown-listener]}
@@ -13,6 +15,6 @@
 
 (defn close
   [rmq-conn]
-  ; Channels get closed automatically when connection is closed.
+  ;; Channels get closed automatically when connection is closed.
   (when rmq-conn
     (lcore/close rmq-conn)))

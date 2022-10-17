@@ -1,5 +1,5 @@
 (ns goose.brokers.rmq.channel
-  {:no-doc true}
+  ^:no-doc
   (:require
     [goose.brokers.rmq.return-listener :as return-listener]
     [goose.defaults :as d]
@@ -10,7 +10,9 @@
 
 
 (defn open
-  [conn {:keys [strategy ack-handler nack-handler]} return-listener]
+  [conn
+   {:keys [strategy ack-handler nack-handler]}
+   return-listener]
   (let [ch (lch/open conn)]
     (if ch
       (do

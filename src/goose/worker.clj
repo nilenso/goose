@@ -1,21 +1,21 @@
 (ns goose.worker
   (:require
-    [goose.brokers.broker :as b]
+    [goose.broker :as b]
     [goose.defaults :as d]
     [goose.metrics.statsd :as statsd]))
 
 (defprotocol Shutdown
   "Shutdown a worker object."
-  (stop [_]))
+  (stop [this]))
 
 (def default-opts
   "Default config for Goose worker."
   {:threads               d/worker-threads
    :queue                 d/default-queue
    :graceful-shutdown-sec d/graceful-shutdown-sec
+   :metrics-plugin        (statsd/new statsd/default-opts)
    :middlewares           nil
-   :error-service-cfg     nil
-   :metrics-plugin        (statsd/new statsd/default-opts)})
+   :error-service-cfg     nil})
 
 (defn start
   "Starts a threadpool for worker."

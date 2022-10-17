@@ -1,4 +1,4 @@
-(ns goose.rmq.api-test
+(ns goose.brokers.rmq.api-test
   (:require
     [goose.api.dead-jobs :as dead-jobs]
     [goose.api.enqueued-jobs :as enqueued-jobs]
@@ -11,7 +11,7 @@
   (:import
     [java.util UUID]))
 
-; ======= Setup & Teardown ==========
+;;; ======= Setup & Teardown ==========
 (use-fixtures :each tu/rmq-fixture)
 
 (deftest enqueued-jobs-test

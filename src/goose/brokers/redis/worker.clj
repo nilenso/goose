@@ -1,5 +1,5 @@
 (ns goose.brokers.redis.worker
-  {:no-doc true}
+  ^:no-doc
   (:require
     [goose.brokers.redis.connection :as redis-connection]
     [goose.brokers.redis.consumer :as redis-consumer]
@@ -24,23 +24,23 @@
   "Gracefully shuts down the worker threadpool."
   [{:keys [thread-pool internal-thread-pool graceful-shutdown-sec]
     :as   opts}]
-  ; Set state of thread-pool to SHUTDOWN.
+  ;; Set state of thread-pool to SHUTDOWN.
   (log/warn "Shutting down thread-pool...")
   (cp/shutdown thread-pool)
   (cp/shutdown internal-thread-pool)
 
-  ; Interrupt scheduler to exit sleep & terminate thread-pool.
-  ; If not interrupted, shutdown time will increase by
-  ; max(graceful-shutdown-sec, sleep time)
+  ;; Interrupt scheduler to exit sleep & terminate thread-pool.
+  ;; If not interrupted, shutdown time will increase by
+  ;; max(graceful-shutdown-sec, sleep time)
   (cp/shutdown! internal-thread-pool)
 
-  ; Give in-progress jobs grace time to complete.
+  ;; Give in-progress jobs grace time to complete.
   (log/warn "Awaiting in-progress jobs to complete.")
   (.awaitTermination thread-pool graceful-shutdown-sec TimeUnit/SECONDS)
 
   (redis-heartbeat/stop opts)
 
-  ; Set state of thread-pool to STOP.
+  ;; Set state of thread-pool to STOP.
   (log/warn "Sending InterruptedException to close threads.")
   (cp/shutdown! thread-pool))
 
@@ -57,7 +57,7 @@
 (defn start
   [{:keys [threads queue middlewares pool-opts url] :as common-opts}]
   (let [thread-pool (cp/threadpool threads)
-        ; Internal threadpool for metrics, scheduler, orphan-checker & heartbeat.
+        ;; Internal threadpool for metrics, scheduler, orphan-checker & heartbeat.
         internal-thread-pool (cp/threadpool d/redis-internal-threads)
 
         pool-opts (or pool-opts (d/redis-consumer-pool-opts threads))

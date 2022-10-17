@@ -1,6 +1,6 @@
 (ns goose.api.scheduled-jobs
   (:require
-    [goose.brokers.broker :as b]))
+    [goose.broker :as b]))
 
 (defn size
   "Get size of Scheduled Jobs."

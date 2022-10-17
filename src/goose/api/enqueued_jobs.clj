@@ -1,6 +1,6 @@
 (ns goose.api.enqueued-jobs
   (:require
-    [goose.brokers.broker :as b]))
+    [goose.broker :as b]))
 
 (defn list-all-queues
   "List all Queues."

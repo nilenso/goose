@@ -1,5 +1,5 @@
 (ns goose.brokers.rmq.worker
-  {:no-doc true}
+  ^:no-doc
   (:require
     [goose.brokers.rmq.connection :as rmq-connection]
     [goose.brokers.rmq.consumer :as rmq-consumer]
@@ -26,19 +26,18 @@
   (log/warn "Cancelling consumer subscriptions...")
   (doall (for [[ch consumer] ch+consumers] (lb/cancel ch consumer)))
 
-  ; RabbitMQ thread-pool & conn closing is a catch-22 situation.
-  ; If thread-pool is shutdown before conn,
-  ; RejectedExecutionException is thrown because conn uses
-  ; executor-service thread to close the connection.
-  ; If conn is closed before thread-pool, ACKs for completed jobs
-  ; won't reach RabbitMQ.
-  ; Hence, the ugly sleep using `.getActiveCount`
-  ; Ideally, thread-pools should be closed as
-  ; implemented in `goose.brokers.redis.worker/internal-stop`
+  ;; RabbitMQ thread-pool & conn closing is a catch-22 situation.
+  ;; If thread-pool is shutdown before conn,
+  ;; RejectedExecutionException is thrown because conn uses
+  ;; executor-service thread to close the connection.
+  ;; If conn is closed before thread-pool, ACKs for completed jobs
+  ;; won't reach RabbitMQ.
+  ;; Hence, the ugly sleep using `.getActiveCount`
+  ;; Ideally, thread-pools should be closed as
+  ;; implemented in `goose.brokers.redis.worker/internal-stop`
   (log/warn "Awaiting in-progress jobs to complete.")
   (trampoline await-execution thread-pool graceful-shutdown-sec)
 
-  ; Channels get closed automatically when connection is closed.
   (log/warn "Closing RabbitMQ connection")
   (rmq-connection/close rmq-conn)
 
@@ -72,7 +71,7 @@
         opts (merge rmq-opts common-opts)
         opts (dissoc opts :threads :queue :middlewares :broker :return-listener :shutdown-listener :settings)]
 
-    ; A queue must exist before consumers can subscribe to it.
+    ;; A queue must exist before consumers can subscribe to it.
     (let [queue-opts (assoc queue-type :queue ready-queue)]
       (rmq-queue/declare (first channels) queue-opts))
 

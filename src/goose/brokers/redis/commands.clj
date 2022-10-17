@@ -1,5 +1,5 @@
 (ns goose.brokers.redis.commands
-  {:no-doc true}
+  ^:no-doc
   (:require
     [goose.defaults :as d]
     [goose.utils :as u]
@@ -11,7 +11,7 @@
 
 (defmacro wcar* [conn & body] `(car/wcar ~conn ~@body))
 
-; ============ Utils =============
+;;; ============ Utils =============
 
 (defn- scan-database [conn _ cursor]
   (wcar* conn (car/scan cursor "MATCH" "*" "COUNT" 1)))
@@ -50,22 +50,22 @@
 (defn run-with-transaction
   "Runs fn inside a Carmine atomic block, and returns
   whatever fn returns."
-  [redis-conn f]
+  [conn f]
   (let [return-value (atom nil)]
-    (car/atomic redis-conn atomic-lock-attempts
-      ;; This ugliness is necessary because car/atomic does not return the value
-      ;; of the last expression inside it.
+    (car/atomic conn atomic-lock-attempts
+      ;; This ugliness is necessary because car/atomic does not
+      ;; return the value of the last expression inside it.
       (reset! return-value (f)))
     @return-value))
 
 (defmacro with-transaction
   "Runs `body` inside a Carmine `atomic` block.
   `body` must call `car/multi`."
-  [redis-conn & body]
-  `(run-with-transaction ~redis-conn
+  [conn & body]
+  `(run-with-transaction ~conn
                          (fn [] ~@body)))
 
-; ============ Key-Value =============
+;;; ============ Key-Value =============
 (defn set-key-val [conn key value expire-sec]
   (wcar* conn (car/set key value "EX" expire-sec)))
 
@@ -75,7 +75,7 @@
 (defn del-keys [conn keys]
   (wcar* conn (apply car/del keys)))
 
-; ============== Sets ===============
+;;; ============== Sets ===============
 (defn add-to-set [conn set member]
   (wcar* conn (car/sadd set member)))
 
@@ -111,20 +111,19 @@
        (filter match?)
        (doall)))
 
-; ============== Lists ===============
-; ===== FRONT/BACK -> RIGHT/LEFT =====
-(defn enqueue-back
-  ([conn list element]
-   (wcar* conn (car/lpush list element))))
+;;; ============== Lists ===============
+;;; ===== FRONT/BACK -> RIGHT/LEFT =====
+(defn enqueue-back [conn list element]
+  (wcar* conn (car/lpush list element)))
 
 (defn enqueue-front [conn list element]
   (wcar* conn (car/rpush list element)))
 
 (defn dequeue-and-preserve [conn src dst]
-  ; `RPOPLPUSH` will be deprecated soon.
-  ; Switch to `LMOVE` as soon as Carmine supports that.
-  ; https://github.com/ptaoussanis/carmine/issues/268
-  (wcar* conn (car/brpoplpush src dst d/long-polling-timeout-sec)))
+  ;; `RPOPLPUSH` will be deprecated soon.
+  ;; Switch to `LMOVE` as soon as Carmine supports that.
+  ;; https://github.com/ptaoussanis/carmine/issues/268
+  (wcar* conn (car/brpoplpush src dst d/redis-long-polling-timeout-sec)))
 
 (defn list-position [conn list element]
   (wcar* conn (car/lpos list element) "COUNT" 1))
@@ -174,14 +173,15 @@
        (take limit)
        (doall)))
 
-; ============ Sorted-Sets ============
+;;; ============ Sorted-Sets ============
 (def sorted-set-min "-inf")
 (def sorted-set-max "+inf")
 
 (defn enqueue-sorted-set [conn sorted-set score element]
   (wcar* conn (car/zadd sorted-set score element)))
 
-(defn scheduled-jobs-due-now [conn sorted-set]
+(defn scheduled-jobs-due-now
+  [conn sorted-set]
   (let [limit "limit"
         offset 0]
     (not-empty
@@ -189,9 +189,10 @@
         conn
         (car/zrangebyscore
           sorted-set sorted-set-min (u/epoch-time-ms)
-          limit offset d/scheduled-jobs-pop-limit)))))
+          limit offset d/redis-scheduled-jobs-pop-limit)))))
 
-(defn move-jobs-from-sorted-set-to-ready-queue [conn sorted-set jobs grouping-fn]
+(defn sorted-set->ready-queue
+  [conn sorted-set jobs grouping-fn]
   (car/atomic
     conn atomic-lock-attempts
     (car/multi)
@@ -205,7 +206,8 @@
 (defn sorted-set-size [conn sorted-set]
   (wcar* conn (car/zcount sorted-set sorted-set-min sorted-set-max)))
 
-(defn- scan-sorted-set [conn sorted-set cursor]
+(defn- scan-sorted-set
+  [conn sorted-set cursor]
   (let [[next-cursor-string replies] (wcar* conn (car/zscan sorted-set cursor "MATCH" "*" "COUNT" 1))]
     [next-cursor-string (map first (partition 2 replies))]))
 

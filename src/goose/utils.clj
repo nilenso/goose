@@ -4,7 +4,9 @@
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [com.climate.claypoole :as cp]
-    [taoensso.nippy :as nippy]))
+    [taoensso.nippy :as nippy])
+  (:import
+    (java.net InetAddress)))
 
 (defn encode [x]
   (nippy/freeze x))
@@ -27,14 +29,13 @@
   ([] (System/currentTimeMillis))
   ([date] (inst-ms date)))
 
-(defn ^:no-doc sec-to-ms
-  [sec]
+(defn ^:no-doc sec->ms [sec]
   (* 1000 sec))
 
 (defn ^:no-doc add-sec
   ([sec] (add-sec sec (epoch-time-ms)))
   ([sec epoch-time-millis]
-   (+ (sec-to-ms sec) epoch-time-millis)))
+   (+ (sec->ms sec) epoch-time-millis)))
 
 (defmacro ^:no-doc while-pool
   [pool & body]
@@ -60,7 +61,7 @@
        (map count)))
 
 (defn ^:no-doc hostname []
-  (.getHostName (java.net.InetAddress/getLocalHost)))
+  (.getHostName (InetAddress/getLocalHost)))
 
 (defn ^:no-doc random-element
   "Randomly select an element from a list & return it."
@@ -83,6 +84,5 @@
         (recur (dec retry-count) retry-delay-ms fn-to-retry))
       res)))
 
-(defmacro with-retry
-  [{:keys [count retry-delay-ms]} & body]
+(defmacro with-retry [{:keys [count retry-delay-ms]} & body]
   `(with-retry* ~count ~retry-delay-ms (fn [] ~@body)))

@@ -16,7 +16,8 @@
     [langohr.queue :as lq]
     [taoensso.carmine :as car]))
 
-(defn my-fn [arg & _] arg)
+(defn my-fn [arg & _]
+  arg)
 (def queue "test")
 (def client-opts
   {:queue      queue
@@ -37,7 +38,8 @@
 (def redis-consumer (redis/new-consumer redis-opts 1))
 (def redis-client-opts (assoc client-opts :broker redis-producer))
 (def redis-worker-opts (assoc worker-opts :broker redis-consumer))
-(defn clear-redis [] (redis-cmds/wcar* redis-conn (car/flushdb "SYNC")))
+(defn clear-redis []
+  (redis-cmds/wcar* redis-conn (car/flushdb "SYNC")))
 
 (defn redis-fixture
   [f]
@@ -55,16 +57,17 @@
         password (or (System/getenv "GOOSE_TEST_RABBITMQ_PASSWORD") "guest")]
     (str "amqp://" username ":" password "@" host ":" port)))
 (def rmq-opts
-  {:settings             {:uri rmq-url}
-   :queue-type           rmq-queue/classic
-   :publisher-confirms   rmq-publisher-confirms/sync
-   :return-listener   return-listener/default
-   :shutdown-listener shutdown-listener/default})
+  {:settings           {:uri rmq-url}
+   :queue-type         rmq-queue/classic
+   :publisher-confirms rmq-publisher-confirms/sync
+   :return-listener    return-listener/default
+   :shutdown-listener  shutdown-listener/default})
 (def rmq-producer (rmq/new-producer rmq-opts 1))
 (def rmq-consumer (rmq/new-consumer rmq-opts))
 (def rmq-client-opts (assoc client-opts :broker rmq-producer))
 (def rmq-worker-opts (assoc worker-opts :broker rmq-consumer))
-(defn rmq-delete-test-queues []
+(defn rmq-delete-test-queues
+  []
   (let [ch (u/random-element (:channels rmq-producer))]
     (lq/delete ch (d/prefix-queue queue))
     (lq/delete ch (d/prefix-queue "quorum-test"))
@@ -91,7 +94,7 @@
   (rmq/close rmq-producer)
   (rmq/close rmq-consumer)
 
-  ; clj-statsd uses agents.
-  ; If not shutdown, program won't quit.
-  ; https://stackoverflow.com/questions/38504056/program-wont-end-when-using-clj-statsd
+  ;; clj-statsd uses agents.
+  ;; If not shutdown, program won't quit.
+  ;; https://stackoverflow.com/questions/38504056/program-wont-end-when-using-clj-statsd
   (shutdown-agents))

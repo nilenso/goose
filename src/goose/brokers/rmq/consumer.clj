@@ -1,5 +1,5 @@
 (ns goose.brokers.rmq.consumer
-  {:no-doc true}
+  ^:no-doc
   (:require
     [goose.defaults :as d]
     [goose.utils :as u]
@@ -22,8 +22,8 @@
    metadata
    ^bytes payload]
   (let [job (u/decode payload)
-        ; Attach RMQ message metadata for ACKing & middlewares.
-        ; https://www.rabbitmq.com/publishers.html#message-properties
+        ;; Attach RMQ message metadata for ACKing & middlewares.
+        ;; https://www.rabbitmq.com/publishers.html#message-properties
         opts (assoc opts :ch ch :metadata metadata)]
     (call opts job)))
 
@@ -50,8 +50,8 @@
       (do
         (lb/qos ch d/rmq-prefetch-limit) ; Set prefetch-limit to 1.
         (let [subscriber-opts {:auto-ack               false
-                               :handle-cancel-ok       (partial cancel-ok ready-queue)
-                               :handle-consume-ok      (partial consume-ok ready-queue)
-                               :handle-recover-ok      (partial recover-ok ready-queue)
+                               :handle-cancel-ok       #(cancel-ok ready-queue %)
+                               :handle-consume-ok      #(consume-ok ready-queue %)
+                               :handle-recover-ok      #(recover-ok ready-queue)
                                :handle-shutdown-signal shutdown-signal}]
-          [ch (lc/subscribe ch ready-queue (partial handler opts) subscriber-opts)])))))
+          [ch (lc/subscribe ch ready-queue #(handler opts %1 %2 %3) subscriber-opts)])))))

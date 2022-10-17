@@ -1,7 +1,7 @@
 (ns goose.api.dead-jobs
   (:refer-clojure :exclude [pop])
   (:require
-    [goose.brokers.broker :as b]))
+    [goose.broker :as b]))
 
 (defn size
   "Get size of Dead Jobs."

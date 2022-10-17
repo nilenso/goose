@@ -1,4 +1,4 @@
-(ns goose.redis.integration-test
+(ns goose.brokers.redis.integration-test
   (:require
     [goose.client :as c]
     [goose.retry :as retry]
@@ -9,10 +9,10 @@
   (:import
     [java.util UUID]))
 
-; ======= Setup & Teardown ==========
+;;; ======= Setup & Teardown ==========
 (use-fixtures :each tu/redis-fixture)
 
-; ======= TEST: Async execution ==========
+;;; ======= TEST: Async execution ==========
 (def perform-async-fn-executed (atom (promise)))
 (defn perform-async-fn [arg]
   (deliver @perform-async-fn-executed arg))
@@ -26,7 +26,7 @@
       (is (= arg (deref @perform-async-fn-executed 100 :e2e-test-timed-out)))
       (w/stop worker))))
 
-; ======= TEST: Relative Scheduling ==========
+;;; ======= TEST: Relative Scheduling ==========
 (def perform-in-sec-fn-executed (atom (promise)))
 (defn perform-in-sec-fn [arg]
   (deliver @perform-in-sec-fn-executed arg))
@@ -40,7 +40,7 @@
       (is (= arg (deref @perform-in-sec-fn-executed 4100 :scheduler-test-timed-out)))
       (w/stop scheduler))))
 
-; ======= TEST: Absolute Scheduling (in-past) ==========
+;;; ======= TEST: Absolute Scheduling (in-past) ==========
 (def perform-at-fn-executed (atom (promise)))
 (defn perform-at-fn [arg]
   (deliver @perform-at-fn-executed arg))
@@ -54,7 +54,7 @@
       (is (= arg (deref @perform-at-fn-executed 100 :scheduler-test-timed-out)))
       (w/stop scheduler))))
 
-; ======= TEST: Middleware ==========
+;;; ======= TEST: Middleware ==========
 (def middleware-called (atom (promise)))
 (defn add-five [arg] (+ 5 arg))
 (defn test-middleware
@@ -72,7 +72,7 @@
       (is (= 10 (deref @middleware-called 100 :middleware-test-timed-out)))
       (w/stop worker))))
 
-; ======= TEST: Error handling transient failure job using custom retry queue ==========
+;;; ======= TEST: Error handling transient failure job using custom retry queue ==========
 (def retry-queue "test-retry")
 (defn immediate-retry [_] 1)
 
@@ -80,12 +80,14 @@
 (def failed-on-1st-retry (atom (promise)))
 (def succeeded-on-2nd-retry (atom (promise)))
 
-(defn retry-test-error-handler [_ _ ex]
+(defn retry-test-error-handler
+  [_ _ ex]
   (if (realized? @failed-on-execute)
     (deliver @failed-on-1st-retry ex)
     (deliver @failed-on-execute ex)))
 
-(defn erroneous-fn [arg]
+(defn erroneous-fn
+  [arg]
   (when-not (realized? @failed-on-execute)
     (/ 1 0))
   (when-not (realized? @failed-on-1st-retry)
@@ -114,14 +116,15 @@
       (is (= arg (deref @succeeded-on-2nd-retry 4100 :2nd-retry-timed-out)))
       (w/stop retry-worker))))
 
-; ======= TEST: Error handling dead-job using job queue ==========
+;;; ======= TEST: Error handling dead-job using job queue ==========
 (def job-dead (atom (promise)))
 (defn dead-test-error-handler [_ _ _])
 (defn dead-test-death-handler [_ _ ex]
   (deliver @job-dead ex))
 
 (def dead-job-run-count (atom 0))
-(defn dead-fn []
+(defn dead-fn
+  []
   (swap! dead-job-run-count inc)
   (/ 1 0))
 
