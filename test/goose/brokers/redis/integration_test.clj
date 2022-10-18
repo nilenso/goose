@@ -1,8 +1,13 @@
 (ns goose.brokers.redis.integration-test
   (:require
+    [goose.brokers.redis.commands :as redis-cmds]
+    [goose.brokers.redis.consumer :as redis-consumer]
     [goose.client :as c]
+    [goose.defaults :as d]
+    [goose.job :as j]
     [goose.retry :as retry]
     [goose.test-utils :as tu]
+    [goose.utils :as u]
     [goose.worker :as w]
 
     [clojure.test :refer [deftest is testing use-fixtures]])
@@ -56,6 +61,27 @@
       (is (= arg (deref @perform-at-fn-executed 100 :scheduler-test-timed-out)))
       (w/stop scheduler))))
 
+;;; ======= TEST: Orphan job recovery ==========
+(def orphan-job-recovered (atom (promise)))
+(defn orphaned-job-fn [arg]
+  (deliver @orphan-job-recovered arg))
+(deftest orphan-job-recovery-test
+  (testing "[redis] Goose recovers an orphan job"
+    (let [dead-worker-id (str tu/queue ":" (u/hostname) ":" "random")
+          arg "orphan-checker-test"
+          ready-queue (d/prefix-queue tu/queue)
+          orphaned-job (j/new `orphaned-job-fn (list arg) tu/queue ready-queue retry/default-opts)
+          process-set (str d/process-prefix tu/queue)
+          preservation-queue (redis-consumer/preservation-queue dead-worker-id)]
+      ;; Add dead-worker-id to process-set for "test" queue.
+      (redis-cmds/add-to-set tu/redis-conn process-set dead-worker-id)
+      ;; Simulate orphan-job by pushing it to dead worker's preservation queue.
+      (redis-cmds/enqueue-back tu/redis-conn preservation-queue orphaned-job)
+
+      (let [orphan-checker (w/start tu/redis-worker-opts)]
+        (is (= arg (deref @orphan-job-recovered 100 :orphan-checker-test-timed-out)))
+        (w/stop orphan-checker)))))
+
 ;;; ======= TEST: Middleware ==========
 (def middleware-called (atom (promise)))
 (defn add-five [arg] (+ 5 arg))
@@ -66,7 +92,7 @@
       (deliver @middleware-called result))))
 
 (deftest middleware-test
-  (testing "[rmq] Goose calls middleware & attaches RMQ metadata to opts"
+  (testing "[redis] Goose calls middleware"
     (reset! middleware-called (promise))
     (let [worker (w/start (assoc tu/redis-worker-opts
                             :middlewares test-middleware))
