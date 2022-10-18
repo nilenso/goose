@@ -41,8 +41,10 @@
       internal-thread-pool
       (let [processes (redis-cmds/find-in-set redis-conn process-set identity)]
         (check-liveness opts (remove #{id} processes)))
-      (let [process-count (heartbeat/process-count redis-conn process-set)]
-        ;; Sleep for (process-count) minutes + jitters.
+      (let [local-workers-count (heartbeat/local-workers-count redis-conn process-set)]
+        ;; Scheduler & metrics runners derive sleep time from global-workers-count.
+        ;; Orphan checker only recovers jobs from it's ready queue;
+        ;; hence it takes local-workers-count into account for sleeping.
+        ;; Sleep for (local-workers-count) minutes + jitters.
         ;; On average, Goose checks for orphan jobs every 1 minute.
-        (Thread/sleep (u/sec->ms (+ (* 60 process-count)
-                                    (rand-int process-count))))))))
+        (u/sleep 60 local-workers-count)))))

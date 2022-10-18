@@ -10,6 +10,7 @@
     [goose.job :as job]
     [goose.metrics :as m]
     [goose.worker :as worker]
+    [goose.utils :as u]
 
     [clojure.tools.logging :as log]
     [com.climate.claypoole :as cp]
@@ -18,7 +19,7 @@
 (defn- await-execution
   [thread-pool graceful-shutdown-sec]
   (when-not (zero? (.getActiveCount thread-pool))
-    (Thread/sleep 1000)
+    (u/sleep 1)
     #(await-execution thread-pool (dec graceful-shutdown-sec))))
 
 (defn- internal-stop

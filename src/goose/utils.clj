@@ -29,13 +29,22 @@
   ([] (System/currentTimeMillis))
   ([date] (inst-ms date)))
 
-(defn ^:no-doc sec->ms [sec]
+(defn- ^:no-doc sec->ms [sec]
   (* 1000 sec))
 
 (defn ^:no-doc add-sec
   ([sec] (add-sec sec (epoch-time-ms)))
   ([sec epoch-time-millis]
    (+ (sec->ms sec) epoch-time-millis)))
+
+(defn sleep
+  "Sleep for given seconds, multiplied by count.
+  Sleep duration: (seconds * count) + jitters"
+  ([sec]
+   (Thread/sleep (sec->ms sec)))
+  ([sec multiplier-count]
+   (Thread/sleep (sec->ms (+ (* sec multiplier-count)
+                             (rand-int multiplier-count))))))
 
 (defmacro ^:no-doc while-pool
   [pool & body]

@@ -7,6 +7,8 @@
 
     [clojure.test :refer [deftest is testing use-fixtures]])
   (:import
+    [clojure.lang ExceptionInfo]
+    [java.time Instant]
     [java.util UUID]))
 
 ;;; ======= Setup & Teardown ==========
@@ -37,7 +39,7 @@
     (let [arg "scheduling-test"
           _ (is (uuid? (UUID/fromString (:id (c/perform-in-sec tu/redis-client-opts 1 `perform-in-sec-fn arg)))))
           scheduler (w/start tu/redis-worker-opts)]
-      (is (= arg (deref @perform-in-sec-fn-executed 4100 :scheduler-test-timed-out)))
+      (is (= arg (deref @perform-in-sec-fn-executed 2100 :scheduler-test-timed-out)))
       (w/stop scheduler))))
 
 ;;; ======= TEST: Absolute Scheduling (in-past) ==========
@@ -49,7 +51,7 @@
   (testing "Goose executes a function scheduled in past"
     (reset! perform-at-fn-executed (promise))
     (let [arg "scheduling-test"
-          _ (is (uuid? (UUID/fromString (:id (c/perform-at tu/redis-client-opts (java.time.Instant/now) `perform-at-fn arg)))))
+          _ (is (uuid? (UUID/fromString (:id (c/perform-at tu/redis-client-opts (Instant/now) `perform-at-fn arg)))))
           scheduler (w/start tu/redis-worker-opts)]
       (is (= arg (deref @perform-at-fn-executed 100 :scheduler-test-timed-out)))
       (w/stop scheduler))))
@@ -108,12 +110,12 @@
           _ (c/perform-async (assoc tu/redis-client-opts :retry-opts retry-opts) `erroneous-fn arg)
           worker (w/start tu/redis-worker-opts)
           retry-worker (w/start (assoc tu/redis-worker-opts :queue retry-queue))]
-      (is (= java.lang.ArithmeticException (type (deref @failed-on-execute 100 :retry-execute-timed-out))))
+      (is (= ArithmeticException (type (deref @failed-on-execute 100 :retry-execute-timed-out))))
       (w/stop worker)
 
-      (is (= clojure.lang.ExceptionInfo (type (deref @failed-on-1st-retry 4100 :1st-retry-timed-out))))
+      (is (= ExceptionInfo (type (deref @failed-on-1st-retry 3100 :1st-retry-timed-out))))
 
-      (is (= arg (deref @succeeded-on-2nd-retry 4100 :2nd-retry-timed-out)))
+      (is (= arg (deref @succeeded-on-2nd-retry 3100 :2nd-retry-timed-out)))
       (w/stop retry-worker))))
 
 ;;; ======= TEST: Error handling dead-job using job queue ==========
@@ -139,6 +141,6 @@
                           :death-handler-fn-sym `dead-test-death-handler)
           _ (c/perform-async (assoc tu/redis-client-opts :retry-opts dead-job-opts) `dead-fn)
           worker (w/start tu/redis-worker-opts)]
-      (is (= java.lang.ArithmeticException (type (deref @job-dead 4100 :death-handler-timed-out))))
+      (is (= ArithmeticException (type (deref @job-dead 2100 :death-handler-timed-out))))
       (is (= 2 @dead-job-run-count))
       (w/stop worker))))
