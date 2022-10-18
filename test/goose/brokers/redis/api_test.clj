@@ -25,9 +25,9 @@
 
       (let [job (enqueued-jobs/find-by-id tu/redis-producer tu/queue job-id)]
         (is (some? (enqueued-jobs/prioritise-execution tu/redis-producer job)))
-        (is (true? (enqueued-jobs/delete tu/redis-producer job))))
+        (is (enqueued-jobs/delete tu/redis-producer job)))
 
-      (is (true? (enqueued-jobs/purge tu/redis-producer tu/queue))))))
+      (is (enqueued-jobs/purge tu/redis-producer tu/queue)))))
 
 (deftest scheduled-jobs-test
   (testing "scheduled-jobs API"
@@ -41,12 +41,12 @@
       (let [job (scheduled-jobs/find-by-id tu/redis-producer job-id1)]
         (is (some? (scheduled-jobs/prioritise-execution tu/redis-producer job)))
         (is (false? (scheduled-jobs/delete tu/redis-producer job)))
-        (is (true? (enqueued-jobs/delete tu/redis-producer job))))
+        (is (enqueued-jobs/delete tu/redis-producer job)))
 
       (let [job (scheduled-jobs/find-by-id tu/redis-producer job-id2)]
-        (is (true? (scheduled-jobs/delete tu/redis-producer job))))
+        (is (scheduled-jobs/delete tu/redis-producer job)))
 
-      (is (true? (scheduled-jobs/purge tu/redis-producer))))))
+      (is (scheduled-jobs/purge tu/redis-producer)))))
 
 (defn death-handler [_ _ _])
 (def dead-fn-atom (atom 0))
@@ -80,20 +80,20 @@
       (is (= dead-job-id-1 (:id (dead-jobs/pop tu/redis-producer))))
       (let [dead-job (dead-jobs/find-by-id tu/redis-producer dead-job-id-2)]
         (is some? (dead-jobs/replay-job tu/redis-producer dead-job))
-        (is true? (enqueued-jobs/delete tu/redis-producer dead-job)))
+        (enqueued-jobs/delete tu/redis-producer dead-job))
 
       (let [match? (fn [job] (= (list 0) (:args job)))
             [dead-job] (dead-jobs/find-by-pattern tu/redis-producer match?)
             died-at (get-in dead-job [:state :died-at])]
-        (is (true? (dead-jobs/delete-older-than tu/redis-producer died-at))))
+        (is (dead-jobs/delete-older-than tu/redis-producer died-at)))
 
       (let [match? (fn [job] (= (list 1) (:args job)))
             [dead-job] (dead-jobs/find-by-pattern tu/redis-producer match?)]
-        (is (true? (dead-jobs/delete tu/redis-producer dead-job))))
+        (is (dead-jobs/delete tu/redis-producer dead-job)))
       (is (= 2 (dead-jobs/replay-n-jobs tu/redis-producer 2)))
       (is (= 2 (enqueued-jobs/size tu/redis-producer (:queue job-opts))))
 
-      (is (true? (dead-jobs/purge tu/redis-producer)))
+      (is (dead-jobs/purge tu/redis-producer))
       (is (= 0 (dead-jobs/replay-n-jobs tu/redis-producer 5))))))
 
 (deftest cron-entries-test
