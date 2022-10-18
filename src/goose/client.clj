@@ -15,21 +15,20 @@
 
 (defn- register-cron-schedule
   [{:keys [broker queue retry-opts] :as _opts}
-   cron-name
-   cron-schedule
+   {:keys [cron-name cron-schedule] :as _cron-opts}
    execute-fn-sym
    args]
   (let [retry-opts (retry/prefix-queue-if-present retry-opts)
         ready-queue (d/prefix-queue queue)
         cron-entry (b/register-cron broker
-                                       cron-name
-                                       cron-schedule
-                                       (j/description execute-fn-sym
-                                                      args
-                                                      queue
-                                                      ready-queue
-                                                      retry-opts))]
-    (select-keys cron-entry [:name :cron-schedule])))
+                                    cron-name
+                                    cron-schedule
+                                    (j/description execute-fn-sym
+                                                   args
+                                                   queue
+                                                   ready-queue
+                                                   retry-opts))]
+    (select-keys cron-entry [:cron-name :cron-schedule])))
 
 (defn- enqueue
   [{:keys [broker queue retry-opts]}
@@ -72,5 +71,5 @@
   `cron-schedule` should be a string in the UNIX cron format.
   `execute-fn-sym` should be a fully-qualified function symbol.
   `args` are variadic."
-  [opts cron-name cron-schedule execute-fn-sym & args]
-  (register-cron-schedule opts cron-name cron-schedule execute-fn-sym args))
+  [opts cron-opts execute-fn-sym & args]
+  (register-cron-schedule opts cron-opts execute-fn-sym args))

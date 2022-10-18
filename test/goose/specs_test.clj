@@ -38,6 +38,10 @@
     ;; :instant
     #(c/perform-at tu/redis-client-opts "22-July-2022" `tu/my-fn)
 
+    ;; :cron-opts
+    #(c/perform-every tu/redis-client-opts {:cron-name :invalid :cron-schedule "* * * * *"} `tu/my-fn)
+    #(c/perform-every tu/redis-client-opts {:cron-name "my-cron" :cron-schedule "invalid"} `tu/my-fn)
+
     ;; Worker specs
     #(w/start (assoc tu/redis-worker-opts :threads -1.1))
     #(w/start (assoc tu/rmq-worker-opts :graceful-shutdown-sec -2))

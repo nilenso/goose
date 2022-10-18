@@ -99,18 +99,18 @@
 (deftest cron-entries-test
   (testing "cron entries API"
     (let [recurring-job (c/perform-every tu/redis-client-opts
-                                         "my-cron-entry"
-                                         "* * * * *"
+                                         {:cron-name     "my-cron-entry"
+                                          :cron-schedule "* * * * *"}
                                          `tu/my-fn
                                          :foo
                                          "bar"
                                          'baz)]
-      (is (= "my-cron-entry" (:name recurring-job)))
+      (is (= "my-cron-entry" (:cron-name recurring-job)))
       (is (= "* * * * *" (:cron-schedule recurring-job))))
 
 
     (is (= "my-cron-entry"
-           (:name (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))))
+           (:cron-name (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))))
     (is (= "* * * * *"
            (:cron-schedule (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))))
     (is (= {:execute-fn-sym `tu/my-fn
@@ -127,15 +127,15 @@
         "delete returns falsey when an entry is not deleted")
 
     (c/perform-every tu/redis-client-opts
-                     "my-cron-entry"
-                     "* * * * *"
+                     {:cron-name     "my-cron-entry"
+                      :cron-schedule "* * * * *"}
                      `tu/my-fn
                      :foo
                      "bar"
                      'baz)
     (c/perform-every tu/redis-client-opts
-                     "my-other-cron-entry"
-                     "* * * * *"
+                     {:cron-name     "my-other-cron-entry"
+                      :cron-schedule "* * * * *"}
                      `tu/my-fn
                      :foo
                      "bar"
@@ -150,14 +150,14 @@
 
     (testing "adding an entry after delete-all was called"
       (c/perform-every tu/redis-client-opts
-                       "my-cron-entry"
-                       "* * * * *"
+                       {:cron-name     "my-cron-entry"
+                        :cron-schedule "* * * * *"}
                        `tu/my-fn
                        :foo
                        "bar"
                        'baz)
       (is (= "my-cron-entry"
-             (:name (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))))
+             (:cron-name (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))))
       (is (= "* * * * *"
              (:cron-schedule (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))))
       (is (= {:execute-fn-sym `tu/my-fn

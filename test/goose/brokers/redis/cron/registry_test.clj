@@ -45,7 +45,7 @@
                                   (d/prefix-queue "foo-queue")
                                   retry/default-opts))
     (is (= {:cron-schedule   "* * * * *"
-            :name            "my-cron-name"
+            :cron-name       "my-cron-name"
             :job-description {:args           [:a "b" 3]
                               :execute-fn-sym `bar-sym
                               :ready-queue    (d/prefix-queue "foo-queue")
@@ -69,7 +69,7 @@
                                       (after-due-time
                                         "*/5 * * * *"))]
         (is (= [{:cron-schedule   "*/5 * * * *"
-                 :name            "my-cron-name"
+                 :cron-name       "my-cron-name"
                  :job-description {:args           [:a "b" 3]
                                    :execute-fn-sym `foo-sym
                                    :ready-queue    (d/prefix-queue "foo-queue")

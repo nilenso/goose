@@ -11,7 +11,7 @@
 
 (defn registry-entry
   [cron-name cron-schedule job-description]
-  {:name            cron-name
+  {:cron-name       cron-name
    :cron-schedule   cron-schedule
    :job-description job-description})
 
@@ -24,10 +24,10 @@
             (-> cron-entry
                 :cron-schedule
                 cron-parsing/next-run-epoch-ms)
-            (:name cron-entry)))
+            (:cron-name cron-entry)))
 
-(defn- persist-to-hash-map [{:keys [name] :as cron-entry}]
-  (car/hmset d/prefixed-cron-entries name cron-entry))
+(defn- persist-to-hash-map [{:keys [cron-name] :as cron-entry}]
+  (car/hmset d/prefixed-cron-entries cron-name cron-entry))
 
 (defn register
   "Registers a cron entry in Redis.

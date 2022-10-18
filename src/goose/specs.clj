@@ -21,9 +21,6 @@
 ;;; ========== Qualified Function Symbols ==============
 (s/def ::fn-sym (s/and qualified-symbol? resolve #(fn? @(resolve %))))
 
-;;; ========== Cron ===============
-(s/def ::cron-string (s/and string? cron-parsing/valid-cron?))
-
 ;;; ========== Redis ==============
 (s/def :goose.specs.redis/url string?)
 (s/def :goose.specs.redis/pool-opts
@@ -119,6 +116,13 @@
 ;;; RMQ queue names cannot be longer than 255 bytes.
 (s/def ::queue (s/and string? #(< (count %) 200) unprefixed? not-protected?))
 
+;;; ============== Cron Opts ==============
+(s/def ::cron-name string?)
+(s/def ::cron-schedule (s/and string? cron-parsing/valid-cron?))
+(s/def ::cron-opts
+  (s/keys :req-un [::cron-name
+                   ::cron-schedule]))
+
 ;;; ============== Retry Opts ==============
 (s/def ::max-retries nat-int?)
 (s/def ::retry-queue (s/nilable ::queue))
@@ -204,8 +208,7 @@
 
 (s/fdef c/perform-every
         :args (s/cat :opts ::client-opts
-                     :cron-name string?
-                     :cron-schedule ::cron-string
+                     :cron-opts ::cron-opts
                      :execute-fn-sym ::fn-sym
                      :args (s/* ::args-serializable?)))
 
