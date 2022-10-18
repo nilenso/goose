@@ -13,9 +13,7 @@
   {:threads               d/worker-threads
    :queue                 d/default-queue
    :graceful-shutdown-sec d/graceful-shutdown-sec
-   :metrics-plugin        (statsd/new statsd/default-opts)
-   :middlewares           nil
-   :error-service-cfg     nil})
+   :metrics-plugin        (statsd/new statsd/default-opts)})
 
 (defn start
   "Starts a threadpool for worker."

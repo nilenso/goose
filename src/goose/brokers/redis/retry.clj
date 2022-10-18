@@ -7,7 +7,7 @@
     [goose.utils :as u]))
 
 (defn- retry-job
-  [{:keys [redis-conn error-service-cfg]
+  [{:keys [redis-conn error-service-config]
     :as   _opts}
    {{:keys [retry-delay-sec-fn-sym error-handler-fn-sym]} :retry-opts
     {:keys [retry-count]}                                 :state
@@ -17,11 +17,11 @@
         retry-delay-sec ((u/require-resolve retry-delay-sec-fn-sym) retry-count)
         retry-at (u/add-sec retry-delay-sec)
         job (assoc-in job [:state :retry-at] retry-at)]
-    (u/log-on-exceptions (error-handler error-service-cfg job ex))
+    (u/log-on-exceptions (error-handler error-service-config job ex))
     (redis-cmds/enqueue-sorted-set redis-conn d/prefixed-retry-schedule-queue retry-at job)))
 
 (defn- bury-job
-  [{:keys [redis-conn error-service-cfg]
+  [{:keys [redis-conn error-service-config]
     :as   _opts}
    {{:keys [skip-dead-queue death-handler-fn-sym]} :retry-opts
     {:keys [last-retried-at]}                      :state
@@ -30,7 +30,7 @@
   (let [death-handler (u/require-resolve death-handler-fn-sym)
         died-at (or last-retried-at (u/epoch-time-ms))
         job (assoc-in job [:state :died-at] died-at)]
-    (u/log-on-exceptions (death-handler error-service-cfg job ex))
+    (u/log-on-exceptions (death-handler error-service-config job ex))
     (when-not skip-dead-queue
       (redis-cmds/enqueue-sorted-set redis-conn d/prefixed-dead-queue died-at job))))
 

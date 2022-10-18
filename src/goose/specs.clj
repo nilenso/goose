@@ -178,7 +178,8 @@
 (s/def ::graceful-shutdown-sec pos-int?)
 (s/def ::metrics-plugin #(satisfies? m/Metrics %))
 (s/def ::middlewares fn?)
-(s/def ::error-service-cfg any?) ; This varies by error services.
+(s/def ::error-service-config any?) ; This varies by error services.
+(s/def ::error-service-config any?) ; This varies by error services.
 (s/def ::worker-opts
   (s/keys :req-un [::broker
                    ::threads
@@ -186,7 +187,7 @@
                    ::graceful-shutdown-sec
                    ::metrics-plugin]
           :opt-un [::middlewares
-                   ::error-service-cfg]))
+                   ::error-service-config]))
 
 ;;; ============== FDEFs ==============
 (s/fdef c/perform-async

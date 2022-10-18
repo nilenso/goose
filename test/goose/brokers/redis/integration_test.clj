@@ -81,9 +81,11 @@
 (def failed-on-execute (atom (promise)))
 (def failed-on-1st-retry (atom (promise)))
 (def succeeded-on-2nd-retry (atom (promise)))
+(def retry-error-service (atom (promise)))
 
 (defn retry-test-error-handler
-  [_ _ ex]
+  [config _ ex]
+  (deliver @retry-error-service config)
   (if (realized? @failed-on-execute)
     (deliver @failed-on-1st-retry ex)
     (deliver @failed-on-execute ex)))
@@ -100,6 +102,7 @@
     (reset! failed-on-execute (promise))
     (reset! failed-on-1st-retry (promise))
     (reset! succeeded-on-2nd-retry (promise))
+    (reset! retry-error-service (promise))
 
     (let [arg "retry-test"
           retry-opts (assoc retry/default-opts
@@ -108,9 +111,12 @@
                        :retry-queue retry-queue
                        :error-handler-fn-sym `retry-test-error-handler)
           _ (c/perform-async (assoc tu/redis-client-opts :retry-opts retry-opts) `erroneous-fn arg)
-          worker (w/start tu/redis-worker-opts)
-          retry-worker (w/start (assoc tu/redis-worker-opts :queue retry-queue))]
+          error-svc-cfg :my-retry-test-config
+          worker-opts (assoc tu/redis-worker-opts :error-service-config error-svc-cfg)
+          worker (w/start worker-opts)
+          retry-worker (w/start (assoc worker-opts :queue retry-queue))]
       (is (= ArithmeticException (type (deref @failed-on-execute 100 :retry-execute-timed-out))))
+      (is (= error-svc-cfg (deref @retry-error-service 1 :retry-error-svc-cfg-timed-out)))
       (w/stop worker)
 
       (is (= ExceptionInfo (type (deref @failed-on-1st-retry 3100 :1st-retry-timed-out))))
@@ -120,8 +126,12 @@
 
 ;;; ======= TEST: Error handling dead-job using job queue ==========
 (def job-dead (atom (promise)))
+(def death-error-service (atom (promise)))
+
 (defn dead-test-error-handler [_ _ _])
-(defn dead-test-death-handler [_ _ ex]
+(defn dead-test-death-handler
+  [config _ ex]
+  (deliver @death-error-service config)
   (deliver @job-dead ex))
 
 (def dead-job-run-count (atom 0))
@@ -130,9 +140,10 @@
   (swap! dead-job-run-count inc)
   (/ 1 0))
 
-(deftest dead-test
+(deftest death-test
   (testing "Goose marks a job as dead upon reaching max retries"
     (reset! job-dead (promise))
+    (reset! death-error-service (promise))
     (reset! dead-job-run-count 0)
     (let [dead-job-opts (assoc retry/default-opts
                           :max-retries 1
@@ -140,7 +151,10 @@
                           :error-handler-fn-sym `dead-test-error-handler
                           :death-handler-fn-sym `dead-test-death-handler)
           _ (c/perform-async (assoc tu/redis-client-opts :retry-opts dead-job-opts) `dead-fn)
-          worker (w/start tu/redis-worker-opts)]
+          error-svc-cfg :my-death-test-config
+          worker-opts (assoc tu/redis-worker-opts :error-service-config error-svc-cfg)
+          worker (w/start worker-opts)]
       (is (= ArithmeticException (type (deref @job-dead 2100 :death-handler-timed-out))))
+      (is (= error-svc-cfg (deref @death-error-service 1 :death-error-svc-cfg-timed-out)))
       (is (= 2 @dead-job-run-count))
       (w/stop worker))))
