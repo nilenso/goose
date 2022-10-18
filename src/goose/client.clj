@@ -20,15 +20,16 @@
    execute-fn-sym
    args]
   (let [retry-opts (retry/prefix-queue-if-present retry-opts)
-        ready-queue (d/prefix-queue queue)]
-    (:id (b/register-cron broker
-                          cron-name
-                          cron-schedule
-                          (j/description execute-fn-sym
-                                         args
-                                         queue
-                                         ready-queue
-                                         retry-opts)))))
+        ready-queue (d/prefix-queue queue)
+        cron-entry (b/register-cron broker
+                                       cron-name
+                                       cron-schedule
+                                       (j/description execute-fn-sym
+                                                      args
+                                                      queue
+                                                      ready-queue
+                                                      retry-opts))]
+    (select-keys cron-entry [:name :cron-schedule])))
 
 (defn- enqueue
   [{:keys [broker queue retry-opts]}

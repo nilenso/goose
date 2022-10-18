@@ -1,6 +1,6 @@
 (ns goose.brokers.redis.api-test
   (:require
-    [goose.api.cron-jobs :as cron-entries]
+    [goose.api.cron-jobs :as cron-jobs]
     [goose.api.dead-jobs :as dead-jobs]
     [goose.api.enqueued-jobs :as enqueued-jobs]
     [goose.api.scheduled-jobs :as scheduled-jobs]
@@ -98,29 +98,32 @@
 
 (deftest cron-entries-test
   (testing "cron entries API"
-    (c/perform-every tu/redis-client-opts
-                     "my-cron-entry"
-                     "* * * * *"
-                     `tu/my-fn
-                     :foo
-                     "bar"
-                     'baz)
+    (let [recurring-job (c/perform-every tu/redis-client-opts
+                                         "my-cron-entry"
+                                         "* * * * *"
+                                         `tu/my-fn
+                                         :foo
+                                         "bar"
+                                         'baz)]
+      (is (= "my-cron-entry" (:name recurring-job)))
+      (is (= "* * * * *" (:cron-schedule recurring-job))))
+
 
     (is (= "my-cron-entry"
-           (:name (cron-entries/find-by-name tu/redis-producer "my-cron-entry"))))
+           (:name (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))))
     (is (= "* * * * *"
-           (:cron-schedule (cron-entries/find-by-name tu/redis-producer "my-cron-entry"))))
+           (:cron-schedule (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))))
     (is (= {:execute-fn-sym `tu/my-fn
             :args           [:foo "bar" 'baz]}
-           (-> (cron-entries/find-by-name tu/redis-producer "my-cron-entry")
+           (-> (cron-jobs/find-by-name tu/redis-producer "my-cron-entry")
                (:job-description)
                (select-keys [:execute-fn-sym :args]))))
 
-    (is (cron-entries/delete tu/redis-producer "my-cron-entry")
+    (is (cron-jobs/delete tu/redis-producer "my-cron-entry")
         "delete returns truthy when an entry is deleted")
-    (is (nil? (cron-entries/find-by-name tu/redis-producer "my-cron-entry"))
+    (is (nil? (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))
         "The deleted entry should be absent")
-    (is (not (cron-entries/delete tu/redis-producer "my-cron-entry"))
+    (is (not (cron-jobs/delete tu/redis-producer "my-cron-entry"))
         "delete returns falsey when an entry is not deleted")
 
     (c/perform-every tu/redis-client-opts
@@ -138,11 +141,11 @@
                      "bar"
                      'baz)
 
-    (is (cron-entries/delete-all tu/redis-producer)
+    (is (cron-jobs/delete-all tu/redis-producer)
         "delete-all returns truthy if the cron entry keys were deleted")
-    (is (nil? (cron-entries/find-by-name tu/redis-producer "my-cron-entry"))
+    (is (nil? (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))
         "The deleted entry should be absent")
-    (is (nil? (cron-entries/find-by-name tu/redis-producer "my-other-cron-entry"))
+    (is (nil? (cron-jobs/find-by-name tu/redis-producer "my-other-cron-entry"))
         "The deleted entry should be absent")
 
     (testing "adding an entry after delete-all was called"
@@ -154,11 +157,11 @@
                        "bar"
                        'baz)
       (is (= "my-cron-entry"
-             (:name (cron-entries/find-by-name tu/redis-producer "my-cron-entry"))))
+             (:name (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))))
       (is (= "* * * * *"
-             (:cron-schedule (cron-entries/find-by-name tu/redis-producer "my-cron-entry"))))
+             (:cron-schedule (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))))
       (is (= {:execute-fn-sym `tu/my-fn
               :args           [:foo "bar" 'baz]}
-             (-> (cron-entries/find-by-name tu/redis-producer "my-cron-entry")
+             (-> (cron-jobs/find-by-name tu/redis-producer "my-cron-entry")
                  (:job-description)
                  (select-keys [:execute-fn-sym :args])))))))
