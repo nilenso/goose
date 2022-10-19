@@ -19,8 +19,8 @@
     (select-keys job [:id]))
   (schedule [this schedule job]
     (redis-scheduler/run-at (:redis-conn this) schedule job))
-  (register-cron [this cron-name cron-schedule job-description]
-    (cron/register (:redis-conn this) cron-name cron-schedule job-description))
+  (register-cron [this cron-opts job-description]
+    (cron/register (:redis-conn this) cron-opts job-description))
   (start-worker [this worker-opts]
     (redis-worker/start (merge worker-opts (:opts this))))
 

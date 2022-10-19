@@ -4,7 +4,7 @@
     (com.cronutils.model.definition CronDefinitionBuilder)
     (com.cronutils.model.time ExecutionTime)
     (com.cronutils.parser CronParser)
-    (java.time ZonedDateTime)))
+    (java.time ZonedDateTime ZoneId)))
 
 (defn parse-cron
   [cron-schedule]
@@ -22,19 +22,21 @@
 
 
 (defn next-run-epoch-ms
-  [cron-schedule]
-  (some-> (parse-cron cron-schedule)
-          (ExecutionTime/forCron)
-          (.nextExecution (ZonedDateTime/now))
-          (.orElse nil)
-          (.toInstant)
-          (.toEpochMilli)))
+  [cron-schedule timezone]
+  (let [zone (ZoneId/of timezone)]
+    (some-> (parse-cron cron-schedule)
+            (ExecutionTime/forCron)
+            (.nextExecution (ZonedDateTime/now zone))
+            (.orElse nil)
+            (.toInstant)
+            (.toEpochMilli))))
 
 (defn previous-run-epoch-ms
-  [cron-schedule]
-  (some-> (parse-cron cron-schedule)
-          (ExecutionTime/forCron)
-          (.lastExecution (ZonedDateTime/now))
-          (.orElse nil)
-          (.toInstant)
-          (.toEpochMilli)))
+  [cron-schedule timezone]
+  (let [zone (ZoneId/of timezone)]
+    (some-> (parse-cron cron-schedule)
+            (ExecutionTime/forCron)
+            (.lastExecution (ZonedDateTime/now zone))
+            (.orElse nil)
+            (.toInstant)
+            (.toEpochMilli))))

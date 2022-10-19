@@ -16,7 +16,7 @@
     [clojure.string :as str]
     [taoensso.carmine.connections :refer [IConnectionPool]])
   (:import
-    (java.time Instant)))
+    (java.time Instant ZoneId)))
 
 ;;; ========== Qualified Function Symbols ==============
 (s/def ::fn-sym (s/and qualified-symbol? resolve #(fn? @(resolve %))))
@@ -119,9 +119,11 @@
 ;;; ============== Cron Opts ==============
 (s/def ::cron-name string?)
 (s/def ::cron-schedule (s/and string? cron-parsing/valid-cron?))
+(s/def ::timezone (set (ZoneId/getAvailableZoneIds)))
 (s/def ::cron-opts
   (s/keys :req-un [::cron-name
-                   ::cron-schedule]))
+                   ::cron-schedule]
+          :opt-un [::timezone]))
 
 ;;; ============== Retry Opts ==============
 (s/def ::max-retries nat-int?)

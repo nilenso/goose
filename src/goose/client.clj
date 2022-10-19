@@ -15,20 +15,19 @@
 
 (defn- register-cron-schedule
   [{:keys [broker queue retry-opts] :as _opts}
-   {:keys [cron-name cron-schedule] :as _cron-opts}
+   cron-opts
    execute-fn-sym
    args]
   (let [retry-opts (retry/prefix-queue-if-present retry-opts)
         ready-queue (d/prefix-queue queue)
         cron-entry (b/register-cron broker
-                                    cron-name
-                                    cron-schedule
+                                    cron-opts
                                     (j/description execute-fn-sym
                                                    args
                                                    queue
                                                    ready-queue
                                                    retry-opts))]
-    (select-keys cron-entry [:cron-name :cron-schedule])))
+    (select-keys cron-entry [:cron-name :cron-schedule :timezone])))
 
 (defn- enqueue
   [{:keys [broker queue retry-opts]}

@@ -42,8 +42,10 @@
     #(c/perform-at tu/redis-client-opts "22-July-2022" `tu/my-fn)
 
     ;; :cron-opts
-    #(c/perform-every tu/redis-client-opts {:cron-name :invalid :cron-schedule "* * * * *"} `tu/my-fn)
-    #(c/perform-every tu/redis-client-opts {:cron-name "my-cron" :cron-schedule "invalid"} `tu/my-fn)
+    (let [cron-opts {:cron-name "my-cron" :cron-schedule "* * * * *"}]
+      #(c/perform-every tu/redis-client-opts (assoc cron-opts :cron-name :invalid) `tu/my-fn)
+      #(c/perform-every tu/redis-client-opts (assoc cron-opts :cron-schedule "invalid") `tu/my-fn)
+      #(c/perform-every tu/redis-client-opts (assoc cron-opts :timezone "invalid-zone-id") `tu/my-fn))
 
     ;; Worker specs
     #(w/start (assoc tu/redis-worker-opts :threads -1.1))

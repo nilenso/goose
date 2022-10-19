@@ -9,7 +9,9 @@
     [goose.test-utils :as tu]
     [goose.worker :as w]
 
-    [clojure.test :refer [deftest is testing use-fixtures]]))
+    [clojure.test :refer [deftest is testing use-fixtures]])
+  (:import
+    (java.time ZoneId)))
 
 ;;; ======= Setup & Teardown ==========
 (use-fixtures :each tu/redis-fixture)
@@ -100,19 +102,23 @@
   (testing "cron entries API"
     (let [recurring-job (c/perform-every tu/redis-client-opts
                                          {:cron-name     "my-cron-entry"
-                                          :cron-schedule "* * * * *"}
+                                          :cron-schedule "* * * * *"
+                                          :timezone      "US/Pacific"}
                                          `tu/my-fn
                                          :foo
                                          "bar"
                                          'baz)]
       (is (= "my-cron-entry" (:cron-name recurring-job)))
-      (is (= "* * * * *" (:cron-schedule recurring-job))))
+      (is (= "* * * * *" (:cron-schedule recurring-job)))
+      (is (= "US/Pacific" (:timezone recurring-job))))
 
 
     (is (= "my-cron-entry"
            (:cron-name (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))))
     (is (= "* * * * *"
            (:cron-schedule (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))))
+    (is (= "US/Pacific"
+           (:timezone (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))))
     (is (= {:execute-fn-sym `tu/my-fn
             :args           [:foo "bar" 'baz]}
            (-> (cron-jobs/find-by-name tu/redis-producer "my-cron-entry")
@@ -160,6 +166,8 @@
              (:cron-name (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))))
       (is (= "* * * * *"
              (:cron-schedule (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))))
+      (is (= (.getId (ZoneId/systemDefault))
+             (:timezone (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))))
       (is (= {:execute-fn-sym `tu/my-fn
               :args           [:foo "bar" 'baz]}
              (-> (cron-jobs/find-by-name tu/redis-producer "my-cron-entry")
