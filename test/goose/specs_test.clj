@@ -9,17 +9,20 @@
     [goose.test-utils :as tu]
     [goose.worker :as w]
 
-    [clojure.test :refer [deftest is are]]))
+    [clojure.test :refer [deftest is are]])
+  (:import
+    (clojure.lang ExceptionInfo)
+    (java.time Instant)))
 
 (defn single-arity-fn [_] "dummy")
-(def now (java.time.Instant/now))
+(def now (Instant/now))
 
 (deftest specs-test
   (specs/instrument)
   (are [sut]
     (is
       (thrown-with-msg?
-        clojure.lang.ExceptionInfo
+        ExceptionInfo
         #"Call to goose.* did not conform to spec."
         (sut)))
 
@@ -38,13 +41,19 @@
     ;; :instant
     #(c/perform-at tu/redis-client-opts "22-July-2022" `tu/my-fn)
 
+    ;; :cron-opts
+    (let [cron-opts {:cron-name "my-cron" :cron-schedule "* * * * *"}]
+      #(c/perform-every tu/redis-client-opts (assoc cron-opts :cron-name :invalid) `tu/my-fn)
+      #(c/perform-every tu/redis-client-opts (assoc cron-opts :cron-schedule "invalid") `tu/my-fn)
+      #(c/perform-every tu/redis-client-opts (assoc cron-opts :timezone "invalid-zone-id") `tu/my-fn))
+
     ;; Worker specs
     #(w/start (assoc tu/redis-worker-opts :threads -1.1))
     #(w/start (assoc tu/rmq-worker-opts :graceful-shutdown-sec -2))
     #(w/start (assoc tu/redis-worker-opts :metrics-plugin :invalid))
     #(w/start (assoc tu/rmq-worker-opts :middlewares "non-fn"))
 
-    ;; :statad-opts
+    ;; :statsd-opts
     #(statsd/new (assoc statsd/default-opts :enabled? 1))
     #(statsd/new (assoc statsd/default-opts :host 127.0))
     #(statsd/new (assoc statsd/default-opts :port "8125"))
@@ -92,7 +101,7 @@
     #(rmq/new-producer (assoc rmq/default-opts :publisher-confirms {:strategy d/sync-confirms :timeout-ms 10 :max-retries -1}))
     #(rmq/new-consumer (assoc rmq/default-opts :publisher-confirms {:strategy d/sync-confirms :timeout-ms 10 :retry-delay-ms 0}))
     #(rmq/new-producer (assoc rmq/default-opts :publisher-confirms {:strategy d/async-confirms :ack-handler 'invalid}))
-    #(rmq/new-consumer (assoc rmq/default-opts :publisher-confirms {:strategy d/async-confirms :nack-handler `my-fn}))
+    #(rmq/new-consumer (assoc rmq/default-opts :publisher-confirms {:strategy d/async-confirms :nack-handler `tu/my-fn}))
 
     ;; rmq-broker :return-listener
     #(rmq/new-producer (assoc rmq/default-opts :return-listener :non-fn))

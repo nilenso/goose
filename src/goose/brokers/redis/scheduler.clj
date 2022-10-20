@@ -14,23 +14,11 @@
   [redis-conn
    epoch-ms
    {:keys [ready-queue] :as job}]
-  (let [scheduled-job (assoc job :schedule epoch-ms)]
+  (let [scheduled-job (assoc job :schedule-run-at epoch-ms)]
     (if (< epoch-ms (u/epoch-time-ms))
       (redis-cmds/enqueue-front redis-conn ready-queue scheduled-job)
       (redis-cmds/enqueue-sorted-set redis-conn d/prefixed-schedule-queue epoch-ms scheduled-job))
     (select-keys job [:id])))
-
-(defn- sleep-duration
-  [redis-conn scheduler-polling-interval-sec]
-  (let [total-process-count (heartbeat/total-process-count redis-conn)]
-    ;; Sleep for total-process-count * polling-interval + jitters
-    ;; Regardless of number of processes,
-    ;; On average, Goose checks for scheduled jobs
-    ;; every polling interval configured to reduce load on Redis.
-    ;; All worker processes must have same polling interval.
-    (u/sec->ms
-      (+ (* scheduler-polling-interval-sec total-process-count)
-         (rand-int 3)))))
 
 (defn- enqueue-due-scheduled-jobs
   "Returns truthy if due jobs were found."
@@ -56,5 +44,6 @@
           ;; Goose only sleeps if no due jobs or cron entries are found.
           ;; If they are found, then Goose immediately polls to check
           ;; if more jobs are due.
-          (Thread/sleep (sleep-duration redis-conn scheduler-polling-interval-sec))))))
+          (let [global-workers-count (heartbeat/global-workers-count redis-conn)]
+            (u/sleep scheduler-polling-interval-sec global-workers-count))))))
   (log/info "Stopped scheduler. Exiting gracefully..."))

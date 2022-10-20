@@ -7,37 +7,41 @@
     [goose.job :as j]
     [goose.utils :as u]
 
-    [taoensso.carmine :as car]))
+    [taoensso.carmine :as car])
+  (:import
+    (java.time ZoneId)))
 
 (defn registry-entry
-  [cron-name cron-schedule job-description]
-  {:name            cron-name
+  [{:keys [cron-name cron-schedule timezone]
+    :or   {timezone (.getId (ZoneId/systemDefault))}
+    :as   _cron-opts}
+   job-description]
+  {:cron-name       cron-name
    :cron-schedule   cron-schedule
+   :timezone        timezone
    :job-description job-description})
 
 (defn find-by-name [redis-conn cron-name]
   (redis-cmds/wcar* redis-conn (car/hget d/prefixed-cron-entries cron-name)))
 
 (defn- set-due-time
-  [cron-entry]
+  [{:keys [cron-name cron-schedule timezone]}]
   (car/zadd d/prefixed-cron-queue
-            (-> cron-entry
-                :cron-schedule
-                cron-parsing/next-run-epoch-ms)
-            (:name cron-entry)))
+            (cron-parsing/next-run-epoch-ms cron-schedule timezone)
+            cron-name))
 
-(defn- persist-to-hash-map [{:keys [name] :as cron-entry}]
-  (car/hmset d/prefixed-cron-entries name cron-entry))
+(defn- persist-to-hash-map [{:keys [cron-name] :as cron-entry}]
+  (car/hmset d/prefixed-cron-entries cron-name cron-entry))
 
 (defn register
   "Registers a cron entry in Redis.
   If an entry already exists against the same name, it will be
   overwritten."
-  [redis-conn cron-name cron-schedule job-description]
+  [redis-conn cron-opts job-description]
   (redis-cmds/with-transaction redis-conn
     (car/watch d/prefixed-cron-entries)
     (car/watch d/prefixed-cron-queue)
-    (let [new-entry (registry-entry cron-name cron-schedule job-description)]
+    (let [new-entry (registry-entry cron-opts job-description)]
       (car/multi)
       (persist-to-hash-map new-entry)
       (set-due-time new-entry)
@@ -75,10 +79,10 @@
         (doall (map #(car/hget d/prefixed-cron-entries %) cron-names))))))
 
 (defn- create-job
-  [{:keys [cron-schedule job-description]
+  [{:keys [cron-schedule timezone job-description]
     :as   _cron-entry}]
   (-> (j/from-description job-description)
-      (assoc :cron-run-at (cron-parsing/previous-run-epoch-ms cron-schedule))))
+      (assoc :cron-run-at (cron-parsing/previous-run-epoch-ms cron-schedule timezone))))
 
 (defn enqueue-due-cron-entries
   "Returns truthy if due cron entries were found."

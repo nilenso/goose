@@ -6,7 +6,7 @@
     [goose.client :as c]
     [goose.cron.parsing :as cron-parsing]
     [goose.defaults :as d]
-    [goose.metrics.protocol :as metrics-protocol]
+    [goose.metrics :as m]
     [goose.metrics.statsd :as statsd]
     [goose.utils :as u]
     [goose.worker :as w]
@@ -16,13 +16,10 @@
     [clojure.string :as str]
     [taoensso.carmine.connections :refer [IConnectionPool]])
   (:import
-    (java.time Instant)))
+    (java.time Instant ZoneId)))
 
 ;;; ========== Qualified Function Symbols ==============
 (s/def ::fn-sym (s/and qualified-symbol? resolve #(fn? @(resolve %))))
-
-;;; ========== Cron ===============
-(s/def ::cron-string (s/and string? cron-parsing/valid-cron?))
 
 ;;; ========== Redis ==============
 (s/def :goose.specs.redis/url string?)
@@ -119,6 +116,15 @@
 ;;; RMQ queue names cannot be longer than 255 bytes.
 (s/def ::queue (s/and string? #(< (count %) 200) unprefixed? not-protected?))
 
+;;; ============== Cron Opts ==============
+(s/def ::cron-name string?)
+(s/def ::cron-schedule (s/and string? cron-parsing/valid-cron?))
+(s/def ::timezone (set (ZoneId/getAvailableZoneIds)))
+(s/def ::cron-opts
+  (s/keys :req-un [::cron-name
+                   ::cron-schedule]
+          :opt-un [::timezone]))
+
 ;;; ============== Retry Opts ==============
 (s/def ::max-retries nat-int?)
 (s/def ::retry-queue (s/nilable ::queue))
@@ -172,9 +178,10 @@
 ;;; ============== Worker ==============
 (s/def ::threads pos-int?)
 (s/def ::graceful-shutdown-sec pos-int?)
-(s/def ::metrics-plugin #(satisfies? metrics-protocol/Protocol %))
+(s/def ::metrics-plugin #(satisfies? m/Metrics %))
 (s/def ::middlewares fn?)
-(s/def ::error-service-cfg any?) ; This varies by error services.
+(s/def ::error-service-config any?) ; This varies by error services.
+(s/def ::error-service-config any?) ; This varies by error services.
 (s/def ::worker-opts
   (s/keys :req-un [::broker
                    ::threads
@@ -182,7 +189,7 @@
                    ::graceful-shutdown-sec
                    ::metrics-plugin]
           :opt-un [::middlewares
-                   ::error-service-cfg]))
+                   ::error-service-config]))
 
 ;;; ============== FDEFs ==============
 (s/fdef c/perform-async
@@ -204,8 +211,7 @@
 
 (s/fdef c/perform-every
         :args (s/cat :opts ::client-opts
-                     :cron-name string?
-                     :cron-schedule ::cron-string
+                     :cron-opts ::cron-opts
                      :execute-fn-sym ::fn-sym
                      :args (s/* ::args-serializable?)))
 

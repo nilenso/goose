@@ -1,7 +1,7 @@
 (ns goose.job
   ^:no-doc
   (:require
-    [goose.metrics.keys :as metrics-keys]
+    [goose.metrics :as m]
     [goose.utils :as u]))
 
 (defn new
@@ -44,13 +44,13 @@
   [job]
   (cond
     (:retry-at (:state job))
-    [metrics-keys/retry-latency (- (u/epoch-time-ms) (:retry-at (:state job)))]
-    (:schedule job)
-    [metrics-keys/schedule-latency (- (u/epoch-time-ms) (:schedule job))]
+    [m/retry-latency (- (u/epoch-time-ms) (:retry-at (:state job)))]
+    (:schedule-run-at job)
+    [m/schedule-latency (- (u/epoch-time-ms) (:schedule-run-at job))]
     (:cron-run-at job)
-    [metrics-keys/cron-schedule-latency (- (u/epoch-time-ms) (:cron-run-at job))]
+    [m/cron-schedule-latency (- (u/epoch-time-ms) (:cron-run-at job))]
     :else
-    [metrics-keys/execution-latency (- (u/epoch-time-ms) (:enqueued-at job))]))
+    [m/execution-latency (- (u/epoch-time-ms) (:enqueued-at job))]))
 
 (defn wrap-latency
   [next]

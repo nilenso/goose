@@ -1,6 +1,6 @@
 (ns goose.brokers.redis.api-test
   (:require
-    [goose.api.cron-jobs :as cron-entries]
+    [goose.api.cron-jobs :as cron-jobs]
     [goose.api.dead-jobs :as dead-jobs]
     [goose.api.enqueued-jobs :as enqueued-jobs]
     [goose.api.scheduled-jobs :as scheduled-jobs]
@@ -9,7 +9,9 @@
     [goose.test-utils :as tu]
     [goose.worker :as w]
 
-    [clojure.test :refer [deftest is testing use-fixtures]]))
+    [clojure.test :refer [deftest is testing use-fixtures]])
+  (:import
+    (java.time ZoneId)))
 
 ;;; ======= Setup & Teardown ==========
 (use-fixtures :each tu/redis-fixture)
@@ -25,9 +27,9 @@
 
       (let [job (enqueued-jobs/find-by-id tu/redis-producer tu/queue job-id)]
         (is (some? (enqueued-jobs/prioritise-execution tu/redis-producer job)))
-        (is (true? (enqueued-jobs/delete tu/redis-producer job))))
+        (is (enqueued-jobs/delete tu/redis-producer job)))
 
-      (is (true? (enqueued-jobs/purge tu/redis-producer tu/queue))))))
+      (is (enqueued-jobs/purge tu/redis-producer tu/queue)))))
 
 (deftest scheduled-jobs-test
   (testing "scheduled-jobs API"
@@ -41,12 +43,12 @@
       (let [job (scheduled-jobs/find-by-id tu/redis-producer job-id1)]
         (is (some? (scheduled-jobs/prioritise-execution tu/redis-producer job)))
         (is (false? (scheduled-jobs/delete tu/redis-producer job)))
-        (is (true? (enqueued-jobs/delete tu/redis-producer job))))
+        (is (enqueued-jobs/delete tu/redis-producer job)))
 
       (let [job (scheduled-jobs/find-by-id tu/redis-producer job-id2)]
-        (is (true? (scheduled-jobs/delete tu/redis-producer job))))
+        (is (scheduled-jobs/delete tu/redis-producer job)))
 
-      (is (true? (scheduled-jobs/purge tu/redis-producer))))))
+      (is (scheduled-jobs/purge tu/redis-producer)))))
 
 (defn death-handler [_ _ _])
 (def dead-fn-atom (atom 0))
@@ -80,85 +82,94 @@
       (is (= dead-job-id-1 (:id (dead-jobs/pop tu/redis-producer))))
       (let [dead-job (dead-jobs/find-by-id tu/redis-producer dead-job-id-2)]
         (is some? (dead-jobs/replay-job tu/redis-producer dead-job))
-        (is true? (enqueued-jobs/delete tu/redis-producer dead-job)))
+        (enqueued-jobs/delete tu/redis-producer dead-job))
 
       (let [match? (fn [job] (= (list 0) (:args job)))
             [dead-job] (dead-jobs/find-by-pattern tu/redis-producer match?)
-            dead-at (get-in dead-job [:state :dead-at])]
-        (is (true? (dead-jobs/delete-older-than tu/redis-producer dead-at))))
+            died-at (get-in dead-job [:state :died-at])]
+        (is (dead-jobs/delete-older-than tu/redis-producer died-at)))
 
       (let [match? (fn [job] (= (list 1) (:args job)))
             [dead-job] (dead-jobs/find-by-pattern tu/redis-producer match?)]
-        (is (true? (dead-jobs/delete tu/redis-producer dead-job))))
+        (is (dead-jobs/delete tu/redis-producer dead-job)))
       (is (= 2 (dead-jobs/replay-n-jobs tu/redis-producer 2)))
       (is (= 2 (enqueued-jobs/size tu/redis-producer (:queue job-opts))))
 
-      (is (true? (dead-jobs/purge tu/redis-producer)))
+      (is (dead-jobs/purge tu/redis-producer))
       (is (= 0 (dead-jobs/replay-n-jobs tu/redis-producer 5))))))
 
 (deftest cron-entries-test
   (testing "cron entries API"
-    (c/perform-every tu/redis-client-opts
-                     "my-cron-entry"
-                     "* * * * *"
-                     `tu/my-fn
-                     :foo
-                     "bar"
-                     'baz)
+    (let [recurring-job (c/perform-every tu/redis-client-opts
+                                         {:cron-name     "my-cron-entry"
+                                          :cron-schedule "* * * * *"
+                                          :timezone      "US/Pacific"}
+                                         `tu/my-fn
+                                         :foo
+                                         "bar"
+                                         'baz)]
+      (is (= "my-cron-entry" (:cron-name recurring-job)))
+      (is (= "* * * * *" (:cron-schedule recurring-job)))
+      (is (= "US/Pacific" (:timezone recurring-job))))
+
 
     (is (= "my-cron-entry"
-           (:name (cron-entries/find-by-name tu/redis-producer "my-cron-entry"))))
+           (:cron-name (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))))
     (is (= "* * * * *"
-           (:cron-schedule (cron-entries/find-by-name tu/redis-producer "my-cron-entry"))))
+           (:cron-schedule (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))))
+    (is (= "US/Pacific"
+           (:timezone (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))))
     (is (= {:execute-fn-sym `tu/my-fn
             :args           [:foo "bar" 'baz]}
-           (-> (cron-entries/find-by-name tu/redis-producer "my-cron-entry")
+           (-> (cron-jobs/find-by-name tu/redis-producer "my-cron-entry")
                (:job-description)
                (select-keys [:execute-fn-sym :args]))))
 
-    (is (cron-entries/delete tu/redis-producer "my-cron-entry")
+    (is (cron-jobs/delete tu/redis-producer "my-cron-entry")
         "delete returns truthy when an entry is deleted")
-    (is (nil? (cron-entries/find-by-name tu/redis-producer "my-cron-entry"))
+    (is (nil? (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))
         "The deleted entry should be absent")
-    (is (not (cron-entries/delete tu/redis-producer "my-cron-entry"))
+    (is (not (cron-jobs/delete tu/redis-producer "my-cron-entry"))
         "delete returns falsey when an entry is not deleted")
 
     (c/perform-every tu/redis-client-opts
-                     "my-cron-entry"
-                     "* * * * *"
+                     {:cron-name     "my-cron-entry"
+                      :cron-schedule "* * * * *"}
                      `tu/my-fn
                      :foo
                      "bar"
                      'baz)
     (c/perform-every tu/redis-client-opts
-                     "my-other-cron-entry"
-                     "* * * * *"
+                     {:cron-name     "my-other-cron-entry"
+                      :cron-schedule "* * * * *"}
                      `tu/my-fn
                      :foo
                      "bar"
                      'baz)
 
-    (is (cron-entries/delete-all tu/redis-producer)
+    (is (cron-jobs/delete-all tu/redis-producer)
         "delete-all returns truthy if the cron entry keys were deleted")
-    (is (nil? (cron-entries/find-by-name tu/redis-producer "my-cron-entry"))
+    (is (nil? (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))
         "The deleted entry should be absent")
-    (is (nil? (cron-entries/find-by-name tu/redis-producer "my-other-cron-entry"))
+    (is (nil? (cron-jobs/find-by-name tu/redis-producer "my-other-cron-entry"))
         "The deleted entry should be absent")
 
     (testing "adding an entry after delete-all was called"
       (c/perform-every tu/redis-client-opts
-                       "my-cron-entry"
-                       "* * * * *"
+                       {:cron-name     "my-cron-entry"
+                        :cron-schedule "* * * * *"}
                        `tu/my-fn
                        :foo
                        "bar"
                        'baz)
       (is (= "my-cron-entry"
-             (:name (cron-entries/find-by-name tu/redis-producer "my-cron-entry"))))
+             (:cron-name (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))))
       (is (= "* * * * *"
-             (:cron-schedule (cron-entries/find-by-name tu/redis-producer "my-cron-entry"))))
+             (:cron-schedule (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))))
+      (is (= (.getId (ZoneId/systemDefault))
+             (:timezone (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))))
       (is (= {:execute-fn-sym `tu/my-fn
               :args           [:foo "bar" 'baz]}
-             (-> (cron-entries/find-by-name tu/redis-producer "my-cron-entry")
+             (-> (cron-jobs/find-by-name tu/redis-producer "my-cron-entry")
                  (:job-description)
                  (select-keys [:execute-fn-sym :args])))))))

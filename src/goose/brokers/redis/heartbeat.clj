@@ -11,13 +11,13 @@
 (defn alive? [redis-conn id]
   (boolean (redis-cmds/get-key redis-conn (heartbeat-id id))))
 
-(defn process-count [redis-conn process-set]
+(defn local-workers-count [redis-conn process-set]
   (redis-cmds/set-size redis-conn process-set))
 
-(defn total-process-count
+(defn global-workers-count
   [redis-conn]
   (let [process-sets (redis-cmds/find-sets redis-conn (str d/process-prefix "*"))
-        process-counts (map (fn [process] (process-count redis-conn process)) process-sets)]
+        process-counts (map (fn [process] (local-workers-count redis-conn process)) process-sets)]
     (reduce + process-counts)))
 
 (defn run
@@ -31,7 +31,7 @@
       ;; aren't considered abandoned and double executions are avoided.
       (let [expiry (max d/redis-heartbeat-expire-sec graceful-shutdown-sec)]
         (redis-cmds/set-key-val redis-conn (heartbeat-id id) "alive" expiry))
-      (Thread/sleep (u/sec->ms d/redis-heartbeat-sleep-sec)))))
+      (u/sleep d/redis-heartbeat-sleep-sec))))
 
 (defn stop
   [{:keys [id redis-conn process-set in-progress-queue]}]

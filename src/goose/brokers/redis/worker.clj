@@ -11,7 +11,7 @@
     [goose.consumer :as consumer]
     [goose.defaults :as d]
     [goose.job :as job]
-    [goose.metrics.middleware :as metrics-middleware]
+    [goose.metrics :as m]
     [goose.utils :as u]
     [goose.worker :as worker]
 
@@ -50,7 +50,7 @@
                (-> consumer/execute-job (middlewares))
                consumer/execute-job)]
     (-> call
-        (metrics-middleware/wrap-metrics)
+        (m/wrap-metrics)
         (job/wrap-latency)
         (redis-retry/wrap-failure))))
 
