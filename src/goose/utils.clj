@@ -29,7 +29,7 @@
   ([] (System/currentTimeMillis))
   ([date] (inst-ms date)))
 
-(defn- ^:no-doc sec->ms [sec]
+(defn- sec->ms [sec]
   (* 1000 sec))
 
 (defn ^:no-doc add-sec
@@ -37,14 +37,16 @@
   ([sec epoch-time-millis]
    (+ (sec->ms sec) epoch-time-millis)))
 
-(defn sleep
+(defn ^:no-doc sleep
   "Sleep for given seconds, multiplied by count.
   Sleep duration: (seconds * count) + jitters"
   ([sec]
    (Thread/sleep (sec->ms sec)))
   ([sec multiplier-count]
-   (Thread/sleep (sec->ms (+ (* sec multiplier-count)
-                             (rand-int multiplier-count))))))
+   ;; `Thread/sleep` converts float to long value.
+   ;; For sec=3, multiplier-count=5, it sleeps for
+   ;; [15,000, 16,000) milliseconds.
+   (Thread/sleep (sec->ms (+ (* sec multiplier-count) (rand))))))
 
 (defmacro ^:no-doc while-pool
   [pool & body]

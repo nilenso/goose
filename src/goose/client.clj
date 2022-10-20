@@ -20,13 +20,8 @@
    args]
   (let [retry-opts (retry/prefix-queue-if-present retry-opts)
         ready-queue (d/prefix-queue queue)
-        cron-entry (b/register-cron broker
-                                    cron-opts
-                                    (j/description execute-fn-sym
-                                                   args
-                                                   queue
-                                                   ready-queue
-                                                   retry-opts))]
+        job-description (j/description execute-fn-sym args queue ready-queue retry-opts)
+        cron-entry (b/register-cron broker cron-opts job-description)]
     (select-keys cron-entry [:cron-name :cron-schedule :timezone])))
 
 (defn- enqueue

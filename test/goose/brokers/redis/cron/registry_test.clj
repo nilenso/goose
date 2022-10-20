@@ -11,7 +11,8 @@
     [goose.utils :as u]
 
     [clojure.test :refer [deftest is testing use-fixtures]])
-  (:import (java.time ZoneId)))
+  (:import
+    (java.time ZoneId)))
 
 (use-fixtures :each tu/redis-fixture)
 

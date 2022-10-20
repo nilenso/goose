@@ -12,7 +12,10 @@
     (java.time ZoneId)))
 
 (defn registry-entry
-  [cron-name cron-schedule timezone job-description]
+  [{:keys [cron-name cron-schedule timezone]
+    :or   {timezone (.getId (ZoneId/systemDefault))}
+    :as   _cron-opts}
+   job-description]
   {:cron-name       cron-name
    :cron-schedule   cron-schedule
    :timezone        timezone
@@ -34,14 +37,11 @@
   "Registers a cron entry in Redis.
   If an entry already exists against the same name, it will be
   overwritten."
-  [redis-conn
-   {:keys [cron-name cron-schedule timezone] :as _cron-opts
-    :or   {timezone (.getId (ZoneId/systemDefault))}}
-   job-description]
+  [redis-conn cron-opts job-description]
   (redis-cmds/with-transaction redis-conn
     (car/watch d/prefixed-cron-entries)
     (car/watch d/prefixed-cron-queue)
-    (let [new-entry (registry-entry cron-name cron-schedule timezone job-description)]
+    (let [new-entry (registry-entry cron-opts job-description)]
       (car/multi)
       (persist-to-hash-map new-entry)
       (set-due-time new-entry)
