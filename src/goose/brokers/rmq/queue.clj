@@ -11,7 +11,7 @@
 
 (def quorum
   {:type               d/rmq-quorum-queue
-   :replication-factor 5})
+   :replication-factor d/rmq-replication-factor})
 
 (defn- ^:no-doc arguments
   [{:keys [type replication-factor]}]

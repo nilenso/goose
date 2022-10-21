@@ -66,5 +66,6 @@
 (def rmq-delay-limit-ms 4294967295) ; (2^32 - 1)
 (def rmq-classic-queue "classic")
 (def rmq-quorum-queue "quorum")
+(def rmq-replication-factor 3)
 (def sync-confirms "sync")
 (def async-confirms "classic")
