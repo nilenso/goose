@@ -9,7 +9,6 @@
     [goose.defaults :as d]
     [goose.job :as job]
     [goose.metrics :as m]
-    [goose.worker :as worker]
     [goose.utils :as u]
 
     [clojure.tools.logging :as log]
@@ -76,6 +75,6 @@
     (let [queue-opts (assoc queue-type :queue ready-queue)]
       (rmq-queue/declare (first channels) queue-opts))
 
-    (let [consumers (rmq-consumer/run opts)]
-      (reify worker/Shutdown
-        (stop [_] (internal-stop (assoc opts :ch+consumers consumers)))))))
+    (let [consumers (rmq-consumer/run opts)
+          opts (assoc opts :ch+consumers consumers)]
+      (with-meta opts {'goose.worker/stop internal-stop}))))
