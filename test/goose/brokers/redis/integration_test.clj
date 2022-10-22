@@ -33,20 +33,6 @@
       (is (= arg (deref @perform-async-fn-executed 100 :e2e-test-timed-out)))
       (w/stop worker))))
 
-;;; ======= TEST: Relative Scheduling ==========
-(def perform-in-sec-fn-executed (atom (promise)))
-(defn perform-in-sec-fn [arg]
-  (deliver @perform-in-sec-fn-executed arg))
-
-(deftest perform-in-sec-test
-  (testing "Goose executes a function scheduled in future"
-    (reset! perform-in-sec-fn-executed (promise))
-    (let [arg "scheduling-test"
-          _ (is (uuid? (UUID/fromString (:id (c/perform-in-sec tu/redis-client-opts 1 `perform-in-sec-fn arg)))))
-          scheduler (w/start tu/redis-worker-opts)]
-      (is (= arg (deref @perform-in-sec-fn-executed 2100 :scheduler-test-timed-out)))
-      (w/stop scheduler))))
-
 ;;; ======= TEST: Absolute Scheduling (in-past) ==========
 (def perform-at-fn-executed (atom (promise)))
 (defn perform-at-fn [arg]
@@ -59,6 +45,20 @@
           _ (is (uuid? (UUID/fromString (:id (c/perform-at tu/redis-client-opts (Instant/now) `perform-at-fn arg)))))
           scheduler (w/start tu/redis-worker-opts)]
       (is (= arg (deref @perform-at-fn-executed 100 :scheduler-test-timed-out)))
+      (w/stop scheduler))))
+
+;;; ======= TEST: Relative Scheduling ==========
+(def perform-in-sec-fn-executed (atom (promise)))
+(defn perform-in-sec-fn [arg]
+  (deliver @perform-in-sec-fn-executed arg))
+
+(deftest perform-in-sec-test
+  (testing "Goose executes a function scheduled in future"
+    (reset! perform-in-sec-fn-executed (promise))
+    (let [arg "scheduling-test"
+          _ (is (uuid? (UUID/fromString (:id (c/perform-in-sec tu/redis-client-opts 1 `perform-in-sec-fn arg)))))
+          scheduler (w/start tu/redis-worker-opts)]
+      (is (= arg (deref @perform-in-sec-fn-executed 2100 :scheduler-test-timed-out)))
       (w/stop scheduler))))
 
 ;;; ======= TEST: Orphan job recovery ==========

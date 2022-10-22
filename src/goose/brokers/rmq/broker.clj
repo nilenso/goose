@@ -13,6 +13,7 @@
     [goose.brokers.rmq.worker :as rmq-worker]
     [goose.defaults :as d]
     [goose.job :as job]
+    [goose.specs :as specs]
     [goose.utils :as u]))
 
 (defprotocol Close
@@ -80,6 +81,7 @@
    (new-producer opts d/rmq-producer-channels))
   ([{:keys [queue-type publisher-confirms] :as opts}
     channels]
+   (specs/assert-rmq-producer opts channels)
    (let [[rmq-conn channels] (rmq-connection/open opts channels)]
      (->RabbitMQ rmq-conn channels queue-type publisher-confirms nil))))
 
@@ -90,4 +92,5 @@
   To avoid duplication & mis-match in `threads` config,
   we decided to delegate connection creation at start time of worker."
   [opts]
+  (specs/assert-rmq-consumer opts)
   (->RabbitMQ nil nil nil nil opts))

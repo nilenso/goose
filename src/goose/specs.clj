@@ -1,15 +1,11 @@
 (ns goose.specs
   (:require
     [goose.broker :as b]
-    [goose.brokers.redis.broker :as redis]
-    [goose.brokers.rmq.broker :as rmq]
     [goose.client :as c]
     [goose.cron.parsing :as cron-parsing]
     [goose.defaults :as d]
     [goose.metrics :as m]
-    [goose.metrics.statsd :as statsd]
     [goose.utils :as u]
-    [goose.worker :as w]
 
     [clojure.spec.alpha :as s]
     [clojure.spec.test.alpha :as st]
@@ -29,17 +25,10 @@
         :map map?
         :iconn-pool #(satisfies? IConnectionPool %)))
 
-(s/def ::redis
+(s/def ::redis-conn-opts
   (s/keys :req-un [:goose.specs.redis/url]
           :opt-un [:goose.specs.redis/pool-opts]))
-
-(s/fdef redis/new-producer
-        :args (s/cat :redis ::redis))
-
-(s/fdef redis/new-consumer
-        :args (s/alt :one (s/cat :redis ::redis)
-                     :two (s/cat :redis ::redis
-                                 :scheduler-polling-interval-sec (s/int-in 1 61))))
+(s/def ::redis-scheduler-polling-interval-sec (s/int-in 1 61))
 
 ;;; ========== RabbitMQ ==============
 (s/def :goose.specs.rmq/uri string?)
@@ -99,14 +88,6 @@
                    ::return-listener
                    ::shutdown-listener]))
 
-(s/fdef rmq/new-producer
-        :args (s/alt :one (s/cat :opts ::rmq)
-                     :two (s/cat :opts ::rmq
-                                 :channels pos-int?)))
-
-(s/fdef rmq/new-consumer
-        :args (s/cat :opts ::rmq))
-
 ;;; ============== Brokers ==============
 (s/def ::broker #(satisfies? b/Broker %))
 
@@ -165,8 +146,6 @@
                    :goose.specs.statsd/prefix
                    :goose.specs.statsd/tags
                    :goose.specs.statsd/sample-rate]))
-(s/fdef statsd/new
-        :args (s/cat :opts ::statsd-opts))
 
 ;;; ============== Client ==============
 (s/def ::args-serializable?
@@ -215,23 +194,53 @@
                      :execute-fn-sym ::fn-sym
                      :args (s/* ::args-serializable?)))
 
-(s/fdef w/start
-        :args (s/cat :opts ::worker-opts))
 
 (def ^:private fns-with-specs
-  [`redis/new-producer
-   `redis/new-consumer
-   `rmq/new-producer
-   `rmq/new-consumer
-   `statsd/new
-   `c/perform-async
+  [`c/perform-async
    `c/perform-at
    `c/perform-in-sec
-   `c/perform-every
-   `w/start])
+   `c/perform-every])
 
 (defn instrument []
   (st/instrument fns-with-specs))
 
 (defn unstrument []
   (st/unstrument fns-with-specs))
+
+(defn with-asserts*
+  [f]
+  (let [asserts-state (s/check-asserts?)]
+    (s/check-asserts true)
+    (try
+      (f)
+      (finally
+        ;; Revert back to previous state of asserts.
+        ;; Goose being a library, it shouldn't add
+        ;; unintended side-effects to application's code.
+        (s/check-asserts asserts-state)))))
+
+(defmacro with-asserts
+  [& body]
+  `(with-asserts* (fn [] ~@body)))
+
+(defn assert-redis-producer [conn-opts]
+  (with-asserts (s/assert ::redis-conn-opts conn-opts)))
+
+(defn assert-redis-consumer
+  [conn-opts scheduler-polling-interval-sec]
+  (with-asserts (s/assert ::redis-conn-opts conn-opts)
+                (s/assert ::redis-scheduler-polling-interval-sec scheduler-polling-interval-sec)))
+
+(defn assert-rmq-producer
+  [opts channels]
+  (with-asserts (s/assert ::rmq opts)
+                (s/assert pos-int? channels)))
+
+(defn assert-rmq-consumer [opts]
+  (with-asserts (s/assert ::rmq opts)))
+
+(defn assert-statsd [opts]
+  (with-asserts (s/assert ::statsd-opts opts)))
+
+(defn assert-worker [opts]
+  (with-asserts (s/assert ::worker-opts opts)))

@@ -47,27 +47,13 @@
       #(c/perform-every tu/redis-client-opts (assoc cron-opts :cron-schedule "invalid") `tu/my-fn)
       #(c/perform-every tu/redis-client-opts (assoc cron-opts :timezone "invalid-zone-id") `tu/my-fn))
 
-    ;; Worker specs
-    #(w/start (assoc tu/redis-worker-opts :threads -1.1))
-    #(w/start (assoc tu/rmq-worker-opts :graceful-shutdown-sec -2))
-    #(w/start (assoc tu/redis-worker-opts :metrics-plugin :invalid))
-    #(w/start (assoc tu/rmq-worker-opts :middlewares "non-fn"))
-
-    ;; :statsd-opts
-    #(statsd/new (assoc statsd/default-opts :enabled? 1))
-    #(statsd/new (assoc statsd/default-opts :host 127.0))
-    #(statsd/new (assoc statsd/default-opts :port "8125"))
-    #(statsd/new (assoc statsd/default-opts :prefix :symbol))
-    #(statsd/new (assoc statsd/default-opts :sample-rate 1))
-    #(statsd/new (assoc statsd/default-opts :tags '("service:maverick")))
-
     ;; Common specs
     ;; :broker
     #(c/perform-async (assoc tu/redis-client-opts :broker :invalid) `tu/my-fn)
 
     ;; :queue
     #(c/perform-async (assoc tu/redis-client-opts :queue :non-string) `tu/my-fn)
-    #(w/start (assoc tu/redis-worker-opts :queue (str (range 300))))
+    #(c/perform-async (assoc tu/redis-client-opts :queue (str (range 300))) `tu/my-fn)
     #(c/perform-at (assoc tu/redis-client-opts :queue d/schedule-queue) now `tu/my-fn)
     #(c/perform-in-sec (assoc tu/redis-client-opts :queue d/dead-queue) 1 `tu/my-fn)
     #(c/perform-async (assoc tu/redis-client-opts :queue d/cron-queue) `tu/my-fn)
@@ -81,7 +67,15 @@
     #(c/perform-async (assoc-in tu/redis-client-opts [:retry-opts :death-handler-fn-sym] `single-arity-fn) `tu/my-fn)
     #(c/perform-at (assoc-in tu/redis-client-opts [:retry-opts :retry-delay-sec-fn-sym] 'non-fn-sym) now `tu/my-fn)
     #(c/perform-in-sec (assoc-in tu/redis-client-opts [:retry-opts :skip-dead-queue] 1) 1 `tu/my-fn)
-    #(c/perform-async (assoc-in tu/redis-client-opts [:retry-opts :extra-key] :foo-bar) `tu/my-fn)
+    #(c/perform-async (assoc-in tu/redis-client-opts [:retry-opts :extra-key] :foo-bar) `tu/my-fn)))
+
+(deftest assertions-test
+  (are [sut]
+    (is
+      (thrown-with-msg?
+        ExceptionInfo
+        #"Spec assertion failed*"
+        (sut)))
 
     ;; :redis-opts
     #(redis/new-producer (assoc redis/default-opts :url :invalid-url))
@@ -109,5 +103,20 @@
     ;; rmq-broker :shutdown-listener
     #(rmq/new-consumer (assoc rmq/default-opts :shutdown-listener :non-fn))
 
-    ;; rmq-broker channel-pool-size
-    #(rmq/new-producer rmq/default-opts -1)))
+    ;; rmq-producer channel-pool-size
+    #(rmq/new-producer rmq/default-opts -1)
+
+    ;; Worker specs
+    #(w/start (assoc tu/redis-worker-opts :threads -1.1))
+    #(w/start (assoc tu/redis-worker-opts :queue (str (range 300))))
+    #(w/start (assoc tu/rmq-worker-opts :graceful-shutdown-sec -2))
+    #(w/start (assoc tu/redis-worker-opts :metrics-plugin :invalid))
+    #(w/start (assoc tu/rmq-worker-opts :middlewares "non-fn"))
+
+    ;; :statsd-opts
+    #(statsd/new (assoc statsd/default-opts :enabled? 1))
+    #(statsd/new (assoc statsd/default-opts :host 127.0))
+    #(statsd/new (assoc statsd/default-opts :port "8125"))
+    #(statsd/new (assoc statsd/default-opts :prefix :symbol))
+    #(statsd/new (assoc statsd/default-opts :sample-rate 1))
+    #(statsd/new (assoc statsd/default-opts :tags '("service:maverick")))))
