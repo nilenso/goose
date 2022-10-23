@@ -44,7 +44,9 @@ Getting Started
   ;; Supply a fully-qualified function symbol for enqueuing.
   ;; Args to perform-async are variadic.
   (c/perform-async client-opts `my-fn "foo" :bar)
-  (c/perform-in-sec client-opts 900 `my-fn "foo" :bar))
+  (c/perform-in-sec client-opts 900 `my-fn "foo" :bar)
+  ;; When shutting down client...
+  (rmq/close rmq-consumer))
 ```
 
 ### Worker
@@ -60,8 +62,9 @@ Getting Started
       ;; Along with RabbitMQ, Goose supports Redis as well.
       worker-opts (assoc w/default-opts :broker rmq-consumer)
       worker (w/start worker-opts)]
-  ;; Listen for SIGINT or SIGTERM...
-  (w/stop worker))
+  ;; When shutting down worker...
+  (w/stop worker) ; Performs graceful shutsdown.
+  (rmq/close rmq-consumer))
 ```
 Refer to wiki for [Redis](https://github.com/nilenso/goose/wiki/Redis), [Periodic Jobs](https://github.com/nilenso/goose/wiki/Periodic-Jobs), [Error Handling](https://github.com/nilenso/goose/wiki/Error-Handling-&-Retries), [Monitoring](https://github.com/nilenso/goose/wiki/Monitoring-&-Alerting), [Production Readiness](https://github.com/nilenso/goose/wiki/Production-Readiness), etc.  
 

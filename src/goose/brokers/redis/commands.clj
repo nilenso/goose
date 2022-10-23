@@ -1,5 +1,4 @@
-(ns goose.brokers.redis.commands
-  ^:no-doc
+(ns ^:no-doc goose.brokers.redis.commands
   (:require
     [goose.defaults :as d]
     [goose.utils :as u]

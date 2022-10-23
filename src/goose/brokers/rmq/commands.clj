@@ -1,5 +1,4 @@
-(ns goose.brokers.rmq.commands
-  ^:no-doc
+(ns ^:no-doc goose.brokers.rmq.commands
   (:require
     [goose.brokers.rmq.queue :as rmq-queue]
     [goose.defaults :as d]

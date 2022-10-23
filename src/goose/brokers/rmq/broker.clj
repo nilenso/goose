@@ -67,8 +67,18 @@
 
 (def default-opts
   "Default config for RabbitMQ client.
-  Refer to http://clojurerabbitmq.info/articles/connecting.html
-  for complete set of settings."
+
+  Keys:
+
+  `:settings`           :
+
+  `:queue-type`         :
+
+  `:publisher-confirms` :
+
+  `:return-listener`    :
+
+  `:shutdown-listener`  :"
   {:settings           {:uri d/rmq-default-url}
    :queue-type         rmq-queue/classic
    :publisher-confirms publisher-confirms/sync

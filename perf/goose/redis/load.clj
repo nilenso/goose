@@ -1,5 +1,4 @@
-(ns goose.redis.load
-  ^:no-doc
+(ns ^:no-doc goose.redis.load
   (:require
     [goose.api.enqueued-jobs :as enqueued-jobs]
     [goose.brokers.redis.broker :as redis]

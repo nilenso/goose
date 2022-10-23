@@ -1,5 +1,4 @@
-(ns goose.brokers.redis.api.enqueued-jobs
-  ^:no-doc
+(ns ^:no-doc goose.brokers.redis.api.enqueued-jobs
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]))

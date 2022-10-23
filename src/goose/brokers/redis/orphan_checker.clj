@@ -1,5 +1,4 @@
-(ns goose.brokers.redis.orphan-checker
-  ^:no-doc
+(ns ^:no-doc goose.brokers.redis.orphan-checker
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.brokers.redis.consumer :as redis-consumer]

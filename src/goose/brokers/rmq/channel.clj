@@ -1,5 +1,4 @@
-(ns goose.brokers.rmq.channel
-  ^:no-doc
+(ns ^:no-doc goose.brokers.rmq.channel
   (:require
     [goose.brokers.rmq.return-listener :as return-listener]
     [goose.defaults :as d]

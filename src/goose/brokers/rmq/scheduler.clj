@@ -1,4 +1,4 @@
-(ns goose.brokers.rmq.scheduler
+(ns ^:no-doc goose.brokers.rmq.scheduler
   (:require
     [goose.brokers.rmq.commands :as rmq-cmds]
     [goose.utils :as u]))

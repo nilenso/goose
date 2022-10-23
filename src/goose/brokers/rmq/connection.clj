@@ -1,4 +1,4 @@
-(ns goose.brokers.rmq.connection
+(ns ^:no-doc goose.brokers.rmq.connection
   (:require
     [goose.brokers.rmq.channel :as rmq-channel]
 

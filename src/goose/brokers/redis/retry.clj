@@ -1,5 +1,4 @@
-(ns goose.brokers.redis.retry
-  ^:no-doc
+(ns ^:no-doc goose.brokers.redis.retry
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]

@@ -1,5 +1,4 @@
-(ns goose.job
-  ^:no-doc
+(ns ^:no-doc goose.job
   (:require
     [goose.metrics :as m]
     [goose.utils :as u]))

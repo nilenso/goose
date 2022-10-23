@@ -1,5 +1,4 @@
-(ns goose.brokers.redis.cron
-  ^:no-doc
+(ns ^:no-doc goose.brokers.redis.cron
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.cron.parsing :as cron-parsing]

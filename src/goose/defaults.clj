@@ -1,4 +1,5 @@
 (ns goose.defaults
+  "All default configurations for Goose are defined here."
   (:require
     [clojure.string :as str]))
 

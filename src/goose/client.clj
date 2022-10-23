@@ -9,7 +9,20 @@
     (java.time Instant)))
 
 (def default-opts
-  "Default config for Goose client."
+  "Map of sample configs for enqueuing jobs.
+
+  Keys:
+
+  `:broker`     : Message broker that transfers message from Producer to Consumer.\\
+  Given value must implement [[goose.broker/Broker]] protocol.\\
+  [Message Broker wiki](https://github.com/nilenso/goose/wiki/Message-Brokers)
+
+  `:queue`      : Destination where client produces to & worker consumes from.\\
+  Example       : [[goose.defaults/default-queue]]
+
+  `:retry-opts` : Configuration for handling Job failure.\\
+  Example       : [[goose.retry/default-opts]]\\
+  [Error Handling & Retries wiki](https://github.com/nilenso/goose/wiki/Error-Handling-&-Retries)"
   {:queue      d/default-queue
    :retry-opts retry/default-opts})
 
@@ -37,33 +50,97 @@
       (b/schedule broker schedule job)
       (b/enqueue broker job))))
 
-(defn perform-async
-  "Enqueue a function for async execution.
-  `execute-fn-sym` should be a fully-qualified function symbol.
-  `args` are variadic."
+(defn ^{:added "0.3.0"} perform-async
+  "Enqueues a function for async execution.
+
+  Args:
+
+  `client-opts`    : A map of `:broker`, `:queue` & `:retry-opts`.\\
+  Example          : [[default-opts]]
+
+  `execute-fn-sym` : A fully-qualified function symbol called by worker.\\
+  Example          : ```my-fn`, ```ns-alias/my-fn`, `'fully-qualified-ns/my-fn`
+
+  `args`           : Values provided when invoking `execute-fn-sym`.\\
+   Given values must be serializable by `ptaoussanis/nippy`.\\
+   `args` being variadic, it can be as long as number parameters required by `execute-fn-sym`.
+
+  [Getting Started wiki](https://github.com/nilenso/goose/wiki/Getting-Started)."
   [opts execute-fn-sym & args]
   (enqueue opts nil execute-fn-sym args))
 
-(defn perform-at
-  "Schedule a function for execution at given date & time.
-  `execute-fn-sym` should be a fully-qualified function symbol.
-  `args` are variadic."
+(defn ^{:added "0.3.0"} perform-at
+  "Schedules a function for execution at given date & time.
+
+  Args:
+
+  `client-opts`      : A map of `:broker`, `:queue` & `:retry-opts`.\\
+  Example            : [[default-opts]]
+
+  `^Instant instant` : `java.time.Instant` at which job should be executed.
+
+  `execute-fn-sym`   : A fully-qualified function symbol called by worker.\\
+  Example            : ```my-fn`, ```ns-alias/my-fn`, `'fully-qualified-ns/my-fn`
+
+  `args`             : Values provided when invoking `execute-fn-sym`.\\
+   Given values must be serializable by `ptaoussanis/nippy`.\\
+   `args` being variadic, it can be as long as number parameters required by `execute-fn-sym`.
+
+  [Scheduled Jobs wiki](https://github.com/nilenso/goose/wiki/Scheduled-Jobs)"
   [opts ^Instant instant execute-fn-sym & args]
   (enqueue opts (u/epoch-time-ms instant) execute-fn-sym args))
 
-(defn perform-in-sec
-  "Schedule a function for execution in given seconds.
-  `execute-fn-sym` should be a fully-qualified function symbol.
-  `args` are variadic."
+(defn ^{:added "0.3.0"} perform-in-sec
+  "Schedules a function for execution with a delay of given seconds.
+
+  Args:
+
+  `client-opts`    : A map of `:broker`, `:queue` & `:retry-opts`.\\
+  Example          : [[default-opts]]
+
+  `sec`            : Delay of Job execution in seconds.
+
+  `execute-fn-sym` : A fully-qualified function symbol called by worker.\\
+  Example          : ```my-fn`, ```ns-alias/my-fn`, `'fully-qualified-ns/my-fn`
+
+  `args`           : Values provided when invoking `execute-fn-sym`.\\
+   Given values must be serializable by `ptaoussanis/nippy`.\\
+   `args` being variadic, it can be as long as number parameters required by `execute-fn-sym`.
+
+  [Scheduled Jobs wiki](https://github.com/nilenso/goose/wiki/Scheduled-Jobs)"
   [opts sec execute-fn-sym & args]
   (enqueue opts (u/add-sec sec) execute-fn-sym args))
 
-(defn perform-every
-  "Schedule a function for periodic execution.
-  If a cron entry already exists with the same name, it will be
-  overwritten.
-  `cron-schedule` should be a string in the UNIX cron format.
-  `execute-fn-sym` should be a fully-qualified function symbol.
-  `args` are variadic."
+(defn ^{:added "0.3.0"} perform-every
+  "Registers a function for periodic execution in cron-jobs style.\\
+  `perform-every` is idempotent.\\
+  If a cron entry already exists with the same name, it will be overwritten with new data.
+
+  Args:
+
+  `client-opts`    : A map of `:broker`, `:queue` & `:retry-opts`.\\
+  Example          : [[default-opts]]
+
+  `cron-opts`      : A map of `:cron-name`, `:cron-schedule`, `:timezone`
+  - `:cron-name` (Mandatory)
+    - Unique identifier of a recurring job
+    - Example: `\"my-recurring-job\"`
+  - `:cron-schedule` (Mandatory)
+    - Unix-style schedule
+    - Example: `\"0 10 15 * *\"`
+  - `:timezone` (Optional)
+    - Timezone for executing the Job at schedule
+    - Acceptable timezones: `(java.time.ZoneId/getAvailableZoneIds)`
+    - Defaults to system timezone
+    - Example: `\"US/Pacific\"`
+
+  `execute-fn-sym` : A fully-qualified function symbol called by worker.\\
+  Example          : ```my-fn`, ```ns-alias/my-fn`, `'fully-qualified-ns/my-fn`
+
+  `args`           : Values provided when invoking `execute-fn-sym`.\\
+   Given values must be serializable by `ptaoussanis/nippy`.\\
+   `args` being variadic, it can be as long as number parameters required by `execute-fn-sym`.
+
+  [Periodic Jobs wiki](https://github.com/nilenso/goose/wiki/Periodic-Jobs)"
   [opts cron-opts execute-fn-sym & args]
   (register-cron-schedule opts cron-opts execute-fn-sym args))
