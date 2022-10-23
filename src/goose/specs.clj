@@ -174,25 +174,29 @@
 (s/fdef c/perform-async
         :args (s/cat :opts ::client-opts
                      :execute-fn-sym ::fn-sym
-                     :args (s/* ::args-serializable?)))
+                     :args (s/* ::args-serializable?))
+        :ret map?)
 
 (s/fdef c/perform-at
         :args (s/cat :opts ::client-opts
                      :instant ::instant
                      :execute-fn-sym ::fn-sym
-                     :args (s/* ::args-serializable?)))
+                     :args (s/* ::args-serializable?))
+        :ret map?)
 
 (s/fdef c/perform-in-sec
         :args (s/cat :opts ::client-opts
                      :sec int?
                      :execute-fn-sym ::fn-sym
-                     :args (s/* ::args-serializable?)))
+                     :args (s/* ::args-serializable?))
+        :ret map?)
 
 (s/fdef c/perform-every
         :args (s/cat :opts ::client-opts
                      :cron-opts ::cron-opts
                      :execute-fn-sym ::fn-sym
-                     :args (s/* ::args-serializable?)))
+                     :args (s/* ::args-serializable?))
+        :ret map?)
 
 
 (def ^:private fns-with-specs
@@ -223,24 +227,49 @@
   [& body]
   `(with-asserts* (fn [] ~@body)))
 
+;;; Single-use functions have manual assertions.
+;;; (s/fdef) is declared redundantly for
+;;; the purpose of `clojure.repl/doc`.
+
+(s/fdef goose.brokers.redis.broker/new-producer
+        :args (s/cat :redis ::redis-conn-opts)
+        :ret ::broker)
 (defn assert-redis-producer [conn-opts]
   (with-asserts (s/assert ::redis-conn-opts conn-opts)))
 
+(s/fdef goose.brokers.redis.broker/new-consumer
+        :args (s/alt :one (s/cat :redis ::redis-conn-opts)
+                     :two (s/cat :redis ::redis-conn-opts
+                                 :scheduler-polling-interval-sec ::redis-scheduler-polling-interval-sec))
+        :ret ::broker)
 (defn assert-redis-consumer
   [conn-opts scheduler-polling-interval-sec]
   (with-asserts (s/assert ::redis-conn-opts conn-opts)
                 (s/assert ::redis-scheduler-polling-interval-sec scheduler-polling-interval-sec)))
 
+(s/fdef goose.brokers.rmq.broker/new-producer
+        :args (s/alt :one (s/cat :opts ::rmq)
+                     :two (s/cat :opts ::rmq
+                                 :channels pos-int?))
+        :ret ::broker)
 (defn assert-rmq-producer
   [opts channels]
   (with-asserts (s/assert ::rmq opts)
                 (s/assert pos-int? channels)))
 
+(s/fdef goose.brokers.rmq.broker/new-consumer
+        :args (s/cat :opts ::rmq)
+        :ret ::broker)
 (defn assert-rmq-consumer [opts]
   (with-asserts (s/assert ::rmq opts)))
 
+(s/fdef goose.metrics.statsd/new
+        :args (s/cat :opts ::statsd-opts)
+        :ret ::metrics-plugin)
 (defn assert-statsd [opts]
   (with-asserts (s/assert ::statsd-opts opts)))
 
+(s/fdef goose.worker/start
+        :args (s/cat :opts ::worker-opts))
 (defn assert-worker [opts]
   (with-asserts (s/assert ::worker-opts opts)))
