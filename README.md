@@ -38,8 +38,9 @@ Getting Started
   [arg1 arg2]
   (println "my-fn called with" arg1 arg2))
 
-(let [producer (rmq/new-producer rmq/default-opts)
-      client-opts (assoc c/default-opts :broker producer)]
+(let [rmq-producer (rmq/new-producer rmq/default-opts)
+      ;; Along with RabbitMQ, Goose supports Redis as well.
+      client-opts (assoc c/default-opts :broker rmq-producer)]
   ;; Supply a fully-qualified function symbol for enqueuing.
   ;; Args to perform-async are variadic.
   (c/perform-async client-opts `my-fn "foo" :bar)
@@ -55,8 +56,9 @@ Getting Started
     [goose.worker :as w]))
 
 ;;; 'my-app' namespace should be resolvable by worker.
-(let [consumer (rmq/new-consumer rmq/default-opts)
-      worker-opts (assoc w/default-opts :broker consumer)
+(let [rmq-consumer (rmq/new-consumer rmq/default-opts)
+      ;; Along with RabbitMQ, Goose supports Redis as well.
+      worker-opts (assoc w/default-opts :broker rmq-consumer)
       worker (w/start worker-opts)]
   ;; Listen for SIGINT or SIGTERM...
   (w/stop worker))
