@@ -65,6 +65,20 @@
       (rmq/close producer)
       (rmq/close consumer))))
 
+;;; ======= TEST: Absolute Scheduling (in-past) ==========
+(def perform-at-fn-executed (atom (promise)))
+(defn perform-at-fn [arg]
+  (deliver @perform-at-fn-executed arg))
+
+(deftest perform-at-test
+  (testing "[rmq] Goose executes a function scheduled in past"
+    (reset! perform-at-fn-executed (promise))
+    (let [arg "scheduling-test"
+          _ (is (uuid? (UUID/fromString (:id (c/perform-at tu/rmq-client-opts (Instant/now) `perform-at-fn arg)))))
+          scheduler (w/start tu/rmq-worker-opts)]
+      (is (= arg (deref @perform-at-fn-executed 100 :scheduler-test-timed-out)))
+      (w/stop scheduler))))
+
 ;;; ======= TEST: Relative Scheduling ==========
 (def perform-in-sec-fn-executed (atom (promise)))
 (defn perform-in-sec-fn [arg]
@@ -85,20 +99,6 @@
         ExceptionInfo
         #"MAX_DELAY limit breached*"
         (c/perform-in-sec tu/rmq-client-opts 4294968 `perform-in-sec-fn)))))
-
-;;; ======= TEST: Absolute Scheduling (in-past) ==========
-(def perform-at-fn-executed (atom (promise)))
-(defn perform-at-fn [arg]
-  (deliver @perform-at-fn-executed arg))
-
-(deftest perform-at-test
-  (testing "[rmq] Goose executes a function scheduled in past"
-    (reset! perform-at-fn-executed (promise))
-    (let [arg "scheduling-test"
-          _ (is (uuid? (UUID/fromString (:id (c/perform-at tu/rmq-client-opts (Instant/now) `perform-at-fn arg)))))
-          scheduler (w/start tu/rmq-worker-opts)]
-      (is (= arg (deref @perform-at-fn-executed 100 :scheduler-test-timed-out)))
-      (w/stop scheduler))))
 
 ;;; ======= TEST: Publisher Confirms =======
 (def ack-handler-called (atom (promise)))

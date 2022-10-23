@@ -2,7 +2,8 @@
   (:require
     [goose.broker :as b]
     [goose.defaults :as d]
-    [goose.metrics.statsd :as statsd]))
+    [goose.metrics.statsd :as statsd]
+    [goose.specs :as specs]))
 
 (defprotocol Shutdown
   ;; We're extending a protocol via metadata because reloading REPL
@@ -21,4 +22,5 @@
 (defn start
   "Starts a threadpool for worker."
   [{:keys [broker] :as opts}]
+  (specs/assert-worker opts)
   (b/start-worker broker opts))

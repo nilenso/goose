@@ -5,6 +5,11 @@
   (:require
     [goose.broker :as b]))
 
+(defn size
+  "Total count of all Periodic Jobs."
+  [broker]
+  (b/cron-jobs-size broker))
+
 (defn find-by-name
   "Look up a cron entry by name."
   [broker entry-name]

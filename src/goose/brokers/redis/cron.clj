@@ -21,6 +21,9 @@
    :timezone        timezone
    :job-description job-description})
 
+(defn size [redis-conn]
+  (redis-cmds/wcar* redis-conn (car/hlen d/prefixed-cron-entries)))
+
 (defn find-by-name [redis-conn cron-name]
   (redis-cmds/wcar* redis-conn (car/hget d/prefixed-cron-entries cron-name)))
 

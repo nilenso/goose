@@ -2,6 +2,7 @@
   ^:no-doc
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
+    [goose.brokers.redis.cron :as cron]
     [goose.brokers.redis.heartbeat :as heartbeat]
     [goose.defaults :as d]
     [goose.metrics :as m]
@@ -27,7 +28,8 @@
 (defn- get-size-of-protected-queues
   [redis-conn]
   {m/schedule-queue-size (redis-cmds/sorted-set-size redis-conn d/prefixed-schedule-queue)
-   m/dead-queue-size     (redis-cmds/sorted-set-size redis-conn d/prefixed-dead-queue)})
+   m/dead-queue-size     (redis-cmds/sorted-set-size redis-conn d/prefixed-dead-queue)
+   m/periodic-jobs-size  (cron/size redis-conn)})
 
 (defn run
   [{:keys [internal-thread-pool redis-conn metrics-plugin]}]

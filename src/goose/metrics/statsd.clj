@@ -3,6 +3,7 @@
   Plugins can be customized by implementing Metrics protocol."
   (:require
     [goose.metrics :as m]
+    [goose.specs :as specs]
 
     [clj-statsd]))
 
@@ -38,6 +39,7 @@
   "Create a StatsD Metrics plugin.
   Prefix metrics to distinguish between 2 microservices."
   [{:keys [enabled? host port prefix] :as opts}]
+  (specs/assert-statsd opts)
   (when enabled?
     (clj-statsd/setup host port :prefix prefix))
   (map->StatsD opts))

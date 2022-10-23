@@ -9,7 +9,8 @@
     [goose.brokers.redis.cron :as cron]
     [goose.brokers.redis.scheduler :as redis-scheduler]
     [goose.brokers.redis.worker :as redis-worker]
-    [goose.defaults :as d]))
+    [goose.defaults :as d]
+    [goose.specs :as specs]))
 
 (defrecord Redis [redis-conn opts]
   b/Broker
@@ -75,6 +76,8 @@
     (dead-jobs/purge (:redis-conn this)))
 
   ;; cron entries API
+  (cron-jobs-size [this]
+    (cron/size (:redis-conn this)))
   (cron-jobs-find-by-name [this entry-name]
     (cron/find-by-name (:redis-conn this) entry-name))
   (cron-jobs-delete [this entry-name]
@@ -89,7 +92,8 @@
 
 (defn new-producer
   "Create a client that produce messages to Redis broker."
-  [{:keys [url pool-opts]}]
+  [{:keys [url pool-opts] :as conn-opts}]
+  (specs/assert-redis-producer conn-opts)
   (let [pool-opts (or pool-opts d/redis-producer-pool-opts)
         redis-conn (redis-connection/new url pool-opts)]
     (->Redis redis-conn nil)))
@@ -102,6 +106,7 @@
   ([conn-opts]
    (new-consumer conn-opts d/redis-scheduler-polling-interval-sec))
   ([conn-opts scheduler-polling-interval-sec]
+   (specs/assert-redis-consumer conn-opts scheduler-polling-interval-sec)
    (let [opts (assoc conn-opts
                 :scheduler-polling-interval-sec scheduler-polling-interval-sec)]
      (->Redis nil opts))))

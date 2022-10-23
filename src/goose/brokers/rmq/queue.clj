@@ -29,7 +29,7 @@
 
 (defn ^:no-doc declare
   [ch {:keys [queue] :as queue-opts}]
-  (when-not (contains? @declared-queues queue)
+  (when-not (@declared-queues queue)
     (lex/declare ch
                  d/rmq-delay-exchange
                  d/rmq-delay-exchange-type

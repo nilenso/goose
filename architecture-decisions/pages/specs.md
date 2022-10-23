@@ -6,6 +6,9 @@ ADR: Specs
 Rationale
 ---------
 
+- Single-use initialization functions have manual assertion using specs. That'll fail an application at start-time, following the principle of fail-fast
+- Instrumentation for frequently-used functions is optional, but recommended in Development/Staging env
+
 ### Pros
 - Job enqueue performance improves by 50% when specs are disabled
   - When tested in Development & Staging env, specs can be disabled in production to reduce validations overhead
