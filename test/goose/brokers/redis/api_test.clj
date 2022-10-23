@@ -147,12 +147,10 @@
                      "bar"
                      'baz)
 
+    (is (= 2 (cron-jobs/size tu/redis-producer)))
     (is (cron-jobs/delete-all tu/redis-producer)
         "delete-all returns truthy if the cron entry keys were deleted")
-    (is (nil? (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))
-        "The deleted entry should be absent")
-    (is (nil? (cron-jobs/find-by-name tu/redis-producer "my-other-cron-entry"))
-        "The deleted entry should be absent")
+    (is (= 0 (cron-jobs/size tu/redis-producer)))
 
     (testing "adding an entry after delete-all was called"
       (c/perform-every tu/redis-client-opts

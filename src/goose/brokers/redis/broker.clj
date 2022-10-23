@@ -76,6 +76,8 @@
     (dead-jobs/purge (:redis-conn this)))
 
   ;; cron entries API
+  (cron-jobs-size [this]
+    (cron/size (:redis-conn this)))
   (cron-jobs-find-by-name [this entry-name]
     (cron/find-by-name (:redis-conn this) entry-name))
   (cron-jobs-delete [this entry-name]

@@ -19,6 +19,7 @@
   (format "enqueued.%s.size" (d/affix-queue queue)))
 (defonce total-enqueued-size "total_enqueued.size")
 (defonce schedule-queue-size "scheduled_queue.size")
+(defonce periodic-jobs-size "periodic_jobs.size")
 (defonce dead-queue-size "dead_queue.size")
 
 (defprotocol Metrics

@@ -36,6 +36,7 @@
   (dead-jobs-purge [this])
 
   ;; cron jobs API
+  (cron-jobs-size [this])
   (cron-jobs-find-by-name [this entry-name])
   (cron-jobs-delete [this entry-name])
   (cron-jobs-delete-all [this]))
