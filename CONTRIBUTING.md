@@ -11,6 +11,7 @@ Installation
 - [Clojure v1.11+](https://clojure.org/guides/install_clojure)
 - [Redis v6.2.0+](https://redis.io/docs/getting-started/installation/)
 - [RabbitMQ v3.9.0+](https://www.rabbitmq.com/download.html)
+  - [Management Plugin](https://www.rabbitmq.com/management.html#getting-started)
   - [RabbitMQ Delayed Message Plugin](https://github.com/rabbitmq/rabbitmq-delayed-message-exchange)
 - Use `:repl` profile when starting REPL in your IDE
 

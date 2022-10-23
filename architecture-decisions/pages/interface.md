@@ -3,16 +3,22 @@ ADR: Interface
 
 Goose's interface:
 ```clojure
-(goose.client/perform-async goose.client/default-opts `my-background-fn :arg1 "arg2"...)
-(let [worker (goose.worker/start goose.worker/default-opts)]
-  (goose.worker/stop worker))
+(c/perform-async client-opts `my-background-fn :arg1 "arg2"...)
+(let [worker (w/start worker-opts)]
+  (w/stop worker))
 ```
 
 Rationale
 ---------
 
 - Args to background-function are kept last as they're variadic
-- Goose doesn't endorse a particular broker. Users have to choose between the 3 based on their 
+- Goose requires application to store state of a broker & inject it
+  - Since we're reusing rmq/redis connection pools, broker state must be stored somewhere
+  - DI approach was chosen over injecting config & memoizing connection state based on that
+  - If Goose stores state in an atom/memoizes it & has a 1-to-1 mapping with config, that's non-intuitive & confusing
+  - Carmine also derives connection state from config passed into it & that has led to confusion many-a-times
+  - For this reason, we've designed it so that state of broker is injected by application, not stored internally by Goose
+- Goose doesn't endorse a particular broker. Users have to choose between RabbitMQ, Redis or implement their own message broker
 
 ##### Client
 
