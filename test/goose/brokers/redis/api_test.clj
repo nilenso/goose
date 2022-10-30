@@ -148,7 +148,7 @@
                      'baz)
 
     (is (= 2 (cron-jobs/size tu/redis-producer)))
-    (is (cron-jobs/delete-all tu/redis-producer)
+    (is (cron-jobs/purge tu/redis-producer)
         "delete-all returns truthy if the cron entry keys were deleted")
     (is (= 0 (cron-jobs/size tu/redis-producer)))
 

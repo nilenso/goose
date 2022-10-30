@@ -11,12 +11,12 @@
 
 (defn run-at
   [redis-conn
-   epoch-ms
+   schedule
    {:keys [ready-queue] :as job}]
-  (let [scheduled-job (assoc job :schedule-run-at epoch-ms)]
-    (if (< epoch-ms (u/epoch-time-ms))
+  (let [scheduled-job (assoc job :schedule-run-at schedule)]
+    (if (< schedule (u/epoch-time-ms))
       (redis-cmds/enqueue-front redis-conn ready-queue scheduled-job)
-      (redis-cmds/enqueue-sorted-set redis-conn d/prefixed-schedule-queue epoch-ms scheduled-job))
+      (redis-cmds/enqueue-sorted-set redis-conn d/prefixed-schedule-queue schedule scheduled-job))
     (select-keys job [:id])))
 
 (defn- enqueue-due-scheduled-jobs

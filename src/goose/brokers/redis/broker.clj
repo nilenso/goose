@@ -55,6 +55,16 @@
   (scheduled-jobs-purge [this]
     (scheduled-jobs/purge (:redis-conn this)))
 
+  ;; cron entries API
+  (cron-jobs-size [this]
+    (cron/size (:redis-conn this)))
+  (cron-jobs-find-by-name [this entry-name]
+    (cron/find-by-name (:redis-conn this) entry-name))
+  (cron-jobs-delete [this entry-name]
+    (cron/delete (:redis-conn this) entry-name))
+  (cron-jobs-purge [this]
+    (cron/purge (:redis-conn this)))
+
   ;; dead-jobs API
   (dead-jobs-size [this]
     (dead-jobs/size (:redis-conn this)))
@@ -73,17 +83,7 @@
   (dead-jobs-delete-older-than [this epoch-time-ms]
     (dead-jobs/delete-older-than (:redis-conn this) epoch-time-ms))
   (dead-jobs-purge [this]
-    (dead-jobs/purge (:redis-conn this)))
-
-  ;; cron entries API
-  (cron-jobs-size [this]
-    (cron/size (:redis-conn this)))
-  (cron-jobs-find-by-name [this entry-name]
-    (cron/find-by-name (:redis-conn this) entry-name))
-  (cron-jobs-delete [this entry-name]
-    (cron/delete (:redis-conn this) entry-name))
-  (cron-jobs-delete-all [this]
-    (cron/delete-all (:redis-conn this))))
+    (dead-jobs/purge (:redis-conn this))))
 
 (def default-opts
   "Default config for Redis client."

@@ -1,4 +1,5 @@
 (ns goose.client
+  "Functions for executing job in async, scheduled or periodic manner."
   (:require
     [goose.broker :as b]
     [goose.defaults :as d]
@@ -123,8 +124,8 @@
 
   `cron-opts`      : A map of `:cron-name`, `:cron-schedule`, `:timezone`
   - `:cron-name` (Mandatory)
-    - Unique identifier of a recurring job
-    - Example: `\"my-recurring-job\"`
+    - Unique identifier of a periodic job
+    - Example: `\"my-periodic-job\"`
   - `:cron-schedule` (Mandatory)
     - Unix-style schedule
     - Example: `\"0 10 15 * *\"`

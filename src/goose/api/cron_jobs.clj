@@ -20,7 +20,7 @@
   [broker entry-name]
   (b/cron-jobs-delete broker entry-name))
 
-(defn delete-all
-  "Delete all cron entries."
+(defn purge
+  "Purges all cron entries."
   [broker]
-  (b/cron-jobs-delete-all broker))
+  (b/cron-jobs-purge broker))
