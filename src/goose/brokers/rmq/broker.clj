@@ -31,11 +31,11 @@
                            job))
 
   (schedule
-    [this schedule job]
+    [this schedule-epoch-ms job]
     (rmq-scheduler/run-at (u/random-element (:channels this))
                           (assoc (:queue-type this) :queue (job/ready-queue job))
                           (:publisher-confirms this)
-                          schedule
+                          schedule-epoch-ms
                           job))
 
   (start-worker [this worker-opts]

@@ -18,8 +18,8 @@
     [this job]
     (redis-cmds/enqueue-back (:redis-conn this) (:ready-queue job) job)
     (select-keys job [:id]))
-  (schedule [this schedule job]
-    (redis-scheduler/run-at (:redis-conn this) schedule job))
+  (schedule [this schedule-epoch-ms job]
+    (redis-scheduler/run-at (:redis-conn this) schedule-epoch-ms job))
   (register-cron [this cron-opts job-description]
     (cron/register (:redis-conn this) cron-opts job-description))
   (start-worker [this worker-opts]

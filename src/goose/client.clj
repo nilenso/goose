@@ -40,15 +40,15 @@
 
 (defn- enqueue
   [{:keys [broker queue retry-opts]}
-   schedule
+   schedule-epoch-ms
    execute-fn-sym
    args]
   (let [retry-opts (retry/prefix-queue-if-present retry-opts)
         ready-queue (d/prefix-queue queue)
         job (j/new execute-fn-sym args queue ready-queue retry-opts)]
 
-    (if schedule
-      (b/schedule broker schedule job)
+    (if schedule-epoch-ms
+      (b/schedule broker schedule-epoch-ms job)
       (b/enqueue broker job))))
 
 (defn ^{:added "0.3.0"} perform-async
@@ -110,7 +110,7 @@
 
   [Scheduled Jobs wiki](https://github.com/nilenso/goose/wiki/Scheduled-Jobs)"
   [opts sec execute-fn-sym & args]
-  (enqueue opts (u/add-sec sec) execute-fn-sym args))
+  (enqueue opts (u/sec+current-epoch-ms sec) execute-fn-sym args))
 
 (defn ^{:added "0.3.0"} perform-every
   "Registers a function for periodic execution in cron-jobs style.\\

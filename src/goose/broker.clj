@@ -7,7 +7,7 @@
   producer & consumer, AKA application client & worker."
   ;; client/producer
   (enqueue [this job] "Enqueues a Job for async execution.")
-  (schedule [this schedule job] "Schedules a Job for execution at given epoch-ms.")
+  (schedule [this schedule-epoch-ms job] "Schedules a Job for execution at given epoch-ms.")
   (register-cron [this cron-opts job-description] "Registers a function for periodic execution in cron-jobs style.")
 
   ;; worker/consumer

@@ -14,7 +14,7 @@
    ex]
   (let [error-handler (u/require-resolve error-handler-fn-sym)
         retry-delay-sec ((u/require-resolve retry-delay-sec-fn-sym) retry-count)
-        retry-at (u/add-sec retry-delay-sec)
+        retry-at (u/sec+current-epoch-ms retry-delay-sec)
         job (assoc-in job [:state :retry-at] retry-at)]
     (u/log-on-exceptions (error-handler error-service-config job ex))
     (redis-cmds/enqueue-sorted-set redis-conn d/prefixed-retry-schedule-queue retry-at job)))

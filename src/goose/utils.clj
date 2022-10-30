@@ -6,7 +6,8 @@
     [com.climate.claypoole :as cp]
     [taoensso.nippy :as nippy])
   (:import
-    (java.net InetAddress)))
+    (java.net InetAddress)
+    (java.time Instant)))
 
 (defn encode [x]
   (nippy/freeze x))
@@ -24,18 +25,16 @@
          (log/error e# "Exception occurred")))))
 
 (defn epoch-time-ms
-  "Returns Unix epoch milliseconds for given date.
-   If no date is given, returns epoch for current time."
+  "Returns Unix epoch milliseconds for given java.time.Instant.
+   If no instant is given, returns epoch for current time."
   ([] (System/currentTimeMillis))
-  ([date] (inst-ms date)))
+  ([java-time-instant] (.toEpochMilli ^Instant java-time-instant)))
 
 (defn- sec->ms [sec]
   (* 1000 sec))
 
-(defn ^:no-doc add-sec
-  ([sec] (add-sec sec (epoch-time-ms)))
-  ([sec epoch-time-millis]
-   (+ (sec->ms sec) epoch-time-millis)))
+(defn ^:no-doc sec+current-epoch-ms
+  ([sec] (+ (sec->ms sec) (epoch-time-ms))))
 
 (defn ^:no-doc sleep
   "Sleep for given seconds, multiplied by count.
