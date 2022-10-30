@@ -1,5 +1,4 @@
-(ns goose.consumer
-  ^:no-doc
+(ns ^:no-doc goose.consumer
   (:require
     [goose.utils :as u]))
 

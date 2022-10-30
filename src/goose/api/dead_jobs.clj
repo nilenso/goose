@@ -1,25 +1,27 @@
 (ns goose.api.dead-jobs
+  "API to manage dead jobs.\\
+  - [API wiki](https://github.com/nilenso/goose/wiki/API)"
   (:refer-clojure :exclude [pop])
   (:require
     [goose.broker :as b]))
 
 (defn size
-  "Get size of Dead Jobs."
+  "Returns count of Dead Jobs."
   [broker]
   (b/dead-jobs-size broker))
 
 (defn pop
-  "Return Job at head of Dead-queue."
+  "Pops the oldest Dead Job from the queue & returns it."
   [broker]
   (b/dead-jobs-pop broker))
 
 (defn find-by-id
-  "Find a Dead Job by ID."
+  "Finds a Dead Job by `:id`."
   [broker id]
   (b/dead-jobs-find-by-id broker id))
 
 (defn find-by-pattern
-  "Find a Dead Job by pattern.
+  "Finds a Dead Jobs by user-defined parameters.\\
   If limit isn't mentioned, defaults to 10."
   ([broker match?]
    (find-by-pattern broker match? 10))
@@ -27,29 +29,28 @@
    (b/dead-jobs-find-by-pattern broker match? limit)))
 
 (defn replay-job
-  "Move a job from dead-jobs to it's queue
-  after verification of existence.
+  "Re-enqueues given Dead Job to front of queue for execution,
+   after verification of existence.
   Hence, this accepts only 1 job instead of multiple."
   [broker job]
   (b/dead-jobs-replay-job broker job))
 
 (defn replay-n-jobs
-  "Replay n jobs from dead queue by moving them to ready queue"
+  "Re-enqueues n oldest Dead Jobs to front of queue for execution."
   [broker n]
   (b/dead-jobs-replay-n-jobs broker n))
 
 (defn delete
-  "Delete a Dead Job."
+  "Deletes given Dead Job."
   [broker job]
   (b/dead-jobs-delete broker job))
 
 (defn delete-older-than
-  "Delete Dead Jobs older than a certain time.
-  Note: The epoch should be in milliseconds."
+  "Delete Dead Jobs older than given epoch-ms."
   [broker epoch-time-ms]
   (b/dead-jobs-delete-older-than broker epoch-time-ms))
 
 (defn purge
-  "Delete all Dead Jobs."
+  "Purges all the Dead Jobs."
   [broker]
   (b/dead-jobs-purge broker))

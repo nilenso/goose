@@ -1,5 +1,4 @@
-(ns goose.brokers.rmq.channel
-  ^:no-doc
+(ns ^:no-doc goose.brokers.rmq.channel
   (:require
     [goose.brokers.rmq.return-listener :as return-listener]
     [goose.defaults :as d]
@@ -15,13 +14,13 @@
    return-listener]
   (let [ch (lch/open conn)]
     (if ch
-      (do
+      (let [ch-number (.getChannelNumber ch)]
         (condp = strategy
           d/sync-confirms
           (lcnf/select ch)
 
           d/async-confirms
-          (lcnf/select ch ack-handler nack-handler))
+          (lcnf/select ch #(ack-handler ch-number %1 %2) #(nack-handler ch-number %1 %2)))
         (lb/add-return-listener ch (return-listener/wrapper return-listener))
         ch)
 

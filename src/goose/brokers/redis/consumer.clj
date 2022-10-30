@@ -1,5 +1,4 @@
-(ns goose.brokers.redis.consumer
-  ^:no-doc
+(ns ^:no-doc goose.brokers.redis.consumer
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]

@@ -1,5 +1,4 @@
-(ns goose.brokers.rmq.commands
-  ^:no-doc
+(ns ^:no-doc goose.brokers.rmq.commands
   (:require
     [goose.brokers.rmq.queue :as rmq-queue]
     [goose.defaults :as d]
@@ -33,7 +32,11 @@
   (locking ch
     (let [seq (.getNextPublishSeqNo ch)]
       (publish ch exch queue job properties)
-      {:delivery-tag seq :id (:id job)})))
+      ;; Return `delivery-tag` & `:channel-number` for application to maintain sequence.
+      ;; Delivery tags are unique for a given channel.
+      {:id             (:id job)
+       :channel-number (.getChannelNumber ch)
+       :delivery-tag   seq})))
 
 (defn- sync-enqueue
   [ch

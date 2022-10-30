@@ -18,7 +18,7 @@ Avoided Designs
   - `validate/destroy` hooks aren't working :(
     - https://github.com/kul/pool/issues/3
   - Code here for future reference
-```clojure
+```Clojure
 (defn create-pool [rmq-conn count]
   (doto (pool/get-pool (fn [] (rmq-channel/open rmq-conn {} (fn [x] x)))
                        {:validate int? :destroy lch/close})

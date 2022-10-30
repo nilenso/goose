@@ -1,4 +1,4 @@
-(ns goose.cron.parsing
+(ns ^:no-doc goose.cron.parsing
   (:import
     (com.cronutils.model CronType)
     (com.cronutils.model.definition CronDefinitionBuilder)

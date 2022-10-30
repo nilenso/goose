@@ -1,5 +1,4 @@
-(ns goose.brokers.redis.heartbeat
-  ^:no-doc
+(ns ^:no-doc goose.brokers.redis.heartbeat
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]

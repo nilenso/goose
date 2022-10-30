@@ -1,5 +1,4 @@
-(ns goose.brokers.redis.scheduler
-  ^:no-doc
+(ns ^:no-doc goose.brokers.redis.scheduler
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.brokers.redis.cron :as cron]
@@ -12,12 +11,12 @@
 
 (defn run-at
   [redis-conn
-   epoch-ms
+   schedule-epoch-ms
    {:keys [ready-queue] :as job}]
-  (let [scheduled-job (assoc job :schedule-run-at epoch-ms)]
-    (if (< epoch-ms (u/epoch-time-ms))
+  (let [scheduled-job (assoc job :schedule-run-at schedule-epoch-ms)]
+    (if (< schedule-epoch-ms (u/epoch-time-ms))
       (redis-cmds/enqueue-front redis-conn ready-queue scheduled-job)
-      (redis-cmds/enqueue-sorted-set redis-conn d/prefixed-schedule-queue epoch-ms scheduled-job))
+      (redis-cmds/enqueue-sorted-set redis-conn d/prefixed-schedule-queue schedule-epoch-ms scheduled-job))
     (select-keys job [:id])))
 
 (defn- enqueue-due-scheduled-jobs

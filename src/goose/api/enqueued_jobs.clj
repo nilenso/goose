@@ -1,24 +1,26 @@
 (ns goose.api.enqueued-jobs
+  "API to manage enqueued jobs.\\
+  - [API wiki](https://github.com/nilenso/goose/wiki/API)"
   (:require
     [goose.broker :as b]))
 
 (defn list-all-queues
-  "List all Queues."
+  "Lists all the queues."
   [broker]
   (b/enqueued-jobs-list-all-queues broker))
 
 (defn size
-  "Get size of Enqueued Jobs in a Queue."
+  "Returns count of Jobs in given queue."
   [broker queue]
   (b/enqueued-jobs-size broker queue))
 
 (defn find-by-id
-  "Find an Enqueued Job by ID."
+  "Finds a Job by `:id` in given queue."
   [broker queue id]
   (b/enqueued-jobs-find-by-id broker queue id))
 
 (defn find-by-pattern
-  "Find an Enqueued Job by pattern.
+  "Finds a Job by user-defined parameters in given queue.\\
   If limit isn't mentioned, defaults to 10."
   ([broker queue match?]
    (find-by-pattern broker queue match? 10))
@@ -26,18 +28,18 @@
    (b/enqueued-jobs-find-by-pattern broker queue match? limit)))
 
 (defn prioritise-execution
-  "Move a job to front of it's queue
-  after verification of existence.
+  "Brings a Job anywhere in the queue to front of queue,
+   after verification of existence.\\
   Hence, this accepts only 1 job instead of multiple."
   [broker job]
   (b/enqueued-jobs-prioritise-execution broker job))
 
 (defn delete
-  "Delete an Enqueued Job."
+  "Deletes given Job from it's queue."
   [broker job]
   (b/enqueued-jobs-delete broker job))
 
 (defn purge
-  "Delete entire Queue containing Enqueued Jobs."
+  "Purges all the Jobs in given queue."
   [broker queue]
   (b/enqueued-jobs-purge broker queue))

@@ -1,5 +1,4 @@
-(ns goose.brokers.redis.cron
-  ^:no-doc
+(ns ^:no-doc goose.brokers.redis.cron
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.cron.parsing :as cron-parsing]
@@ -111,5 +110,5 @@
                              (car/hdel d/prefixed-cron-entries entry-name))]
     (= [1 1] atomic-results)))
 
-(defn delete-all [redis-conn]
+(defn purge [redis-conn]
   (= 2 (redis-cmds/del-keys redis-conn [d/prefixed-cron-entries d/prefixed-cron-queue])))

@@ -1,5 +1,4 @@
-(ns goose.brokers.redis.api.scheduled-jobs
-  ^:no-doc
+(ns ^:no-doc goose.brokers.redis.api.scheduled-jobs
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]
@@ -12,8 +11,7 @@
   (redis-cmds/find-in-sorted-set redis-conn d/prefixed-schedule-queue match? limit))
 
 (defn find-by-id [redis-conn id]
-  (let [
-        limit 1
+  (let [limit 1
         match? (fn [job] (= (:id job) id))]
     (first (find-by-pattern redis-conn match? limit))))
 

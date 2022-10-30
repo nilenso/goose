@@ -6,16 +6,16 @@
     [clojure.tools.logging :as log]))
 
 (defn default-ack-handler
-  [delivery-tag multiple]
+  [ch-number delivery-tag multiple]
   (if multiple
-    (log/infof "ACK until delivery-tag: %d" delivery-tag)
-    (log/infof "ACK for delivery-tag: %d" delivery-tag)))
+    (log/infof "[ch: %d] ACK until delivery-tag: %d" ch-number delivery-tag)
+    (log/infof "[ch: %d] ACK for delivery-tag: %d" ch-number delivery-tag)))
 
 (defn default-nack-handler
-  [delivery-tag multiple]
+  [channel-number delivery-tag multiple]
   (if multiple
-    (log/errorf "Negative-ACK until delivery-tag: %d" delivery-tag)
-    (log/errorf "Negative-ACK for delivery-tag: %d" delivery-tag)))
+    (log/errorf "[ch: %d] Negative-ACK until delivery-tag: %d" channel-number delivery-tag)
+    (log/errorf "[ch: %d] Negative-ACK for delivery-tag: %d" channel-number delivery-tag)))
 
 (def sync
   {:strategy       d/sync-confirms

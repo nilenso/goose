@@ -160,7 +160,6 @@
 (s/def ::metrics-plugin #(satisfies? m/Metrics %))
 (s/def ::middlewares fn?)
 (s/def ::error-service-config any?) ; This varies by error services.
-(s/def ::error-service-config any?) ; This varies by error services.
 (s/def ::worker-opts
   (s/keys :req-un [::broker
                    ::threads
@@ -205,27 +204,24 @@
    `c/perform-in-sec
    `c/perform-every])
 
-(defn instrument []
+(defn instrument
+  "Instruments frequently-called functions.\\
+  By default, Instrumentation is disabled.\\
+  It is recommended to enable Specs in Development & Staging.\\
+  Disabling Specs in Production has a 40% performance improvement.\\
+  Only disable Specs in Production after thorough testing in Staging."
+  []
   (st/instrument fns-with-specs))
 
-(defn unstrument []
+(defn unstrument
+  "Disables instrumentation of frequently-called functions."
+  []
   (st/unstrument fns-with-specs))
 
-(defn with-asserts*
-  [f]
-  (let [asserts-state (s/check-asserts?)]
-    (s/check-asserts true)
-    (try
-      (f)
-      (finally
-        ;; Revert back to previous state of asserts.
-        ;; Goose being a library, it shouldn't add
-        ;; unintended side-effects to application's code.
-        (s/check-asserts asserts-state)))))
-
-(defmacro with-asserts
-  [& body]
-  `(with-asserts* (fn [] ~@body)))
+(defn- assert-specs
+  [ns-fn spec x]
+  (when-let [fail (s/explain-data spec x)]
+    (throw (ex-info (format "Call to %s did not conform to spec." ns-fn) fail))))
 
 ;;; Single-use functions have manual assertions.
 ;;; (s/fdef) is declared redundantly for
@@ -235,7 +231,7 @@
         :args (s/cat :redis ::redis-conn-opts)
         :ret ::broker)
 (defn assert-redis-producer [conn-opts]
-  (with-asserts (s/assert ::redis-conn-opts conn-opts)))
+  (assert-specs 'goose.brokers.redis.broker/new-producer ::redis-conn-opts conn-opts))
 
 (s/fdef goose.brokers.redis.broker/new-consumer
         :args (s/alt :one (s/cat :redis ::redis-conn-opts)
@@ -244,8 +240,10 @@
         :ret ::broker)
 (defn assert-redis-consumer
   [conn-opts scheduler-polling-interval-sec]
-  (with-asserts (s/assert ::redis-conn-opts conn-opts)
-                (s/assert ::redis-scheduler-polling-interval-sec scheduler-polling-interval-sec)))
+  (assert-specs 'goose.brokers.redis.broker/new-consumer ::redis-conn-opts conn-opts)
+  (assert-specs 'goose.brokers.redis.broker/new-consumer
+                ::redis-scheduler-polling-interval-sec
+                scheduler-polling-interval-sec))
 
 (s/fdef goose.brokers.rmq.broker/new-producer
         :args (s/alt :one (s/cat :opts ::rmq)
@@ -254,22 +252,22 @@
         :ret ::broker)
 (defn assert-rmq-producer
   [opts channels]
-  (with-asserts (s/assert ::rmq opts)
-                (s/assert pos-int? channels)))
+  (assert-specs 'goose.brokers.rmq.broker/new-producer ::rmq opts)
+  (assert-specs 'goose.brokers.rmq.broker/new-producer pos-int? channels))
 
 (s/fdef goose.brokers.rmq.broker/new-consumer
         :args (s/cat :opts ::rmq)
         :ret ::broker)
 (defn assert-rmq-consumer [opts]
-  (with-asserts (s/assert ::rmq opts)))
+  (assert-specs 'goose.brokers.rmq.broker/new-consumer ::rmq opts))
 
 (s/fdef goose.metrics.statsd/new
         :args (s/cat :opts ::statsd-opts)
         :ret ::metrics-plugin)
 (defn assert-statsd [opts]
-  (with-asserts (s/assert ::statsd-opts opts)))
+  (assert-specs 'goose.metrics.statsd/new ::statsd-opts opts))
 
 (s/fdef goose.worker/start
         :args (s/cat :opts ::worker-opts))
 (defn assert-worker [opts]
-  (with-asserts (s/assert ::worker-opts opts)))
+  (assert-specs 'goose.worker/start ::worker-opts opts))

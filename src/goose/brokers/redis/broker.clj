@@ -18,8 +18,8 @@
     [this job]
     (redis-cmds/enqueue-back (:redis-conn this) (:ready-queue job) job)
     (select-keys job [:id]))
-  (schedule [this schedule job]
-    (redis-scheduler/run-at (:redis-conn this) schedule job))
+  (schedule [this schedule-epoch-ms job]
+    (redis-scheduler/run-at (:redis-conn this) schedule-epoch-ms job))
   (register-cron [this cron-opts job-description]
     (cron/register (:redis-conn this) cron-opts job-description))
   (start-worker [this worker-opts]
@@ -55,6 +55,16 @@
   (scheduled-jobs-purge [this]
     (scheduled-jobs/purge (:redis-conn this)))
 
+  ;; cron entries API
+  (cron-jobs-size [this]
+    (cron/size (:redis-conn this)))
+  (cron-jobs-find-by-name [this entry-name]
+    (cron/find-by-name (:redis-conn this) entry-name))
+  (cron-jobs-delete [this entry-name]
+    (cron/delete (:redis-conn this) entry-name))
+  (cron-jobs-purge [this]
+    (cron/purge (:redis-conn this)))
+
   ;; dead-jobs API
   (dead-jobs-size [this]
     (dead-jobs/size (:redis-conn this)))
@@ -73,25 +83,33 @@
   (dead-jobs-delete-older-than [this epoch-time-ms]
     (dead-jobs/delete-older-than (:redis-conn this) epoch-time-ms))
   (dead-jobs-purge [this]
-    (dead-jobs/purge (:redis-conn this)))
-
-  ;; cron entries API
-  (cron-jobs-size [this]
-    (cron/size (:redis-conn this)))
-  (cron-jobs-find-by-name [this entry-name]
-    (cron/find-by-name (:redis-conn this) entry-name))
-  (cron-jobs-delete [this entry-name]
-    (cron/delete (:redis-conn this) entry-name))
-  (cron-jobs-delete-all [this]
-    (cron/delete-all (:redis-conn this))))
+    (dead-jobs/purge (:redis-conn this))))
 
 (def default-opts
-  "Default config for Redis client."
+  "Map of sample config for Redis Message Broker.
+
+  ### Keys
+  `:url`       : URL to connect to Redis.\\
+  [URL Syntax wiki](https://github.com/lettuce-io/lettuce-core/wiki/Redis-URI-and-connection-details#uri-syntax)
+
+  `:pool-opts` : Config for connection-pooling.\\
+  Example      : [[goose.defaults/redis-producer-pool-opts], [[:goose.specs.redis/pool-opts]]"
   {:url       d/redis-default-url
    :pool-opts nil})
 
 (defn new-producer
-  "Create a client that produce messages to Redis broker."
+  "Creates a Redis broker implementation for client.
+
+  ### Args
+  `conn-opts`  : Config for connecting to Redis.\\
+  Example      : [[default-opts]]
+
+  ### Usage
+  ```Clojure
+  (new-producer redis-conn-opts)
+  ```
+
+  - [Redis Message Broker wiki](https://github.com/nilenso/goose/wiki/Redis)"
   [{:keys [url pool-opts] :as conn-opts}]
   (specs/assert-redis-producer conn-opts)
   (let [pool-opts (or pool-opts d/redis-producer-pool-opts)
@@ -99,14 +117,27 @@
     (->Redis redis-conn nil)))
 
 (defn new-consumer
-  "Create a Redis broker implementation for worker.
-  The connection is opened & closed with start & stop of worker.
-  To avoid duplication & mis-match in `threads` config,
-  we decided to delegate connection creation at start time of worker."
+  "Creates a Redis broker implementation for worker.
+
+  ### Args
+  `conn-opts`                       : Config for connecting to Redis.\\
+  Example                           : [[default-opts]]
+
+  `scheduler-polling-interval-sec`  : Interval at which to poll Redis for scheduled jobs.\\
+  Acceptable values                 : 1-60
+
+  ### Usage
+  ```Clojure
+  (new-consumer redis-conn-opts 10)
+  ```
+
+  - [Redis Message Broker wiki](https://github.com/nilenso/goose/wiki/Redis)"
   ([conn-opts]
    (new-consumer conn-opts d/redis-scheduler-polling-interval-sec))
   ([conn-opts scheduler-polling-interval-sec]
    (specs/assert-redis-consumer conn-opts scheduler-polling-interval-sec)
    (let [opts (assoc conn-opts
                 :scheduler-polling-interval-sec scheduler-polling-interval-sec)]
+     ;; Connection to Redis is opened/closed from start/stop functions of worker.
+     ;; This was done to avoid duplication of code & mis-match in `threads` config.
      (->Redis nil opts))))

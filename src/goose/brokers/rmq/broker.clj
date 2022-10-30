@@ -31,11 +31,11 @@
                            job))
 
   (schedule
-    [this schedule job]
+    [this schedule-epoch-ms job]
     (rmq-scheduler/run-at (u/random-element (:channels this))
                           (assoc (:queue-type this) :queue (job/ready-queue job))
                           (:publisher-confirms this)
-                          schedule
+                          schedule-epoch-ms
                           job))
 
   (start-worker [this worker-opts]
@@ -66,9 +66,23 @@
     (rmq-connection/close (:rmq-conn this))))
 
 (def default-opts
-  "Default config for RabbitMQ client.
-  Refer to http://clojurerabbitmq.info/articles/connecting.html
-  for complete set of settings."
+  "Map of sample config for RabbitMQ Message Broker.
+
+  ### Keys
+  `:settings`           : Map of settings accepted by `langohr.core/settings`.\\
+  [Connecting to RabbitMQ using Langohr](http://clojurerabbitmq.info/articles/connecting.html)
+
+  `:queue-type`         : `classic` or `quorum` (for replication purpose).\\
+  Example               : [[rmq-queue/classic]], [[rmq-queue/quorum]]
+
+  `:publisher-confirms` : Strategy for RabbitMQ Publisher Confirms.\\
+  [Publisher Confirms wiki](https://www.rabbitmq.com/confirms.html#publisher-confirms)
+
+  `:return-listener`    : Handle unroutable messages.\\
+  Example               : [[return-listener/default]]
+
+  `:shutdown-listener`  : Handle abrupt shutdowns not initialized by application.
+  Example               : [[shutdown-listener/default]]"
   {:settings           {:uri d/rmq-default-url}
    :queue-type         rmq-queue/classic
    :publisher-confirms publisher-confirms/sync
@@ -76,7 +90,20 @@
    :shutdown-listener  shutdown-listener/default})
 
 (defn new-producer
-  "Create a client that produce messages to RabbitMQ broker."
+  "Creates a RabbitMQ broker implementation for client.
+
+  ### Args
+  `opts`      : Map of `:settings`, `:queue-type`, `:publisher-confirms`, `:return-listener`, `:shutdown-listener`.\\
+  Example     : [[default-opts]]
+
+  `channels` : Count of channel-pool-size for publishing messages.
+
+  ### Usage
+  ```Clojure
+  (new-producer rmq-opts)
+  ```
+
+  - [RabbitMQ Message Broker wiki](https://github.com/nilenso/goose/wiki/RabbitMQ)"
   ([opts]
    (new-producer opts d/rmq-producer-channels))
   ([{:keys [queue-type publisher-confirms] :as opts}
@@ -86,11 +113,21 @@
      (->RabbitMQ rmq-conn channels queue-type publisher-confirms nil))))
 
 (defn new-consumer
-  "Create a RabbitMQ broker implementation for worker.
-  The connection is opened & closed with start & stop of worker.
-  Job-execution thread-pool must be given when starting RMQ connection.
-  To avoid duplication & mis-match in `threads` config,
-  we decided to delegate connection creation at start time of worker."
+  "Creates a RabbitMQ broker implementation for worker.
+
+  ### Args
+  `opts`  : Map of `:settings`, `:queue-type`, `:publisher-confirms`, `:return-listener`, `:shutdown-listener`.\\
+  Example : [[default-opts]]
+
+  ### Usage
+  ```Clojure
+  (new-consumer rmq-opts)
+  ```
+
+  - [RabbitMQ Message Broker wiki](https://github.com/nilenso/goose/wiki/RabbitMQ)"
   [opts]
   (specs/assert-rmq-consumer opts)
+  ;; Connection to RabbitMQ is opened/closed from start/stop functions of worker.
+  ;; Reason #1: Job-execution thread-pool must be given when starting RMQ connection.
+  ;; Reason #2: Avoid duplication of code & mis-match in `threads` config.
   (->RabbitMQ nil nil nil nil opts))

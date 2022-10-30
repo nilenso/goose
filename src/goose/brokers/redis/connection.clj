@@ -1,4 +1,4 @@
-(ns goose.brokers.redis.connection)
+(ns ^:no-doc goose.brokers.redis.connection)
 
 (defn new
   [url pool-opts]
