@@ -160,7 +160,6 @@
 (s/def ::metrics-plugin #(satisfies? m/Metrics %))
 (s/def ::middlewares fn?)
 (s/def ::error-service-config any?) ; This varies by error services.
-(s/def ::error-service-config any?) ; This varies by error services.
 (s/def ::worker-opts
   (s/keys :req-un [::broker
                    ::threads

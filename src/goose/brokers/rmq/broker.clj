@@ -98,7 +98,7 @@
   `:opts`     : Map of `:settings`, `:queue-type`, `:publisher-confirms`, `:return-listener`, `:shutdown-listener`.\\
   Example     : [[default-opts]]
 
-  `:channels` : Count of channel-pool-size for publishing messages.\\
+  `:channels` : Count of channel-pool-size for publishing messages.
 
   Usage:
   ```Clojure

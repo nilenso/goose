@@ -10,7 +10,7 @@
     (java.time Instant)))
 
 (def default-opts
-  "Map of sample configs for enqueuing jobs.
+  "Map of sample configs for producing jobs.
 
   Keys:
 

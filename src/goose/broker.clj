@@ -13,8 +13,8 @@
   ;; worker/consumer
   (start-worker [this worker-opts] "Starts a worker process that does multiple things:
   - Dequeue & execute jobs from given queue
-  - Enqueue scheduled jobs which are due for execution
-  - Enqueue cron jobs which are due for execution
+  - Enqueue scheduled jobs due for execution
+  - Enqueue cron jobs due for execution
   - Retry failed jobs & mark them as dead when retries are exhausted
   - Run checks & replay orphan jobs
   - Send metrics around Job execution & state of message broker
