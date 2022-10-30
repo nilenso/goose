@@ -14,13 +14,13 @@
    return-listener]
   (let [ch (lch/open conn)]
     (if ch
-      (do
+      (let [ch-number (.getChannelNumber ch)]
         (condp = strategy
           d/sync-confirms
           (lcnf/select ch)
 
           d/async-confirms
-          (lcnf/select ch ack-handler nack-handler))
+          (lcnf/select ch #(ack-handler ch-number %1 %2) #(nack-handler ch-number %1 %2)))
         (lb/add-return-listener ch (return-listener/wrapper return-listener))
         ch)
 

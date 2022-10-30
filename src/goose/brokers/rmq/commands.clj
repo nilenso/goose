@@ -32,7 +32,11 @@
   (locking ch
     (let [seq (.getNextPublishSeqNo ch)]
       (publish ch exch queue job properties)
-      {:delivery-tag seq :id (:id job)})))
+      ;; Return `delivery-tag` & `:channel-number` for application to maintain sequence.
+      ;; Delivery tags are unique for a given channel.
+      {:id             (:id job)
+       :channel-number (.getChannelNumber ch)
+       :delivery-tag   seq})))
 
 (defn- sync-enqueue
   [ch

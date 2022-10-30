@@ -101,10 +101,12 @@
         (c/perform-in-sec tu/rmq-client-opts 4294968 `perform-in-sec-fn)))))
 
 ;;; ======= TEST: Publisher Confirms =======
-(def ack-handler-called (atom (promise)))
-(defn test-ack-handler [tag _]
-  (deliver @ack-handler-called tag))
-(defn test-nack-handler [_ _])
+(def ack-channel-number (atom (promise)))
+(def ack-delivery-tag (atom (promise)))
+(defn test-ack-handler [ch-no tag _]
+  (deliver @ack-channel-number ch-no)
+  (deliver @ack-delivery-tag tag))
+(defn test-nack-handler [_ _ _])
 (deftest publisher-confirm-test
   ;; This test fails quite rarely.
   ;; RMQ confirms in 1ms too sometimes ¯\_(ツ)_/¯
@@ -123,17 +125,20 @@
       (rmq/close producer)))
 
   (testing "[rmq][async-confirms] Ack handler called"
-    (reset! ack-handler-called (promise))
+    (reset! ack-channel-number (promise))
+    (reset! ack-delivery-tag (promise))
     (let [opts (assoc tu/rmq-opts
                  :publisher-confirms {:strategy     d/async-confirms
                                       :ack-handler  test-ack-handler
                                       :nack-handler test-nack-handler})
-          producer (rmq/new-producer opts 1)
+          ;; Create multiple channels to test correctness of delivery-tag & channel-number.
+          producer (rmq/new-producer opts 5)
           client-opts {:queue      "async-publisher-confirms-test"
                        :retry-opts retry/default-opts
                        :broker     producer}
-          delivery-tag (:delivery-tag (c/perform-in-sec client-opts 1 `tu/my-fn))]
-      (is (= delivery-tag (deref @ack-handler-called 100 :async-publisher-confirm-test-timed-out)))
+          enqueued-job (c/perform-in-sec client-opts 1 `tu/my-fn)]
+      (is (= (:channel-number enqueued-job) (deref @ack-channel-number 100 :async-publisher-confirm-test-timed-out)))
+      (is (= (:delivery-tag enqueued-job) (deref @ack-delivery-tag 1 :async-publisher-confirm-test-timed-out)))
       (rmq/close producer))))
 
 ;;; ======= TEST: Graceful shutdown ==========
