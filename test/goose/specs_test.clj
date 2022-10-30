@@ -67,15 +67,9 @@
     #(c/perform-async (assoc-in tu/redis-client-opts [:retry-opts :death-handler-fn-sym] `single-arity-fn) `tu/my-fn)
     #(c/perform-at (assoc-in tu/redis-client-opts [:retry-opts :retry-delay-sec-fn-sym] 'non-fn-sym) now `tu/my-fn)
     #(c/perform-in-sec (assoc-in tu/redis-client-opts [:retry-opts :skip-dead-queue] 1) 1 `tu/my-fn)
-    #(c/perform-async (assoc-in tu/redis-client-opts [:retry-opts :extra-key] :foo-bar) `tu/my-fn)))
+    #(c/perform-async (assoc-in tu/redis-client-opts [:retry-opts :extra-key] :foo-bar) `tu/my-fn)
 
-(deftest assertions-test
-  (are [sut]
-    (is
-      (thrown-with-msg?
-        ExceptionInfo
-        #"Spec assertion failed*"
-        (sut)))
+    ;; Tests for functions that have manual specs assertion.
 
     ;; :redis-opts
     #(redis/new-producer (assoc redis/default-opts :url :invalid-url))
