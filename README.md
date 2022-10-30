@@ -13,10 +13,11 @@ Please refer to the [Benchmarking section](https://github.com/nilenso/goose/tree
 Features
 ---------
 - *Reliable* - Code/Hardware/Network failure won't cause data loss
-- Supports RabbitMQ & Redis message brokers
+- Native support for RabbitMQ & Redis
 - Pluggable [Message Broker](https://github.com/nilenso/goose/wiki/Guide-to-Message-Broker-Integration) & [Metrics Backend](https://github.com/nilenso/goose/wiki/Guide-to-Custom-Metrics-Backend)
 - [Scheduled Jobs](https://github.com/nilenso/goose/wiki/Scheduled-Jobs)
 - [Periodic Jobs](https://github.com/nilenso/goose/wiki/Periodic-Jobs)
+- [Error Handling & Retries](https://github.com/nilenso/goose/wiki/Error-Handling-&-Retries)
 - Extensible using [Middlewares](https://github.com/nilenso/goose/wiki/Middlewares)
 - Concurrency & Parallelism friendly
 - ... more details in [Goose Wiki](https://github.com/nilenso/goose/wiki)
