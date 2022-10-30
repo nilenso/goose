@@ -56,15 +56,19 @@
 
   Args:
 
-  `client-opts`    : A map of `:broker`, `:queue` & `:retry-opts`.\\
+  `client-opts`    : Map of `:broker`, `:queue` & `:retry-opts`.\\
   Example          : [[default-opts]]
 
   `execute-fn-sym` : A fully-qualified function symbol called by worker.\\
   Example          : ```my-fn`, ```ns-alias/my-fn`, `'fully-qualified-ns/my-fn`
 
-  `args`           : Values provided when invoking `execute-fn-sym`.\\
-   Given values must be serializable by `ptaoussanis/nippy`.\\
-   `args` being variadic, it can be as long as number parameters required by `execute-fn-sym`.
+  `args`           : Variadic values provided in given order when invoking `execute-fn-sym`.\\
+   Given values must be serializable by `ptaoussanis/nippy`.
+
+  Usage:
+  ```Clojure
+  (perform-async client-opts `send-emails \"subject\" \"body\" [:user-1 :user-2])
+  ```
 
   [Getting Started wiki](https://github.com/nilenso/goose/wiki/Getting-Started)."
   [opts execute-fn-sym & args]
@@ -75,7 +79,7 @@
 
   Args:
 
-  `client-opts`      : A map of `:broker`, `:queue` & `:retry-opts`.\\
+  `client-opts`      : Map of `:broker`, `:queue` & `:retry-opts`.\\
   Example            : [[default-opts]]
 
   `^Instant instant` : `java.time.Instant` at which job should be executed.
@@ -83,9 +87,14 @@
   `execute-fn-sym`   : A fully-qualified function symbol called by worker.\\
   Example            : ```my-fn`, ```ns-alias/my-fn`, `'fully-qualified-ns/my-fn`
 
-  `args`             : Values provided when invoking `execute-fn-sym`.\\
-   Given values must be serializable by `ptaoussanis/nippy`.\\
-   `args` being variadic, it can be as long as number parameters required by `execute-fn-sym`.
+  `args`             : Variadic values provided in given order when invoking `execute-fn-sym`.\\
+   Given values must be serializable by `ptaoussanis/nippy`.
+
+   Usage:
+   ```Clojure
+   (let [instant (java.time.Instant/parse \"2022-10-31T18:46:09.00Z\")]
+     (perform-at client-opts instant `send-emails \"subject\" \"body\" [:user-1 :user-2]))
+   ```
 
   [Scheduled Jobs wiki](https://github.com/nilenso/goose/wiki/Scheduled-Jobs)"
   [opts ^Instant instant execute-fn-sym & args]
@@ -96,7 +105,7 @@
 
   Args:
 
-  `client-opts`    : A map of `:broker`, `:queue` & `:retry-opts`.\\
+  `client-opts`    : Map of `:broker`, `:queue` & `:retry-opts`.\\
   Example          : [[default-opts]]
 
   `sec`            : Delay of Job execution in seconds.
@@ -104,9 +113,13 @@
   `execute-fn-sym` : A fully-qualified function symbol called by worker.\\
   Example          : ```my-fn`, ```ns-alias/my-fn`, `'fully-qualified-ns/my-fn`
 
-  `args`           : Values provided when invoking `execute-fn-sym`.\\
-   Given values must be serializable by `ptaoussanis/nippy`.\\
-   `args` being variadic, it can be as long as number parameters required by `execute-fn-sym`.
+  `args`           : Variadic values provided in given order when invoking `execute-fn-sym`.\\
+   Given values must be serializable by `ptaoussanis/nippy`.
+
+   Usage:
+   ```Clojure
+   (perform-in-sec default-opts 300 `send-emails \"subject\" \"body\" [:user-1 :user-2])
+   ```
 
   [Scheduled Jobs wiki](https://github.com/nilenso/goose/wiki/Scheduled-Jobs)"
   [opts sec execute-fn-sym & args]
@@ -119,28 +132,32 @@
 
   Args:
 
-  `client-opts`    : A map of `:broker`, `:queue` & `:retry-opts`.\\
+  `client-opts`    : Map of `:broker`, `:queue` & `:retry-opts`.\\
   Example          : [[default-opts]]
 
-  `cron-opts`      : A map of `:cron-name`, `:cron-schedule`, `:timezone`
+  `cron-opts`      : Map of `:cron-name`, `:cron-schedule`, `:timezone`
   - `:cron-name` (Mandatory)
     - Unique identifier of a periodic job
-    - Example: `\"my-periodic-job\"`
   - `:cron-schedule` (Mandatory)
     - Unix-style schedule
-    - Example: `\"0 10 15 * *\"`
   - `:timezone` (Optional)
     - Timezone for executing the Job at schedule
     - Acceptable timezones: `(java.time.ZoneId/getAvailableZoneIds)`
     - Defaults to system timezone
-    - Example: `\"US/Pacific\"`
 
   `execute-fn-sym` : A fully-qualified function symbol called by worker.\\
   Example          : ```my-fn`, ```ns-alias/my-fn`, `'fully-qualified-ns/my-fn`
 
-  `args`           : Values provided when invoking `execute-fn-sym`.\\
-   Given values must be serializable by `ptaoussanis/nippy`.\\
-   `args` being variadic, it can be as long as number parameters required by `execute-fn-sym`.
+  `args`           : Variadic values provided in given order when invoking `execute-fn-sym`.\\
+   Given values must be serializable by `ptaoussanis/nippy`.
+
+  Usage:
+  ```Clojure
+  (let [cron-opts {:cron-name     \"my-periodic-job\"
+                   :cron-schedule \"0 10 15 * *\"
+                   :timezone      \"US/Pacific\"}]
+    (perform-every client-opts cron-opts `send-emails \"subject\" \"body\" [:user-1 :user-2]))
+  ```
 
   [Periodic Jobs wiki](https://github.com/nilenso/goose/wiki/Periodic-Jobs)"
   [opts cron-opts execute-fn-sym & args]
