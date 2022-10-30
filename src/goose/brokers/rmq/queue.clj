@@ -13,7 +13,7 @@
   {:type               d/rmq-quorum-queue
    :replication-factor d/rmq-replication-factor})
 
-(defn- ^:no-doc arguments
+(defn- arguments
   [{:keys [type replication-factor]}]
   (condp = type
     d/rmq-classic-queue

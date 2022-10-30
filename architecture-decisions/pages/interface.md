@@ -2,7 +2,7 @@ ADR: Interface
 =============
 
 Goose's interface:
-```clojure
+```Clojure
 (c/perform-async client-opts `my-background-fn :arg1 "arg2"...)
 (let [worker (w/start worker-opts)]
   (w/stop worker))

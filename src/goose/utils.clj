@@ -28,7 +28,7 @@
   "Returns Unix epoch milliseconds for given java.time.Instant.
    If no instant is given, returns epoch for current time."
   ([] (System/currentTimeMillis))
-  ([java-time-instant] (.toEpochMilli ^Instant java-time-instant)))
+  ([instant] (.toEpochMilli ^Instant instant)))
 
 (defn- sec->ms [sec]
   (* 1000 sec))

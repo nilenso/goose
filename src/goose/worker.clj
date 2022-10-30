@@ -19,7 +19,6 @@
   "Map of sample configs for consuming jobs.
 
   #### Mandatory Keys
-
   `:broker`                : Message broker that transfers message from Producer to Consumer.\\
   Given value must implement [[goose.broker/Broker]] protocol.\\
   [Message Broker wiki](https://github.com/nilenso/goose/wiki/Message-Brokers)
@@ -35,7 +34,6 @@
   Given value must implement [[goose.metrics/Metrics]] protocol.
 
   #### Optional Keys
-
   `:middlewares`          : Chain of function/s to run 'around' execution of a Job
   [Middlewares wiki](https://github.com/nilenso/goose/wiki/Middlewares)
 
@@ -53,13 +51,12 @@
   - Retry failed jobs & mark them as dead when retries are exhausted
   - Send metrics around Job execution & state of message broker
 
-  Args:
-
+  ### Args
   `opts`  : Map of `:threads`, `:queue`, `:graceful-shutdown-sec`,
    `:metrics-plugin`, `:middleware` & `:error-service-config`.\\
   Example : [[default-opts]]
 
-  Usage:
+  ### Usage
   ```Clojure
   (let [worker (start worker-opts)]
     ;; When shutting down worker...

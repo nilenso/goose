@@ -12,8 +12,7 @@
 (def default-opts
   "Map of sample configs for producing jobs.
 
-  Keys:
-
+  ### Keys
   `:broker`     : Message broker that transfers message from Producer to Consumer.\\
   Given value must implement [[goose.broker/Broker]] protocol.\\
   [Message Broker wiki](https://github.com/nilenso/goose/wiki/Message-Brokers)
@@ -51,11 +50,10 @@
       (b/schedule broker schedule-epoch-ms job)
       (b/enqueue broker job))))
 
-(defn ^{:added "0.3.0"} perform-async
+(defn perform-async
   "Enqueues a function for async execution.
 
-  Args:
-
+  ### Args
   `client-opts`    : Map of `:broker`, `:queue` & `:retry-opts`.\\
   Example          : [[default-opts]]
 
@@ -65,20 +63,19 @@
   `args`           : Variadic values provided in given order when invoking `execute-fn-sym`.\\
    Given values must be serializable by `ptaoussanis/nippy`.
 
-  Usage:
+  ### Usage
   ```Clojure
   (perform-async client-opts `send-emails \"subject\" \"body\" [:user-1 :user-2])
   ```
 
-  [Getting Started wiki](https://github.com/nilenso/goose/wiki/Getting-Started)."
+  - [Getting Started wiki](https://github.com/nilenso/goose/wiki/Getting-Started)."
   [opts execute-fn-sym & args]
   (enqueue opts nil execute-fn-sym args))
 
-(defn ^{:added "0.3.0"} perform-at
+(defn perform-at
   "Schedules a function for execution at given date & time.
 
-  Args:
-
+  ### Args
   `client-opts`      : Map of `:broker`, `:queue` & `:retry-opts`.\\
   Example            : [[default-opts]]
 
@@ -90,21 +87,20 @@
   `args`             : Variadic values provided in given order when invoking `execute-fn-sym`.\\
    Given values must be serializable by `ptaoussanis/nippy`.
 
-   Usage:
+   ### Usage
    ```Clojure
    (let [instant (java.time.Instant/parse \"2022-10-31T18:46:09.00Z\")]
      (perform-at client-opts instant `send-emails \"subject\" \"body\" [:user-1 :user-2]))
    ```
 
-  [Scheduled Jobs wiki](https://github.com/nilenso/goose/wiki/Scheduled-Jobs)"
+   - [Scheduled Jobs wiki](https://github.com/nilenso/goose/wiki/Scheduled-Jobs)"
   [opts ^Instant instant execute-fn-sym & args]
   (enqueue opts (u/epoch-time-ms instant) execute-fn-sym args))
 
-(defn ^{:added "0.3.0"} perform-in-sec
+(defn perform-in-sec
   "Schedules a function for execution with a delay of given seconds.
 
-  Args:
-
+  ### Args
   `client-opts`    : Map of `:broker`, `:queue` & `:retry-opts`.\\
   Example          : [[default-opts]]
 
@@ -116,22 +112,21 @@
   `args`           : Variadic values provided in given order when invoking `execute-fn-sym`.\\
    Given values must be serializable by `ptaoussanis/nippy`.
 
-   Usage:
+   ### Usage
    ```Clojure
    (perform-in-sec default-opts 300 `send-emails \"subject\" \"body\" [:user-1 :user-2])
    ```
 
-  [Scheduled Jobs wiki](https://github.com/nilenso/goose/wiki/Scheduled-Jobs)"
+  - [Scheduled Jobs wiki](https://github.com/nilenso/goose/wiki/Scheduled-Jobs)"
   [opts sec execute-fn-sym & args]
   (enqueue opts (u/sec+current-epoch-ms sec) execute-fn-sym args))
 
-(defn ^{:added "0.3.0"} perform-every
+(defn perform-every
   "Registers a function for periodic execution in cron-jobs style.\\
   `perform-every` is idempotent.\\
   If a cron entry already exists with the same name, it will be overwritten with new data.
 
-  Args:
-
+  ### Args
   `client-opts`    : Map of `:broker`, `:queue` & `:retry-opts`.\\
   Example          : [[default-opts]]
 
@@ -151,7 +146,7 @@
   `args`           : Variadic values provided in given order when invoking `execute-fn-sym`.\\
    Given values must be serializable by `ptaoussanis/nippy`.
 
-  Usage:
+  ### Usage
   ```Clojure
   (let [cron-opts {:cron-name     \"my-periodic-job\"
                    :cron-schedule \"0 10 15 * *\"
@@ -159,6 +154,6 @@
     (perform-every client-opts cron-opts `send-emails \"subject\" \"body\" [:user-1 :user-2]))
   ```
 
-  [Periodic Jobs wiki](https://github.com/nilenso/goose/wiki/Periodic-Jobs)"
+  - [Periodic Jobs wiki](https://github.com/nilenso/goose/wiki/Periodic-Jobs)"
   [opts cron-opts execute-fn-sym & args]
   (register-cron-schedule opts cron-opts execute-fn-sym args))

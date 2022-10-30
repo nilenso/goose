@@ -28,7 +28,7 @@ Getting Started
 
 ### Client
 
-```clojure
+```Clojure
 (ns my-app
   (:require 
     [goose.brokers.rmq.broker :as rmq]
@@ -51,7 +51,7 @@ Getting Started
 
 ### Worker
 
-```clojure
+```Clojure
 (ns my-worker
   (:require
     [goose.brokers.rmq.broker :as rmq]

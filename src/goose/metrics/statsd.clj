@@ -53,9 +53,10 @@
   "Creates a Metrics implementation for StatsD Backend.
 
   ### Args
-
   `opts`  : Map of `:enabled?`, `:host`, `:port`, `:prefix`, `:sample-rate` & `:tags`.\\
-  Example : [[default-opts]]"
+  Example : [[default-opts]]
+
+  - [Monitoring & Alerting wiki](https://github.com/nilenso/goose/wiki/Monitoring-&-Alerting)"
   [{:keys [enabled? host port prefix] :as opts}]
   (specs/assert-statsd opts)
   (when enabled?

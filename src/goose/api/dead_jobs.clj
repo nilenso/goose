@@ -1,6 +1,6 @@
 (ns goose.api.dead-jobs
   "API to manage dead jobs.\\
-  [API wiki](https://github.com/nilenso/goose/wiki/API)"
+  - [API wiki](https://github.com/nilenso/goose/wiki/API)"
   (:refer-clojure :exclude [pop])
   (:require
     [goose.broker :as b]))

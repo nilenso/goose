@@ -68,8 +68,7 @@
 (def default-opts
   "Map of sample config for RabbitMQ Message Broker.
 
-  Keys:
-
+  ### Keys
   `:settings`           : Map of settings accepted by `langohr.core/settings`.\\
   [Connecting to RabbitMQ using Langohr](http://clojurerabbitmq.info/articles/connecting.html)
 
@@ -93,19 +92,18 @@
 (defn new-producer
   "Creates a RabbitMQ broker implementation for client.
 
-  Args:
-
-  `:opts`     : Map of `:settings`, `:queue-type`, `:publisher-confirms`, `:return-listener`, `:shutdown-listener`.\\
+  ### Args
+  `opts`      : Map of `:settings`, `:queue-type`, `:publisher-confirms`, `:return-listener`, `:shutdown-listener`.\\
   Example     : [[default-opts]]
 
-  `:channels` : Count of channel-pool-size for publishing messages.
+  `channels` : Count of channel-pool-size for publishing messages.
 
-  Usage:
+  ### Usage
   ```Clojure
   (new-producer rmq-opts)
   ```
 
-  [RabbitMQ Message Broker wiki](https://github.com/nilenso/goose/wiki/RabbitMQ)"
+  - [RabbitMQ Message Broker wiki](https://github.com/nilenso/goose/wiki/RabbitMQ)"
   ([opts]
    (new-producer opts d/rmq-producer-channels))
   ([{:keys [queue-type publisher-confirms] :as opts}
@@ -117,17 +115,16 @@
 (defn new-consumer
   "Creates a RabbitMQ broker implementation for worker.
 
-  Args:
-
-  `:opts` : Map of `:settings`, `:queue-type`, `:publisher-confirms`, `:return-listener`, `:shutdown-listener`.\\
+  ### Args
+  `opts`  : Map of `:settings`, `:queue-type`, `:publisher-confirms`, `:return-listener`, `:shutdown-listener`.\\
   Example : [[default-opts]]
 
-  Usage:
+  ### Usage
   ```Clojure
   (new-consumer rmq-opts)
   ```
 
-  [RabbitMQ Message Broker wiki](https://github.com/nilenso/goose/wiki/RabbitMQ)"
+  - [RabbitMQ Message Broker wiki](https://github.com/nilenso/goose/wiki/RabbitMQ)"
   [opts]
   (specs/assert-rmq-consumer opts)
   ;; Connection to RabbitMQ is opened/closed from start/stop functions of worker.

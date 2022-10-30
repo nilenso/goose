@@ -1,6 +1,6 @@
 (ns goose.api.scheduled-jobs
   "API to manage scheduled jobs.\\
-  [API wiki](https://github.com/nilenso/goose/wiki/API)"
+  - [API wiki](https://github.com/nilenso/goose/wiki/API)"
   (:require
     [goose.broker :as b]))
 

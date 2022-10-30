@@ -88,8 +88,7 @@
 (def default-opts
   "Map of sample config for Redis Message Broker.
 
-  Keys:
-
+  ### Keys
   `:url`       : URL to connect to Redis.\\
   [URL Syntax wiki](https://github.com/lettuce-io/lettuce-core/wiki/Redis-URI-and-connection-details#uri-syntax)
 
@@ -101,17 +100,16 @@
 (defn new-producer
   "Creates a Redis broker implementation for client.
 
-  Args:
-
-  `:conn-opts` : Config for connecting to Redis.\\
+  ### Args
+  `conn-opts`  : Config for connecting to Redis.\\
   Example      : [[default-opts]]
 
-  Usage:
+  ### Usage
   ```Clojure
   (new-producer redis-conn-opts)
   ```
 
-  [Redis Message Broker wiki](https://github.com/nilenso/goose/wiki/Redis)"
+  - [Redis Message Broker wiki](https://github.com/nilenso/goose/wiki/Redis)"
   [{:keys [url pool-opts] :as conn-opts}]
   (specs/assert-redis-producer conn-opts)
   (let [pool-opts (or pool-opts d/redis-producer-pool-opts)
@@ -121,20 +119,19 @@
 (defn new-consumer
   "Creates a Redis broker implementation for worker.
 
-  Args:
-
-  `:conn-opts`                      : Config for connecting to Redis.\\
+  ### Args
+  `conn-opts`                       : Config for connecting to Redis.\\
   Example                           : [[default-opts]]
 
-  `:scheduler-polling-interval-sec` : Interval at which to poll Redis for scheduled jobs.\\
+  `scheduler-polling-interval-sec`  : Interval at which to poll Redis for scheduled jobs.\\
   Acceptable values                 : 1-60
 
-  Usage:
+  ### Usage
   ```Clojure
   (new-consumer redis-conn-opts 10)
   ```
 
-  [Redis Message Broker wiki](https://github.com/nilenso/goose/wiki/Redis)"
+  - [Redis Message Broker wiki](https://github.com/nilenso/goose/wiki/Redis)"
   ([conn-opts]
    (new-consumer conn-opts d/redis-scheduler-polling-interval-sec))
   ([conn-opts scheduler-polling-interval-sec]
