@@ -17,9 +17,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### [Goose 0.3.0 Project Board](https://github.com/orgs/nilenso/projects/6)
 
 ### Added
+- Periodic jobs for Redis
 - Pluggable Message Brokers
 - Native support for RabbitMQ
-- Periodic jobs for Redis
+    - Replication, Clustering & Quorum queues
+    - Publisher confirms
+    - AS
 - Pluggable Custom Metrics Backend
 - Contribution Guide
 - Docstrings
@@ -29,6 +32,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 - Inject broker instead of broker-opts
 
 ### Fixed
+- `No implementation of protocol method` bug
 
 ## [0.2] - 29-Jul-2022
 
