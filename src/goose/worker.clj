@@ -30,7 +30,7 @@
 
   `:graceful-shutdown-sec` : Waiting time for in-progress jobs to complete during shutdown.
 
-  `:metrics-plugin`        : Transfer Goose metrics to custom backend.\\
+  `:metrics-plugin`        : Publish Goose metrics to respective backend.\\
   Example                  : [[statsd/StatsD]]\\
   Given value must implement [[goose.metrics/Metrics]] protocol.
 

@@ -27,7 +27,21 @@
     (with-merged-tags clj-statsd/timing key duration (:sample-rate this) (:tags this) additional-tags)))
 
 (def default-opts
-  "Default config for StatsD Metrics."
+  "Map of sample config for StatsD Metric Backend.
+
+  ### Keys
+  `:enabled?`    : Boolean flag for enabling/disabling metrics.
+
+  `:host`        : Host of StatsD Aggregator.
+
+  `:port`        : Port of StatsD Aggregator.
+
+  `:prefix`      : Prefix for all metrics.\\
+  Can be a generic term like `\"goose.\"` or specific to microservice name.
+
+  `:sample-rate` : Sample rate of metric collection.
+
+  `:tags`        : Map of key-value pairs to be attached to every metric."
   {:enabled?    true
    :host        "localhost"
    :port        8125
@@ -36,8 +50,12 @@
    :tags        {}})
 
 (defn new
-  "Create a StatsD Metrics plugin.
-  Prefix metrics to distinguish between 2 microservices."
+  "Creates a Metrics implementation for StatsD Backend.
+
+  ### Args
+
+  `opts`  : Map of `:enabled?`, `:host`, `:port`, `:prefix`, `:sample-rate` & `:tags`.\\
+  Example : [[default-opts]]"
   [{:keys [enabled? host port prefix] :as opts}]
   (specs/assert-statsd opts)
   (when enabled?

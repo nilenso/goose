@@ -1,10 +1,11 @@
 (ns goose.broker
-  "Defines protocol for message broker of Goose.")
+  "Defines protocol for Message Broker of Goose.")
 
 (defprotocol Broker
   "Protocol that message brokers should implement
-  in order to facilitate transfers between
-  producer & consumer, AKA application client & worker."
+   in order to facilitate transfers between
+   producer & consumer, AKA application client & worker.
+   - [Guide to Message Broker Integration](https://github.com/nilenso/goose/wiki/Guide-to-Message-Broker-Integration)"
   ;; client/producer
   (enqueue [this job] "Enqueues a Job for async execution.")
   (schedule [this schedule-epoch-ms job] "Schedules a Job for execution at given epoch-ms.")

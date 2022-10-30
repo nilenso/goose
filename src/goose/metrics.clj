@@ -1,4 +1,6 @@
 (ns goose.metrics
+  "Defines protocol for Metrics Backend.
+  - [Monitoring & Alerting wiki](https://github.com/nilenso/goose/wiki/Monitoring-&-Alerting)"
   (:require
     [goose.defaults :as d]
     [goose.utils :as u]))
@@ -23,10 +25,13 @@
 (defonce dead-queue-size "dead_queue.size")
 
 (defprotocol Metrics
-  (enabled? [this])
-  (gauge [this key value tags])
-  (increment [this key value tags])
-  (timing [this key duration tags]))
+  "Protocol that Metrics Backends should implement
+   to publish Goose metrics to respective backends.
+   - [Guide to Custom Metrics Backend](https://github.com/nilenso/goose/wiki/Guide-to-Custom-Metrics-Backend)"
+  (enabled? [this] "Returns true if metrics is enabled.")
+  (gauge [this key value tags] "Set gauge of given key")
+  (increment [this key value tags] "Increment given key by value.")
+  (timing [this key duration tags] "Record duration of given key."))
 
 (defn ^:no-doc wrap-metrics
   [next]
