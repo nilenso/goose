@@ -204,10 +204,18 @@
    `c/perform-in-sec
    `c/perform-every])
 
-(defn instrument []
+(defn instrument
+  "Instruments frequently-called functions.\\
+  By default, Instrumentation is disabled.\\
+  It is recommended to enable Specs in Development & Staging.\\
+  Disabling Specs in Production has a 40% performance improvement.\\
+  Only disable Specs in Production after thorough testing in Staging."
+  []
   (st/instrument fns-with-specs))
 
-(defn unstrument []
+(defn unstrument
+  "Disables instrumentation of frequently-called functions."
+  []
   (st/unstrument fns-with-specs))
 
 (defn- assert-specs

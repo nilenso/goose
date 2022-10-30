@@ -43,16 +43,16 @@
   ;; cron jobs API
   (cron-jobs-size [this] "Returns count of Periodic Jobs.")
   (cron-jobs-find-by-name [this entry-name] "Finds a Cron Job by `:name`.")
-  (cron-jobs-delete [this entry-name] "Deletes Cron Job of given `:name`.")
-  (cron-jobs-purge [this] "Purges all the Cron Jobs.")
+  (cron-jobs-delete [this entry-name] "Deletes Cron Entry & Cron-Scheduled Job of given `:name`.")
+  (cron-jobs-purge [this] "Purges all the Cron Entries & Cron-Scheduled Jobs.")
 
   ;; dead-jobs API
   (dead-jobs-size [this] "Returns count of Dead Jobs.")
   (dead-jobs-pop [this] "Pops the oldest Dead Job from the queue & returns it.")
   (dead-jobs-find-by-id [this id] "Finds a Dead Job by `:id`.")
   (dead-jobs-find-by-pattern [this match? limit] "Finds a Dead Jobs by user-defined parameters.")
-  (dead-jobs-replay-job [this job] "Re-enqueues given Dead Job for execution.")
-  (dead-jobs-replay-n-jobs [this n] "Re-enqueues n Dead Jobs for execution.")
+  (dead-jobs-replay-job [this job] "Re-enqueues given Dead Job to front of queue for execution.")
+  (dead-jobs-replay-n-jobs [this n] "Re-enqueues n oldest Dead Jobs to front of queue for execution.")
   (dead-jobs-delete [this job] "Deletes given Dead Job.")
-  (dead-jobs-delete-older-than [this epoch-time-ms] "Delete Dead Jobs older than given epoch-ms.")
+  (dead-jobs-delete-older-than [this epoch-time-ms] "Deletes Dead Jobs older than given epoch-ms.")
   (dead-jobs-purge [this] "Purges all the Dead Jobs."))

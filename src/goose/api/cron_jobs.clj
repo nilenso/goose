@@ -1,26 +1,26 @@
 (ns goose.api.cron-jobs
-  "API to manage cron-jobs AKA periodic jobs.
-  To update a cron entry, call goose.client/perform-every
-  with the cron entry name."
+  "API to manage cron-jobs AKA periodic jobs.\\
+  To update a cron entry, call [[goose.client/perform-every]] since it's idempotent.\\
+  [API wiki](https://github.com/nilenso/goose/wiki/API)"
   (:require
     [goose.broker :as b]))
 
 (defn size
-  "Total count of all Periodic Jobs."
+  "Returns count of Periodic Jobs."
   [broker]
   (b/cron-jobs-size broker))
 
 (defn find-by-name
-  "Look up a cron entry by name."
+  "Finds a Cron Job by `:name`."
   [broker entry-name]
   (b/cron-jobs-find-by-name broker entry-name))
 
 (defn delete
-  "Delete a cron entry."
+  "Deletes Cron Entry & Cron-Scheduled Job of given `:name`."
   [broker entry-name]
   (b/cron-jobs-delete broker entry-name))
 
 (defn purge
-  "Purges all cron entries."
+  "Purges all the Cron Entries & Cron-Scheduled Jobs."
   [broker]
   (b/cron-jobs-purge broker))
