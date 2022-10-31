@@ -6,35 +6,59 @@
     [clojure.tools.logging :as log]))
 
 (defn default-error-handler
-  "Default error handler of a Job.
-  Called when a job fails.
+  "Sample error handler of a Job.\\
+  Called when a job fails.\\
   Logs exception & job details."
   [_error-service-config job ex]
   (log/error ex "Job execution failed." job))
 
 (defn default-death-handler
-  "Default death handler of a Job
-  Called when a job fails & has exhausted retries.
+  "Sample death handler of a Job.\\
+  Called when a job dies, i.e. fails & has exhausted retries.\\
   Logs exception & job details."
   [_error-service-config job ex]
   (log/error ex "Job retries exhausted." job))
 
 (defn default-retry-delay-sec
-  "Calculates backoff seconds
-  before a failed Job is retried."
+  "Calculates backoff seconds before a failed Job is retried."
   [retry-count]
   (+ 20
      (* (rand-int 20) (inc retry-count))
      (reduce * (repeat 4 retry-count)))) ; retry-count^4
 
 (def default-opts
-  "Default config for Error Handling & Retries."
+  "Map of sample configs for error handling & retries.\\
+  A Job is considered to fail when it throws an exception during execution.\\
+  A Job is considered dead when it has exhausted `max-retries`
+
+  #### Mandatory Keys
+  `:max-retries`            : Number of times to retry before marking a Job as dead.
+
+  `:retry-delay-sec-fn-sym` : A fully-qualified function symbol to calculate backoff
+   time in seconds before retrying a Job.\\
+  Takes `retry-count` as input & returns backoff-seconds as a positive integer.\\
+  *Example*                 : [[default-retry-delay-sec]]
+
+  `:error-handler-fn-sym`   : A fully-qualified function symbol called when a Job fails.\\
+  Takes `error-service-config`, `job` & `exception` as input.\\
+  *Example*                 : [[default-error-handler]]
+
+  `:death-handler-fn-sym`   : A fully-qualified function symbol called when a Job dies.\\
+  Takes `error-service-config`, `job` & `exception` as input.\\
+  *Example*                 : [[default-death-handler]]
+
+  `:skip-dead-queue`        : Boolean flag for skipping Dead Jobs queue.
+
+  #### Optional Keys
+  `:retry-queue`            : Optional queue for retrying failed jobs in a separate queue.\\
+  This helps increase/decrease priority of retrying failed jobs.\\
+  **Note**: When using different retry queue, remember to start a worker process for that."
   {:max-retries            27
    :retry-delay-sec-fn-sym `default-retry-delay-sec
    :retry-queue            nil
    :error-handler-fn-sym   `default-error-handler
-   :skip-dead-queue        false
-   :death-handler-fn-sym   `default-death-handler})
+   :death-handler-fn-sym   `default-death-handler
+   :skip-dead-queue        false})
 
 (defn- prefix-retry-queue
   [retry-opts]
@@ -56,7 +80,7 @@
    :first-failed-at (or first-failed-at (u/epoch-time-ms))
    :retry-count     (if retry-count (inc retry-count) 0)})
 
-(defn set-failed-config
+(defn ^:no-doc set-failed-config
   [job ex]
   (assoc
     job :state

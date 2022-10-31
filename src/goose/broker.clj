@@ -43,7 +43,7 @@
 
   ;; cron jobs API
   (cron-jobs-size [this] "Returns count of Periodic Jobs.")
-  (cron-jobs-find-by-name [this entry-name] "Finds a Cron Job by `:name`.")
+  (cron-jobs-find-by-name [this entry-name] "Finds a Cron Entry by `:name`.")
   (cron-jobs-delete [this entry-name] "Deletes Cron Entry & Cron-Scheduled Job of given `:name`.")
   (cron-jobs-purge [this] "Purges all the Cron Entries & Cron-Scheduled Jobs.")
 
@@ -55,5 +55,5 @@
   (dead-jobs-replay-job [this job] "Re-enqueues given Dead Job to front of queue for execution.")
   (dead-jobs-replay-n-jobs [this n] "Re-enqueues n oldest Dead Jobs to front of queue for execution.")
   (dead-jobs-delete [this job] "Deletes given Dead Job.")
-  (dead-jobs-delete-older-than [this epoch-time-ms] "Deletes Dead Jobs older than given epoch-ms.")
+  (dead-jobs-delete-older-than [this epoch-ms] "Deletes Dead Jobs older than given epoch-ms.")
   (dead-jobs-purge [this] "Purges all the Dead Jobs."))

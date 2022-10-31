@@ -1,6 +1,6 @@
 (ns goose.metrics.statsd
-  "StatsD is the default & specimen plugin for Goose.
-  Plugins can be customized by implementing Metrics protocol."
+  "StatsD is a specimen Metrics Backend for Goose.
+  Plugins can be customized by implementing [[goose.metrics/Metrics]] protocol."
   (:require
     [goose.metrics :as m]
     [goose.specs :as specs]
@@ -30,11 +30,11 @@
   "Map of sample config for StatsD Metric Backend.
 
   ### Keys
-  `:enabled?`    : Boolean flag for enabling/disabling metrics.
+  `:enabled?`    - Boolean flag for enabling/disabling metrics.
 
-  `:host`        : Host of StatsD Aggregator.
+  `:host`        - Host of StatsD Aggregator.
 
-  `:port`        : Port of StatsD Aggregator.
+  `:port`        - Port of StatsD Aggregator.
 
   `:prefix`      : Prefix for all metrics.\\
   Can be a generic term like `\"goose.\"` or specific to microservice name.

@@ -5,18 +5,18 @@ Performance
 <tr>
   <th>Version</th>
   <th>System Specs</th>
-  <th>Broker</th>
   <th>Threads</th>
+  <th>Broker</th>
   <th>Persistence</th>
   <th>Latency</th>
   <th>Time to process<br>100k Jobs</th>
   <th>Throughput</th>
 </tr>
 <tr align="center">
-  <td rowspan="6" align="left"><b>Goose:</b> 0.3<br><b>Clojure:</b> v1.11.0</td>
+  <td rowspan="6" align="left"><b>Goose:</b> 0.3.0<br><b>Clojure:</b> v1.11.0</td>
   <td rowspan="6" align="left"><b>OS: </b>Ubuntu 20.04<br><b>CPU: </b>Intel 8280<br> <b>Cores: </b>4<br><b>RAM: </b>8 GB</td>
-  <td rowspan="4"> Redis</td>
   <td rowspan="6">▲<br>|<br>25<br>|<br>▼</td>
+  <td rowspan="4"> Redis</td>
   <td>Memory</td>
   <td>2 ms</td>
   <td>12 sec</td>
@@ -60,7 +60,7 @@ Notes
 
 - Brokers have a latency of 1ms
 - Performance testing code can be found here:
-  - [Redis](https://github.com/nilenso/goose/tree/main/perf/goose/redis)
-  - [RabbitMQ](https://github.com/nilenso/goose/tree/main/perf/goose/rmq)
+  - [Redis](https://github.com/nilenso/goose/blob/main/perf/goose/redis/load.clj)
+  - [RabbitMQ](https://github.com/nilenso/goose/blob/main/perf/goose/rmq/load.clj)
 - Results can be found in [screenshots](https://github.com/nilenso/goose/tree/main/perf/screenshots)
 - VM setup code can be found at [setup.sh](https://github.com/nilenso/goose/blob/main/perf/setup.sh)

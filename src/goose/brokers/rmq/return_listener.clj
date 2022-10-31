@@ -4,10 +4,12 @@
 
     [clojure.tools.logging :as log]))
 
-(defn default [msg]
+(defn default
+  "Sample handler for unroutable messages."
+  [msg]
   (log/error "Message returned from rabbitmq" msg))
 
-(defn wrapper
+(defn ^:no-doc wrapper
   [return-listener]
   (fn [reply-code reply-text exchange routing-key properties body]
     (return-listener {:reply-code  reply-code

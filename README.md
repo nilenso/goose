@@ -47,7 +47,7 @@ Getting Started
   (c/perform-async client-opts `my-fn "foo" :bar)
   (c/perform-in-sec client-opts 900 `my-fn "foo" :bar)
   ;; When shutting down client...
-  (rmq/close rmq-consumer))
+  (rmq/close rmq-producer))
 ```
 
 ### Worker

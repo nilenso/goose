@@ -22,7 +22,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 - Native support for RabbitMQ
     - Replication, Clustering & Quorum queues
     - Publisher confirms
-    - AS
+    - Return, Shutdown & Recovery handlers
 - Pluggable Custom Metrics Backend
 - Contribution Guide
 - Docstrings

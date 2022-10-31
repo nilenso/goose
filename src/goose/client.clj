@@ -18,10 +18,10 @@
   [Message Broker wiki](https://github.com/nilenso/goose/wiki/Message-Brokers)
 
   `:queue`      : Destination where client produces to & worker consumes from.\\
-  Example       : [[goose.defaults/default-queue]]
+  Example       : [[d/default-queue]]
 
   `:retry-opts` : Configuration for handling Job failure.\\
-  Example       : [[goose.retry/default-opts]]\\
+  Example       : [[retry/default-opts]]\\
   [Error Handling & Retries wiki](https://github.com/nilenso/goose/wiki/Error-Handling-&-Retries)"
   {:queue      d/default-queue
    :retry-opts retry/default-opts})

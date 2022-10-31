@@ -36,9 +36,9 @@
 (defn delete [redis-conn job]
   (= 1 (redis-cmds/del-from-sorted-set redis-conn d/prefixed-dead-queue job)))
 
-(defn delete-older-than [redis-conn epoch-time-ms]
+(defn delete-older-than [redis-conn epoch-ms]
   (< 0 (redis-cmds/del-from-sorted-set-until
-         redis-conn d/prefixed-dead-queue epoch-time-ms)))
+         redis-conn d/prefixed-dead-queue epoch-ms)))
 
 (defn purge [redis-conn]
   (= 1 (redis-cmds/del-keys redis-conn [d/prefixed-dead-queue])))

@@ -7,10 +7,10 @@
 (def graceful-shutdown-sec 30)
 (def content-type "ptaoussanis/nippy")
 
-(def queue-prefix "goose/queue:")
-(def in-progress-queue-prefix "goose/in-progress-jobs:")
-(def process-prefix "goose/processes:")
-(def heartbeat-prefix "goose/heartbeat:")
+(def ^:no-doc queue-prefix "goose/queue:")
+(def ^:no-doc in-progress-queue-prefix "goose/in-progress-jobs:")
+(def ^:no-doc process-prefix "goose/processes:")
+(def ^:no-doc heartbeat-prefix "goose/heartbeat:")
 
 (def default-queue "default")
 (def schedule-queue "scheduled-jobs")
@@ -30,11 +30,11 @@
       (str/split (re-pattern (str queue-prefix "*")))
       (second)))
 
-(def prefixed-schedule-queue (prefix-queue schedule-queue))
-(def prefixed-retry-schedule-queue (prefix-queue schedule-queue))
-(def prefixed-dead-queue (prefix-queue dead-queue))
-(def prefixed-cron-queue (prefix-queue cron-queue))
-(def prefixed-cron-entries (str "goose/" cron-entries))
+(def ^:no-doc prefixed-schedule-queue (prefix-queue schedule-queue))
+(def ^:no-doc prefixed-retry-schedule-queue (prefix-queue schedule-queue))
+(def ^:no-doc prefixed-dead-queue (prefix-queue dead-queue))
+(def ^:no-doc prefixed-cron-queue (prefix-queue cron-queue))
+(def ^:no-doc prefixed-cron-entries (str "goose/" cron-entries))
 
 ;;; ======== Redis defaults ========
 (def redis-internal-threads 4)
@@ -58,11 +58,6 @@
 ;;; ======== RabbitMQ defaults ========
 (def rmq-default-url "amqp://guest:guest@localhost:5672")
 (def rmq-producer-channels 5)
-(def rmq-exchange "")
-(def rmq-delay-exchange prefixed-schedule-queue)
-(def rmq-delay-exchange-type "x-delayed-message")
-(def rmq-low-priority 0)
-(def rmq-high-priority 1)
 (def rmq-prefetch-limit 1)
 (def rmq-delay-limit-ms 4294967295) ; (2^32 - 1)
 (def rmq-classic-queue "classic")
@@ -70,3 +65,8 @@
 (def rmq-replication-factor 3)
 (def sync-confirms "sync")
 (def async-confirms "classic")
+(def ^:no-doc rmq-exchange "")
+(def ^:no-doc rmq-delay-exchange prefixed-schedule-queue)
+(def ^:no-doc rmq-delay-exchange-type "x-delayed-message")
+(def ^:no-doc rmq-low-priority 0)
+(def ^:no-doc rmq-high-priority 1)

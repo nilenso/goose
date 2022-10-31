@@ -1,6 +1,6 @@
 (ns goose.api.cron-jobs
-  "API to manage cron-jobs AKA periodic jobs.\\
-  To update a cron entry, call [[goose.client/perform-every]] since it's idempotent.\\
+  "API to manage Periodic Jobs AKA Cron Entries.\\
+  To update a cron entry, call [[goose.client/perform-every]] since it's idempotent.
   - [API wiki](https://github.com/nilenso/goose/wiki/API)"
   (:require
     [goose.broker :as b]))
@@ -11,7 +11,7 @@
   (b/cron-jobs-size broker))
 
 (defn find-by-name
-  "Finds a Cron Job by `:name`."
+  "Finds a Cron Entry by `:name`."
   [broker entry-name]
   (b/cron-jobs-find-by-name broker entry-name))
 

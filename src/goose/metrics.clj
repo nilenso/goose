@@ -5,24 +5,24 @@
     [goose.defaults :as d]
     [goose.utils :as u]))
 
-(defonce jobs-processed "jobs.processed")
-(defonce jobs-success "jobs.succeeded")
-(defonce jobs-failure "jobs.failed")
-(defonce jobs-recovered "jobs.recovered")
+(defonce ^:no-doc jobs-processed "jobs.processed")
+(defonce ^:no-doc jobs-success "jobs.succeeded")
+(defonce ^:no-doc jobs-failure "jobs.failed")
+(defonce ^:no-doc jobs-recovered "jobs.recovered")
 
-(defonce execution-time "job.execution_time")
+(defonce ^:no-doc execution-time "job.execution_time")
 
-(defonce execution-latency "execution.latency")
-(defonce schedule-latency "scheduled.latency")
-(defonce cron-schedule-latency "cron_scheduled.latency")
-(defonce retry-latency "retry.latency")
+(defonce ^:no-doc execution-latency "execution.latency")
+(defonce ^:no-doc schedule-latency "scheduled.latency")
+(defonce ^:no-doc cron-schedule-latency "cron_scheduled.latency")
+(defonce ^:no-doc retry-latency "retry.latency")
 
-(defn format-queue-size [queue]
+(defn ^:no-doc format-queue-size [queue]
   (format "enqueued.%s.size" (d/affix-queue queue)))
-(defonce total-enqueued-size "total_enqueued.size")
-(defonce schedule-queue-size "scheduled_queue.size")
-(defonce periodic-jobs-size "periodic_jobs.size")
-(defonce dead-queue-size "dead_queue.size")
+(defonce ^:no-doc total-enqueued-size "total_enqueued.size")
+(defonce ^:no-doc schedule-queue-size "scheduled_queue.size")
+(defonce ^:no-doc periodic-jobs-size "periodic_jobs.size")
+(defonce ^:no-doc dead-queue-size "dead_queue.size")
 
 (defprotocol Metrics
   "Protocol that Metrics Backends should implement

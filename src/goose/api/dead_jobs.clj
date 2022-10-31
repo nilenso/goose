@@ -1,5 +1,5 @@
 (ns goose.api.dead-jobs
-  "API to manage dead jobs.\\
+  "API to manage dead jobs.
   - [API wiki](https://github.com/nilenso/goose/wiki/API)"
   (:refer-clojure :exclude [pop])
   (:require
@@ -30,7 +30,7 @@
 
 (defn replay-job
   "Re-enqueues given Dead Job to front of queue for execution,
-   after verification of existence.
+   after verification of existence.\\
   Hence, this accepts only 1 job instead of multiple."
   [broker job]
   (b/dead-jobs-replay-job broker job))
@@ -46,9 +46,9 @@
   (b/dead-jobs-delete broker job))
 
 (defn delete-older-than
-  "Delete Dead Jobs older than given epoch-ms."
-  [broker epoch-time-ms]
-  (b/dead-jobs-delete-older-than broker epoch-time-ms))
+  "Deletes Dead Jobs older than given epoch-ms."
+  [broker epoch-ms]
+  (b/dead-jobs-delete-older-than broker epoch-ms))
 
 (defn purge
   "Purges all the Dead Jobs."

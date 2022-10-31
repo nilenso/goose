@@ -24,7 +24,7 @@
        (when-not (= "sleep interrupted" (ex-message e#))
          (log/error e# "Exception occurred")))))
 
-(defn epoch-time-ms
+(defn ^:no-doc epoch-time-ms
   "Returns Unix epoch milliseconds for given java.time.Instant.
    If no instant is given, returns epoch for current time."
   ([] (System/currentTimeMillis))
@@ -80,7 +80,7 @@
     (throw (ex-info "List is empty." {:empty-list list}))
     (nth list (rand-int (count list)))))
 
-(defn with-retry* [retry-count retry-delay-ms fn-to-retry]
+(defn ^:no-doc with-retry* [retry-count retry-delay-ms fn-to-retry]
   (let [res (try
               (fn-to-retry)
               (catch Exception e
@@ -94,5 +94,5 @@
         (recur (dec retry-count) retry-delay-ms fn-to-retry))
       res)))
 
-(defmacro with-retry [{:keys [count retry-delay-ms]} & body]
+(defmacro ^:no-doc with-retry [{:keys [count retry-delay-ms]} & body]
   `(with-retry* ~count ~retry-delay-ms (fn [] ~@body)))

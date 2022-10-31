@@ -80,8 +80,8 @@
     (dead-jobs/replay-n-jobs (:redis-conn this) n))
   (dead-jobs-delete [this job]
     (dead-jobs/delete (:redis-conn this) job))
-  (dead-jobs-delete-older-than [this epoch-time-ms]
-    (dead-jobs/delete-older-than (:redis-conn this) epoch-time-ms))
+  (dead-jobs-delete-older-than [this epoch-ms]
+    (dead-jobs/delete-older-than (:redis-conn this) epoch-ms))
   (dead-jobs-purge [this]
     (dead-jobs/purge (:redis-conn this))))
 
@@ -93,7 +93,7 @@
   [URL Syntax wiki](https://github.com/lettuce-io/lettuce-core/wiki/Redis-URI-and-connection-details#uri-syntax)
 
   `:pool-opts` : Config for connection-pooling.\\
-  Example      : [[goose.defaults/redis-producer-pool-opts], [[:goose.specs.redis/pool-opts]]"
+  Example      : [[d/redis-producer-pool-opts]], [[:goose.specs.redis/pool-opts]]"
   {:url       d/redis-default-url
    :pool-opts nil})
 

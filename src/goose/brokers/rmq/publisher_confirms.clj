@@ -12,10 +12,10 @@
     (log/infof "[ch: %d] ACK for delivery-tag: %d" ch-number delivery-tag)))
 
 (defn default-nack-handler
-  [channel-number delivery-tag multiple]
+  [ch-number delivery-tag multiple]
   (if multiple
-    (log/errorf "[ch: %d] Negative-ACK until delivery-tag: %d" channel-number delivery-tag)
-    (log/errorf "[ch: %d] Negative-ACK for delivery-tag: %d" channel-number delivery-tag)))
+    (log/errorf "[ch: %d] Negative-ACK until delivery-tag: %d" ch-number delivery-tag)
+    (log/errorf "[ch: %d] Negative-ACK for delivery-tag: %d" ch-number delivery-tag)))
 
 (def sync
   {:strategy       d/sync-confirms

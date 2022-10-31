@@ -17,7 +17,7 @@
     [goose.utils :as u]))
 
 (defprotocol Close
-  "Close connections for RabbitMQ broker."
+  "Closes connection to RabbitMQ Message Broker."
   (close [this]))
 
 (defrecord RabbitMQ [rmq-conn channels queue-type publisher-confirms opts]
@@ -76,12 +76,14 @@
   Example               : [[rmq-queue/classic]], [[rmq-queue/quorum]]
 
   `:publisher-confirms` : Strategy for RabbitMQ Publisher Confirms.\\
-  [Publisher Confirms wiki](https://www.rabbitmq.com/confirms.html#publisher-confirms)
+  [Publisher Confirms wiki](https://www.rabbitmq.com/confirms.html#publisher-confirms)\\
+  [Publisher Confirms tutorial](https://www.rabbitmq.com/tutorials/tutorial-seven-java.html)
 
   `:return-listener`    : Handle unroutable messages.\\
+  Receives a map of keys `:reply-code` `:reply-text` `:exchange` `:routing-key` `:properties` `:body`.\\
   Example               : [[return-listener/default]]
 
-  `:shutdown-listener`  : Handle abrupt shutdowns not initialized by application.
+  `:shutdown-listener`  : Handle abrupt RabbitMQ connection shutdowns not initialized by application.
   Example               : [[shutdown-listener/default]]"
   {:settings           {:uri d/rmq-default-url}
    :queue-type         rmq-queue/classic
@@ -96,7 +98,7 @@
   `opts`      : Map of `:settings`, `:queue-type`, `:publisher-confirms`, `:return-listener`, `:shutdown-listener`.\\
   Example     : [[default-opts]]
 
-  `channels` : Count of channel-pool-size for publishing messages.
+  `channels`  : Count of channel-pool-size for publishing messages.
 
   ### Usage
   ```Clojure

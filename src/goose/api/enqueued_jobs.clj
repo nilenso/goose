@@ -1,5 +1,5 @@
 (ns goose.api.enqueued-jobs
-  "API to manage enqueued jobs.\\
+  "API to manage enqueued jobs.
   - [API wiki](https://github.com/nilenso/goose/wiki/API)"
   (:require
     [goose.broker :as b]))
