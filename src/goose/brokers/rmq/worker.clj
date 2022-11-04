@@ -52,7 +52,7 @@
         (m/wrap-metrics)
         (job/wrap-latency)
         (rmq-retry/wrap-failure)
-        (rmq-consumer/wrap-acks))))
+        (rmq-consumer/wrap-recovery-and-acks))))
 
 (defn start
   [{:keys [threads queue queue-type middlewares]

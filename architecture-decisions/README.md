@@ -7,6 +7,7 @@ Vision & Philosophy
 - **Reliable**: Code/Hardware/Network failure shouldn't cause Job/Data loss
 - Cloud-native Architecture
     - Deployments shouldn't cause downtime
+- Extensible
 - Pluggable
 - Multi-broker
 - Scalable

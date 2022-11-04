@@ -30,11 +30,11 @@
   "Map of sample config for StatsD Metric Backend.
 
   ### Keys
-  `:enabled?`    - Boolean flag for enabling/disabling metrics.
+  `:enabled?`    : Boolean flag for enabling/disabling metrics.
 
-  `:host`        - Host of StatsD Aggregator.
+  `:host`        : Host of StatsD Aggregator.
 
-  `:port`        - Port of StatsD Aggregator.
+  `:port`        : Port of StatsD Aggregator.
 
   `:prefix`      : Prefix for all metrics.\\
   Can be a generic term like `\"goose.\"` or specific to microservice name.
@@ -55,6 +55,10 @@
   ### Args
   `opts`  : Map of `:enabled?`, `:host`, `:port`, `:prefix`, `:sample-rate` & `:tags`.\\
   Example : [[default-opts]]
+
+  ### Note
+  Goose library for StatsD, `clj-statsd`, uses agents internally. Post stopping a worker,
+   `(shutdown-agents)` must be called in order to exit the program.
 
   - [Monitoring & Alerting wiki](https://github.com/nilenso/goose/wiki/Monitoring-&-Alerting)"
   [{:keys [enabled? host port prefix] :as opts}]

@@ -24,11 +24,18 @@ Features
 
 Getting Started
 ---------
-
 [![Clojars Project](https://img.shields.io/clojars/v/com.nilenso/goose.svg?labelColor=283C67&color=729AD1&style=for-the-badge&logo=clojure&logoColor=fff)](https://clojars.org/com.nilenso/goose)
 
-### Client
+#### Adding Goose as a dependency
+```Clojure
+;;; Clojure CLI/deps.edn
+com.nilenso/goose {:mvn/version "0.3.0"}
 
+;;; Leiningen/Boot
+[com.nilenso/goose "0.3.0"]
+```
+
+#### Client
 ```Clojure
 (ns my-app
   (:require 
@@ -50,8 +57,7 @@ Getting Started
   (rmq/close rmq-producer))
 ```
 
-### Worker
-
+#### Worker
 ```Clojure
 (ns my-worker
   (:require

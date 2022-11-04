@@ -1,17 +1,21 @@
 (ns ^:no-doc goose.brokers.rmq.consumer
   (:require
     [goose.defaults :as d]
+    [goose.metrics :as m]
     [goose.utils :as u]
 
     [clojure.tools.logging :as log]
     [langohr.basic :as lb]
     [langohr.consumers :as lc]))
 
-(defn wrap-acks
+(defn wrap-recovery-and-acks
   [next]
-  (fn [{:keys                  [ch] :as opts
-        {:keys [delivery-tag]} :metadata}
+  (fn [{{:keys [delivery-tag redelivery?]} :metadata
+        :keys                              [ch metrics-plugin]
+        :as                                opts}
        job]
+    (when redelivery?
+      (m/increment-job-recovery-metric metrics-plugin job))
     (next opts job)
     (lb/ack ch delivery-tag)))
 

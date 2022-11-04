@@ -33,6 +33,13 @@
   (increment [this key value tags] "Increment given key by value.")
   (timing [this key duration tags] "Record duration of given key."))
 
+(defn ^:no-doc increment-job-recovery-metric
+  [metrics-plugin
+   {:keys [execute-fn-sym queue]}]
+  (when (enabled? metrics-plugin)
+    (let [tags {:function execute-fn-sym :queue queue}]
+      (increment metrics-plugin jobs-recovered 1 tags))))
+
 (defn ^:no-doc wrap-metrics
   [next]
   (fn [{:keys [metrics-plugin] :as opts}
