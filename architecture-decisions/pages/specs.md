@@ -10,7 +10,7 @@ Rationale
 - Instrumentation for frequently-used functions is optional, but recommended in Development/Staging env
 
 ### Pros
-- Job enqueue performance improves by 50% when specs are disabled
+- Job enqueue performance improves by 40% when specs are disabled
   - When tested in Development & Staging env, specs can be disabled in production to reduce validations overhead
 - When doing validations manually, most of the code was checking for non-matching patterns `#(not (string? %))`. Spec definitions `string?` are more intuitive & reader-friendly
  
