@@ -13,3 +13,5 @@
 .cpcache/
 .idea/
 goose.iml
+.clj-kondo/
+.lsp/

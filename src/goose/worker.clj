@@ -2,7 +2,6 @@
   (:require
     [goose.broker :as b]
     [goose.defaults :as d]
-    [goose.metrics.statsd :as statsd]
     [goose.specs :as specs]))
 
 (defprotocol Shutdown
@@ -29,20 +28,20 @@
 
   `:graceful-shutdown-sec` : Waiting time for in-progress jobs to complete during shutdown.
 
-  `:metrics-plugin`        : Publish Goose metrics to respective backend.\\
-  Example                  : [[statsd/StatsD]]\\
-  Given value must implement [[goose.metrics/Metrics]] protocol.
-
   #### Optional Keys
   `:middlewares`          : Chain of function/s to run 'around' execution of a Job
   [Middlewares wiki](https://github.com/nilenso/goose/wiki/Middlewares)
 
   `:error-service-config` : Config for error service like Honeybadger, Sentry, etc.\\
-  [Error Handling & Retries wiki](https://github.com/nilenso/goose/wiki/Error-Handling-&-Retries)"
+  [Error Handling & Retries wiki](https://github.com/nilenso/goose/wiki/Error-Handling-&-Retries)
+
+  `:metrics-plugin`        : Publish Goose metrics to respective backend.\\
+  Example                  : [[statsd/StatsD]]\\
+  Given value must implement [[goose.metrics/Metrics]] protocol.
+  If unset or set to `nil`, does not record metrics."
   {:threads               d/worker-threads
    :queue                 d/default-queue
-   :graceful-shutdown-sec d/graceful-shutdown-sec
-   :metrics-plugin        (statsd/new statsd/default-opts)})
+   :graceful-shutdown-sec d/graceful-shutdown-sec})
 
 (defn start
   "Starts a worker process that does multiple things including, but not limited to:

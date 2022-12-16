@@ -164,10 +164,10 @@
   (s/keys :req-un [::broker
                    ::threads
                    ::queue
-                   ::graceful-shutdown-sec
-                   ::metrics-plugin]
+                   ::graceful-shutdown-sec]
           :opt-un [::middlewares
-                   ::error-service-config]))
+                   ::error-service-config
+                   ::metrics-plugin]))
 
 ;;; ============== FDEFs ==============
 (s/fdef c/perform-async
