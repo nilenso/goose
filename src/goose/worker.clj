@@ -42,7 +42,7 @@
   {:threads               d/worker-threads
    :queue                 d/default-queue
    :graceful-shutdown-sec d/graceful-shutdown-sec
-   :metrics-plugin        (statsd/new statsd/default-opts)})
+   :metrics-plugin        (statsd/new {:enabled? false})})
 
 (defn start
   "Starts a worker process that does multiple things including, but not limited to:
