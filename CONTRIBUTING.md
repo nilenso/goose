@@ -9,19 +9,30 @@ Installation
 --------
 
 - [Clojure v1.11+](https://clojure.org/guides/install_clojure)
-- [Redis v6.2.0+](https://redis.io/docs/getting-started/installation/)
-- [RabbitMQ v3.9.0+](https://www.rabbitmq.com/download.html)
-  - [Management Plugin](https://www.rabbitmq.com/management.html#getting-started)
-  - [RabbitMQ Delayed Message Plugin](https://github.com/rabbitmq/rabbitmq-delayed-message-exchange)
+- Infra dependencies (note: for easy testing, use the docker compose manifest)
+  - [Redis v6.2.0+](https://redis.io/docs/getting-started/installation/)
+  - [RabbitMQ v3.9.0+](https://www.rabbitmq.com/download.html)
+    - [Management Plugin](https://www.rabbitmq.com/management.html#getting-started)
+    - [RabbitMQ Delayed Message Plugin](https://github.com/rabbitmq/rabbitmq-delayed-message-exchange)
 - Use `:repl` profile when starting REPL in your IDE
 
-Testing & Linting
+Testing
 --------
 
-- Install [clj-kondo](https://github.com/clj-kondo/clj-kondo/blob/master/doc/install.md#installation-script-macos-and-linux)
+The test suite is mostly integration tests, so use docker-compose to get the containerized Redis and RabbitMQ images for testing purposes.
+
 ```shell
+$ docker-compose up -d                   # Sets up infra required for tests.
 $ clj -X:test :nses '[goose.specs-test]' # Testing only 1 namespace.
 $ clj -X:test                            # Running all tests.
+$ docker-compose down                    # ...when you're done.
+```
+
+Linting
+--------
+- Install [clj-kondo](https://github.com/clj-kondo/clj-kondo/blob/master/doc/install.md#installation-script-macos-and-linux)
+
+```shell
 $ clj-kondo --lint src                   # Linting src dir.
 $ clj-kondo --lint test                  # Linting test dir.
 ```
