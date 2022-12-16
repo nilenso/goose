@@ -2,7 +2,6 @@
   (:require
     [goose.broker :as b]
     [goose.defaults :as d]
-    [goose.metrics.statsd :as statsd]
     [goose.specs :as specs]))
 
 (defprotocol Shutdown
@@ -42,8 +41,7 @@
   If set to `nil`, does not record metrics."
   {:threads               d/worker-threads
    :queue                 d/default-queue
-   :graceful-shutdown-sec d/graceful-shutdown-sec
-   :metrics-plugin        (statsd/new statsd/default-opts)})
+   :graceful-shutdown-sec d/graceful-shutdown-sec})
 
 (defn start
   "Starts a worker process that does multiple things including, but not limited to:
