@@ -38,7 +38,7 @@
   `:metrics-plugin`        : Publish Goose metrics to respective backend.\\
   Example                  : [[statsd/StatsD]]\\
   Given value must implement [[goose.metrics/Metrics]] protocol.
-  If set to `nil`, does not record metrics."
+  If unset or set to `nil`, does not record metrics."
   {:threads               d/worker-threads
    :queue                 d/default-queue
    :graceful-shutdown-sec d/graceful-shutdown-sec})

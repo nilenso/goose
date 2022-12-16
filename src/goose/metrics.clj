@@ -2,9 +2,10 @@
   "Defines protocol for Metrics Backend.
   - [Monitoring & Alerting wiki](https://github.com/nilenso/goose/wiki/Monitoring-&-Alerting)"
   (:require
-   [goose.defaults :as d]
-   [goose.utils :as u]
-   [clojure.tools.logging :as log]))
+    [goose.defaults :as d]
+    [goose.utils :as u]
+
+    [clojure.tools.logging :as log]))
 
 (defonce ^:no-doc jobs-processed "jobs.processed")
 (defonce ^:no-doc jobs-success "jobs.succeeded")
@@ -34,13 +35,13 @@
   (increment [this key value tags] "Increment given key by value.")
   (timing [this key duration tags] "Record duration of given key."))
 
-;; nil behaves equivalent to a disabled metric.
+;;; `nil` behaves equivalent to a disabled metric.
 (extend-protocol Metrics
   nil
   (enabled? [_] false)
-  (gauge [_ _ _ _] (log/error "tried to gauge without a metrics plugin"))
-  (increment [_ _ _ _] (log/error "tried to increment without a metrics plugin"))
-  (timing [_ _ _ _] (log/error "tried to record duration without a metrics plugin")))
+  (gauge [_ _ _ _] (log/error "Called `gauge` on nil metrics-plugin"))
+  (increment [_ _ _ _] (log/error "Called `increment` on nil metrics-plugin"))
+  (timing [_ _ _ _] (log/error "Called `timing` on nil metrics-plugin")))
 
 (defn ^:no-doc increment-job-recovery-metric
   [metrics-plugin
