@@ -1,0 +1,12 @@
+services:
+  redis:
+    image: redis:7.0
+    ports:
+      - 6379:6379
+  rabbitmq:
+    image: heidiks/rabbitmq-delayed-message-exchange:3.9.13-management
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - 5672:5672
