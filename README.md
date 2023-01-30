@@ -26,7 +26,7 @@ Getting Started
 ---------
 [![Clojars Project](https://img.shields.io/clojars/v/com.nilenso/goose.svg?labelColor=283C67&color=729AD1&style=for-the-badge&logo=clojure&logoColor=fff)](https://clojars.org/com.nilenso/goose)
 
-#### Adding Goose as a dependency
+### Add Goose as a dependency
 ```Clojure
 ;;; Clojure CLI/deps.edn
 com.nilenso/goose {:mvn/version "0.3.1"}
@@ -35,10 +35,10 @@ com.nilenso/goose {:mvn/version "0.3.1"}
 [com.nilenso/goose "0.3.1"]
 ```
 
-#### Client
+### Client
 ```Clojure
 (ns my-app
-  (:require 
+  (:require
     [goose.brokers.rmq.broker :as rmq]
     [goose.client :as c]))
 
@@ -57,7 +57,7 @@ com.nilenso/goose {:mvn/version "0.3.1"}
   (rmq/close rmq-producer))
 ```
 
-#### Worker
+### Worker
 ```Clojure
 (ns my-worker
   (:require
@@ -73,13 +73,19 @@ com.nilenso/goose {:mvn/version "0.3.1"}
   (w/stop worker) ; Performs graceful shutsdown.
   (rmq/close rmq-consumer))
 ```
-Refer to wiki for [Redis](https://github.com/nilenso/goose/wiki/Redis), [Periodic Jobs](https://github.com/nilenso/goose/wiki/Periodic-Jobs), [Error Handling](https://github.com/nilenso/goose/wiki/Error-Handling-&-Retries), [Monitoring](https://github.com/nilenso/goose/wiki/Monitoring-&-Alerting), [Production Readiness](https://github.com/nilenso/goose/wiki/Production-Readiness), etc.  
+Refer to wiki for [Redis](https://github.com/nilenso/goose/wiki/Redis), [Periodic Jobs](https://github.com/nilenso/goose/wiki/Periodic-Jobs), [Error Handling](https://github.com/nilenso/goose/wiki/Error-Handling-&-Retries), [Monitoring](https://github.com/nilenso/goose/wiki/Monitoring-&-Alerting), [Production Readiness](https://github.com/nilenso/goose/wiki/Production-Readiness), etc.
 
 Getting Help
 ---------
 [![Get help on Slack](http://img.shields.io/badge/slack-clojurians%20%23goose-F49109?labelColor=3c0c3c&logo=slack&style=for-the-badge)](https://clojurians.slack.com/channels/goose)
 
 Please [open an issue](https://github.com/nilenso/goose/issues/new) or ping us on [#goose @Clojurians slack](https://clojurians.slack.com/channels/goose).
+
+Companies using Goose in Production
+---------
+<a href="https://aspect-analytics.com/">
+  <img src="logo/aspect-analytics.png" title="Aspect Analytics">
+</a>
 
 Contributing
 ---------
