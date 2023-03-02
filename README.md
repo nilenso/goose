@@ -84,10 +84,10 @@ Please [open an issue](https://github.com/nilenso/goose/issues/new) or ping us o
 Companies using Goose in Production
 ---------
 <a href="https://aspect-analytics.com/">
-  <img src="logo/aspect-analytics.png" title="Aspect Analytics" width="150" height="150">
+  <img src="logo/aspect-analytics.png" title="Aspect Analytics" width="150" height="150" />
 </a>
 <a href="https://beecastle.com/">
-  <img src="logo/beecastle.png" title="BeeCastle" width="150" height="150">
+  <img src="logo/beecastle.png" title="BeeCastle" width="150" height="150" />
 </a>
 
 Contributing
@@ -99,7 +99,7 @@ Contributing
 Why the name "Goose"?
 ---------
 <p align="center">
-  <img src="logo/goose-round@2x.png" title="Goose" width="360" height="360">
+  <img src="logo/goose-round@2x.png" title="Goose" width="360" height="360" />
 </p>
 
 Named after [LT Nick 'Goose' Bradshaw](https://topgun.fandom.com/wiki/Nick_Bradshaw), the _sidekick_ to [Captain Pete 'Maverick' Mitchell](https://topgun.fandom.com/wiki/Pete_Mitchell) in Top Gun.
