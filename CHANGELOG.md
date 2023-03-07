@@ -4,14 +4,27 @@ All notable changes to Goose will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## [Unreleased] - 31-Jan-2023
+## [Unreleased] - ???
 
 ### Added
 ### Changed
-- Redis client library from `ptaoussanis/carmine` to `nilenso/crimson`
-
 ### Fixed
 
+## [0.3.2] - 07-Mar-2023
+
+### Added
+### Changed
+### Fixed
+- Fix JDK19 interop with `Thread/sleep`
+
+## [0.3.1] - 16-Dec-2022
+
+### Added
+### Changed
+- Disable statsd metrics initialization by default
+### Fixed
+- Fix compilation error caused by `clj-statsd` initialization
+ 
 ## [0.3.0] - 31-Oct-2022
 
 ### [Goose 0.3.0 Project Board](https://github.com/orgs/nilenso/projects/6)
