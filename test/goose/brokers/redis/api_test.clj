@@ -65,11 +65,11 @@
                        :death-handler-fn-sym `death-handler)
           job-opts (assoc tu/redis-client-opts :retry-opts retry-opts)
           dead-job-id-1 (:id (c/perform-async job-opts `dead-fn 11))
-          _ (Thread/sleep (rand-int 15))
+          _ (Thread/sleep ^long (rand-int 15))
           dead-job-id-2 (:id (c/perform-async job-opts `dead-fn 12))
           _ (doseq [id (range 5)]
               (c/perform-async job-opts `dead-fn id)
-              (Thread/sleep (rand-int 15))) ; Prevent jobs from dying at the same time
+              (Thread/sleep ^long (rand-int 15))) ; Prevent jobs from dying at the same time
           circuit-breaker (atom 0)]
       ; Wait until 4 jobs have died after execution.
       (while (and (> 7 @circuit-breaker) (not= 7 @dead-fn-atom))

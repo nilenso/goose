@@ -36,7 +36,7 @@
           job-opts (assoc tu/rmq-client-opts :retry-opts retry-opts)
           _ (doseq [id (range 4)]
               (c/perform-async job-opts `dead-fn id)
-              (Thread/sleep (rand-int 15))) ; Prevent jobs from dying at the same time
+              (Thread/sleep ^long (rand-int 15))) ; Prevent jobs from dying at the same time
           circuit-breaker (atom 0)]
       ; Wait until 2 jobs have died after execution.
       (while (and (> 4 @circuit-breaker) (not= 4 @dead-fn-atom))
