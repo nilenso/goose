@@ -40,12 +40,12 @@
   "Sleep for given seconds, multiplied by count.
   Sleep duration: (seconds * count) + jitters"
   ([sec]
-   (Thread/sleep (sec->ms sec)))
+   (Thread/sleep ^long (sec->ms sec)))
   ([sec multiplier-count]
-   ;; `Thread/sleep` converts float to long value.
    ;; For sec=3, multiplier-count=5, it sleeps for
    ;; [15,000, 16,000) milliseconds.
-   (Thread/sleep (sec->ms (+ (* sec multiplier-count) (rand))))))
+   (Thread/sleep ^long (+ (sec->ms (* sec multiplier-count))
+                          (rand-int (sec->ms 1))))))
 
 (defmacro ^:no-doc while-pool
   [pool & body]
