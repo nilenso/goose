@@ -90,7 +90,7 @@
     (if (instance? Throwable res)
       (do
         (log/warnf "Exception caught: %s. Retrying in %dms." res retry-delay-ms)
-        (Thread/sleep retry-delay-ms)
+        (Thread/sleep ^long retry-delay-ms)
         (recur (dec retry-count) retry-delay-ms fn-to-retry))
       res)))
 
