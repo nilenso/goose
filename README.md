@@ -4,7 +4,8 @@ Goose
 [![Clojars Project](https://img.shields.io/clojars/v/com.nilenso/goose.svg)](https://clojars.org/com.nilenso/goose)
 [![cljdoc badge](https://cljdoc.org/badge/com.nilenso/goose)](https://cljdoc.org/d/com.nilenso/goose)
 
-A *Reliable, Pluggable & Scalable* background job processing library for Clojure.
+The Next-Level background job processing library for Clojure.
+> **Reliable. Scalable. Pluggable. Extensible.**
 
 Performance
 ---------
