@@ -8,6 +8,7 @@
    - [Guide to Message Broker Integration](https://github.com/nilenso/goose/wiki/Guide-to-Message-Broker-Integration)"
   ;; client/producer
   (enqueue [this job] "Enqueues a Job for async execution.")
+  (enqueue-batch [this batch] "Enqueues a Batch of Jobs for async execution.")
   (schedule [this schedule-epoch-ms job] "Schedules a Job for execution at given epoch-ms.")
   (register-cron [this cron-opts job-description] "Registers a function for periodic execution in cron-jobs style.")
 

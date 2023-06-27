@@ -1,6 +1,7 @@
 (ns goose.client
   "Functions for executing job in async, scheduled or periodic manner."
   (:require
+    [goose.batch :as batch]
     [goose.broker :as b]
     [goose.defaults :as d]
     [goose.job :as j]
@@ -26,6 +27,10 @@
   {:queue      d/default-queue
    :retry-opts retry/default-opts})
 
+(defn accumulate-batch-args
+  [coll & args]
+  (conj coll args))
+
 (defn- register-cron-schedule
   [{:keys [broker queue retry-opts] :as _opts}
    cron-opts
@@ -37,15 +42,18 @@
         cron-entry (b/register-cron broker cron-opts job-description)]
     (select-keys cron-entry [:cron-name :cron-schedule :timezone])))
 
+(defn- create-job
+  [{:keys [queue retry-opts]} execute-fn-sym args]
+  (let [retry-opts (retry/prefix-queue-if-present retry-opts)
+        ready-queue (d/prefix-queue queue)]
+    (j/new execute-fn-sym args queue ready-queue retry-opts)))
+
 (defn- enqueue
-  [{:keys [broker queue retry-opts]}
+  [{:keys [broker] :as opts}
    schedule-epoch-ms
    execute-fn-sym
    args]
-  (let [retry-opts (retry/prefix-queue-if-present retry-opts)
-        ready-queue (d/prefix-queue queue)
-        job (j/new execute-fn-sym args queue ready-queue retry-opts)]
-
+  (let [job (create-job opts execute-fn-sym args)]
     (if schedule-epoch-ms
       (b/schedule broker schedule-epoch-ms job)
       (b/enqueue broker job))))
@@ -157,3 +165,9 @@
   - [Periodic Jobs wiki](https://github.com/nilenso/goose/wiki/Periodic-Jobs)"
   [opts cron-opts execute-fn-sym & args]
   (register-cron-schedule opts cron-opts execute-fn-sym args))
+
+(defn perform-batch
+  ([opts batch-opts execute-fn-sym args-coll]
+   (let [jobs (map #(create-job opts execute-fn-sym %) args-coll)
+         batch (batch/new batch-opts jobs)]
+     (b/enqueue-batch (:broker opts) batch))))
