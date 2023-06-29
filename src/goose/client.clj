@@ -58,7 +58,7 @@
   Example          : [[default-opts]]
 
   `execute-fn-sym` : A fully-qualified function symbol called by worker.\\
-  Example          : ```my-fn`, ```ns-alias/my-fn`, `'fully-qualified-ns/my-fn`
+  Example          : `` `my-fn ``, `` `ns-alias/my-fn ``, `'fully-qualified-ns/my-fn`
 
   `args`           : Variadic values provided in given order when invoking `execute-fn-sym`.\\
    Given values must be serializable by `ptaoussanis/nippy`.
@@ -82,7 +82,7 @@
   `^Instant instant` : `java.time.Instant` at which job should be executed.
 
   `execute-fn-sym`   : A fully-qualified function symbol called by worker.\\
-  Example            : ```my-fn`, ```ns-alias/my-fn`, `'fully-qualified-ns/my-fn`
+  Example            : `` `my-fn ``, `` `ns-alias/my-fn ``, `'fully-qualified-ns/my-fn`
 
   `args`             : Variadic values provided in given order when invoking `execute-fn-sym`.\\
    Given values must be serializable by `ptaoussanis/nippy`.
@@ -107,7 +107,7 @@
   `sec`            : Delay of Job execution in seconds.
 
   `execute-fn-sym` : A fully-qualified function symbol called by worker.\\
-  Example          : ```my-fn`, ```ns-alias/my-fn`, `'fully-qualified-ns/my-fn`
+  Example          : `` `my-fn ``, `` `ns-alias/my-fn ``, `'fully-qualified-ns/my-fn`
 
   `args`           : Variadic values provided in given order when invoking `execute-fn-sym`.\\
    Given values must be serializable by `ptaoussanis/nippy`.
@@ -141,7 +141,7 @@
     - Defaults to system timezone
 
   `execute-fn-sym` : A fully-qualified function symbol called by worker.\\
-  Example          : ```my-fn`, ```ns-alias/my-fn`, `'fully-qualified-ns/my-fn`
+  Example          : `` `my-fn ``, `` `ns-alias/my-fn ``, `'fully-qualified-ns/my-fn`
 
   `args`           : Variadic values provided in given order when invoking `execute-fn-sym`.\\
    Given values must be serializable by `ptaoussanis/nippy`.
