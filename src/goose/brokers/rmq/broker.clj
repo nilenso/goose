@@ -73,7 +73,7 @@
   [Connecting to RabbitMQ using Langohr](http://clojurerabbitmq.info/articles/connecting.html)
 
   `:queue-type`         : `classic` or `quorum` (for replication purpose).\\
-  Example               : [[rmq-queue/classic]], [[rmq-queue/quorum]]
+  Example               : [[goose.brokers.rmq.queue/classic]], [[goose.brokers.rmq.queue/quorum]]
 
   `:publisher-confirms` : Strategy for RabbitMQ Publisher Confirms.\\
   [Publisher Confirms wiki](https://www.rabbitmq.com/confirms.html#publisher-confirms)\\
