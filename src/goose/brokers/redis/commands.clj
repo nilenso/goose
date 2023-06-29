@@ -165,7 +165,7 @@
                   ;; We iterate from the end of the list down to index zero,
                   ;; since lists in Goose represent queues,
                   ;; and the front of a queue is the right side (the tail).
-                  (let [next-cursor (max 0 (dec cursor))
+                  (let [next-cursor (dec cursor)
                         elements (wcar* conn
                                    (car/lrange redis-key (dec cursor) (dec cursor)))]
                     [next-cursor elements]))]
