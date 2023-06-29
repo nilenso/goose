@@ -16,6 +16,9 @@
 ;;; ======= Setup & Teardown ==========
 (use-fixtures :each tu/redis-fixture)
 
+;;; This should be long enough for unit testing.
+(def default-timeout-ms 1000)
+
 (deftest enqueued-jobs-test
   (testing "[redis] enqueued-jobs API"
     (let [job-id (:id (c/perform-async tu/redis-client-opts `tu/my-fn 1))
@@ -29,7 +32,18 @@
         (is (some? (enqueued-jobs/prioritise-execution tu/redis-producer job)))
         (is (enqueued-jobs/delete tu/redis-producer job)))
 
-      (is (enqueued-jobs/purge tu/redis-producer tu/queue)))))
+      (is (enqueued-jobs/purge tu/redis-producer tu/queue))))
+
+  (testing "[redis] enqueued-jobs API over empty list"
+    (let [queues (tu/with-timeout default-timeout-ms
+                   (enqueued-jobs/list-all-queues tu/redis-producer))]
+      (is (and (not= :timed-out queues) (empty? queues))))
+    (let [jobs (tu/with-timeout default-timeout-ms
+                 (enqueued-jobs/find-by-pattern tu/redis-producer tu/queue (constantly true)))]
+      (is (and (not= :timed-out jobs) (empty? jobs))))
+    (let [job-id (str (random-uuid))]
+      (is (nil? (tu/with-timeout default-timeout-ms
+                  (enqueued-jobs/find-by-id tu/redis-producer tu/queue job-id)))))))
 
 (deftest scheduled-jobs-test
   (testing "scheduled-jobs API"
@@ -48,7 +62,15 @@
       (let [job (scheduled-jobs/find-by-id tu/redis-producer job-id2)]
         (is (scheduled-jobs/delete tu/redis-producer job)))
 
-      (is (scheduled-jobs/purge tu/redis-producer)))))
+      (is (scheduled-jobs/purge tu/redis-producer))))
+
+  (testing "[redis] scheduled-jobs API over empty list"
+    (let [jobs (tu/with-timeout default-timeout-ms
+                 (scheduled-jobs/find-by-pattern tu/redis-producer (constantly true)))]
+      (is (and (not= :timed-out jobs) (empty? jobs))))
+    (let [job-id (str (random-uuid))]
+      (is (nil? (tu/with-timeout default-timeout-ms
+                  (scheduled-jobs/find-by-id tu/redis-producer job-id)))))))
 
 (defn death-handler [_ _ _])
 (def dead-fn-atom (atom 0))
@@ -96,7 +118,15 @@
       (is (= 2 (enqueued-jobs/size tu/redis-producer (:queue job-opts))))
 
       (is (dead-jobs/purge tu/redis-producer))
-      (is (= 0 (dead-jobs/replay-n-jobs tu/redis-producer 5))))))
+      (is (= 0 (dead-jobs/replay-n-jobs tu/redis-producer 5)))))
+
+  (testing "[redis] dead-jobs API over empty list"
+    (let [jobs (tu/with-timeout default-timeout-ms
+                 (dead-jobs/find-by-pattern tu/redis-producer (constantly true)))]
+      (is (and (not= :timed-out jobs) (empty? jobs))))
+    (let [job-id (str (random-uuid))]
+      (is (nil? (tu/with-timeout default-timeout-ms
+                  (dead-jobs/find-by-id tu/redis-producer job-id)))))))
 
 (deftest cron-entries-test
   (testing "cron entries API"
