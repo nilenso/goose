@@ -46,7 +46,7 @@
                   (enqueued-jobs/find-by-id tu/redis-producer tu/queue job-id)))))))
 
 (deftest scheduled-jobs-test
-  (testing "scheduled-jobs API"
+  (testing "[redis] scheduled-jobs API"
     (let [job-id1 (:id (c/perform-in-sec tu/redis-client-opts 10 `tu/my-fn 1))
           job-id2 (:id (c/perform-in-sec tu/redis-client-opts 10 `tu/my-fn 2))
           _ (c/perform-in-sec tu/redis-client-opts 10 `tu/my-fn 3)]
