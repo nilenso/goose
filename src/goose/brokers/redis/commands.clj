@@ -43,7 +43,7 @@
      (let [[next-cursor-string items] (scan-fn conn redis-key cursor)
            next-cursor (ensure-int next-cursor-string)]
        (concat items
-               (when-not (zero? next-cursor)
+               (when (pos? next-cursor)
                  (scan-seq conn scan-fn redis-key next-cursor)))))))
 
 (defn run-with-transaction
