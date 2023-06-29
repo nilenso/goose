@@ -98,3 +98,16 @@
   ;; If not shutdown, program won't quit.
   ;; https://stackoverflow.com/questions/38504056/program-wont-end-when-using-clj-statsd
   (shutdown-agents))
+
+;; ref: https://stackoverflow.com/questions/6694530/executing-a-function-with-a-timeout/27550676#answer-27550676
+(defn timeout
+  [timeout-ms callback]
+  (let [fut (future (callback))
+        ret (deref fut timeout-ms :timed-out)]
+    (when (= ret :timed-out)
+      (future-cancel fut))
+    ret))
+
+(defmacro with-timeout
+  [timeout-ms & body]
+  `(timeout ~timeout-ms (fn [] ~@body)))
