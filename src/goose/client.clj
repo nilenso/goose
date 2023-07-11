@@ -167,6 +167,7 @@
   (register-cron-schedule opts cron-opts execute-fn-sym args))
 
 (defn perform-batch
+  "Enqueues a batch of jobs for async execution."
   ([opts batch-opts execute-fn-sym args-coll]
    (let [jobs (map #(create-job opts execute-fn-sym %) args-coll)
          batch (batch/new batch-opts jobs)]
