@@ -4,6 +4,7 @@
     [goose.brokers.redis.api.dead-jobs :as dead-jobs]
     [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
     [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
+    [goose.brokers.redis.batch :as batch]
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.brokers.redis.connection :as redis-connection]
     [goose.brokers.redis.cron :as cron]
@@ -18,6 +19,10 @@
     [this job]
     (redis-cmds/enqueue-back (:redis-conn this) (:ready-queue job) job)
     (select-keys job [:id]))
+  (enqueue-batch
+    [this batch]
+    (batch/enqueue (:redis-conn this) batch)
+    (select-keys batch [:id]))
   (schedule [this schedule-epoch-ms job]
     (redis-scheduler/run-at (:redis-conn this) schedule-epoch-ms job))
   (register-cron [this cron-opts job-description]
