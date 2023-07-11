@@ -20,6 +20,7 @@
 (def cron-entries "cron-entries")
 (def enqueued-job-set "enqueued")
 (def successful-job-set "successful")
+(def retrying-job-set "retrying")
 (def dead-job-set "dead")
 
 (def protected-queues [schedule-queue dead-queue cron-queue cron-entries])
@@ -71,7 +72,7 @@
 (def rmq-default-url "amqp://guest:guest@localhost:5672")
 (def rmq-producer-channels 5)
 (def rmq-prefetch-limit 1)
-(def rmq-delay-limit-ms 4294967295) ; (2^32 - 1)
+(def rmq-delay-limit-ms 4294967295)                         ; (2^32 - 1)
 (def rmq-classic-queue "classic")
 (def rmq-quorum-queue "quorum")
 (def rmq-replication-factor 3)

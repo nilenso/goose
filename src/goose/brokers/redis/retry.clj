@@ -39,10 +39,7 @@
     (try
       (next opts job)
       (catch Exception ex
-        (let [failed-job (goose.retry/set-failed-config job ex)
-              retry-count (get-in failed-job [:state :retry-count])
-              max-retries (get-in failed-job [:retry-opts :max-retries])]
-          (if (< retry-count max-retries)
-            (retry-job opts failed-job ex)
-            (bury-job opts failed-job ex)))))))
-
+        (let [failed-job (goose.retry/set-failed-config job ex)]
+          (if (goose.retry/max-retries-reached? failed-job)
+            (bury-job opts failed-job ex)
+            (retry-job opts failed-job ex)))))))
