@@ -110,6 +110,9 @@
        (filter match?)
        (doall)))
 
+(defn move-between-sets [conn src dst elem]
+  (wcar* conn (car/smove src dst elem)))
+
 ;;; ============== Lists ===============
 ;;; ===== FRONT/BACK -> RIGHT/LEFT =====
 (defn enqueue-back [conn list element]
