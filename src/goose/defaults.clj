@@ -11,12 +11,16 @@
 (def ^:no-doc in-progress-queue-prefix "goose/in-progress-jobs:")
 (def ^:no-doc process-prefix "goose/processes:")
 (def ^:no-doc heartbeat-prefix "goose/heartbeat:")
+(def ^:no-doc batch-prefix "goose/batch:")
 
 (def default-queue "default")
 (def schedule-queue "scheduled-jobs")
 (def dead-queue "dead-jobs")
 (def cron-queue "cron-schedules")
 (def cron-entries "cron-entries")
+(def enqueued-job-set "enqueued")
+(def successful-job-set "successful")
+(def dead-job-set "dead")
 
 (def protected-queues [schedule-queue dead-queue cron-queue cron-entries])
 
@@ -29,6 +33,14 @@
   (-> queue
       (str/split (re-pattern (str queue-prefix "*")))
       (second)))
+
+(defn ^:no-doc prefix-batch
+  [batch-id]
+  (str batch-prefix batch-id))
+
+(defn ^:no-doc construct-batch-job-set
+  [batch-id set]
+  (str batch-prefix batch-id "/" set))
 
 (def ^:no-doc prefixed-schedule-queue (prefix-queue schedule-queue))
 (def ^:no-doc prefixed-retry-schedule-queue (prefix-queue schedule-queue))
