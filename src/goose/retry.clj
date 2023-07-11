@@ -26,6 +26,11 @@
      (* (rand-int 20) (inc retry-count))
      (reduce * (repeat 4 retry-count)))) ; retry-count^4
 
+(defn max-retries-reached?
+  [{{:keys [retry-count]} :state
+    {:keys [max-retries]} :retry-opts}]
+  (>= retry-count max-retries))
+
 (def default-opts
   "Map of sample configs for error handling & retries.\\
   A Job is considered to fail when it throws an exception during execution.\\
@@ -83,5 +88,5 @@
 (defn ^:no-doc set-failed-config
   [job ex]
   (assoc
-    job :state
-        (failure-state job ex)))
+   job :state
+   (failure-state job ex)))
