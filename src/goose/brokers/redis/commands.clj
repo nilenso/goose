@@ -57,6 +57,10 @@
       (reset! return-value (f)))
     @return-value))
 
+(defn atomic
+  [conn f]
+  (car/atomic conn atomic-lock-attempts (f)))
+
 (defmacro with-transaction
   "Runs `body` inside a Carmine `atomic` block.
   `body` must call `car/multi`."
