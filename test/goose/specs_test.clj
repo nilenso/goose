@@ -47,6 +47,15 @@
       #(c/perform-every tu/redis-client-opts (assoc cron-opts :cron-schedule "invalid") `tu/my-fn)
       #(c/perform-every tu/redis-client-opts (assoc cron-opts :timezone "invalid-zone-id") `tu/my-fn))
 
+    ; :batch-opts
+    (let [batch-opts {:callback-fn-sym `prn}]
+      #(c/perform-batch tu/redis-client-opts batch-opts `single-arity-fn [1 2])
+      #(c/perform-batch tu/redis-client-opts batch-opts `unresolvable-fn [["foo" "bar"]])
+      #(c/perform-batch tu/redis-client-opts batch-opts `single-arity-fn {1 2})
+      #(c/perform-batch tu/redis-client-opts
+                        (assoc batch-opts :callback-fn-sym `unresolvable-fn)
+                        `single-arity-fn [["foo" "bar"]]))
+
     ;; Common specs
     ;; :broker
     #(c/perform-async (assoc tu/redis-client-opts :broker :invalid) `tu/my-fn)
