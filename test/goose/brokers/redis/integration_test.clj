@@ -10,6 +10,7 @@
     [goose.utils :as u]
     [goose.worker :as w]
 
+    [clojure.string :as str]
     [clojure.test :refer [deftest is testing use-fixtures]])
   (:import
     [clojure.lang ExceptionInfo]
@@ -184,3 +185,44 @@
       (is (= error-svc-cfg (deref @death-error-service 1 :death-error-svc-cfg-timed-out)))
       (is (= 2 @dead-job-run-count))
       (w/stop worker))))
+
+;;; ======= TEST: Batch async execution ==========
+(def batch-exec-count (atom 0))
+(def batch-args-count (atom 0))
+(def batch-args-acc (atom (vector)))
+(def perform-batch-fn-executed (atom (promise)))
+(defn perform-batch-fn [arg]
+  (swap! batch-args-acc conj (vector arg))
+  (swap! batch-exec-count inc)
+  (when (= @batch-exec-count @batch-args-count)
+    (deliver @perform-batch-fn-executed @batch-args-acc)))
+
+; TODO: replace nil with a callback-fn-sym when callback is implemented
+(def batch-opts {:callback-fn-sym nil})
+
+(deftest perform-batch-test
+  (testing "Goose executes a batch asynchronously"
+    (let [args (-> []
+                   (c/accumulate-batch-args "arg-one")
+                   (c/accumulate-batch-args "arg-two"))]
+      (reset! perform-batch-fn-executed (promise))
+      (reset! batch-exec-count 0)
+      (reset! batch-args-count (count args))
+      (let [batch-id (:id (c/perform-batch
+                            tu/redis-client-opts
+                            batch-opts
+                            `perform-batch-fn
+                            args))
+            worker (w/start tu/redis-worker-opts)
+            queue (:queue tu/redis-client-opts)]
+        (is (uuid? (UUID/fromString batch-id))
+            "perform-batch should return a map of id with a uuid value")
+        (is (= (deref @perform-batch-fn-executed 100 :e2e-test-timed-out) args)
+            "Worker should execute on the args passed to perform-batch")
+        (is (empty? (redis-cmds/find-in-list
+                      tu/redis-conn
+                      (d/prefix-queue queue)
+                      #(str/includes? % batch-id)
+                      2000))
+            "Ready queue should not contain any jobs that belong to the batch after execution")
+        (w/stop worker)))))
