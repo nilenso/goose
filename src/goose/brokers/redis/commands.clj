@@ -113,6 +113,10 @@
 (defn move-between-sets [conn src dst elem]
   (wcar* conn (car/smove src dst elem)))
 
+(defn set-members [conn key]
+  (->> (wcar* conn (car/smembers key))
+    (set)))
+
 ;;; ============== Lists ===============
 ;;; ===== FRONT/BACK -> RIGHT/LEFT =====
 (defn enqueue-back [conn list element]
@@ -245,3 +249,13 @@
 
 (defn del-from-sorted-set-until [conn sorted-set score]
   (wcar* conn (car/zremrangebyscore sorted-set sorted-set-min score)))
+
+;;; ============ Hashes ============
+
+(defn parse-map [conn hash]
+  (wcar* conn (car/parse-map (car/hgetall hash) :keywordize)))
+
+;;; ============ Misc ============
+
+(defn exists [conn key]
+  (wcar* conn (car/exists key)))
