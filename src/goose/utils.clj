@@ -102,3 +102,8 @@
 
 (defmacro ^:no-doc with-retry [{:keys [count retry-delay-ms]} & body]
   `(with-retry* ~count ~retry-delay-ms (fn [] ~@body)))
+
+(defn ^:no-doc flat-sequence->map [coll]
+  (->>
+    (partition 2 coll)
+    (reduce (fn [map [k v]] (assoc map (keyword k) v)) {})))

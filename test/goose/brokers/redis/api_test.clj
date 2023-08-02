@@ -2,6 +2,7 @@
   (:require
     [goose.api.cron-jobs :as cron-jobs]
     [goose.api.dead-jobs :as dead-jobs]
+    [goose.api.batch :as batch]
     [goose.api.enqueued-jobs :as enqueued-jobs]
     [goose.api.scheduled-jobs :as scheduled-jobs]
     [goose.client :as c]
@@ -201,3 +202,25 @@
              (-> (cron-jobs/find-by-name tu/redis-producer "my-cron-entry")
                  (:job-description)
                  (select-keys [:execute-fn-sym :args])))))))
+
+(deftest batch-test
+  (testing "[redis] batch API"
+    (let [batch-id (:id (goose.client/perform-batch tu/redis-client-opts
+                                                    {}
+                                                    `tu/my-fn
+                                                    (-> []
+                                                        (c/accumulate-batch-args "arg-one")
+                                                        (c/accumulate-batch-args "arg-two"))))
+          expected-batch {:id         batch-id
+                          :status     "in-progress"
+                          :total      2
+                          :enqueued   2
+                          :retrying   0
+                          :successful 0
+                          :dead       0}
+          {:keys [created-at] :as batch} (batch/status tu/redis-producer batch-id)]
+      (is (= expected-batch (dissoc batch :created-at)))
+      (is (Long/parseLong created-at))))
+  (testing "[redis] batch API with invalid id"
+    (is (nil? (batch/status tu/redis-producer
+                            (str (random-uuid)))))))
