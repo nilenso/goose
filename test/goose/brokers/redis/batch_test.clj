@@ -97,7 +97,7 @@
   (testing "Job state transitioned from enqueued -> dead on job failure without retries"
     (let [job (assoc job :retry-opts {:max-retries 0})]
       (redis-cmds/add-to-set (:redis-conn opts) enqueued-job-set job-id)
-      (is (thrown? Exception #"Exception"
+      (is (thrown-with-msg? Exception #"Exception"
                    ((redis-batch/update-state (fn [_opts _job]
                                                 (throw (Exception. "Exception"))))
                     opts job)))
@@ -143,7 +143,6 @@
                                     successful-job-set)))
       (is (= 0 (redis-cmds/set-size (:redis-conn opts)
                                     dead-job-set))))))
-
 
 (deftest retrying-to-dead
   (testing "Job state transitioned from retrying -> dead on exhausting job retries"
