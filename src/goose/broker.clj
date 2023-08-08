@@ -57,4 +57,7 @@
   (dead-jobs-replay-n-jobs [this n] "Re-enqueues n oldest Dead Jobs to front of queue for execution.")
   (dead-jobs-delete [this job] "Deletes given Dead Job.")
   (dead-jobs-delete-older-than [this epoch-ms] "Deletes Dead Jobs older than given epoch-ms.")
-  (dead-jobs-purge [this] "Purges all the Dead Jobs."))
+  (dead-jobs-purge [this] "Purges all the Dead Jobs.")
+
+  ;; batch API
+  (batch-status [this id] "Finds a Batch by `:id`"))
