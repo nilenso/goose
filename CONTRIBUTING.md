@@ -55,3 +55,21 @@ These aren't exhaustive, but majorly inspired from [The Clojure Style Guide](htt
 - In specs, use `set` as a predicate for equality/contains functionality
 - Use compact metadata notation for flags
 - Follow [comments](https://guide.clojure.style/#comments) & [docstrings](https://guide.clojure.style/#documentation) guidelines
+
+Documentation Guidelines
+--------
+
+- Every new feature should have an ADR, well-formatted docstrings & a Wiki Page.
+- ADRs (Architecture Decision Records) should be added to [this folder](https://github.com/nilenso/goose/tree/main/architecture-decisions).
+- Docstrings serve 3 purposes:
+  1. Record the _How and What_ of an external function
+  1. Document usage of a function and meaning of its args
+  1. Beautify documentation of Goose APIs on [cljdoc](https://cljdoc.org/d/com.nilenso/goose/), a documentation website for Clojure community
+- When writing docstrings, follow these guidelines:
+  - Put code logic/reasoning in code-comments & only cover usage of a function in docstrings.
+  - Format docstrings in markdown for parsing by Cljdoc.
+  - Capitalize the first line.
+  - Use double backslashes (`\\`) for line break when a new line isn't feasible.
+  - Wrap positional args with backtick (example: `:broker`).
+  - Link to other functions/data in Goose using [API Wikilinks syntax](https://github.com/cljdoc/cljdoc/blob/master/doc/userguide/for-library-authors.adoc#use-api-wikilinks-from-docstrings) (example: `[[goose.retry/default-opts]]`).
+    - In API Wikilinks, use fully-qualified namespaces and avoid alias or relative paths for namespaces.

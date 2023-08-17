@@ -73,18 +73,18 @@
   [Connecting to RabbitMQ using Langohr](http://clojurerabbitmq.info/articles/connecting.html)
 
   `:queue-type`         : `classic` or `quorum` (for replication purpose).\\
-  Example               : [[rmq-queue/classic]], [[rmq-queue/quorum]]
+  Example               : [[goose.brokers.rmq.queue/classic]], [[goose.brokers.rmq.queue/quorum]]
 
   `:publisher-confirms` : Strategy for RabbitMQ Publisher Confirms.\\
-  [Publisher Confirms wiki](https://www.rabbitmq.com/confirms.html#publisher-confirms)\\
-  [Publisher Confirms tutorial](https://www.rabbitmq.com/tutorials/tutorial-seven-java.html)
+  Wiki & Tutorial       : [Publisher Confirms wiki](https://www.rabbitmq.com/confirms.html#publisher-confirms), [Publisher Confirms tutorial](https://www.rabbitmq.com/tutorials/tutorial-seven-java.html)\\
+  Example               : [[goose.brokers.rmq.publisher-confirms/sync]], [[goose.brokers.rmq.publisher-confirms/async]]
 
   `:return-listener`    : Handle unroutable messages.\\
   Receives a map of keys `:reply-code` `:reply-text` `:exchange` `:routing-key` `:properties` `:body`.\\
-  Example               : [[return-listener/default]]
+  Example               : [[goose.brokers.rmq.return-listener/default]]
 
-  `:shutdown-listener`  : Handle abrupt RabbitMQ connection shutdowns not initialized by application.
-  Example               : [[shutdown-listener/default]]"
+  `:shutdown-listener`  : Handle abrupt RabbitMQ connection shutdowns not initialized by application.\\
+  Example               : [[goose.brokers.rmq.shutdown-listener/default]]"
   {:settings           {:uri d/rmq-default-url}
    :queue-type         rmq-queue/classic
    :publisher-confirms publisher-confirms/sync

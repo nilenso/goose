@@ -25,7 +25,7 @@
      "x-quorum-initial-group-size" replication-factor}))
 
 (def ^:private declared-queues (atom #{}))
-(defn clear-cache [] (reset! declared-queues #{}))
+(defn ^:no-doc clear-cache [] (reset! declared-queues #{}))
 
 (defn ^:no-doc declare
   [ch {:keys [queue] :as queue-opts}]

@@ -9,10 +9,16 @@
     (java.net InetAddress)
     (java.time Instant)))
 
-(defn encode [x]
+(defn encode
+  "Serializes input to a byte array using `taoensso.nippy/freeze`.\\
+   To freeze custom types, extend the Clojure reader or use `taoensso.nippy/extend-freeze`."
+  [x]
   (nippy/freeze x))
 
-(defn decode [o]
+(defn decode
+  "Deserializes a frozen Nippy byte array to its original Clojure data type.\\
+   To thaw custom types, extend the Clojure reader or use `taoensso.nippy/extend-thaw`."
+  [o]
   (nippy/thaw o))
 
 (defmacro ^:no-doc log-on-exceptions
