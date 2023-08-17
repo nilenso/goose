@@ -92,7 +92,7 @@
   `:url`       : URL to connect to Redis.\\
   [URL Syntax wiki](https://github.com/lettuce-io/lettuce-core/wiki/Redis-URI-and-connection-details#uri-syntax)
 
-  `:pool-opts` : Config for connection-pooling.\\
+  `:pool-opts` : Config for connection-pooling. Refer to `goose.specs.redis/pool-opts` for allowed spec of pool opts.\\
   Example      : [[goose.defaults/redis-producer-pool-opts]]"
   {:url       d/redis-default-url
    :pool-opts nil})
@@ -124,7 +124,7 @@
   Example                           : [[default-opts]]
 
   `scheduler-polling-interval-sec`  : Interval at which to poll Redis for scheduled jobs.\\
-  Acceptable values                 : 1-60
+  Acceptable values                 : `1-60`
 
   ### Usage
   ```Clojure
