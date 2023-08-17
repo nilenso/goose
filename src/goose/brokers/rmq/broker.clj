@@ -81,10 +81,10 @@
 
   `:return-listener`    : Handle unroutable messages.\\
   Receives a map of keys `:reply-code` `:reply-text` `:exchange` `:routing-key` `:properties` `:body`.\\
-  Example               : [[return-listener/default]]
+  Example               : [[goose.brokers.rmq.return-listener/default]]
 
   `:shutdown-listener`  : Handle abrupt RabbitMQ connection shutdowns not initialized by application.
-  Example               : [[shutdown-listener/default]]"
+  Example               : [[goose.brokers.rmq.shutdown-listener/default]]"
   {:settings           {:uri d/rmq-default-url}
    :queue-type         rmq-queue/classic
    :publisher-confirms publisher-confirms/sync

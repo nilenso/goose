@@ -21,7 +21,7 @@
   Example       : [[goose.defaults/default-queue]]
 
   `:retry-opts` : Configuration for handling Job failure.\\
-  Example       : [[retry/default-opts]]\\
+  Example       : [[goose.retry/default-opts]]\\
   [Error Handling & Retries wiki](https://github.com/nilenso/goose/wiki/Error-Handling-&-Retries)"
   {:queue      d/default-queue
    :retry-opts retry/default-opts})
