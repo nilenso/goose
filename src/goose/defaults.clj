@@ -58,6 +58,8 @@
 (def redis-cron-names-pop-limit 50)
 (def redis-heartbeat-sleep-sec 15)
 (def redis-heartbeat-expire-sec 60)
+(def redis-batch-lock-timeout-ms 100)
+(def redis-batch-lock-wait-ms 50)
 (def redis-producer-pool-opts
   {:max-total-per-key 5
    :max-idle-per-key  5

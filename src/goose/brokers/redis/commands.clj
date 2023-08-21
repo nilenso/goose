@@ -257,3 +257,6 @@
 ;;; ============ Misc ============
 (defn exists [conn key]
   (wcar* conn (car/exists key)))
+
+(defn ttl [conn key]
+  (wcar* conn (car/ttl key)))
