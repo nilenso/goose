@@ -27,7 +27,7 @@
                                (set-batch-state batch)
                                (enqueue-jobs (:jobs batch))))
 
-(defn update-state [next]
+(defn wrap-state-update [next]
   (fn [{:keys [redis-conn] :as opts}
        {:keys [id batch-id] :as job}]
     (if batch-id
