@@ -1,11 +1,11 @@
 (ns goose.brokers.redis.batch-test
   (:require
-    [clojure.test :refer [deftest is testing use-fixtures]]
     [goose.brokers.redis.batch :as redis-batch]
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]
+    [goose.test-utils :as tu]
 
-    [goose.test-utils :as tu]))
+    [clojure.test :refer [deftest is testing use-fixtures]]))
 
 ;;; ======= Setup & Teardown ==========
 (use-fixtures :each tu/redis-fixture)
@@ -66,7 +66,7 @@
 (deftest enqueued-to-successful
   (testing "Job state is transitioned from enqueued -> successful on successful job execution"
     (redis-cmds/add-to-set (:redis-conn opts) enqueued-job-set job-id)
-    ((redis-batch/update-state (fn [_opts _job] "Function executed"))
+    ((redis-batch/wrap-state-update (fn [_opts _job] "Function executed"))
      opts job)
     (is (= 0 (redis-cmds/set-size (:redis-conn opts)
                                   enqueued-job-set)))
@@ -81,8 +81,8 @@
   (testing "Job state is transitioned from enqueued -> retrying on job failure"
     (redis-cmds/add-to-set (:redis-conn opts) enqueued-job-set job-id)
     (is (thrown-with-msg? Exception #"Exception"
-                          ((redis-batch/update-state (fn [_opts _job]
-                                                       (throw (Exception. "Exception"))))
+                          ((redis-batch/wrap-state-update (fn [_opts _job]
+                                                            (throw (Exception. "Exception"))))
                            opts job)))
     (is (= 0 (redis-cmds/set-size (:redis-conn opts)
                                   enqueued-job-set)))
@@ -98,9 +98,9 @@
     (let [job (assoc job :retry-opts {:max-retries 0})]
       (redis-cmds/add-to-set (:redis-conn opts) enqueued-job-set job-id)
       (is (thrown-with-msg? Exception #"Exception"
-                   ((redis-batch/update-state (fn [_opts _job]
-                                                (throw (Exception. "Exception"))))
-                    opts job)))
+                            ((redis-batch/wrap-state-update (fn [_opts _job]
+                                                              (throw (Exception. "Exception"))))
+                             opts job)))
       (is (= 0 (redis-cmds/set-size (:redis-conn opts)
                                     enqueued-job-set)))
       (is (= 1 (redis-cmds/set-size (:redis-conn opts)
@@ -115,7 +115,7 @@
     (let [job (assoc job :state {:error       "Exception"
                                  :retry-count 0})]
       (redis-cmds/add-to-set (:redis-conn opts) retry-job-set job-id)
-      ((redis-batch/update-state (fn [_opts _job] "Function Executed")) opts job)
+      ((redis-batch/wrap-state-update (fn [_opts _job] "Function Executed")) opts job)
       (is (= 0 (redis-cmds/set-size (:redis-conn opts)
                                     retry-job-set)))
       (is (= 1 (redis-cmds/set-size (:redis-conn opts)
@@ -132,8 +132,8 @@
                          :retry-opts {:max-retries 2})
           _ (redis-cmds/add-to-set (:redis-conn opts) retry-job-set job-id)]
       (is (thrown-with-msg? Exception #"Exception"
-                            ((redis-batch/update-state (fn [_opts _job]
-                                                         (throw (Exception. "Exception"))))
+                            ((redis-batch/wrap-state-update (fn [_opts _job]
+                                                              (throw (Exception. "Exception"))))
                              opts job)))
 
       (is (= 1 (redis-cmds/set-size (:redis-conn opts) retry-job-set)))
@@ -150,8 +150,8 @@
                                  :retry-count 0})
           _ (redis-cmds/add-to-set (:redis-conn opts) retry-job-set job-id)]
       (is (thrown-with-msg? Exception #"Exception"
-                            ((redis-batch/update-state (fn [_opts _job]
-                                                         (throw (Exception. "Exception"))))
+                            ((redis-batch/wrap-state-update (fn [_opts _job]
+                                                              (throw (Exception. "Exception"))))
                              opts job)))
       (is (= 0 (redis-cmds/set-size (:redis-conn opts)
                                     retry-job-set)))

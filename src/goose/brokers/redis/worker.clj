@@ -51,7 +51,7 @@
     (-> call
         (m/wrap-metrics)
         (job/wrap-latency)
-        (batch/update-state)
+        (batch/wrap-state-update)
         (redis-retry/wrap-failure))))
 
 (defn start
