@@ -14,9 +14,7 @@
      :created-at      (u/epoch-time-ms)}))
 
 (defn status-from-counts
-  [{:keys [successful dead]}
-   total]
+  [{:keys [enqueued retrying]}]
   (cond
-    (= (+ successful dead) total) status-complete
+    (= 0 (+ enqueued retrying)) status-complete
     :else status-in-progress))
-
