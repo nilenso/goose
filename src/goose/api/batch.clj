@@ -10,7 +10,7 @@
                 (reduce +))
         status {:id         (get-in batch [:batch-state :id])
                 :created-at (get-in batch [:batch-state :created-at])
-                :status     (batch/status-from-counts counts total)
+                :status     (batch/status-from-counts counts)
                 :total      total}]
     (merge status counts)))
 
