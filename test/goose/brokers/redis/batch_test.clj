@@ -71,9 +71,15 @@
 
 ;;;; ======= TEST: Batch state update middleware ===========
 
+(defn redis-set-batch-state [conn batch]
+  (let [batch-state-key (d/prefix-batch batch-id)
+        batch-state (redis-batch/batch-state batch)]
+    (redis-cmds/hmset* conn batch-state-key batch-state)))
+
 (deftest enqueued-to-successful
   (testing "Job state is transitioned from enqueued -> successful on successful job execution"
     (redis-cmds/add-to-set (:redis-conn opts) enqueued-job-set job-id)
+    (redis-set-batch-state (:redis-conn opts) batch)
     ((redis-batch/wrap-state-update (fn [_opts _job] "Function executed"))
      opts job)
     (is (= 0 (redis-cmds/set-size (:redis-conn opts)
@@ -87,6 +93,7 @@
 
 (deftest enqueued-to-retrying
   (testing "Job state is transitioned from enqueued -> retrying on job failure"
+    (redis-set-batch-state (:redis-conn opts) batch)
     (redis-cmds/add-to-set (:redis-conn opts) enqueued-job-set job-id)
     (is (thrown-with-msg? Exception #"Exception"
                           ((redis-batch/wrap-state-update (fn [_opts _job]
@@ -104,6 +111,7 @@
 (deftest enqueued-to-dead
   (testing "Job state transitioned from enqueued -> dead on job failure without retries"
     (let [job (assoc job :retry-opts {:max-retries 0})]
+      (redis-set-batch-state (:redis-conn opts) batch)
       (redis-cmds/add-to-set (:redis-conn opts) enqueued-job-set job-id)
       (is (thrown-with-msg? Exception #"Exception"
                             ((redis-batch/wrap-state-update (fn [_opts _job]
@@ -122,6 +130,7 @@
   (testing "Job state transitioned from retrying -> successful on successful execution of retrying job"
     (let [job (assoc job :state {:error       "Exception"
                                  :retry-count 0})]
+      (redis-set-batch-state (:redis-conn opts) batch)
       (redis-cmds/add-to-set (:redis-conn opts) retry-job-set job-id)
       ((redis-batch/wrap-state-update (fn [_opts _job] "Function Executed")) opts job)
       (is (= 0 (redis-cmds/set-size (:redis-conn opts)
@@ -137,8 +146,9 @@
   (testing "Job state remains in retrying on failure of retrying job"
     (let [job (assoc job :state {:error       "Exception"
                                  :retry-count 0}
-                         :retry-opts {:max-retries 2})
-          _ (redis-cmds/add-to-set (:redis-conn opts) retry-job-set job-id)]
+                         :retry-opts {:max-retries 2})]
+      (redis-set-batch-state (:redis-conn opts) batch)
+      (redis-cmds/add-to-set (:redis-conn opts) retry-job-set job-id)
       (is (thrown-with-msg? Exception #"Exception"
                             ((redis-batch/wrap-state-update (fn [_opts _job]
                                                               (throw (Exception. "Exception"))))
@@ -155,8 +165,9 @@
 (deftest retrying-to-dead
   (testing "Job state transitioned from retrying -> dead on exhausting job retries"
     (let [job (assoc job :state {:error       "Exception"
-                                 :retry-count 0})
-          _ (redis-cmds/add-to-set (:redis-conn opts) retry-job-set job-id)]
+                                 :retry-count 0})]
+      (redis-set-batch-state (:redis-conn opts) batch)
+      (redis-cmds/add-to-set (:redis-conn opts) retry-job-set job-id)
       (is (thrown-with-msg? Exception #"Exception"
                             ((redis-batch/wrap-state-update (fn [_opts _job]
                                                               (throw (Exception. "Exception"))))
