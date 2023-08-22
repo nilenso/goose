@@ -251,12 +251,22 @@
   (wcar* conn (car/zremrangebyscore sorted-set sorted-set-min score)))
 
 ;;; ============ Hashes ============
+
+(defn hset [conn hash & field_value]
+  (wcar* conn (apply car/hset hash field_value)))
+
+(defn hmset* [conn hash m]
+  (wcar* conn (car/hmset* hash m)))
+
 (defn parse-map [conn hash]
   (wcar* conn (car/parse-map (car/hgetall hash) :keywordize)))
 
 ;;; ============ Misc ============
 (defn exists [conn key]
   (wcar* conn (car/exists key)))
+
+(defn expire [conn key sec]
+  (wcar* conn (car/expire key sec)))
 
 (defn ttl [conn key]
   (wcar* conn (car/ttl key)))

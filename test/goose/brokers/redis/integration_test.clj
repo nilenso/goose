@@ -191,14 +191,17 @@
 (def batch-args-count (atom 0))
 (def batch-args-acc (atom (vector)))
 (def perform-batch-fn-executed (atom (promise)))
+(def callback-fn-executed (atom (promise)))
 (defn perform-batch-fn [arg]
   (swap! batch-args-acc conj (vector arg))
   (swap! batch-exec-count inc)
   (when (= @batch-exec-count @batch-args-count)
     (deliver @perform-batch-fn-executed @batch-args-acc)))
+(defn perform-batch-callback-fn [args]
+  (deliver @callback-fn-executed args))
 
-; TODO: replace nil with a callback-fn-sym when callback is implemented
-(def batch-opts {:callback-fn-sym nil})
+(def batch-opts {:callback-fn-sym `perform-batch-callback-fn
+                 :linger-in-hours 1})
 
 (deftest perform-batch-test
   (testing "Goose executes a batch asynchronously"
@@ -208,6 +211,7 @@
       (reset! perform-batch-fn-executed (promise))
       (reset! batch-exec-count 0)
       (reset! batch-args-count (count args))
+      (reset! callback-fn-executed (promise))
       (let [batch-id (:id (c/perform-batch
                             tu/redis-client-opts
                             batch-opts
@@ -219,6 +223,10 @@
             "perform-batch should return a map of id with a uuid value")
         (is (= (deref @perform-batch-fn-executed 100 :e2e-test-timed-out) args)
             "Worker should execute on the args passed to perform-batch")
+        (is (= (deref @callback-fn-executed 200 :e2e-test-timed-out) {:id         batch-id
+                                                                      :successful 2
+                                                                      :dead       0})
+            "Callback should be executed with batch status map as its arg")
         (is (empty? (redis-cmds/find-in-list
                       tu/redis-conn
                       (d/prefix-queue queue)
