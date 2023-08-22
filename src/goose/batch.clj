@@ -1,15 +1,21 @@
 (ns goose.batch
   (:require
+    [goose.defaults :as d]
     [goose.utils :as u]))
 
 (def status-in-progress "in-progress")
 (def status-complete "complete")
 
 (defn new
-  [{:keys [callback-fn-sym]} jobs]
+  [{:keys [queue retry-opts]}
+   {:keys [callback-fn-sym]}
+   jobs]
   (let [id (str (random-uuid))]
     {:id              id
      :callback-fn-sym callback-fn-sym
+     :queue           queue
+     :ready-queue     (d/prefix-queue queue)
+     :retry-opts      retry-opts
      :jobs            (map #(assoc % :batch-id id) jobs)
      :created-at      (u/epoch-time-ms)}))
 

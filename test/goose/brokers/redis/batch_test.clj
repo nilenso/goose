@@ -3,6 +3,7 @@
     [goose.brokers.redis.batch :as redis-batch]
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]
+    [goose.retry :as retry]
     [goose.test-utils :as tu]
 
     [clojure.test :refer [deftest is testing use-fixtures]]))
@@ -28,6 +29,10 @@
 (def batch
   {:id              batch-id
    :callback-fn-sym `prn
+   :linger-in-hours 1
+   :queue           tu/queue
+   :ready-queue     (d/prefix-queue tu/queue)
+   :retry-opts      retry/default-opts
    :jobs            '({:id             (str (random-uuid))
                        :execute-fn-sym clojure.core/prn
                        :args           ["foo"]
@@ -48,7 +53,8 @@
 (deftest enqueue-test
   (testing "Broker creates batch state and enqueues jobs"
     (let [batch-id (:id batch)
-          batch-state (select-keys batch [:id :callback-fn-sym])
+          batch-state (->> (redis-batch/batch-state batch)
+                        (reduce (fn [m [k v]] (assoc m k (str v))) {}))
           batch-state-key (d/prefix-batch batch-id)
           job-ids (->>
                     (map :id (:jobs batch))
@@ -58,7 +64,9 @@
 
       (redis-batch/enqueue tu/redis-conn batch)
 
-      (is (= (redis-cmds/parse-map tu/redis-conn batch-state-key) batch-state))
+      (is (= (->> (redis-cmds/parse-map tu/redis-conn batch-state-key)
+               (reduce (fn [m [k v]] (assoc m k (str v))) {}))
+             batch-state))
       (is (= (redis-cmds/set-members tu/redis-conn enqueued-job-set) job-ids)))))
 
 ;;;; ======= TEST: Batch state update middleware ===========
@@ -161,3 +169,28 @@
                                     enqueued-job-set)))
       (is (= 0 (redis-cmds/set-size (:redis-conn opts)
                                     successful-job-set))))))
+
+(deftest set-expiration-test
+  (testing "Batch state expires after the linger duration has elapsed"
+    (let [batch-id (:id batch)
+          batch-state-key (d/prefix-batch batch-id)
+          linger 5
+          linger-in-hours (/ linger 3600)
+          linger-in-ms (* linger 1000)]
+      (redis-batch/enqueue tu/redis-conn batch)
+      (is (< (redis-cmds/ttl tu/redis-conn batch-state-key) 0))
+      (is (< (redis-cmds/ttl tu/redis-conn enqueued-job-set) 0))
+      (is (< (redis-cmds/ttl tu/redis-conn retry-job-set) 0))
+      (is (< (redis-cmds/ttl tu/redis-conn successful-job-set) 0))
+      (is (< (redis-cmds/ttl tu/redis-conn dead-job-set) 0))
+
+      (redis-batch/set-batch-expiration tu/redis-conn batch-id linger-in-hours)
+      (is (> (redis-cmds/ttl tu/redis-conn batch-state-key) 0))
+      (is (> (redis-cmds/ttl tu/redis-conn enqueued-job-set) 0))
+
+      (Thread/sleep ^long linger-in-ms)
+      (is (= (redis-cmds/exists tu/redis-conn batch-state-key) 0))
+      (is (= (redis-cmds/exists tu/redis-conn enqueued-job-set) 0))
+      (is (= (redis-cmds/exists tu/redis-conn retry-job-set) 0))
+      (is (= (redis-cmds/exists tu/redis-conn successful-job-set) 0))
+      (is (= (redis-cmds/exists tu/redis-conn dead-job-set) 0)))))

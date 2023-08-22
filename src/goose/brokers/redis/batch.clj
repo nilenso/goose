@@ -8,10 +8,19 @@
             [taoensso.carmine :as car]
             [taoensso.carmine.locks :as car-locks]))
 
+(defn batch-state
+  [batch]
+  (select-keys batch [:id
+                      :callback-fn-sym
+                      :created-at
+                      :linger-in-hours
+                      :ready-queue
+                      :queue
+                      :retry-opts]))
 (defn- set-batch-state
   [{:keys [id jobs] :as batch}]
   (let [batch-state-key (d/prefix-batch id)
-        batch-state (select-keys batch [:id :callback-fn-sym :created-at])
+        batch-state (batch-state batch)
         enqueued-job-set (d/construct-batch-job-set id d/enqueued-job-set)
         job-ids (map :id jobs)]
     (car/hmset* batch-state-key batch-state)
@@ -53,18 +62,18 @@
        :dead        dead})))
 
 (defn set-batch-expiration
-  [id linger-in-hours]
+  [conn id linger-in-hours]
   (let [batch-state-key (d/prefix-batch id)
         enqueued-job-set (d/construct-batch-job-set id d/enqueued-job-set)
         retrying-job-set (d/construct-batch-job-set id d/retrying-job-set)
         successful-job-set (d/construct-batch-job-set id d/successful-job-set)
         dead-job-set (d/construct-batch-job-set id d/dead-job-set)
         linger-in-sec (u/hour->sec linger-in-hours)]
-    (car/expire batch-state-key linger-in-sec)
-    (car/expire enqueued-job-set linger-in-sec)
-    (car/expire retrying-job-set linger-in-sec)
-    (car/expire successful-job-set linger-in-sec)
-    (car/expire dead-job-set linger-in-sec)))
+    (redis-cmds/expire conn batch-state-key linger-in-sec)
+    (redis-cmds/expire conn enqueued-job-set linger-in-sec)
+    (redis-cmds/expire conn retrying-job-set linger-in-sec)
+    (redis-cmds/expire conn successful-job-set linger-in-sec)
+    (redis-cmds/expire conn dead-job-set linger-in-sec)))
 
 (defn post-batch-exec
   [conn id]
@@ -73,22 +82,31 @@
                        d/redis-batch-lock-wait-ms
                        (let [{:keys [batch-state] :as batch} (get-batch-state conn id)
                              status (batch/status-from-counts batch)
-                             {:keys [callback-job-id callback-fn-sym linger-in-hours queue ready-queue retry-opts]}
-                             batch-state]
+                             {:keys [callback-job-id
+                                     callback-fn-sym
+                                     linger-in-hours
+                                     queue
+                                     ready-queue
+                                     retry-opts]} batch-state]
                          (when (= status batch/status-complete)
                            (when (and
                                    (some? callback-fn-sym)
                                    (not callback-job-id))
-                             (let [callback-args (->> (select-keys batch [:id :successful :dead])
-                                                   (list))
-                                   callback-job (job/new callback-fn-sym
-                                                         callback-args
-                                                         queue
-                                                         ready-queue
-                                                         retry-opts)]
-                               (car/lpush ready-queue callback-job)
-                               (car/hset (d/prefix-batch id) :callback-job-id (:id callback-job))))
-                           (set-batch-expiration id linger-in-hours)))))
+                             (let [callback-args (-> (select-keys batch [:successful :dead])
+                                                     (assoc :id id)
+                                                     (list))
+                                   callback-job (-> (job/new callback-fn-sym
+                                                             callback-args
+                                                             queue
+                                                             ready-queue
+                                                             retry-opts)
+                                                    (assoc :batch-id id))]
+                               (redis-cmds/enqueue-back conn ready-queue callback-job)
+                               (redis-cmds/hset conn (d/prefix-batch id) (name :callback-job-id) (:id callback-job))))
+                           (let [linger-in-hours (Integer/parseInt linger-in-hours)]
+                             (set-batch-expiration conn
+                                                   id
+                                                   linger-in-hours))))))
 
 (defn wrap-state-update [next]
   (fn [{:keys [redis-conn] :as opts}

@@ -170,5 +170,5 @@
   "Enqueues a batch of jobs for async execution."
   ([opts batch-opts execute-fn-sym args-coll]
    (let [jobs (map #(create-job opts execute-fn-sym %) args-coll)
-         batch (batch/new batch-opts jobs)]
+         batch (batch/new opts batch-opts jobs)]
      (b/enqueue-batch (:broker opts) batch))))
