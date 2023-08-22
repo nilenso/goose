@@ -10,7 +10,8 @@
     [goose.test-utils :as tu]
     [goose.worker :as w]
 
-    [clojure.test :refer [deftest is are]])
+    [clojure.test :refer [deftest is are]]
+    [tech.v3.dataset :as ds])
   (:import
     (clojure.lang ExceptionInfo)
     (java.time Instant)))
@@ -35,6 +36,10 @@
 
     ;; :args
     #(c/perform-async tu/redis-client-opts `tu/my-fn specs-test)
+    #(c/perform-async tu/redis-client-opts `tu/my-fn (-> {:1 1}
+                                                          ds/->dataset
+                                                          ds/mapseq-reader
+                                                          first))
 
     ;; :sec
     #(c/perform-in-sec tu/redis-client-opts 0.2 `tu/my-fn)

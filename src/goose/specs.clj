@@ -157,8 +157,13 @@
 
 ;;; ============== Client ==============
 (s/def ::args-serializable?
-  #(try (= % (u/decode (u/encode %)))
-        (catch Exception _ false)))
+  (s/and
+    #(try (= % (u/decode (u/encode %)))
+          (catch Exception _ false))
+
+    ;; Type check alongwith value equality check past encode/decode.
+    #(= (type %) (type (u/decode (u/encode %))))))
+
 (s/def ::instant #(instance? Instant %))
 (s/def ::client-opts (s/keys :req-un [::broker ::queue ::retry-opts]))
 
