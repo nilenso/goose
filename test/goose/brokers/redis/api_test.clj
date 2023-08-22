@@ -206,7 +206,7 @@
 (deftest batch-test
   (testing "[redis] batch API"
     (let [batch-id (:id (goose.client/perform-batch tu/redis-client-opts
-                                                    {}
+                                                    {:linger-in-hours 1}
                                                     `tu/my-fn
                                                     (-> []
                                                         (c/accumulate-batch-args "arg-one")
