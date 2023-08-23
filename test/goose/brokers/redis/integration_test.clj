@@ -197,8 +197,8 @@
   (swap! batch-exec-count inc)
   (when (= @batch-exec-count @batch-args-count)
     (deliver @perform-batch-fn-executed @batch-args-acc)))
-(defn perform-batch-callback-fn [args]
-  (deliver @callback-fn-executed args))
+(defn perform-batch-callback-fn [id m]
+  (deliver @callback-fn-executed (assoc m :id id)))
 
 (def batch-opts {:callback-fn-sym `perform-batch-callback-fn
                  :linger-in-hours 1})
