@@ -93,8 +93,8 @@
                                    (some? callback-fn-sym)
                                    (not callback-job-id))
                              (let [callback-args (-> (select-keys batch [:successful :dead])
-                                                     (assoc :id id)
-                                                     (list))
+                                                     (list)
+                                                     (conj id))
                                    callback-job (-> (job/new callback-fn-sym
                                                              callback-args
                                                              queue
