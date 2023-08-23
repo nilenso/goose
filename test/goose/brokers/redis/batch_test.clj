@@ -80,6 +80,7 @@
   (testing "Job state is transitioned from enqueued -> successful on successful job execution"
     (redis-cmds/add-to-set (:redis-conn opts) enqueued-job-set job-id)
     (redis-set-batch-state (:redis-conn opts) batch)
+    ;; Call to middleware to update batch state
     ((redis-batch/wrap-state-update (fn [_opts _job] "Function executed"))
      opts job)
     (is (= 0 (redis-cmds/set-size (:redis-conn opts)
@@ -96,6 +97,7 @@
     (redis-set-batch-state (:redis-conn opts) batch)
     (redis-cmds/add-to-set (:redis-conn opts) enqueued-job-set job-id)
     (is (thrown-with-msg? Exception #"Exception"
+                          ;; Call to middleware to update batch state
                           ((redis-batch/wrap-state-update (fn [_opts _job]
                                                             (throw (Exception. "Exception"))))
                            opts job)))
@@ -114,6 +116,7 @@
       (redis-set-batch-state (:redis-conn opts) batch)
       (redis-cmds/add-to-set (:redis-conn opts) enqueued-job-set job-id)
       (is (thrown-with-msg? Exception #"Exception"
+                            ;; Call to middleware to update batch state
                             ((redis-batch/wrap-state-update (fn [_opts _job]
                                                               (throw (Exception. "Exception"))))
                              opts job)))
@@ -132,6 +135,7 @@
                                  :retry-count 0})]
       (redis-set-batch-state (:redis-conn opts) batch)
       (redis-cmds/add-to-set (:redis-conn opts) retry-job-set job-id)
+      ;; Call to middleware to update batch state
       ((redis-batch/wrap-state-update (fn [_opts _job] "Function Executed")) opts job)
       (is (= 0 (redis-cmds/set-size (:redis-conn opts)
                                     retry-job-set)))
@@ -150,6 +154,7 @@
       (redis-set-batch-state (:redis-conn opts) batch)
       (redis-cmds/add-to-set (:redis-conn opts) retry-job-set job-id)
       (is (thrown-with-msg? Exception #"Exception"
+                            ;; Call to middleware to update batch state
                             ((redis-batch/wrap-state-update (fn [_opts _job]
                                                               (throw (Exception. "Exception"))))
                              opts job)))
@@ -169,6 +174,7 @@
       (redis-set-batch-state (:redis-conn opts) batch)
       (redis-cmds/add-to-set (:redis-conn opts) retry-job-set job-id)
       (is (thrown-with-msg? Exception #"Exception"
+                            ;; Call to middleware to update batch state
                             ((redis-batch/wrap-state-update (fn [_opts _job]
                                                               (throw (Exception. "Exception"))))
                              opts job)))
