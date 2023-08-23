@@ -54,6 +54,8 @@
   (testing "Broker creates batch state and enqueues jobs"
     (let [batch-id (:id batch)
           batch-state (->> (redis-batch/batch-state batch)
+                        ;; Redis returns all values as strings
+                        ;; This is needed so that they can be compared with values returned from Redis
                         (reduce (fn [m [k v]] (assoc m k (str v))) {}))
           batch-state-key (d/prefix-batch batch-id)
           job-ids (->>
@@ -65,6 +67,7 @@
       (redis-batch/enqueue tu/redis-conn batch)
 
       (is (= (->> (redis-cmds/parse-map tu/redis-conn batch-state-key)
+               ;; This is needed so that de-serialized values are strings and can be compared with batch-state
                (reduce (fn [m [k v]] (assoc m k (str v))) {}))
              batch-state))
       (is (= (redis-cmds/set-members tu/redis-conn enqueued-job-set) job-ids)))))
