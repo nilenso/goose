@@ -103,10 +103,10 @@
                                                     (assoc :batch-id id))]
                                (redis-cmds/enqueue-back conn ready-queue callback-job)
                                (redis-cmds/hset conn (d/prefix-batch id) (name :callback-job-id) (:id callback-job))))
-                           (let [linger-in-hours (Integer/parseInt linger-in-hours)]
-                             (set-batch-expiration conn
-                                                   id
-                                                   linger-in-hours))))))
+                           (let [linger-in-hours (if linger-in-hours
+                                                   (Integer/parseInt linger-in-hours)
+                                                   d/redis-batch-linger-hours)]
+                             (set-batch-expiration conn id linger-in-hours))))))
 
 (defn wrap-state-update [next]
   (fn [{:keys [redis-conn] :as opts}
