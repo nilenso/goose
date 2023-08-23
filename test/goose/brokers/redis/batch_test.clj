@@ -53,7 +53,7 @@
 (deftest enqueue-test
   (testing "Broker creates batch state and enqueues jobs"
     (let [batch-id (:id batch)
-          batch-state (->> (redis-batch/batch-state batch)
+          batch-state (->> (select-keys batch redis-batch/batch-state-keys)
                         ;; Redis returns all values as strings
                         ;; This is needed so that they can be compared with values returned from Redis
                         (reduce (fn [m [k v]] (assoc m k (str v))) {}))
@@ -76,7 +76,7 @@
 
 (defn redis-set-batch-state [conn batch]
   (let [batch-state-key (d/prefix-batch batch-id)
-        batch-state (redis-batch/batch-state batch)]
+        batch-state (select-keys batch redis-batch/batch-state-keys)]
     (redis-cmds/hmset* conn batch-state-key batch-state)))
 
 (deftest enqueued-to-successful

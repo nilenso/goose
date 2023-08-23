@@ -8,19 +8,17 @@
             [taoensso.carmine :as car]
             [taoensso.carmine.locks :as car-locks]))
 
-(defn batch-state
-  [batch]
-  (select-keys batch [:id
-                      :callback-fn-sym
-                      :created-at
-                      :linger-in-hours
-                      :ready-queue
-                      :queue
-                      :retry-opts]))
+(def batch-state-keys [:id
+                       :callback-fn-sym
+                       :created-at
+                       :linger-in-hours
+                       :ready-queue
+                       :queue
+                       :retry-opts])
 (defn- set-batch-state
   [{:keys [id jobs] :as batch}]
   (let [batch-state-key (d/prefix-batch id)
-        batch-state (batch-state batch)
+        batch-state (select-keys batch batch-state-keys)
         enqueued-job-set (d/construct-batch-job-set id d/enqueued-job-set)
         job-ids (map :id jobs)]
     (car/hmset* batch-state-key batch-state)
