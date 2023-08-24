@@ -210,7 +210,7 @@
 (deftest batch-test
   (testing "[redis] batch API"
     (let [batch-id (:id (goose.client/perform-batch tu/redis-client-opts
-                                                    {:linger-in-hours 1}
+                                                    {:linger-sec 1}
                                                     `tu/my-fn
                                                     (-> []
                                                         (c/accumulate-batch-args "arg-one")
@@ -231,7 +231,7 @@
   (testing "[redis] batch API with expired batch"
     (reset! callback-fn-atom (promise))
     (let [batch-id (:id (goose.client/perform-batch tu/redis-client-opts
-                                                    {:linger-in-hours 0
+                                                    {:linger-sec      0
                                                      :callback-fn-sym `callback-fn}
                                                     `tu/my-fn
                                                     (-> []

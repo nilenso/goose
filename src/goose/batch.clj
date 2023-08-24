@@ -7,12 +7,12 @@
 
 (defn new
   [{:keys [queue ready-queue retry-opts]}
-   {:keys [callback-fn-sym linger-in-hours]}
+   {:keys [callback-fn-sym linger-sec]}
    jobs]
   (let [id (str (random-uuid))]
     {:id              id
      :callback-fn-sym callback-fn-sym
-     :linger-in-hours linger-in-hours
+     :linger-sec      linger-sec
      :queue           queue
      :ready-queue     ready-queue
      :retry-opts      retry-opts

@@ -108,10 +108,10 @@
 
 ;;; ============== Batch ==============
 (s/def ::callback-fn-sym (s/nilable ::fn-sym))
-(s/def ::linger-in-hours nat-int?)
+(s/def ::linger-sec nat-int?)
 (s/def ::batch-opts
   (s/keys :opt-un [::callback-fn-sym
-                   ::linger-in-hours]))
+                   ::linger-sec]))
 (s/def ::batch-args (s/and sequential? #(every? sequential? %) (s/* ::args-serializable?)))
 
 ;;; ============== Retry Opts ==============
