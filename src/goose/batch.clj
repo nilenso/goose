@@ -3,8 +3,8 @@
     [goose.defaults :as d]
     [goose.utils :as u]))
 
-(def status-in-progress "in-progress")
-(def status-complete "complete")
+(def status-in-progress :in-progress)
+(def status-complete :complete)
 
 (defn new
   [{:keys [queue retry-opts]}
