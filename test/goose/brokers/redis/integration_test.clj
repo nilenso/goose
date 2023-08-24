@@ -201,7 +201,7 @@
   (deliver @callback-fn-executed (assoc m :id id)))
 
 (def batch-opts {:callback-fn-sym `perform-batch-callback-fn
-                 :linger-in-hours 1})
+                 :linger-sec      3600})
 
 (deftest perform-batch-test
   (testing "Goose executes a batch asynchronously"

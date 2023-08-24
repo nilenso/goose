@@ -29,7 +29,7 @@
 (def batch
   {:id              batch-id
    :callback-fn-sym `prn
-   :linger-in-hours 1
+   :linger-sec      3600
    :queue           tu/queue
    :ready-queue     (d/prefix-queue tu/queue)
    :retry-opts      retry/default-opts
@@ -194,9 +194,8 @@
   (testing "Batch state expires after the linger duration has elapsed"
     (let [batch-id (:id batch)
           batch-state-key (d/prefix-batch batch-id)
-          linger 5
-          linger-in-hours (/ linger 3600)
-          linger-in-ms (* linger 1000)]
+          linger-sec "5"
+          linger-ms (* (Long/parseLong linger-sec) 1000)]
       (redis-batch/enqueue tu/redis-conn batch)
       (is (< (redis-cmds/ttl tu/redis-conn batch-state-key) 0))
       (is (< (redis-cmds/ttl tu/redis-conn enqueued-job-set) 0))
@@ -204,11 +203,11 @@
       (is (< (redis-cmds/ttl tu/redis-conn successful-job-set) 0))
       (is (< (redis-cmds/ttl tu/redis-conn dead-job-set) 0))
 
-      (redis-batch/set-batch-expiration tu/redis-conn batch-id linger-in-hours)
+      (redis-batch/set-batch-expiration tu/redis-conn batch-id linger-sec)
       (is (> (redis-cmds/ttl tu/redis-conn batch-state-key) 0))
       (is (> (redis-cmds/ttl tu/redis-conn enqueued-job-set) 0))
 
-      (Thread/sleep ^long linger-in-ms)
+      (Thread/sleep ^long linger-ms)
       (is (= (redis-cmds/exists tu/redis-conn batch-state-key) 0))
       (is (= (redis-cmds/exists tu/redis-conn enqueued-job-set) 0))
       (is (= (redis-cmds/exists tu/redis-conn retry-job-set) 0))
