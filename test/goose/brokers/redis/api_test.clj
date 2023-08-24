@@ -203,6 +203,10 @@
                  (:job-description)
                  (select-keys [:execute-fn-sym :args])))))))
 
+(def callback-fn-atom (atom (promise)))
+(defn callback-fn [batch-id _]
+  (deliver @callback-fn-atom batch-id))
+
 (deftest batch-test
   (testing "[redis] batch API"
     (let [batch-id (:id (goose.client/perform-batch tu/redis-client-opts
@@ -223,4 +227,16 @@
       (is (Long/parseLong created-at))))
   (testing "[redis] batch API with invalid id"
     (is (nil? (batch/status tu/redis-producer
-                            (str (random-uuid)))))))
+                            (str (random-uuid))))))
+  (testing "[redis] batch API with expired batch"
+    (reset! callback-fn-atom (promise))
+    (let [batch-id (:id (goose.client/perform-batch tu/redis-client-opts
+                                                    {:linger-in-hours 0
+                                                     :callback-fn-sym `callback-fn}
+                                                    `tu/my-fn
+                                                    (-> []
+                                                        (c/accumulate-batch-args "arg"))))
+          worker (w/start tu/redis-worker-opts)]
+      (deref @callback-fn-atom 200 :api-test-timed-out)
+      (is (nil? (batch/status tu/redis-producer batch-id)))
+      (w/stop worker))))
