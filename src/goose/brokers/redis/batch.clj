@@ -75,7 +75,7 @@
 
 (defn post-batch-exec
   [conn id]
-  (car-locks/with-lock conn "post-batch-exec"
+  (car-locks/with-lock conn (concat "post-batch-exec:" id)
                        d/redis-batch-lock-timeout-ms
                        d/redis-batch-lock-wait-ms
                        (let [{:keys [batch-state] :as batch} (get-batch-state conn id)
