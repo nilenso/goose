@@ -31,29 +31,33 @@
   [coll & args]
   (conj coll args))
 
+(defn- enhance-opts-for-internal-use
+  [{:keys [queue retry-opts] :as opts}]
+  (assoc opts
+    :ready-queue (d/prefix-queue queue)
+    :retry-opts (retry/prefix-queue-if-present retry-opts)))
+
 (defn- register-cron-schedule
-  [{:keys [broker queue retry-opts] :as _opts}
+  [{:keys [broker queue] :as _opts}
    cron-opts
    execute-fn-sym
    args]
-  (let [retry-opts (retry/prefix-queue-if-present retry-opts)
-        ready-queue (d/prefix-queue queue)
+  (let [{:keys [ready-queue retry-opts]} (enhance-opts-for-internal-use _opts)
         job-description (j/description execute-fn-sym args queue ready-queue retry-opts)
         cron-entry (b/register-cron broker cron-opts job-description)]
     (select-keys cron-entry [:cron-name :cron-schedule :timezone])))
 
 (defn- create-job
-  [{:keys [queue retry-opts]} execute-fn-sym args]
-  (let [retry-opts (retry/prefix-queue-if-present retry-opts)
-        ready-queue (d/prefix-queue queue)]
-    (j/new execute-fn-sym args queue ready-queue retry-opts)))
+  [{:keys [queue retry-opts ready-queue]} execute-fn-sym args]
+  (j/new execute-fn-sym args queue ready-queue retry-opts))
 
 (defn- enqueue
   [{:keys [broker] :as opts}
    schedule-epoch-ms
    execute-fn-sym
    args]
-  (let [job (create-job opts execute-fn-sym args)]
+  (let [enhanced-opts (enhance-opts-for-internal-use opts)
+        job (create-job enhanced-opts execute-fn-sym args)]
     (if schedule-epoch-ms
       (b/schedule broker schedule-epoch-ms job)
       (b/enqueue broker job))))
@@ -169,6 +173,7 @@
 (defn perform-batch
   "Enqueues a batch of jobs for async execution."
   ([opts batch-opts execute-fn-sym args-coll]
-   (let [jobs (map #(create-job opts execute-fn-sym %) args-coll)
-         batch (batch/new opts batch-opts jobs)]
-     (b/enqueue-batch (:broker opts) batch))))
+   (let [enhanced-opts (enhance-opts-for-internal-use opts)
+         jobs (map #(create-job enhanced-opts execute-fn-sym %) args-coll)
+         batch (batch/new enhanced-opts batch-opts jobs)]
+     (b/enqueue-batch (:broker enhanced-opts) batch))))
