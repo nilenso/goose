@@ -105,24 +105,36 @@
                                (redis-cmds/hset conn (d/prefix-batch id) (name :callback-job-id) (:id callback-job))))
                            (set-batch-expiration conn id linger-sec)))))
 
+(defn- job-source-set
+  [job batch-id]
+  (if (job/retried? job)
+    (d/construct-batch-job-set batch-id d/retrying-job-set)
+    (d/construct-batch-job-set batch-id d/enqueued-job-set)))
+
+(defn- job-destination-set
+  ([job batch-id]
+   (job-destination-set job batch-id nil))
+  ([job batch-id ex]
+   (if-not ex
+     (d/construct-batch-job-set batch-id d/successful-job-set)
+     (if (goose.retry/max-retries-reached? job)
+       (d/construct-batch-job-set batch-id d/dead-job-set)
+       (d/construct-batch-job-set batch-id d/retrying-job-set)))))
+
 (defn wrap-state-update [next]
   (fn [{:keys [redis-conn] :as opts}
-       {:keys [id batch-id] :as job}]
+       {job-id :id batch-id :batch-id :as job}]
     (if batch-id
-      (let [src (if (job/retried? job)
-                  (d/construct-batch-job-set batch-id d/retrying-job-set)
-                  (d/construct-batch-job-set batch-id d/enqueued-job-set))]
+      (let [src-set (job-source-set job batch-id)]
         (try
           (let [response (next opts job)
-                dst (d/construct-batch-job-set batch-id d/successful-job-set)]
-            (redis-cmds/move-between-sets redis-conn src dst id)
+                dst-set (job-destination-set job batch-id)]
+            (redis-cmds/move-between-sets redis-conn src-set dst-set job-id)
             (post-batch-exec redis-conn batch-id)
             response)
           (catch Exception ex
             (let [failed-job (goose.retry/set-failed-config job ex)
-                  dst (if (goose.retry/max-retries-reached? failed-job)
-                        (d/construct-batch-job-set batch-id d/dead-job-set)
-                        (d/construct-batch-job-set batch-id d/retrying-job-set))]
-              (redis-cmds/move-between-sets redis-conn src dst id)
+                  dst-set (job-destination-set failed-job batch-id ex)]
+              (redis-cmds/move-between-sets redis-conn src-set dst-set job-id)
               (throw ex)))))
       (next opts job))))
