@@ -87,6 +87,4 @@
 
 (defn ^:no-doc set-failed-config
   [job ex]
-  (assoc
-   job :state
-   (failure-state job ex)))
+  (assoc job :state (failure-state job ex)))
