@@ -84,8 +84,9 @@
     (redis-cmds/add-to-set (:redis-conn opts) enqueued-job-set job-id)
     (redis-set-batch-state (:redis-conn opts) batch)
     ;; Call to middleware to update batch state
-    ((redis-batch/wrap-state-update (fn [_opts _job] "Function executed"))
-     opts job)
+    (let [result ((redis-batch/wrap-state-update (fn [_opts _job] "Function executed"))
+                  opts job)]
+      (is (= result "Function executed")))
     (is (= 0 (redis-cmds/set-size (:redis-conn opts)
                                   enqueued-job-set)))
     (is (= 1 (redis-cmds/set-size (:redis-conn opts)
