@@ -237,6 +237,6 @@
                                                     (-> []
                                                         (c/accumulate-batch-args "arg"))))
           worker (w/start tu/redis-worker-opts)]
-      (deref @callback-fn-atom 200 :api-test-timed-out)
+      (is (= (deref @callback-fn-atom 200 :api-test-timed-out) batch-id))
       (is (nil? (batch/status tu/redis-producer batch-id)))
       (w/stop worker))))

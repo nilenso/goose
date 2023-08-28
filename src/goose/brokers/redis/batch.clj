@@ -61,10 +61,8 @@
        :dead        dead})))
 
 (defn set-batch-expiration
-  [conn id linger-sec-str]
-  (let [linger-sec (if linger-sec-str
-                     (Long/parseLong linger-sec-str)
-                     d/redis-batch-linger-sec)
+  [conn id linger-sec]
+  (let [linger-sec (or linger-sec d/redis-batch-linger-sec)
         batch-state-key (d/prefix-batch id)
         enqueued-job-set (d/construct-batch-job-set id d/enqueued-job-set)
         retrying-job-set (d/construct-batch-job-set id d/retrying-job-set)
@@ -78,7 +76,7 @@
 
 (defn post-batch-exec
   [conn id]
-  (car-locks/with-lock conn (concat "post-batch-exec:" id)
+  (car-locks/with-lock conn (str "post-batch-exec:" id)
                        d/redis-batch-lock-timeout-ms
                        d/redis-batch-lock-wait-ms
                        (let [{:keys [batch-state] :as batch} (get-batch-state conn id)
