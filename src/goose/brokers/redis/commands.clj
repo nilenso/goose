@@ -81,11 +81,18 @@
 (defn del-from-set [conn set member]
   (wcar* conn (car/srem set member)))
 
-(defn scan-set [conn set cursor count]
-  (wcar* conn (car/sscan set cursor "COUNT" count)))
-
 (defn set-size [conn set]
   (wcar* conn (car/scard set)))
+
+(defn move-between-sets [conn src dst member]
+  (wcar* conn (car/smove src dst member)))
+
+(defn set-members [conn key]
+  (->> (wcar* conn (car/smembers key))
+       (set)))
+
+(defn scan-set [conn set cursor count]
+  (wcar* conn (car/sscan set cursor "COUNT" count)))
 
 (defn- scan-for-sets [conn cursor match count]
   (wcar* conn (car/scan cursor "MATCH" match "COUNT" count "TYPE" "SET")))
@@ -109,13 +116,6 @@
   (->> (set-seq conn set)
        (filter match?)
        (doall)))
-
-(defn move-between-sets [conn src dst elem]
-  (wcar* conn (car/smove src dst elem)))
-
-(defn set-members [conn key]
-  (->> (wcar* conn (car/smembers key))
-    (set)))
 
 ;;; ============== Lists ===============
 ;;; ===== FRONT/BACK -> RIGHT/LEFT =====
