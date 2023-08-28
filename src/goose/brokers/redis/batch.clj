@@ -1,12 +1,13 @@
-(ns goose.brokers.redis.batch
-  (:require [goose.batch :as batch]
-            [goose.brokers.redis.commands :as redis-cmds]
-            [goose.defaults :as d]
-            [goose.job :as job]
-            [goose.retry]
-            [goose.utils :as u]
-            [taoensso.carmine :as car]
-            [taoensso.carmine.locks :as car-locks]))
+(ns ^:no-doc goose.brokers.redis.batch
+  (:require
+    [goose.batch :as batch]
+    [goose.brokers.redis.commands :as redis-cmds]
+    [goose.defaults :as d]
+    [goose.job :as job]
+    [goose.retry]
+    [goose.utils :as u]
+    [taoensso.carmine :as car]
+    [taoensso.carmine.locks :as car-locks]))
 
 (def batch-state-keys [:id
                        :callback-fn-sym
@@ -32,9 +33,9 @@
 (defn enqueue
   [redis-conn batch]
   (redis-cmds/with-transaction redis-conn
-                               (car/multi)
-                               (set-batch-state batch)
-                               (enqueue-jobs (:jobs batch))))
+    (car/multi)
+    (set-batch-state batch)
+    (enqueue-jobs (:jobs batch))))
 
 (defn get-batch-state
   [redis-conn id]
@@ -45,13 +46,13 @@
         dead-job-set (d/construct-batch-job-set id d/dead-job-set)
         [_ [batch-state enqueued retrying successful dead]]
         (car/atomic redis-conn
-                    redis-cmds/atomic-lock-attempts
-                    (car/multi)
-                    (car/hgetall batch-state-key)
-                    (car/scard enqueued-job-set)
-                    (car/scard retrying-job-set)
-                    (car/scard successful-job-set)
-                    (car/scard dead-job-set))]
+          redis-cmds/atomic-lock-attempts
+          (car/multi)
+          (car/hgetall batch-state-key)
+          (car/scard enqueued-job-set)
+          (car/scard retrying-job-set)
+          (car/scard successful-job-set)
+          (car/scard dead-job-set))]
     (when (not-empty batch-state)
       {:batch-state (u/flat-sequence->map batch-state)
        :enqueued    enqueued
