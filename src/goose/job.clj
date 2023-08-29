@@ -18,8 +18,7 @@
 (defn retried? [job]
   (boolean (get-in job [:state :error])))
 
-;TODO: Rename the func to ready-or-retry-queue
-(defn ready-queue
+(defn ready-or-retry-queue
   [job]
   (if (retried? job)
     (or (get-in job [:retry-opts :ready-retry-queue]) (:ready-queue job))

@@ -18,7 +18,7 @@
 (defn prioritise-execution [redis-conn job]
   (let [sorted-set d/prefixed-schedule-queue]
     (when (redis-cmds/sorted-set-score redis-conn sorted-set job)
-      (redis-cmds/sorted-set->ready-queue redis-conn sorted-set (list job) job/ready-queue))))
+      (redis-cmds/sorted-set->ready-queue redis-conn sorted-set (list job) job/ready-or-retry-queue))))
 
 (defn delete [redis-conn job]
   (= 1 (redis-cmds/del-from-sorted-set redis-conn d/prefixed-schedule-queue job)))

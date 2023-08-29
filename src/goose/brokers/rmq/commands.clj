@@ -112,7 +112,7 @@
       (let [job (u/decode payload)]
         (try
           (enqueue-front ch
-                         (assoc queue-type :queue (job/ready-queue job))
+                         (assoc queue-type :queue (job/ready-or-retry-queue job))
                          publisher-confirms
                          job)
           (lb/ack ch delivery-tag)
