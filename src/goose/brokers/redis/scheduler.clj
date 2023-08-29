@@ -27,7 +27,7 @@
       redis-conn
       d/prefixed-schedule-queue
       due-scheduled-jobs
-      job/ready-queue)
+      job/ready-or-retry-queue)
     true))
 
 (defn run

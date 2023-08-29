@@ -120,24 +120,30 @@
        (d/construct-batch-job-set batch-id d/dead-job-set)
        (d/construct-batch-job-set batch-id d/retrying-job-set)))))
 
+(defn- execute-batch
+  [next
+   {:keys [redis-conn] :as opts}
+   {job-id :id batch-id :batch-id :as job}]
+  (let [src-set (job-source-set job batch-id)]
+    (try
+      (let [response (next opts job)
+            dst-set (job-destination-set job batch-id)]
+        (redis-cmds/move-between-sets redis-conn src-set dst-set job-id)
+        response)
+      (catch Exception ex
+        (let [failed-job (goose.retry/set-failed-config job ex)
+              dst-set (job-destination-set failed-job batch-id ex)]
+          (redis-cmds/move-between-sets redis-conn src-set dst-set job-id)
+          (throw ex)))
+      (finally
+        ;; Regardless of job success/failure, post-batch-exec must be called.
+        ;; Parent function receives return value of `try/catch` block,
+        ;; `finally` block runs at the end, but does not override return value.
+        (post-batch-exec redis-conn batch-id)))))
+
 (defn wrap-state-update [next]
-  (fn [{:keys [redis-conn] :as opts}
-       {job-id :id batch-id :batch-id :as job}]
+  (fn [opts
+       {:keys [batch-id] :as job}]
     (if batch-id
-      (let [src-set (job-source-set job batch-id)]
-        (try
-          (let [response (next opts job)
-                dst-set (job-destination-set job batch-id)]
-            (redis-cmds/move-between-sets redis-conn src-set dst-set job-id)
-            response)
-          (catch Exception ex
-            (let [failed-job (goose.retry/set-failed-config job ex)
-                  dst-set (job-destination-set failed-job batch-id ex)]
-              (redis-cmds/move-between-sets redis-conn src-set dst-set job-id)
-              (throw ex)))
-          (finally
-            ;; Regardless of job success/failure, post-batch-exec must be called.
-            ;; Parent function receives return value of `try/catch` block,
-            ;; `finally` block runs at the end, but does not override return value.
-            (post-batch-exec redis-conn batch-id))))
+      (execute-batch next opts job)
       (next opts job))))
