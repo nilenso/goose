@@ -1,7 +1,8 @@
 (ns goose.batch
   (:require
-    [goose.utils :as u]
     [goose.defaults :as d]
+    [goose.job :as job]
+    [goose.utils :as u]
 
     [clojure.tools.logging :as log]))
 
@@ -31,6 +32,15 @@
      :retry-opts      retry-opts
      :jobs            (map #(assoc % :batch-id id) jobs)
      :created-at      (u/epoch-time-ms)}))
+
+(defn ^:no-doc new-callback
+  [batch-id callback-fn-sym callback-args queue ready-queue retry-opts]
+  (-> (job/new callback-fn-sym
+               callback-args
+               queue
+               ready-queue
+               retry-opts)
+      (assoc :callback-for-batch batch-id)))
 
 (defn status-from-counts
   [{:keys [enqueued retrying]}]
