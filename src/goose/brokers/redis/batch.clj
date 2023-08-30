@@ -6,8 +6,8 @@
     [goose.job :as job]
     [goose.retry]
     [goose.utils :as u]
-    [taoensso.carmine :as car]
-    [taoensso.carmine.locks :as car-locks]))
+
+    [taoensso.carmine :as car]))
 
 (def batch-state-keys [:id
                        :callback-fn-sym
@@ -72,35 +72,18 @@
     (redis-cmds/expire conn successful-job-set linger-sec)
     (redis-cmds/expire conn dead-job-set linger-sec)))
 
-(defn post-batch-exec
-  [conn id]
-  (car-locks/with-lock conn (str "post-batch-exec:" id)
-                       d/redis-batch-lock-timeout-ms
-                       d/redis-batch-lock-wait-ms
-                       (let [{:keys [batch-state] :as batch} (get-batch-state conn id)
-                             status (batch/status-from-counts batch)
-                             {:keys [callback-job-id
-                                     callback-fn-sym
-                                     linger-sec
-                                     queue
-                                     ready-queue
-                                     retry-opts]} batch-state]
-                         (when (= status batch/status-complete)
-                           (when (and
-                                   (some? callback-fn-sym)
-                                   (not callback-job-id))
-                             (let [callback-args (-> (select-keys batch [:successful :dead])
-                                                     (list)
-                                                     (conj id))
-                                   callback-job (-> (job/new callback-fn-sym
-                                                             callback-args
-                                                             queue
-                                                             ready-queue
-                                                             retry-opts)
-                                                    (assoc :batch-id id))]
-                               (redis-cmds/enqueue-back conn ready-queue callback-job)
-                               (redis-cmds/hset conn (d/prefix-batch id) (name :callback-job-id) (:id callback-job))))
-                           (set-batch-expiration conn id linger-sec)))))
+(defn enqueue-callback-on-completion
+  [redis-conn batch-id]
+  (let [{:keys [batch-state] :as batch} (get-batch-state redis-conn batch-id)
+        status (batch/status-from-counts batch)
+        {:keys [callback-fn-sym
+                queue
+                ready-queue
+                retry-opts]} batch-state]
+    (when (= status batch/status-complete)
+      (let [callback-args (list batch-id (select-keys batch [:successful :dead]))
+            callback (batch/new-callback batch-id callback-fn-sym callback-args queue ready-queue retry-opts)]
+        (redis-cmds/enqueue-front redis-conn ready-queue callback)))))
 
 (defn- job-source-set
   [job batch-id]
@@ -134,10 +117,10 @@
           (redis-cmds/move-between-sets redis-conn src-set dst-set job-id)
           (throw ex)))
       (finally
-        ;; Regardless of job success/failure, post-batch-exec must be called.
+        ;; Regardless of job success/failure, enqueue-callback-on-completion must be called.
         ;; Parent function receives return value of `try/catch` block,
         ;; `finally` block runs at the end, but does not override return value.
-        (post-batch-exec redis-conn batch-id)))))
+        (enqueue-callback-on-completion redis-conn batch-id)))))
 
 (defn wrap-state-update [next]
   (fn [opts
