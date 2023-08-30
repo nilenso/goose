@@ -31,19 +31,18 @@
   [coll & args]
   (conj coll args))
 
-(defn- enhance-opts-for-internal-use
+(defn- prefix-queues-inside-opts
   [{:keys [queue retry-opts] :as opts}]
   (assoc opts
     :ready-queue (d/prefix-queue queue)
     :retry-opts (retry/prefix-queue-if-present retry-opts)))
 
 (defn- register-cron-schedule
-  [{:keys [broker queue] :as _opts}
+  [{:keys [broker queue ready-queue retry-opts] :as _opts}
    cron-opts
    execute-fn-sym
    args]
-  (let [{:keys [ready-queue retry-opts]} (enhance-opts-for-internal-use _opts)
-        job-description (j/description execute-fn-sym args queue ready-queue retry-opts)
+  (let [job-description (j/description execute-fn-sym args queue ready-queue retry-opts)
         cron-entry (b/register-cron broker cron-opts job-description)]
     (select-keys cron-entry [:cron-name :cron-schedule :timezone])))
 
@@ -56,8 +55,8 @@
    schedule-epoch-ms
    execute-fn-sym
    args]
-  (let [enhanced-opts (enhance-opts-for-internal-use opts)
-        job (create-job enhanced-opts execute-fn-sym args)]
+  (let [internal-opts (prefix-queues-inside-opts opts)
+        job (create-job internal-opts execute-fn-sym args)]
     (if schedule-epoch-ms
       (b/schedule broker schedule-epoch-ms job)
       (b/enqueue broker job))))
@@ -168,12 +167,13 @@
 
   - [Periodic Jobs wiki](https://github.com/nilenso/goose/wiki/Periodic-Jobs)"
   [opts cron-opts execute-fn-sym & args]
-  (register-cron-schedule opts cron-opts execute-fn-sym args))
+  (let [internal-opts (prefix-queues-inside-opts opts)]
+    (register-cron-schedule internal-opts cron-opts execute-fn-sym args)))
 
 (defn perform-batch
   "Enqueues a batch of jobs for async execution."
   ([opts batch-opts execute-fn-sym args-coll]
-   (let [enhanced-opts (enhance-opts-for-internal-use opts)
-         jobs (map #(create-job enhanced-opts execute-fn-sym %) args-coll)
-         batch (batch/new enhanced-opts batch-opts jobs)]
-     (b/enqueue-batch (:broker enhanced-opts) batch))))
+   (let [internal-opts (prefix-queues-inside-opts opts)
+         jobs (map #(create-job internal-opts execute-fn-sym %) args-coll)
+         batch (batch/new internal-opts batch-opts jobs)]
+     (b/enqueue-batch (:broker internal-opts) batch))))

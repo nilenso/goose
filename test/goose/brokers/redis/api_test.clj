@@ -210,7 +210,7 @@
 (deftest batch-test
   (testing "[redis] batch API"
     (let [batch-id (:id (goose.client/perform-batch tu/redis-client-opts
-                                                    {:linger-sec 1
+                                                    {:linger-sec      1
                                                      :callback-fn-sym `prn}
                                                     `tu/my-fn
                                                     (-> []

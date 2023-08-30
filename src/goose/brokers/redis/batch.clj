@@ -59,13 +59,13 @@
        :dead        dead})))
 
 (defn set-batch-expiration
-  [conn id linger-sec]
+  [redis-conn id linger-sec]
   (let [batch-state-key (d/prefix-batch id)
         enqueued-job-set (d/construct-batch-job-set id d/enqueued-job-set)
         retrying-job-set (d/construct-batch-job-set id d/retrying-job-set)
         successful-job-set (d/construct-batch-job-set id d/successful-job-set)
         dead-job-set (d/construct-batch-job-set id d/dead-job-set)]
-    (car/atomic conn redis-cmds/atomic-lock-attempts
+    (redis-cmds/with-transaction redis-conn
       (car/multi)
       (car/expire batch-state-key linger-sec)
       (car/expire enqueued-job-set linger-sec)
@@ -77,13 +77,10 @@
   [redis-conn batch-id]
   (let [{:keys [batch-state] :as batch} (get-batch-state redis-conn batch-id)
         status (batch/status-from-counts batch)
-        {:keys [callback-fn-sym
-                queue
-                ready-queue
-                retry-opts]} batch-state]
+        {:keys [ready-queue]} batch-state]
     (when (= status batch/status-complete)
       (let [callback-args (list batch-id (select-keys batch [:successful :dead]))
-            callback (batch/new-callback batch-id callback-fn-sym callback-args queue ready-queue retry-opts)]
+            callback (batch/new-callback batch-state callback-args)]
         (redis-cmds/enqueue-front redis-conn ready-queue callback)))))
 
 (defn- job-source-set

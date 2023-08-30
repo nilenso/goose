@@ -13,7 +13,7 @@
   "Sample callback for a batch"
   [batch-id
    {:keys [successful dead]}]
-  (log/info "Batch:" batch-id " execution completed with successful:" successful ", dead:" dead))
+  (log/info "Batch:" batch-id "execution completed. Successful:" successful "Dead:" dead))
 
 (def default-opts
   {:linger-sec      d/redis-batch-linger-sec
@@ -34,13 +34,10 @@
      :created-at      (u/epoch-time-ms)}))
 
 (defn ^:no-doc new-callback
-  [batch-id callback-fn-sym callback-args queue ready-queue retry-opts]
-  (-> (job/new callback-fn-sym
-               callback-args
-               queue
-               ready-queue
-               retry-opts)
-      (assoc :callback-for-batch-id batch-id)))
+  [{:keys [id callback-fn-sym queue ready-queue retry-opts]}
+   callback-args]
+  (-> (job/new callback-fn-sym callback-args queue ready-queue retry-opts)
+      (assoc :callback-for-batch-id id)))
 
 (defn status-from-counts
   [{:keys [enqueued retrying]}]

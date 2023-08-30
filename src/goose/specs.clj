@@ -107,7 +107,8 @@
           :opt-un [::timezone]))
 
 ;;; ============== Batch ==============
-(s/def ::callback-fn-sym (s/nilable ::fn-sym))
+(s/def ::callback-fn-sym
+  (s/and ::fn-sym #(some #{2} (u/arities %))))
 (s/def ::linger-sec nat-int?)
 (s/def ::batch-opts
   (s/keys :req-un [::callback-fn-sym ::linger-sec]))
