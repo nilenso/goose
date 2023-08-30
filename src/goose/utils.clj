@@ -101,7 +101,3 @@
   (->>
     (partition 2 coll)
     (reduce (fn [map [k v]] (assoc map (keyword k) v)) {})))
-
-(defn ^:no-doc hour->sec [hours]
-  (long (* 3600 hours)))
-

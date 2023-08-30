@@ -264,9 +264,3 @@
 ;;; ============ Misc ============
 (defn exists [conn key]
   (wcar* conn (car/exists key)))
-
-(defn expire [conn key sec]
-  (wcar* conn (car/expire key sec)))
-
-(defn ttl [conn key]
-  (wcar* conn (car/ttl key)))
