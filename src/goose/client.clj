@@ -31,29 +31,32 @@
   [coll & args]
   (conj coll args))
 
+(defn- prefix-queues-inside-opts
+  [{:keys [queue retry-opts] :as opts}]
+  (assoc opts
+    :ready-queue (d/prefix-queue queue)
+    :retry-opts (retry/prefix-queue-if-present retry-opts)))
+
 (defn- register-cron-schedule
-  [{:keys [broker queue retry-opts] :as _opts}
+  [{:keys [broker queue ready-queue retry-opts] :as _opts}
    cron-opts
    execute-fn-sym
    args]
-  (let [retry-opts (retry/prefix-queue-if-present retry-opts)
-        ready-queue (d/prefix-queue queue)
-        job-description (j/description execute-fn-sym args queue ready-queue retry-opts)
+  (let [job-description (j/description execute-fn-sym args queue ready-queue retry-opts)
         cron-entry (b/register-cron broker cron-opts job-description)]
     (select-keys cron-entry [:cron-name :cron-schedule :timezone])))
 
 (defn- create-job
-  [{:keys [queue retry-opts]} execute-fn-sym args]
-  (let [retry-opts (retry/prefix-queue-if-present retry-opts)
-        ready-queue (d/prefix-queue queue)]
-    (j/new execute-fn-sym args queue ready-queue retry-opts)))
+  [{:keys [queue retry-opts ready-queue]} execute-fn-sym args]
+  (j/new execute-fn-sym args queue ready-queue retry-opts))
 
 (defn- enqueue
   [{:keys [broker] :as opts}
    schedule-epoch-ms
    execute-fn-sym
    args]
-  (let [job (create-job opts execute-fn-sym args)]
+  (let [internal-opts (prefix-queues-inside-opts opts)
+        job (create-job internal-opts execute-fn-sym args)]
     (if schedule-epoch-ms
       (b/schedule broker schedule-epoch-ms job)
       (b/enqueue broker job))))
@@ -164,11 +167,13 @@
 
   - [Periodic Jobs wiki](https://github.com/nilenso/goose/wiki/Periodic-Jobs)"
   [opts cron-opts execute-fn-sym & args]
-  (register-cron-schedule opts cron-opts execute-fn-sym args))
+  (let [internal-opts (prefix-queues-inside-opts opts)]
+    (register-cron-schedule internal-opts cron-opts execute-fn-sym args)))
 
 (defn perform-batch
   "Enqueues a batch of jobs for async execution."
   ([opts batch-opts execute-fn-sym args-coll]
-   (let [jobs (map #(create-job opts execute-fn-sym %) args-coll)
-         batch (batch/new batch-opts jobs)]
-     (b/enqueue-batch (:broker opts) batch))))
+   (let [internal-opts (prefix-queues-inside-opts opts)
+         jobs (map #(create-job internal-opts execute-fn-sym %) args-coll)
+         batch (batch/new internal-opts batch-opts jobs)]
+     (b/enqueue-batch (:broker internal-opts) batch))))

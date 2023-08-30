@@ -37,14 +37,14 @@
 
   (testing "[redis] enqueued-jobs API over empty list"
     (let [queues (tu/with-timeout default-timeout-ms
-                   (enqueued-jobs/list-all-queues tu/redis-producer))]
+                                  (enqueued-jobs/list-all-queues tu/redis-producer))]
       (is (and (not= :timed-out queues) (empty? queues))))
     (let [jobs (tu/with-timeout default-timeout-ms
-                 (enqueued-jobs/find-by-pattern tu/redis-producer tu/queue (constantly true)))]
+                                (enqueued-jobs/find-by-pattern tu/redis-producer tu/queue (constantly true)))]
       (is (and (not= :timed-out jobs) (empty? jobs))))
     (let [job-id (str (random-uuid))]
       (is (nil? (tu/with-timeout default-timeout-ms
-                  (enqueued-jobs/find-by-id tu/redis-producer tu/queue job-id)))))))
+                                 (enqueued-jobs/find-by-id tu/redis-producer tu/queue job-id)))))))
 
 (deftest scheduled-jobs-test
   (testing "[redis] scheduled-jobs API"
@@ -67,11 +67,11 @@
 
   (testing "[redis] scheduled-jobs API over empty list"
     (let [jobs (tu/with-timeout default-timeout-ms
-                 (scheduled-jobs/find-by-pattern tu/redis-producer (constantly true)))]
+                                (scheduled-jobs/find-by-pattern tu/redis-producer (constantly true)))]
       (is (and (not= :timed-out jobs) (empty? jobs))))
     (let [job-id (str (random-uuid))]
       (is (nil? (tu/with-timeout default-timeout-ms
-                  (scheduled-jobs/find-by-id tu/redis-producer job-id)))))))
+                                 (scheduled-jobs/find-by-id tu/redis-producer job-id)))))))
 
 (defn death-handler [_ _ _])
 (def dead-fn-atom (atom 0))
@@ -123,11 +123,11 @@
 
   (testing "[redis] dead-jobs API over empty list"
     (let [jobs (tu/with-timeout default-timeout-ms
-                 (dead-jobs/find-by-pattern tu/redis-producer (constantly true)))]
+                                (dead-jobs/find-by-pattern tu/redis-producer (constantly true)))]
       (is (and (not= :timed-out jobs) (empty? jobs))))
     (let [job-id (str (random-uuid))]
       (is (nil? (tu/with-timeout default-timeout-ms
-                  (dead-jobs/find-by-id tu/redis-producer job-id)))))))
+                                 (dead-jobs/find-by-id tu/redis-producer job-id)))))))
 
 (deftest cron-entries-test
   (testing "cron entries API"
@@ -203,16 +203,21 @@
                  (:job-description)
                  (select-keys [:execute-fn-sym :args])))))))
 
+(def callback-fn-atom (atom (promise)))
+(defn callback-fn [batch-id _]
+  (deliver @callback-fn-atom batch-id))
+
 (deftest batch-test
   (testing "[redis] batch API"
     (let [batch-id (:id (goose.client/perform-batch tu/redis-client-opts
-                                                    {}
+                                                    {:linger-sec      1
+                                                     :callback-fn-sym `prn}
                                                     `tu/my-fn
                                                     (-> []
                                                         (c/accumulate-batch-args "arg-one")
                                                         (c/accumulate-batch-args "arg-two"))))
           expected-batch {:id         batch-id
-                          :status     "in-progress"
+                          :status     :in-progress
                           :total      2
                           :enqueued   2
                           :retrying   0
@@ -223,4 +228,17 @@
       (is (Long/parseLong created-at))))
   (testing "[redis] batch API with invalid id"
     (is (nil? (batch/status tu/redis-producer
-                            (str (random-uuid)))))))
+                            (str (random-uuid))))))
+  (testing "[redis] batch API with expired batch"
+    (reset! callback-fn-atom (promise))
+    (let [batch-id (:id (goose.client/perform-batch tu/redis-client-opts
+                                                    {:linger-sec      0
+                                                     :callback-fn-sym `callback-fn}
+                                                    `tu/my-fn
+                                                    (-> []
+                                                        (c/accumulate-batch-args "arg"))))
+          worker (w/start tu/redis-worker-opts)]
+      (is (= (deref @callback-fn-atom 200 :api-test-timed-out) batch-id))
+      (Thread/sleep 50) ; Wait for for callback middleware to set batch expiration.
+      (is (nil? (batch/status tu/redis-producer batch-id)))
+      (w/stop worker))))

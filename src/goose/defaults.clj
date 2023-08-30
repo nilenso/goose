@@ -58,6 +58,7 @@
 (def redis-cron-names-pop-limit 50)
 (def redis-heartbeat-sleep-sec 15)
 (def redis-heartbeat-expire-sec 60)
+(def redis-batch-linger-sec 86400)
 (def redis-producer-pool-opts
   {:max-total-per-key 5
    :max-idle-per-key  5
@@ -72,7 +73,7 @@
 (def rmq-default-url "amqp://guest:guest@localhost:5672")
 (def rmq-producer-channels 5)
 (def rmq-prefetch-limit 1)
-(def rmq-delay-limit-ms 4294967295)                         ; (2^32 - 1)
+(def rmq-delay-limit-ms 4294967295) ; (2^32 - 1)
 (def rmq-classic-queue "classic")
 (def rmq-quorum-queue "quorum")
 (def rmq-replication-factor 3)

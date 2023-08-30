@@ -50,25 +50,31 @@
     (let [tags {:function execute-fn-sym :queue queue}]
       (increment metrics-plugin jobs-recovered 1 tags))))
 
+(defn- record-metrics
+  [next
+   {:keys [metrics-plugin] :as opts}
+   {[job-type latency] :latency
+    :keys              [execute-fn-sym queue]
+    :as                job}]
+  (let [tags {:function execute-fn-sym :queue queue}
+        start (u/epoch-time-ms)]
+    (try
+      ;; When a job is executed using API, latency might be negative.
+      (when (pos? latency)
+        (timing metrics-plugin job-type latency tags))
+      (next opts job)
+      (increment metrics-plugin jobs-success 1 tags)
+      (catch Exception ex
+        (increment metrics-plugin jobs-failure 1 tags)
+        (throw ex))
+      (finally
+        (increment metrics-plugin jobs-processed 1 tags)
+        (timing metrics-plugin execution-time (- (u/epoch-time-ms) start) tags)))))
+
 (defn ^:no-doc wrap-metrics
   [next]
   (fn [{:keys [metrics-plugin] :as opts}
-       {[job-type latency] :latency
-        :keys              [execute-fn-sym queue]
-        :as                job}]
+       job]
     (if (enabled? metrics-plugin)
-      (let [tags {:function execute-fn-sym :queue queue}
-            start (u/epoch-time-ms)]
-        (try
-          ;; When a job is executed using API, latency might be negative.
-          (when (pos? latency)
-            (timing metrics-plugin job-type latency tags))
-          (next opts job)
-          (increment metrics-plugin jobs-success 1 tags)
-          (catch Exception ex
-            (increment metrics-plugin jobs-failure 1 tags)
-            (throw ex))
-          (finally
-            (increment metrics-plugin jobs-processed 1 tags)
-            (timing metrics-plugin execution-time (- (u/epoch-time-ms) start) tags))))
+      (record-metrics next opts job)
       (next opts job))))

@@ -26,14 +26,14 @@
   (enqueue
     [this job]
     (rmq-cmds/enqueue-back (u/random-element (:channels this))
-                           (assoc (:queue-type this) :queue (job/ready-queue job))
+                           (assoc (:queue-type this) :queue (job/ready-or-retry-queue job))
                            (:publisher-confirms this)
                            job))
 
   (schedule
     [this schedule-epoch-ms job]
     (rmq-scheduler/run-at (u/random-element (:channels this))
-                          (assoc (:queue-type this) :queue (job/ready-queue job))
+                          (assoc (:queue-type this) :queue (job/ready-or-retry-queue job))
                           (:publisher-confirms this)
                           schedule-epoch-ms
                           job))

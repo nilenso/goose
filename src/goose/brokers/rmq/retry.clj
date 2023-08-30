@@ -17,7 +17,7 @@
         retry-delay-ms (* ((u/require-resolve retry-delay-sec-fn-sym) retry-count) 1000)
         retry-at (+ retry-delay-ms (u/epoch-time-ms))
         job (assoc-in job [:state :retry-at] retry-at)
-        queue-opts (assoc queue-type :queue (job/ready-queue job))]
+        queue-opts (assoc queue-type :queue (job/ready-or-retry-queue job))]
     (u/log-on-exceptions (error-handler error-service-config job ex))
     (rmq-cmds/schedule ch queue-opts publisher-confirms job retry-delay-ms)))
 

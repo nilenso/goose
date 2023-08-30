@@ -83,10 +83,13 @@
   {:error           (str ex)
    :last-retried-at (when first-failed-at (u/epoch-time-ms))
    :first-failed-at (or first-failed-at (u/epoch-time-ms))
+   ;; `retry-count` denotes the count of job retries ,NOT the count job executions.
+   ;; Maximum possible job executions = max-retries + 1.
+   ;; 5 `max-retries` means a job will be retried upto 5 times, AFTER failure in first execution.
+   ;; In total, a job will be executed 6 times before being marked as dead.
+   ;; 0 `max-retries` means a job will be marked as dead, IF it fails in first execution.
    :retry-count     (if retry-count (inc retry-count) 0)})
 
 (defn ^:no-doc set-failed-config
   [job ex]
-  (assoc
-   job :state
-   (failure-state job ex)))
+  (assoc job :state (failure-state job ex)))
