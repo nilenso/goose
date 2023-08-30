@@ -1,9 +1,22 @@
 (ns goose.batch
   (:require
-    [goose.utils :as u]))
+    [goose.utils :as u]
+    [goose.defaults :as d]
+
+    [clojure.tools.logging :as log]))
 
 (def status-in-progress :in-progress)
 (def status-complete :complete)
+
+(defn default-callback
+  "Sample callback for a batch"
+  [batch-id
+   {:keys [successful dead]}]
+  (log/info "Batch:" batch-id " execution completed with successful:" successful ", dead:" dead))
+
+(def default-opts
+  {:linger-sec      d/redis-batch-linger-sec
+   :callback-fn-sym `default-callback})
 
 (defn new
   [{:keys [queue ready-queue retry-opts]}

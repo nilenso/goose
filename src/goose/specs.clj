@@ -110,8 +110,7 @@
 (s/def ::callback-fn-sym (s/nilable ::fn-sym))
 (s/def ::linger-sec nat-int?)
 (s/def ::batch-opts
-  (s/keys :opt-un [::callback-fn-sym
-                   ::linger-sec]))
+  (s/keys :req-un [::callback-fn-sym ::linger-sec]))
 (s/def ::batch-args (s/and sequential? #(every? sequential? %) (s/* ::args-serializable?)))
 
 ;;; ============== Retry Opts ==============

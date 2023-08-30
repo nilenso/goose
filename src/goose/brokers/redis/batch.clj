@@ -44,15 +44,13 @@
         retrying-job-set (d/construct-batch-job-set id d/retrying-job-set)
         successful-job-set (d/construct-batch-job-set id d/successful-job-set)
         dead-job-set (d/construct-batch-job-set id d/dead-job-set)
-        [_ [batch-state enqueued retrying successful dead]]
-        (car/atomic redis-conn
-          redis-cmds/atomic-lock-attempts
-          (car/multi)
-          (car/hgetall batch-state-key)
-          (car/scard enqueued-job-set)
-          (car/scard retrying-job-set)
-          (car/scard successful-job-set)
-          (car/scard dead-job-set))]
+        [batch-state enqueued retrying successful dead] (redis-cmds/wcar*
+                                                          redis-conn
+                                                          (car/hgetall batch-state-key)
+                                                          (car/scard enqueued-job-set)
+                                                          (car/scard retrying-job-set)
+                                                          (car/scard successful-job-set)
+                                                          (car/scard dead-job-set))]
     (when (not-empty batch-state)
       {:batch-state (u/flat-sequence->map batch-state)
        :enqueued    enqueued
