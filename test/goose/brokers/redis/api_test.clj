@@ -239,4 +239,6 @@
                                                         (c/accumulate-batch-args "arg"))))
           worker (w/start tu/redis-worker-opts)]
       (is (= (deref @callback-fn-atom 200 :api-test-timed-out) batch-id))
+      (Thread/sleep 50) ; Wait for for callback middleware to set batch expiration.
+      (is (nil? (batch/status tu/redis-producer batch-id)))
       (w/stop worker))))

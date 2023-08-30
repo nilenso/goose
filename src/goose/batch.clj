@@ -40,7 +40,7 @@
                queue
                ready-queue
                retry-opts)
-      (assoc :callback-for-batch batch-id)))
+      (assoc :callback-for-batch-id batch-id)))
 
 (defn status-from-counts
   [{:keys [enqueued retrying]}]

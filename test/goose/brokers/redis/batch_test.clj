@@ -5,8 +5,10 @@
     [goose.defaults :as d]
     [goose.retry :as retry]
     [goose.test-utils :as tu]
+    [goose.utils :as u]
 
-    [clojure.test :refer [deftest is testing use-fixtures]]))
+    [clojure.test :refer [deftest is testing use-fixtures]]
+    [taoensso.carmine :as car]))
 
 ;;; ======= Setup & Teardown ==========
 (use-fixtures :each tu/redis-fixture)
@@ -195,20 +197,19 @@
   (testing "Batch state expires after the linger duration has elapsed"
     (let [batch-id (:id batch)
           batch-state-key (d/prefix-batch batch-id)
-          linger-sec "5"
-          linger-ms (* (Long/parseLong linger-sec) 1000)]
+          linger-sec 2]
       (redis-batch/enqueue tu/redis-conn batch)
-      (is (< (redis-cmds/ttl tu/redis-conn batch-state-key) 0))
-      (is (< (redis-cmds/ttl tu/redis-conn enqueued-job-set) 0))
-      (is (< (redis-cmds/ttl tu/redis-conn retry-job-set) 0))
-      (is (< (redis-cmds/ttl tu/redis-conn successful-job-set) 0))
-      (is (< (redis-cmds/ttl tu/redis-conn dead-job-set) 0))
+      (is (< (redis-cmds/wcar* tu/redis-conn (car/ttl batch-state-key)) 0))
+      (is (< (redis-cmds/wcar* tu/redis-conn (car/ttl enqueued-job-set)) 0))
+      (is (< (redis-cmds/wcar* tu/redis-conn (car/ttl retry-job-set)) 0))
+      (is (< (redis-cmds/wcar* tu/redis-conn (car/ttl successful-job-set)) 0))
+      (is (< (redis-cmds/wcar* tu/redis-conn (car/ttl dead-job-set)) 0))
 
       (redis-batch/set-batch-expiration tu/redis-conn batch-id linger-sec)
-      (is (> (redis-cmds/ttl tu/redis-conn batch-state-key) 0))
-      (is (> (redis-cmds/ttl tu/redis-conn enqueued-job-set) 0))
+      (is (> (redis-cmds/wcar* tu/redis-conn (car/ttl batch-state-key)) 0))
+      (is (> (redis-cmds/wcar* tu/redis-conn (car/ttl enqueued-job-set)) 0))
 
-      (Thread/sleep ^long linger-ms)
+      (u/sleep linger-sec)
       (is (= (redis-cmds/exists tu/redis-conn batch-state-key) 0))
       (is (= (redis-cmds/exists tu/redis-conn enqueued-job-set) 0))
       (is (= (redis-cmds/exists tu/redis-conn retry-job-set) 0))
