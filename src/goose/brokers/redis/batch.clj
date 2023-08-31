@@ -5,7 +5,6 @@
     [goose.defaults :as d]
     [goose.job :as job]
     [goose.retry]
-    [goose.utils :as u]
 
     [taoensso.carmine :as car]))
 
@@ -46,13 +45,13 @@
         dead-job-set (d/construct-batch-job-set id d/dead-job-set)
         [batch-state enqueued retrying successful dead] (redis-cmds/wcar*
                                                           redis-conn
-                                                          (car/hgetall batch-state-key)
+                                                          (car/parse-map (car/hgetall batch-state-key) :keywordize)
                                                           (car/scard enqueued-job-set)
                                                           (car/scard retrying-job-set)
                                                           (car/scard successful-job-set)
                                                           (car/scard dead-job-set))]
     (when (not-empty batch-state)
-      {:batch-state (u/flat-sequence->map batch-state)
+      {:batch-state batch-state
        :enqueued    enqueued
        :retrying    retrying
        :successful  successful
@@ -75,13 +74,16 @@
 
 (defn- enqueue-callback-on-completion
   [redis-conn batch-id]
-  (let [{:keys [batch-state] :as batch} (get-batch-state redis-conn batch-id)
-        status (batch/status-from-counts batch)
-        {:keys [ready-queue]} batch-state]
-    (when (= status batch/status-complete)
-      (let [callback-args (list batch-id (select-keys batch [:successful :dead]))
-            callback (batch/new-callback batch-state callback-args)]
-        (redis-cmds/enqueue-front redis-conn ready-queue callback)))))
+  (when-let [batch (get-batch-state redis-conn batch-id)]
+    ;; If a job is executed after a batch has been deleted,
+    ;; `get-batch-state` will return nil.
+    (let [status (batch/status-from-counts batch)
+          {{:keys [ready-queue]} :batch-state
+           :keys [batch-state]} batch]
+      (when (= status batch/status-complete)
+        (let [callback-args (list batch-id (select-keys batch [:successful :dead]))
+              callback (batch/new-callback batch-state callback-args)]
+          (redis-cmds/enqueue-front redis-conn ready-queue callback))))))
 
 (defn- job-source-set
   [job batch-id]

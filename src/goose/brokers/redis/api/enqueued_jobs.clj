@@ -13,8 +13,7 @@
   (redis-cmds/find-in-list redis-conn (d/prefix-queue queue) match? limit))
 
 (defn find-by-id [redis-conn queue id]
-  (let [
-        limit 1
+  (let [limit 1
         match? (fn [job] (= (:id job) id))]
     (first (find-by-pattern redis-conn queue match? limit))))
 
