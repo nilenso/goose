@@ -93,7 +93,9 @@
 
   ;; batch API
   (batch-status [this id]
-    (batch-api/status (:redis-conn this) id)))
+    (batch-api/status (:redis-conn this) id))
+  (batch-delete [this id]
+    (batch-api/delete (:redis-conn this) id)))
 
 (def default-opts
   "Map of sample config for Redis Message Broker.
