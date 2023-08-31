@@ -111,4 +111,4 @@
     (= [1 1] atomic-results)))
 
 (defn purge [redis-conn]
-  (= 2 (redis-cmds/del-keys redis-conn [d/prefixed-cron-entries d/prefixed-cron-queue])))
+  (= 2 (redis-cmds/del-keys redis-conn d/prefixed-cron-entries d/prefixed-cron-queue)))

@@ -34,4 +34,4 @@
               (enqueued-jobs/delete redis-conn job-enqueued-for-retry))))))
 
     ;; delete batch
-    (redis-cmds/del-keys redis-conn [batch-state-key enqueued-job-set retrying-job-set successful-job-set dead-job-set])))
+    (redis-cmds/del-keys redis-conn batch-state-key enqueued-job-set retrying-job-set successful-job-set dead-job-set)))
