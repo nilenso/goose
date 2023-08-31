@@ -23,7 +23,7 @@
 
   Some tasks are message-broker specific & need not be implemented by all workers.\\
   For instance, RabbitMQ natively supports scheduled jobs & orphan handling,\\
-  and it need not be explicitly implemented by it's worker.")
+  and it need not be explicitly implemented by its worker.")
 
   ;; enqueued-jobs API
   (enqueued-jobs-list-all-queues [this] "Lists all the queues.")
@@ -31,7 +31,7 @@
   (enqueued-jobs-find-by-id [this queue id] "Finds a Job by `:id` in given queue.")
   (enqueued-jobs-find-by-pattern [this queue match? limit] "Finds a Job by user-defined parameters in given queue.")
   (enqueued-jobs-prioritise-execution [this job] "Brings a Job anywhere in the queue to front of queue.")
-  (enqueued-jobs-delete [this job] "Deletes given Job from it's queue.")
+  (enqueued-jobs-delete [this job] "Deletes given Job from its queue.")
   (enqueued-jobs-purge [this queue] "Purges all the Jobs in given queue.")
 
   ;; scheduled-jobs API
@@ -60,4 +60,5 @@
   (dead-jobs-purge [this] "Purges all the Dead Jobs.")
 
   ;; batch API
-  (batch-status [this id] "Finds a Batch by `:id`"))
+  (batch-status [this id] "Finds a Batch by `:id`")
+  (batch-delete [this id] "Deletes given Batch and its jobs."))

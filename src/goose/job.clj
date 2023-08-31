@@ -26,7 +26,7 @@
 
 (defn description
   "A job description is a description of how the job
-  should be created. It's a job without the id or enqueued-at."
+  should be created. It is a job without the id or enqueued-at."
   [execute-fn-sym args queue ready-queue retry-opts]
   {:execute-fn-sym execute-fn-sym
    :args           args

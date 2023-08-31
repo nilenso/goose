@@ -73,7 +73,7 @@
       (is (nil? (tu/with-timeout default-timeout-ms
                                  (scheduled-jobs/find-by-id tu/redis-producer job-id)))))))
 
-(defn death-handler [_ _ _])
+(defn error-or-death-handler [_ _ _])
 (def dead-fn-atom (atom 0))
 (defn dead-fn
   [id]
@@ -85,7 +85,7 @@
     (let [worker (w/start tu/redis-worker-opts)
           retry-opts (assoc retry/default-opts
                        :max-retries 0
-                       :death-handler-fn-sym `death-handler)
+                       :death-handler-fn-sym `error-or-death-handler)
           job-opts (assoc tu/redis-client-opts :retry-opts retry-opts)
           dead-job-id-1 (:id (c/perform-async job-opts `dead-fn 11))
           _ (Thread/sleep ^long (rand-int 15))
@@ -203,42 +203,75 @@
                  (:job-description)
                  (select-keys [:execute-fn-sym :args])))))))
 
+(def job-failed-atom (atom (promise)))
+(defn failing-fn [arg]
+  (deliver @job-failed-atom arg)
+  (/ 1 0))
 (def callback-fn-atom (atom (promise)))
 (defn callback-fn [batch-id _]
   (deliver @callback-fn-atom batch-id))
 
 (deftest batch-test
-  (testing "[redis] batch API"
-    (let [batch-id (:id (goose.client/perform-batch tu/redis-client-opts
-                                                    {:linger-sec      1
-                                                     :callback-fn-sym `prn}
-                                                    `tu/my-fn
-                                                    (-> []
-                                                        (c/accumulate-batch-args "arg-one")
-                                                        (c/accumulate-batch-args "arg-two"))))
-          expected-batch {:id         batch-id
-                          :status     :in-progress
-                          :total      2
-                          :enqueued   2
-                          :retrying   0
-                          :successful 0
-                          :dead       0}
-          {:keys [created-at] :as batch} (batch/status tu/redis-producer batch-id)]
-      (is (= expected-batch (dissoc batch :created-at)))
-      (is (Long/parseLong created-at))))
-  (testing "[redis] batch API with invalid id"
-    (is (nil? (batch/status tu/redis-producer
-                            (str (random-uuid))))))
-  (testing "[redis] batch API with expired batch"
-    (reset! callback-fn-atom (promise))
-    (let [batch-id (:id (goose.client/perform-batch tu/redis-client-opts
-                                                    {:linger-sec      0
-                                                     :callback-fn-sym `callback-fn}
-                                                    `tu/my-fn
-                                                    (-> []
-                                                        (c/accumulate-batch-args "arg"))))
-          worker (w/start tu/redis-worker-opts)]
-      (is (= (deref @callback-fn-atom 200 :api-test-timed-out) batch-id))
-      (Thread/sleep 50) ; Wait for for callback middleware to set batch expiration.
-      (is (nil? (batch/status tu/redis-producer batch-id)))
-      (w/stop worker))))
+  (let [arg "foo"
+        batch-opts {:linger-sec      1
+                    :callback-fn-sym `callback-fn}
+        batch-args [(list arg)]
+        batch-job? (fn [job] (:batch-id job))]
+    (testing "[redis] batch API"
+      (let [batch-id (:id (goose.client/perform-batch tu/redis-client-opts batch-opts `tu/my-fn batch-args))
+            expected-batch {:id         batch-id
+                            :status     :in-progress
+                            :total      1
+                            :enqueued   1
+                            :retrying   0
+                            :successful 0
+                            :dead       0}
+            {:keys [created-at] :as batch} (batch/status tu/redis-producer batch-id)]
+        (is (= expected-batch (dissoc batch :created-at)))
+        (is (Long/parseLong created-at))
+        (is (= 2 (batch/delete tu/redis-producer batch-id)))))
+    (testing "[redis] batch API with invalid id"
+      (is (nil? (batch/status tu/redis-producer "some-id"))))
+    (testing "[redis] batch API with expired batch"
+      (reset! callback-fn-atom (promise))
+      (let [batch-opts (assoc batch-opts :linger-sec 0)
+            batch-id (:id (goose.client/perform-batch tu/redis-client-opts batch-opts `tu/my-fn batch-args))
+            worker (w/start tu/redis-worker-opts)]
+        (is (= (deref @callback-fn-atom 200 :api-test-timed-out) batch-id))
+        (Thread/sleep 50) ; Wait for for callback middleware to set batch expiration.
+        (is (nil? (batch/status tu/redis-producer batch-id)))
+        (w/stop worker)))
+    (testing "[redis] batch/delete for enqueued jobs"
+      (let [batch-id (:id (goose.client/perform-batch tu/redis-client-opts batch-opts `tu/my-fn batch-args))
+            queue (:queue tu/redis-client-opts)]
+
+        (is (not-empty (enqueued-jobs/find-by-pattern tu/redis-producer queue batch-job?)))
+        (batch/delete tu/redis-producer batch-id)
+        (is (empty? (enqueued-jobs/find-by-pattern tu/redis-producer queue batch-job?)))))
+    (testing "[redis] batch/delete for scheduled retrying jobs"
+      (reset! job-failed-atom (promise))
+      (let [client-opts (assoc-in tu/redis-client-opts [:retry-opts :error-handler-fn-sym] `error-or-death-handler)
+            batch-id (:id (goose.client/perform-batch client-opts batch-opts `failing-fn batch-args))
+            worker (w/start tu/redis-worker-opts)]
+        (is (= (deref @job-failed-atom 100 :batch-delete-scheduled-retry-test-timed-out) arg))
+        (w/stop worker)
+
+        (is (not-empty (scheduled-jobs/find-by-pattern tu/redis-producer batch-job?)))
+        (batch/delete tu/redis-producer batch-id)
+        (is (empty? (scheduled-jobs/find-by-pattern tu/redis-producer batch-job?)))))
+    (testing "[redis] batch/delete for enqueued retrying jobs"
+      (reset! job-failed-atom (promise))
+      (let [retry-queue "batch-delete-api-test"
+            client-opts (update-in tu/redis-client-opts [:retry-opts] assoc
+                                   :retry-queue retry-queue
+                                   :error-handler-fn-sym `error-or-death-handler)
+            batch-id (:id (goose.client/perform-batch client-opts batch-opts `failing-fn batch-args))
+            worker (w/start tu/redis-worker-opts)]
+        (is (= (deref @job-failed-atom 100 :batch-delete-enqueued-retry-test-timed-out) arg))
+        (w/stop worker)
+        (let [retrying-job (scheduled-jobs/find-by-pattern tu/redis-producer batch-job?)]
+          (scheduled-jobs/prioritise-execution tu/redis-producer (first retrying-job)))
+
+        (is (not-empty (enqueued-jobs/find-by-pattern tu/redis-producer retry-queue batch-job?)))
+        (batch/delete tu/redis-producer batch-id)
+        (is (empty? (enqueued-jobs/find-by-pattern tu/redis-producer retry-queue batch-job?)))))))

@@ -41,4 +41,4 @@
          redis-conn d/prefixed-dead-queue epoch-ms)))
 
 (defn purge [redis-conn]
-  (= 1 (redis-cmds/del-keys redis-conn [d/prefixed-dead-queue])))
+  (= 1 (redis-cmds/del-keys redis-conn d/prefixed-dead-queue)))

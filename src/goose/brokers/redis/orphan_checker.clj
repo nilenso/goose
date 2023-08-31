@@ -35,7 +35,7 @@
         (check-liveness opts (remove #{id} processes)))
       (let [local-workers-count (heartbeat/local-workers-count redis-conn process-set)]
         ;; Scheduler & metrics runners derive sleep time from global-workers-count.
-        ;; Orphan checker only recovers jobs from it's ready queue;
+        ;; Orphan checker only recovers jobs from its ready queue;
         ;; hence it takes local-workers-count into account for sleeping.
         ;; Sleep for (local-workers-count) minutes + jitters.
         ;; On average, Goose checks for orphan jobs every 1 minute.

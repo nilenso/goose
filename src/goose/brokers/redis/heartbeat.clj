@@ -34,7 +34,7 @@
 
 (defn stop
   [{:keys [id redis-conn process-set in-progress-queue]}]
-  (redis-cmds/del-keys redis-conn [(str d/heartbeat-prefix id)])
+  (redis-cmds/del-keys redis-conn (str d/heartbeat-prefix id))
   ;; `(redis-cmds/list-size in-progress-queue)` won't be empty
   ;; when jobs swallow thread-interrupted exception;
   ;; and don't exit in-time for graceful shutdown.

@@ -35,7 +35,7 @@
   (b/enqueued-jobs-prioritise-execution broker job))
 
 (defn delete
-  "Deletes given Job from it's queue."
+  "Deletes given Job from its queue."
   [broker job]
   (b/enqueued-jobs-delete broker job))
 
