@@ -22,9 +22,11 @@
     (when (redis-cmds/list-position redis-conn ready-queue job)
       (redis-cmds/del-from-list-and-enqueue-front redis-conn ready-queue job))))
 
-(defn delete [redis-conn job]
-  (let [ready-queue (:ready-queue job)]
-    (= 1 (redis-cmds/del-from-list redis-conn ready-queue job))))
+(defn delete
+  ([redis-conn job]
+   (delete redis-conn job (:ready-queue job)))
+  ([redis-conn job queue]
+   (= 1 (redis-cmds/del-from-list redis-conn queue job))))
 
 (defn purge [redis-conn queue]
   (let [ready-queue (d/prefix-queue queue)]
