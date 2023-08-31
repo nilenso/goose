@@ -19,3 +19,7 @@
   (let [batch (b/batch-status broker id)]
     (when batch
       (into-batch-map batch))))
+
+(defn delete
+  [broker id]
+  (b/batch-delete broker id))

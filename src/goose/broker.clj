@@ -60,4 +60,5 @@
   (dead-jobs-purge [this] "Purges all the Dead Jobs.")
 
   ;; batch API
-  (batch-status [this id] "Finds a Batch by `:id`"))
+  (batch-status [this id] "Finds a Batch by `:id`")
+  (batch-delete [this id] "Deletes given Batch and it's jobs."))
