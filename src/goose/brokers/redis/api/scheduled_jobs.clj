@@ -24,4 +24,4 @@
   (= 1 (redis-cmds/del-from-sorted-set redis-conn d/prefixed-schedule-queue job)))
 
 (defn purge [redis-conn]
-  (= 1 (redis-cmds/del-keys redis-conn [d/prefixed-schedule-queue])))
+  (= 1 (redis-cmds/del-keys redis-conn d/prefixed-schedule-queue)))

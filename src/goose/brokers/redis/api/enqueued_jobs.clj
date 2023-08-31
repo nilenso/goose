@@ -28,4 +28,4 @@
 
 (defn purge [redis-conn queue]
   (let [ready-queue (d/prefix-queue queue)]
-    (= 1 (redis-cmds/del-keys redis-conn [ready-queue]))))
+    (= 1 (redis-cmds/del-keys redis-conn ready-queue))))

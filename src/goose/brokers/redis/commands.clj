@@ -71,8 +71,8 @@
 (defn get-key [conn key]
   (wcar* conn (car/get key)))
 
-(defn del-keys [conn keys]
-  (wcar* conn (apply car/del keys)))
+(defn del-keys [conn key & keys]
+  (wcar* conn (apply car/del key keys)))
 
 ;;; ============== Sets ===============
 (defn add-to-set [conn set member]
