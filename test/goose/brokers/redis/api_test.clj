@@ -244,6 +244,7 @@
     (testing "[redis] batch/delete for enqueued jobs"
       (let [batch-id (:id (goose.client/perform-batch tu/redis-client-opts batch-opts `tu/my-fn batch-args))
             queue (:queue tu/redis-client-opts)]
+
         (is (not-empty (enqueued-jobs/find-by-pattern tu/redis-producer queue batch-job?)))
         (batch/delete tu/redis-producer batch-id)
         (is (empty? (enqueued-jobs/find-by-pattern tu/redis-producer queue batch-job?)))))

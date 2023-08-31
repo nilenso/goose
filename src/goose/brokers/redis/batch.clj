@@ -74,9 +74,9 @@
 
 (defn- enqueue-callback-on-completion
   [redis-conn batch-id]
+  ;; If a job is executed after a batch has been deleted,
+  ;; `when-let` guards against nil return from `get-batch-state`.
   (when-let [batch (get-batch-state redis-conn batch-id)]
-    ;; If a job is executed after a batch has been deleted,
-    ;; `get-batch-state` will return nil.
     (let [status (batch/status-from-counts batch)
           {{:keys [ready-queue]} :batch-state
            :keys [batch-state]} batch]
