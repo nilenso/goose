@@ -1,6 +1,6 @@
 (ns goose.api.cron-jobs
   "API to manage Periodic Jobs AKA Cron Entries.\\
-  To update a cron entry, call [[goose.client/perform-every]] since it's idempotent.
+  To update a cron entry, call [[goose.client/perform-every]] since it is idempotent.
   - [API wiki](https://github.com/nilenso/goose/wiki/API)"
   (:require
     [goose.broker :as b]))
