@@ -25,12 +25,12 @@
   (some #{status} terminal-states))
 
 (defn status-from-job-states
-  [{:keys [successful dead total]}]
+  [enqueued retrying successful dead]
   (cond
-    (= total successful) status-success
-    (= total dead) status-dead
-    (= total (+ successful dead)) status-partial-success
-    :else status-in-progress))
+    (< 0 (+ enqueued retrying)) status-in-progress
+    (= 0 dead) status-success
+    (= 0 successful) status-dead
+    :else status-partial-success))
 
 (defn new
   [{:keys [queue ready-queue retry-opts]}
