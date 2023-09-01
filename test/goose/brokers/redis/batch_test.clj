@@ -205,7 +205,7 @@
       (is (< (redis-cmds/wcar* tu/redis-conn (car/ttl successful-job-set)) 0))
       (is (< (redis-cmds/wcar* tu/redis-conn (car/ttl dead-job-set)) 0))
 
-      (redis-batch/set-batch-expiration tu/redis-conn batch-id linger-sec)
+      (redis-batch/set-batch-expiration tu/redis-conn {:id batch-id :linger-sec linger-sec})
       (is (> (redis-cmds/wcar* tu/redis-conn (car/ttl batch-state-key)) 0))
       (is (> (redis-cmds/wcar* tu/redis-conn (car/ttl enqueued-job-set)) 0))
 

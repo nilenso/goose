@@ -4,7 +4,9 @@
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]
     [goose.job :as job]
+    [goose.metrics :as m]
     [goose.retry]
+    [goose.utils :as u]
 
     [taoensso.carmine :as car]))
 
@@ -58,7 +60,7 @@
        :dead        dead})))
 
 (defn set-batch-expiration
-  [redis-conn id linger-sec]
+  [redis-conn {:keys [id linger-sec]}]
   (let [batch-state-key (d/prefix-batch id)
         enqueued-job-set (d/construct-batch-job-set id d/enqueued-job-set)
         retrying-job-set (d/construct-batch-job-set id d/retrying-job-set)
@@ -72,6 +74,16 @@
       (car/expire successful-job-set linger-sec)
       (car/expire dead-job-set linger-sec))))
 
+(defn- record-metrics
+  [{:keys [metrics-plugin]}
+   {:keys [execute-fn-sym]}
+   {:keys [id created-at]}]
+  (when (m/enabled? metrics-plugin)
+    (let [created-at (Long/parseLong created-at)
+          completion-time (u/ms->sec (- (u/epoch-time-ms) created-at))
+          tags {:batch-id id :execute-fn-sym execute-fn-sym}]
+      (m/timing metrics-plugin m/batch-completion-time completion-time tags))))
+
 (defn- enqueue-callback-on-completion
   [redis-conn batch-id]
   ;; If a job is executed after a batch has been deleted,
@@ -79,7 +91,7 @@
   (when-let [batch (get-batch-state redis-conn batch-id)]
     (let [status (batch/status-from-counts batch)
           {{:keys [ready-queue]} :batch-state
-           :keys [batch-state]} batch]
+           :keys                 [batch-state]} batch]
       (when (= status batch/status-complete)
         (let [callback-args (list batch-id (select-keys batch [:successful :dead]))
               callback (batch/new-callback batch-state callback-args)]
@@ -134,8 +146,9 @@
        {batch-id :callback-for-batch-id :as job}]
     (if batch-id
       (let [response (next opts job)
-            {{:keys [linger-sec]} :batch-state} (get-batch-state redis-conn batch-id)]
-        (set-batch-expiration redis-conn batch-id linger-sec)
+            {:keys [batch-state]} (get-batch-state redis-conn batch-id)]
+        (set-batch-expiration redis-conn batch-state)
+        (record-metrics opts job batch-state)
         response)
       (next opts job))))
 

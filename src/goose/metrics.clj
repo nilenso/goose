@@ -13,6 +13,7 @@
 (defonce ^:no-doc jobs-recovered "jobs.recovered")
 
 (defonce ^:no-doc execution-time "job.execution_time")
+(defonce ^:no-doc batch-completion-time "batch.completion_time")
 
 (defonce ^:no-doc execution-latency "execution.latency")
 (defonce ^:no-doc schedule-latency "scheduled.latency")
