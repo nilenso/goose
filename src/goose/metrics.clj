@@ -26,6 +26,7 @@
 (defonce ^:no-doc schedule-queue-size "scheduled_queue.size")
 (defonce ^:no-doc periodic-jobs-size "periodic_jobs.size")
 (defonce ^:no-doc dead-queue-size "dead_queue.size")
+(defonce ^:no-doc batches-count "batches.count")
 
 (defprotocol Metrics
   "Protocol that Metrics Backends should implement
