@@ -9,26 +9,26 @@
 
     [clj-statsd]))
 
-(defn- statsd-queues-size
+(defn- get-queues-count-for-metrics
   [redis-conn queues]
   (map
     (fn [queue]
-      [(m/format-queue-size queue) (redis-cmds/list-size redis-conn queue)])
+      [(m/format-queue-count queue) (redis-cmds/list-size redis-conn queue)])
     queues))
 
-(defn- get-size-of-all-queues
+(defn- get-count-of-enqueued-jobs
   [redis-conn]
   (let [queues (redis-cmds/find-lists redis-conn (str d/queue-prefix "*"))
-        queues-size (statsd-queues-size redis-conn queues)
-        queues->size (into {} queues-size)
-        total-size (reduce + (vals queues->size))]
-    (assoc queues->size m/total-enqueued-size total-size)))
+        queues-count (get-queues-count-for-metrics redis-conn queues)
+        enqueued-jobs->count (into {} queues-count)
+        total-enqueued-jobs-count (reduce + (vals enqueued-jobs->count))]
+    (assoc enqueued-jobs->count m/total-enqueued-jobs-count total-enqueued-jobs-count)))
 
-(defn- get-size-of-protected-queues
+(defn- get-count-of-jobs-in-protected-queues
   [redis-conn]
-  {m/schedule-queue-size (redis-cmds/sorted-set-size redis-conn d/prefixed-schedule-queue)
-   m/dead-queue-size     (redis-cmds/sorted-set-size redis-conn d/prefixed-dead-queue)
-   m/periodic-jobs-size  (cron/size redis-conn)})
+  {m/schedule-jobs-count (redis-cmds/sorted-set-size redis-conn d/prefixed-schedule-queue)
+   m/dead-jobs-count     (redis-cmds/sorted-set-size redis-conn d/prefixed-dead-queue)
+   m/periodic-jobs-count (cron/size redis-conn)})
 
 (defn- get-count-of-all-batches
   [redis-conn]
@@ -36,10 +36,10 @@
 
 (defn- get-count-of-all-job-types
   [redis-conn]
-  (let [protected-queues->size (get-size-of-protected-queues redis-conn)
-        queues->size (get-size-of-all-queues redis-conn)
+  (let [jobs-in-protected-queues->count (get-count-of-jobs-in-protected-queues redis-conn)
+        enqueued-jobs->count (get-count-of-enqueued-jobs redis-conn)
         batches->count (get-count-of-all-batches redis-conn)]
-    (merge protected-queues->size queues->size batches->count)))
+    (merge jobs-in-protected-queues->count enqueued-jobs->count batches->count)))
 
 (defn run
   [{:keys [internal-thread-pool redis-conn metrics-plugin]}]
