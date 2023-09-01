@@ -252,14 +252,21 @@
 
 ;;; ============ Hashes ============
 
-(defn hset [conn hash & field_value]
-  (wcar* conn (apply car/hset hash field_value)))
-
 (defn hmset* [conn hash m]
   (wcar* conn (car/hmset* hash m)))
 
 (defn parse-map [conn hash]
   (wcar* conn (car/parse-map (car/hgetall hash) :keywordize)))
+
+(defn- scan-for-hashes [conn cursor match count]
+  (wcar* conn (car/scan cursor "MATCH" match "COUNT" count "TYPE" "HASH")))
+
+(defn find-hashes
+  [conn match-str]
+  (let [scan-fn (fn [conn _ cursor]
+                  (let [count 1]
+                    (scan-for-hashes conn cursor match-str count)))]
+    (doall (scan-seq conn scan-fn))))
 
 ;;; ============ Misc ============
 (defn exists [conn key]

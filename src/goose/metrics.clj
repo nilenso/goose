@@ -11,20 +11,24 @@
 (defonce ^:no-doc jobs-success "jobs.succeeded")
 (defonce ^:no-doc jobs-failure "jobs.failed")
 (defonce ^:no-doc jobs-recovered "jobs.recovered")
+(defn ^:no-doc batch-status [status]
+  (str "batch." (name status)))
 
 (defonce ^:no-doc execution-time "job.execution_time")
+(defonce ^:no-doc batch-completion-time "batch.completion_time")
 
 (defonce ^:no-doc execution-latency "execution.latency")
 (defonce ^:no-doc schedule-latency "scheduled.latency")
 (defonce ^:no-doc cron-schedule-latency "cron_scheduled.latency")
 (defonce ^:no-doc retry-latency "retry.latency")
 
-(defn ^:no-doc format-queue-size [queue]
-  (format "enqueued.%s.size" (d/affix-queue queue)))
-(defonce ^:no-doc total-enqueued-size "total_enqueued.size")
-(defonce ^:no-doc schedule-queue-size "scheduled_queue.size")
-(defonce ^:no-doc periodic-jobs-size "periodic_jobs.size")
-(defonce ^:no-doc dead-queue-size "dead_queue.size")
+(defn ^:no-doc format-queue-count [queue]
+  (format "enqueued_jobs.%s.count" (d/affix-queue queue)))
+(defonce ^:no-doc total-enqueued-jobs-count "total_enqueued_jobs.count")
+(defonce ^:no-doc schedule-jobs-count "scheduled_jobs.count")
+(defonce ^:no-doc periodic-jobs-count "periodic_jobs.count")
+(defonce ^:no-doc dead-jobs-count "dead_jobs.count")
+(defonce ^:no-doc batches-count "batches.count")
 
 (defprotocol Metrics
   "Protocol that Metrics Backends should implement

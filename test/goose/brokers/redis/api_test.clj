@@ -1,10 +1,11 @@
 (ns goose.brokers.redis.api-test
   (:require
+    [goose.api.batch :as batch]
     [goose.api.cron-jobs :as cron-jobs]
     [goose.api.dead-jobs :as dead-jobs]
-    [goose.api.batch :as batch]
     [goose.api.enqueued-jobs :as enqueued-jobs]
     [goose.api.scheduled-jobs :as scheduled-jobs]
+    [goose.batch]
     [goose.client :as c]
     [goose.retry :as retry]
     [goose.test-utils :as tu]
@@ -220,15 +221,15 @@
     (testing "[redis] batch API"
       (let [batch-id (:id (goose.client/perform-batch tu/redis-client-opts batch-opts `tu/my-fn batch-args))
             expected-batch {:id         batch-id
-                            :status     :in-progress
-                            :total      1
+                            :status     goose.batch/in-progress
+                            :total-jobs 1
                             :enqueued   1
                             :retrying   0
                             :successful 0
                             :dead       0}
             {:keys [created-at] :as batch} (batch/status tu/redis-producer batch-id)]
         (is (= expected-batch (dissoc batch :created-at)))
-        (is (Long/parseLong created-at))
+        (is (= java.lang.Long (type created-at)))
         (is (= 2 (batch/delete tu/redis-producer batch-id)))))
     (testing "[redis] batch API with invalid id"
       (is (nil? (batch/status tu/redis-producer "some-id"))))

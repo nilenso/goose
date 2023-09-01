@@ -11,7 +11,8 @@
     [goose.worker :as w]
 
     [clojure.string :as str]
-    [clojure.test :refer [deftest is testing use-fixtures]])
+    [clojure.test :refer [deftest is testing use-fixtures]]
+    [goose.batch :as batch])
   (:import
     [clojure.lang ExceptionInfo]
     [java.time Instant]
@@ -197,8 +198,8 @@
   (swap! batch-exec-count inc)
   (when (= @batch-exec-count @batch-args-count)
     (deliver @perform-batch-fn-executed @batch-args-acc)))
-(defn perform-batch-callback-fn [id m]
-  (deliver @callback-fn-executed (assoc m :id id)))
+(defn perform-batch-callback-fn [id status]
+  (deliver @callback-fn-executed {:id id :status status}))
 
 (def batch-opts {:callback-fn-sym `perform-batch-callback-fn
                  :linger-sec      3600})
@@ -212,20 +213,15 @@
       (reset! batch-exec-count 0)
       (reset! batch-args-count (count args))
       (reset! callback-fn-executed (promise))
-      (let [batch-id (:id (c/perform-batch
-                            tu/redis-client-opts
-                            batch-opts
-                            `perform-batch-fn
-                            args))
+      (let [batch-id (:id (c/perform-batch tu/redis-client-opts batch-opts `perform-batch-fn args))
             worker (w/start tu/redis-worker-opts)
             queue (:queue tu/redis-client-opts)]
         (is (uuid? (UUID/fromString batch-id))
             "perform-batch should return a map of id with a uuid value")
         (is (= (deref @perform-batch-fn-executed 100 :e2e-test-timed-out) args)
             "Worker should execute on the args passed to perform-batch")
-        (is (= (deref @callback-fn-executed 200 :e2e-test-timed-out) {:id         batch-id
-                                                                      :successful 2
-                                                                      :dead       0})
+        (is (= (deref @callback-fn-executed 200 :e2e-test-timed-out) {:id     batch-id
+                                                                      :status batch/success})
             "Callback should be executed with batch status map as its arg")
         (is (empty? (redis-cmds/find-in-list
                       tu/redis-conn
