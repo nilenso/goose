@@ -10,35 +10,24 @@
 
     [taoensso.carmine :as car]))
 
-(def batch-state-keys [:id
-                       :callback-fn-sym
-                       :linger-sec
-                       :queue
-                       :ready-queue
-                       :retry-opts
-                       :total-jobs
-                       :status
-                       :created-at])
-
-(defn- set-batch-state
-  [{:keys [id jobs] :as batch}]
-  (let [batch-state-key (d/prefix-batch id)
-        batch-state (select-keys batch batch-state-keys)
-        enqueued-job-set (d/construct-batch-job-set id d/enqueued-job-set)
-        job-ids (map :id jobs)]
-    (car/hmset* batch-state-key batch-state)
-    (apply car/sadd enqueued-job-set job-ids)))
-
-(defn- enqueue-jobs [jobs]
-  (doseq [job jobs]
-    (car/lpush (:ready-queue job) job)))
+(defn batch-job-keys [id]
+  {:batch-state-key (d/prefix-batch id)
+   :enqueued-job-set (d/construct-batch-job-set id d/enqueued-job-set)
+   :retrying-job-set (d/construct-batch-job-set id d/retrying-job-set)
+   :successful-job-set (d/construct-batch-job-set id d/successful-job-set)
+   :dead-job-set (d/construct-batch-job-set id d/dead-job-set)})
 
 (defn enqueue
-  [redis-conn batch]
-  (redis-cmds/with-transaction redis-conn
-    (car/multi)
-    (set-batch-state batch)
-    (enqueue-jobs (:jobs batch))))
+  [redis-conn {:keys [id jobs] :as batch}]
+  (let [{:keys [batch-state-key enqueued-job-set]} (batch-job-keys id)
+        batch-state (dissoc batch :jobs)
+        job-ids (map :id jobs)]
+    (redis-cmds/with-transaction redis-conn
+      (car/multi)
+      (car/hmset* batch-state-key batch-state)
+      (apply car/sadd enqueued-job-set job-ids)
+      (doseq [job jobs]
+        (car/lpush (:ready-queue job) job)))))
 
 (defn- restore-data-types
   [{:keys [linger-sec total-jobs status created-at] :as batch-state}]
