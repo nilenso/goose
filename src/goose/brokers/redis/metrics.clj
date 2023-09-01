@@ -9,36 +9,36 @@
 
     [clj-statsd]))
 
-(defn- get-queues-count-for-metrics
+(defn- queue->count
   [redis-conn queues]
   (map
     (fn [queue]
       [(m/format-queue-count queue) (redis-cmds/list-size redis-conn queue)])
     queues))
 
-(defn- get-count-of-enqueued-jobs
+(defn- enqueued-jobs->count
   [redis-conn]
   (let [queues (redis-cmds/find-lists redis-conn (str d/queue-prefix "*"))
-        queues-count (get-queues-count-for-metrics redis-conn queues)
+        queues-count (queue->count redis-conn queues)
         enqueued-jobs->count (into {} queues-count)
         total-enqueued-jobs-count (reduce + (vals enqueued-jobs->count))]
     (assoc enqueued-jobs->count m/total-enqueued-jobs-count total-enqueued-jobs-count)))
 
-(defn- get-count-of-jobs-in-protected-queues
+(defn- protected-queue-jobs->count
   [redis-conn]
   {m/schedule-jobs-count (redis-cmds/sorted-set-size redis-conn d/prefixed-schedule-queue)
    m/dead-jobs-count     (redis-cmds/sorted-set-size redis-conn d/prefixed-dead-queue)
    m/periodic-jobs-count (cron/size redis-conn)})
 
-(defn- get-count-of-all-batches
+(defn- batches->count
   [redis-conn]
   {m/batches-count (count (redis-cmds/find-hashes redis-conn (str d/batch-prefix "*")))})
 
-(defn- get-count-of-all-job-types
+(defn- all-jobs->count
   [redis-conn]
-  (let [jobs-in-protected-queues->count (get-count-of-jobs-in-protected-queues redis-conn)
-        enqueued-jobs->count (get-count-of-enqueued-jobs redis-conn)
-        batches->count (get-count-of-all-batches redis-conn)]
+  (let [jobs-in-protected-queues->count (protected-queue-jobs->count redis-conn)
+        enqueued-jobs->count (enqueued-jobs->count redis-conn)
+        batches->count (batches->count redis-conn)]
     (merge jobs-in-protected-queues->count enqueued-jobs->count batches->count)))
 
 (defn run
@@ -47,7 +47,8 @@
     (when (m/enabled? metrics-plugin)
       (u/while-pool
         internal-thread-pool
-        (doseq [[k v] (get-count-of-all-job-types redis-conn)]
+        ;; Using doseq instead of map, because map is lazy.
+        (doseq [[k v] (all-jobs->count redis-conn)]
           (m/gauge metrics-plugin k v {}))
         (let [global-workers-count (heartbeat/global-workers-count redis-conn)]
           ;; Sleep for (global-workers-count) minutes + jitters.
