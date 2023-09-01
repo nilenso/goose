@@ -75,19 +75,17 @@
       (m/increment metrics-plugin (m/format-batch-status status) 1 tags)
       (m/timing metrics-plugin m/batch-completion-time completion-time tags))))
 
-(defn- enqueue-callback-on-completion
-  [redis-conn id]
+(defn- enqueue-callback
+  [redis-conn id status]
   ;; If a job is executed after a batch has been deleted,
   ;; `when-let` guards against nil return from `get-batch-state`.
   (when-let [{:keys [ready-queue] :as batch} (get-batch-state redis-conn id)]
-    (let [status (batch/status-from-job-states batch)]
-      (when (batch/terminal-state? status)
-        (let [{:keys [batch-hash-key]} (batch-keys id)
-              callback (batch/new-callback batch id status)]
-          (redis-cmds/with-transaction redis-conn
-            (car/multi)
-            (car/rpush ready-queue callback)
-            (car/hset batch-hash-key :status status)))))))
+    (let [{:keys [batch-hash-key]} (batch-keys id)
+          callback (batch/new-callback batch id status)]
+      (redis-cmds/with-transaction redis-conn
+        (car/multi)
+        (car/rpush ready-queue callback) ; Enqueue callback to front of queue.
+        (car/hset batch-hash-key :status status)))))
 
 (defn- job-source-set
   [job {:keys [enqueued-job-set retrying-job-set]}]
@@ -105,27 +103,46 @@
        dead-job-set
        retrying-job-set))))
 
+;;; This will guard against n final batch-jobs completing at same time concurrently
+;;; Only 1 of the final batch-jobs will receive a terminal status post batch updation.
+(defn- update-batch-and-get-status-atomically
+  [redis-conn src dst job-id batch-keys status]
+  (let [{:keys [enqueued-job-set retrying-job-set successful-job-set dead-job-set]} batch-keys
+        [_ atomic-results] (car/atomic
+                             redis-conn
+                             redis-cmds/atomic-lock-attempts
+                             (car/multi)
+                             (car/smove src dst job-id)
+                             (car/scard enqueued-job-set)
+                             (car/scard retrying-job-set)
+                             (car/scard successful-job-set)
+                             (car/scard dead-job-set))
+        [_ enqueued retrying successful dead] atomic-results]
+    (reset! status (batch/status-from-job-states enqueued retrying successful dead))))
+
 (defn- execute-batch
   [next
    {:keys [redis-conn] :as opts}
    {job-id :id batch-id :batch-id :as job}]
-  (let [batch-keys (batch-keys batch-id)
+  (let [status (atom nil)
+        batch-keys (batch-keys batch-id)
         src (job-source-set job batch-keys)]
     (try
       (let [response (next opts job)
             dst (job-destination-set job batch-keys)]
-        (redis-cmds/move-between-sets redis-conn src dst job-id)
+        (update-batch-and-get-status-atomically redis-conn src dst job-id batch-keys status)
         response)
       (catch Exception ex
         (let [failed-job (goose.retry/set-failed-config job ex)
               dst (job-destination-set failed-job batch-keys ex)]
-          (redis-cmds/move-between-sets redis-conn src dst job-id)
+          (update-batch-and-get-status-atomically redis-conn src dst job-id batch-keys status)
           (throw ex)))
       (finally
         ;; Regardless of job success/failure, enqueue-callback-on-completion must be called.
         ;; Parent function receives return value of `try/catch` block,
         ;; `finally` block runs at the end, but does not override return value.
-        (enqueue-callback-on-completion redis-conn batch-id)))))
+        (when (batch/terminal-state? @status)
+          (enqueue-callback redis-conn batch-id @status))))))
 
 (defn- wrap-batch-execution [next]
   (fn [opts
