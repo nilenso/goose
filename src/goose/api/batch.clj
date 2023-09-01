@@ -1,17 +1,12 @@
 (ns goose.api.batch
   (:require
-    [goose.batch :as batch]
     [goose.broker :as b]
     [goose.client]))
 
 (defn- into-batch-map
-  [batch]
+  [{:keys [batch-state] :as batch}]
   (let [counts (select-keys batch [:enqueued :retrying :successful :dead])
-        total (reduce + (vals counts))
-        status {:id         (get-in batch [:batch-state :id])
-                :created-at (get-in batch [:batch-state :created-at])
-                :status     (batch/status-from-counts counts)
-                :total      total}]
+        status (select-keys batch-state [:id :created-at :status :total-jobs])]
     (merge status counts)))
 
 (defn status
