@@ -19,9 +19,13 @@
 (defn my-fn [arg & _]
   arg)
 (def queue "test")
+(defn no-op-error-handler [_ _ _])
+(def retry-opts (assoc retry/default-opts
+                  :error-handler-fn-sym `no-op-error-handler
+                  :death-handler-fn-sym `no-op-error-handler))
 (def client-opts
   {:queue      queue
-   :retry-opts retry/default-opts})
+   :retry-opts retry-opts})
 (def worker-opts
   {:threads               1
    :queue                 queue

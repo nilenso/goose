@@ -255,9 +255,6 @@
 (defn hmset* [conn hash m]
   (wcar* conn (car/hmset* hash m)))
 
-(defn parse-map [conn hash]
-  (wcar* conn (car/parse-map (car/hgetall hash) :keywordize)))
-
 (defn- scan-for-hashes [conn cursor match count]
   (wcar* conn (car/scan cursor "MATCH" match "COUNT" count "TYPE" "HASH")))
 
