@@ -214,20 +214,20 @@
         batch-opts {:callback-fn-sym `batch-callback
                     :linger-sec      linger-sec}]
     (testing "[redis][batch-jobs] Enqueued -> Successful"
-                (reset! callback-fn-executed (promise))
-                (reset! n-jobs-batch-args-sum 0)
-                (let [n-args (range 1 20)
-                      batch-args (map list n-args)
-                      batch-id (:id (c/perform-batch tu/redis-client-opts batch-opts `n-jobs-batch-fn batch-args))
-                      worker (w/start tu/redis-worker-opts)]
-                  (is (uuid? (UUID/fromString batch-id)))
-                  (is (= (deref @callback-fn-executed 400 :n-jobs-batch-callback-timed-out)
-                         {:id batch-id :status batch/success}))
-                  (is (not-empty (batch-api/status tu/redis-producer batch-id)))
-                  (u/sleep linger-sec)
-                  (is (empty? (batch-api/status tu/redis-producer batch-id)))
-                  (is (= (reduce + n-args) @n-jobs-batch-args-sum))
-                  (w/stop worker)))
+      (reset! callback-fn-executed (promise))
+      (reset! n-jobs-batch-args-sum 0)
+      (let [n-args (range 1 20)
+            batch-args (map list n-args)
+            batch-id (:id (c/perform-batch tu/redis-client-opts batch-opts `n-jobs-batch-fn batch-args))
+            worker (w/start tu/redis-worker-opts)]
+        (is (uuid? (UUID/fromString batch-id)))
+        (is (= (deref @callback-fn-executed 400 :n-jobs-batch-callback-timed-out)
+               {:id batch-id :status batch/status-success}))
+        (is (not-empty (batch-api/status tu/redis-producer batch-id)))
+        (u/sleep linger-sec)
+        (is (empty? (batch-api/status tu/redis-producer batch-id)))
+        (is (= (reduce + n-args) @n-jobs-batch-args-sum))
+        (w/stop worker)))
 
     (testing "[redis][batch-jobs] Enqueued -> Retrying -> Successful"
       (reset! callback-fn-executed (promise))
@@ -236,7 +236,7 @@
             batch-id (:id (c/perform-batch client-opts batch-opts `batch-job-fail-pass shared-args))
             worker (w/start tu/redis-worker-opts)]
         (is (= (deref @callback-fn-executed 2100 :-batch-callback-timed-out)
-               {:id batch-id :status batch/success}))
+               {:id batch-id :status batch/status-success}))
         (is (= 4 @batch-fail-pass-count))
         (w/stop worker)))
 
@@ -248,7 +248,7 @@
             batch-id (:id (c/perform-batch client-opts batch-opts `dead-fn shared-args))
             worker (w/start tu/redis-worker-opts)]
         (is (= (deref @callback-fn-executed 2100 :-batch-callback-timed-out)
-               {:id batch-id :status batch/dead}))
+               {:id batch-id :status batch/status-dead}))
         (is (= 4 @dead-job-run-count))
         (w/stop worker)))
 
@@ -259,7 +259,7 @@
             batch-id (:id (c/perform-batch client-opts batch-opts `dead-fn shared-args))
             worker (w/start tu/redis-worker-opts)]
         (is (= (deref @callback-fn-executed 400 :-batch-callback-timed-out)
-               {:id batch-id :status batch/dead}))
+               {:id batch-id :status batch/status-dead}))
         (is (= 2 @dead-job-run-count))
         (w/stop worker)))
 
@@ -269,5 +269,5 @@
             batch-id (:id (c/perform-batch client-opts batch-opts `batch-job-partial-success shared-args))
             worker (w/start tu/redis-worker-opts)]
         (is (= (deref @callback-fn-executed 400 :-batch-callback-timed-out)
-               {:id batch-id :status batch/partial-success}))
+               {:id batch-id :status batch/status-partial-success}))
         (w/stop worker)))))

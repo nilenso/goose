@@ -264,7 +264,3 @@
                   (let [count 1]
                     (scan-for-hashes conn cursor match-str count)))]
     (doall (scan-seq conn scan-fn))))
-
-;;; ============ Misc ============
-(defn exists [conn key]
-  (wcar* conn (car/exists key)))

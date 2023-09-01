@@ -217,8 +217,8 @@
     (testing "[redis] batch API"
       (let [batch-id (:id (goose.client/perform-batch tu/redis-client-opts batch-opts `tu/my-fn batch-args))
             expected-batch {:id         batch-id
-                            :status     goose.batch/in-progress
-                            :total-jobs 1
+                            :status     goose.batch/status-in-progress
+                            :total      1
                             :enqueued   1
                             :retrying   0
                             :successful 0

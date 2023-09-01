@@ -15,22 +15,22 @@
   {:linger-sec      3600
    :callback-fn-sym `default-callback})
 
-(def in-progress :in-progress)
-(def success :success)
-(def dead :dead)
-(def partial-success :partial-success)
-(def terminal-states [success dead partial-success])
+(def status-in-progress :in-progress)
+(def status-success :success)
+(def status-dead :dead)
+(def status-partial-success :partial-success)
+(def terminal-states [status-success status-dead status-partial-success])
 
 (defn terminal-state? [status]
   (some #{status} terminal-states))
 
 (defn status-from-job-states
-  [successful-jobs dead-jobs total-jobs]
+  [{:keys [successful dead total]}]
   (cond
-    (= total-jobs successful-jobs) success
-    (= total-jobs dead-jobs) dead
-    (= total-jobs (+ successful-jobs dead-jobs)) partial-success
-    :else in-progress))
+    (= total successful) status-success
+    (= total dead) status-dead
+    (= total (+ successful dead)) status-partial-success
+    :else status-in-progress))
 
 (defn new
   [{:keys [queue ready-queue retry-opts]}
@@ -44,12 +44,11 @@
      :ready-queue     ready-queue
      :retry-opts      retry-opts
      :jobs            (map #(assoc % :batch-id id) jobs)
-     :total-jobs      (count jobs)
-     :status          in-progress
+     :total           (count jobs)
+     :status          status-in-progress
      :created-at      (u/epoch-time-ms)}))
 
 (defn ^:no-doc new-callback
-  [{:keys [id callback-fn-sym queue ready-queue retry-opts]}
-   callback-args]
-  (-> (job/new callback-fn-sym callback-args queue ready-queue retry-opts)
+  [{:keys [id callback-fn-sym queue ready-queue retry-opts]} & args]
+  (-> (job/new callback-fn-sym args queue ready-queue retry-opts)
       (assoc :callback-for-batch-id id)))

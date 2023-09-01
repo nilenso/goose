@@ -30,31 +30,31 @@
         (car/lpush (:ready-queue job) job)))))
 
 (defn- restore-data-types
-  [{:keys [linger-sec total-jobs status created-at] :as batch-state}]
+  [{:keys [linger-sec total status created-at] :as batch-state}]
   (assoc batch-state
     :linger-sec (Integer/valueOf linger-sec)
-    :total-jobs (Integer/valueOf total-jobs)
+    :total (Integer/valueOf total)
     :status (keyword status)
     :created-at (Long/valueOf created-at)))
 
 (defn get-batch-state
   [redis-conn id]
   (let [{:keys [batch-hash-key enqueued-job-set retrying-job-set successful-job-set dead-job-set]} (batch-keys id)
-        [batch-state enqueued retrying successful dead] (redis-cmds/wcar*
-                                                          redis-conn
-                                                          (car/parse-map (car/hgetall batch-hash-key) :keywordize)
-                                                          (car/scard enqueued-job-set)
-                                                          (car/scard retrying-job-set)
-                                                          (car/scard successful-job-set)
-                                                          (car/scard dead-job-set))]
-    (when (not-empty batch-state)
-      {:batch-state (restore-data-types batch-state)
-       :enqueued    enqueued
-       :retrying    retrying
-       :successful  successful
-       :dead        dead})))
+        [batch enqueued retrying successful dead] (redis-cmds/wcar*
+                                                    redis-conn
+                                                    (car/parse-map (car/hgetall batch-hash-key) :keywordize)
+                                                    (car/scard enqueued-job-set)
+                                                    (car/scard retrying-job-set)
+                                                    (car/scard successful-job-set)
+                                                    (car/scard dead-job-set))]
+    (when (not-empty batch)
+      (merge (restore-data-types batch)
+             {:enqueued   enqueued
+              :retrying   retrying
+              :successful successful
+              :dead       dead}))))
 
-(defn set-batch-expiration
+(defn- set-batch-expiration
   [redis-conn {:keys [id linger-sec]}]
   (let [{:keys [batch-hash-key enqueued-job-set retrying-job-set successful-job-set dead-job-set]} (batch-keys id)]
     (redis-cmds/with-transaction redis-conn
@@ -79,13 +79,11 @@
   [redis-conn batch-id]
   ;; If a job is executed after a batch has been deleted,
   ;; `when-let` guards against nil return from `get-batch-state`.
-  (when-let [{{:keys [ready-queue total-jobs]} :batch-state
-              :keys                            [batch-state successful dead]} (get-batch-state redis-conn batch-id)]
-    (let [status (batch/status-from-job-states successful dead total-jobs)]
+  (when-let [{:keys [ready-queue] :as batch} (get-batch-state redis-conn batch-id)]
+    (let [status (batch/status-from-job-states batch)]
       (when (batch/terminal-state? status)
         (let [{:keys [batch-hash-key]} (batch-keys batch-id)
-              callback-args (list batch-id status)
-              callback (batch/new-callback batch-state callback-args)]
+              callback (batch/new-callback batch batch-id status)]
           (redis-cmds/with-transaction redis-conn
             (car/multi)
             (car/rpush ready-queue callback)
@@ -143,10 +141,10 @@
     ;; `if-let` guards against nil return from `get-batch-state`.
     ;; `(and batch-id ...)` exists to avoid fetching batch-state
     ;; for jobs which aren't a batch callback.
-    (if-let [{:keys [batch-state]} (and batch-id (get-batch-state redis-conn batch-id))]
+    (if-let [batch (and batch-id (get-batch-state redis-conn batch-id))]
       (let [response (next opts job)]
-        (set-batch-expiration redis-conn batch-state)
-        (record-metrics opts job batch-state)
+        (set-batch-expiration redis-conn batch)
+        (record-metrics opts job batch)
         response)
       (next opts job))))
 
