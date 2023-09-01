@@ -1,6 +1,5 @@
 (ns goose.batch
   (:require
-    [goose.defaults :as d]
     [goose.job :as job]
     [goose.utils :as u]
 
@@ -13,7 +12,7 @@
   (log/info "Batch:" batch-id "execution completed. Successful:" successful "Dead:" dead))
 
 (def default-opts
-  {:linger-sec      d/redis-batch-linger-sec
+  {:linger-sec      3600
    :callback-fn-sym `default-callback})
 
 (def in-progress :in-progress)
