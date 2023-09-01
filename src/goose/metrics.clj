@@ -11,8 +11,10 @@
 (defonce ^:no-doc jobs-success "jobs.succeeded")
 (defonce ^:no-doc jobs-failure "jobs.failed")
 (defonce ^:no-doc jobs-recovered "jobs.recovered")
-(defn ^:no-doc batch-status [status]
-  (str "batch." (name status)))
+(defn ^:no-doc format-batch-status [status]
+  ;; Batch status is a keyword.
+  ;; Convert it to string before formatting.
+  (format "batch.%s" (name status)))
 
 (defonce ^:no-doc execution-time "job.execution_time")
 (defonce ^:no-doc batch-completion-time "batch.completion_time")

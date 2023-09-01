@@ -32,8 +32,8 @@
 
 (defn delete [redis-conn id]
   (let [{:keys [batch-hash-key enqueued-job-set retrying-job-set successful-job-set dead-job-set]} (batch/batch-keys id)
-        {:keys [batch-state]} (batch/get-batch-state redis-conn id)]
+        batch (batch/get-batch-state redis-conn id)]
 
-    (delete-enqueued-jobs redis-conn batch-state enqueued-job-set)
-    (delete-retrying-jobs redis-conn batch-state retrying-job-set)
+    (delete-enqueued-jobs redis-conn batch enqueued-job-set)
+    (delete-retrying-jobs redis-conn batch retrying-job-set)
     (redis-cmds/del-keys redis-conn batch-hash-key enqueued-job-set retrying-job-set successful-job-set dead-job-set)))

@@ -20,18 +20,18 @@
 (defn enqueue
   [redis-conn {:keys [id jobs] :as batch}]
   (let [{:keys [batch-hash-key enqueued-job-set]} (batch-keys id)
-        batch-state (dissoc batch :jobs)
+        batch-field-value-map (dissoc batch :jobs)
         job-ids (map :id jobs)]
     (redis-cmds/with-transaction redis-conn
       (car/multi)
-      (car/hmset* batch-hash-key batch-state)
+      (car/hmset* batch-hash-key batch-field-value-map)
       (apply car/sadd enqueued-job-set job-ids)
       (doseq [job jobs]
         (car/lpush (:ready-queue job) job)))))
 
 (defn- restore-data-types
-  [{:keys [linger-sec total status created-at] :as batch-state}]
-  (assoc batch-state
+  [{:keys [linger-sec total status created-at] :as batch}]
+  (assoc batch
     :linger-sec (Integer/valueOf linger-sec)
     :total (Integer/valueOf total)
     :status (keyword status)
@@ -72,18 +72,18 @@
   (when (m/enabled? metrics-plugin)
     (let [completion-time (- (u/epoch-time-ms) created-at)
           tags {:batch-id id :execute-fn-sym execute-fn-sym :queue queue}]
-      (m/increment metrics-plugin (m/batch-status status) 1 tags)
+      (m/increment metrics-plugin (m/format-batch-status status) 1 tags)
       (m/timing metrics-plugin m/batch-completion-time completion-time tags))))
 
 (defn- enqueue-callback-on-completion
-  [redis-conn batch-id]
+  [redis-conn id]
   ;; If a job is executed after a batch has been deleted,
   ;; `when-let` guards against nil return from `get-batch-state`.
-  (when-let [{:keys [ready-queue] :as batch} (get-batch-state redis-conn batch-id)]
+  (when-let [{:keys [ready-queue] :as batch} (get-batch-state redis-conn id)]
     (let [status (batch/status-from-job-states batch)]
       (when (batch/terminal-state? status)
-        (let [{:keys [batch-hash-key]} (batch-keys batch-id)
-              callback (batch/new-callback batch batch-id status)]
+        (let [{:keys [batch-hash-key]} (batch-keys id)
+              callback (batch/new-callback batch id status)]
           (redis-cmds/with-transaction redis-conn
             (car/multi)
             (car/rpush ready-queue callback)
