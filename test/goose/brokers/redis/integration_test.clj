@@ -212,11 +212,7 @@
       (reset! batch-exec-count 0)
       (reset! batch-args-count (count args))
       (reset! callback-fn-executed (promise))
-      (let [batch-id (:id (c/perform-batch
-                            tu/redis-client-opts
-                            batch-opts
-                            `perform-batch-fn
-                            args))
+      (let [batch-id (:id (c/perform-batch tu/redis-client-opts batch-opts `perform-batch-fn args))
             worker (w/start tu/redis-worker-opts)
             queue (:queue tu/redis-client-opts)]
         (is (uuid? (UUID/fromString batch-id))

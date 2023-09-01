@@ -30,17 +30,25 @@
    m/dead-queue-size     (redis-cmds/sorted-set-size redis-conn d/prefixed-dead-queue)
    m/periodic-jobs-size  (cron/size redis-conn)})
 
+(defn- get-count-of-all-batches
+  [redis-conn]
+  {m/batches-count (count (redis-cmds/find-hashes redis-conn (str d/batch-prefix "*")))})
+
+(defn- get-count-of-all-job-types
+  [redis-conn]
+  (let [protected-queues->size (get-size-of-protected-queues redis-conn)
+        queues->size (get-size-of-all-queues redis-conn)
+        batches->count (get-count-of-all-batches redis-conn)]
+    (merge protected-queues->size queues->size batches->count)))
+
 (defn run
   [{:keys [internal-thread-pool redis-conn metrics-plugin]}]
   (u/log-on-exceptions
     (when (m/enabled? metrics-plugin)
       (u/while-pool
         internal-thread-pool
-        (let [protected-queues->size (get-size-of-protected-queues redis-conn)
-              queues->size (get-size-of-all-queues redis-conn)]
-          ;; Using doseq instead of map, because map is lazy.
-          (doseq [[k v] (merge protected-queues->size queues->size)]
-            (m/gauge metrics-plugin k v {})))
+        (doseq [[k v] (get-count-of-all-job-types redis-conn)]
+          (m/gauge metrics-plugin k v {}))
         (let [global-workers-count (heartbeat/global-workers-count redis-conn)]
           ;; Sleep for (global-workers-count) minutes + jitters.
           ;; On average, Goose sends queue level stats every 1 minute.
