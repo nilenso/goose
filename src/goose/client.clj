@@ -27,10 +27,6 @@
   {:queue      d/default-queue
    :retry-opts retry/default-opts})
 
-(defn accumulate-batch-args
-  [coll & args]
-  (conj coll args))
-
 (defn- prefix-queues-inside-opts
   [{:keys [queue retry-opts] :as opts}]
   (assoc opts
