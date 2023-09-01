@@ -3,8 +3,7 @@
     [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
     [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
     [goose.brokers.redis.batch :as batch]
-    [goose.brokers.redis.commands :as redis-cmds]
-    [goose.defaults :as d]))
+    [goose.brokers.redis.commands :as redis-cmds]))
 
 (defn status [redis-conn id]
   (batch/get-batch-state redis-conn id))
@@ -32,13 +31,9 @@
             (enqueued-jobs/delete redis-conn job-enqueued-for-retry retry-or-ready-queue)))))))
 
 (defn delete [redis-conn id]
-  (let [batch-state-key (d/prefix-batch id)
-        enqueued-job-set (d/construct-batch-job-set id d/enqueued-job-set)
-        retrying-job-set (d/construct-batch-job-set id d/retrying-job-set)
-        successful-job-set (d/construct-batch-job-set id d/successful-job-set)
-        dead-job-set (d/construct-batch-job-set id d/dead-job-set)
+  (let [{:keys [batch-hash-key enqueued-job-set retrying-job-set successful-job-set dead-job-set]} (batch/batch-keys id)
         {:keys [batch-state]} (batch/get-batch-state redis-conn id)]
 
     (delete-enqueued-jobs redis-conn batch-state enqueued-job-set)
     (delete-retrying-jobs redis-conn batch-state retrying-job-set)
-    (redis-cmds/del-keys redis-conn batch-state-key enqueued-job-set retrying-job-set successful-job-set dead-job-set)))
+    (redis-cmds/del-keys redis-conn batch-hash-key enqueued-job-set retrying-job-set successful-job-set dead-job-set)))

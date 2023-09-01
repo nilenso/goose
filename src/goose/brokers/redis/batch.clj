@@ -10,21 +10,21 @@
 
     [taoensso.carmine :as car]))
 
-(defn batch-job-keys [id]
-  {:batch-state-key (d/prefix-batch id)
-   :enqueued-job-set (d/construct-batch-job-set id d/enqueued-job-set)
-   :retrying-job-set (d/construct-batch-job-set id d/retrying-job-set)
-   :successful-job-set (d/construct-batch-job-set id d/successful-job-set)
-   :dead-job-set (d/construct-batch-job-set id d/dead-job-set)})
+(defn batch-keys [id]
+  {:batch-hash-key     (d/prefix-batch id)
+   :enqueued-job-set   (str (d/prefix-batch id) "/" set "enqueued")
+   :retrying-job-set   (str (d/prefix-batch id) "/" set "successful")
+   :successful-job-set (str (d/prefix-batch id) "/" set "retrying")
+   :dead-job-set       (str (d/prefix-batch id) "/" set "dead")})
 
 (defn enqueue
   [redis-conn {:keys [id jobs] :as batch}]
-  (let [{:keys [batch-state-key enqueued-job-set]} (batch-job-keys id)
+  (let [{:keys [batch-hash-key enqueued-job-set]} (batch-keys id)
         batch-state (dissoc batch :jobs)
         job-ids (map :id jobs)]
     (redis-cmds/with-transaction redis-conn
       (car/multi)
-      (car/hmset* batch-state-key batch-state)
+      (car/hmset* batch-hash-key batch-state)
       (apply car/sadd enqueued-job-set job-ids)
       (doseq [job jobs]
         (car/lpush (:ready-queue job) job)))))
@@ -39,14 +39,10 @@
 
 (defn get-batch-state
   [redis-conn id]
-  (let [batch-state-key (d/prefix-batch id)
-        enqueued-job-set (d/construct-batch-job-set id d/enqueued-job-set)
-        retrying-job-set (d/construct-batch-job-set id d/retrying-job-set)
-        successful-job-set (d/construct-batch-job-set id d/successful-job-set)
-        dead-job-set (d/construct-batch-job-set id d/dead-job-set)
+  (let [{:keys [batch-hash-key enqueued-job-set retrying-job-set successful-job-set dead-job-set]} (batch-keys id)
         [batch-state enqueued retrying successful dead] (redis-cmds/wcar*
                                                           redis-conn
-                                                          (car/parse-map (car/hgetall batch-state-key) :keywordize)
+                                                          (car/parse-map (car/hgetall batch-hash-key) :keywordize)
                                                           (car/scard enqueued-job-set)
                                                           (car/scard retrying-job-set)
                                                           (car/scard successful-job-set)
@@ -60,14 +56,10 @@
 
 (defn set-batch-expiration
   [redis-conn {:keys [id linger-sec]}]
-  (let [batch-state-key (d/prefix-batch id)
-        enqueued-job-set (d/construct-batch-job-set id d/enqueued-job-set)
-        retrying-job-set (d/construct-batch-job-set id d/retrying-job-set)
-        successful-job-set (d/construct-batch-job-set id d/successful-job-set)
-        dead-job-set (d/construct-batch-job-set id d/dead-job-set)]
+  (let [{:keys [batch-hash-key enqueued-job-set retrying-job-set successful-job-set dead-job-set]} (batch-keys id)]
     (redis-cmds/with-transaction redis-conn
       (car/multi)
-      (car/expire batch-state-key linger-sec)
+      (car/expire batch-hash-key linger-sec)
       (car/expire enqueued-job-set linger-sec)
       (car/expire retrying-job-set linger-sec)
       (car/expire successful-job-set linger-sec)
@@ -91,43 +83,44 @@
               :keys                            [batch-state successful dead]} (get-batch-state redis-conn batch-id)]
     (let [status (batch/status-from-job-states successful dead total-jobs)]
       (when (batch/terminal-state? status)
-        (let [batch-state-key (d/prefix-batch batch-id)
+        (let [{:keys [batch-hash-key]} (batch-keys batch-id)
               callback-args (list batch-id status)
               callback (batch/new-callback batch-state callback-args)]
           (redis-cmds/with-transaction redis-conn
             (car/multi)
             (car/rpush ready-queue callback)
-            (car/hset batch-state-key :status status)))))))
+            (car/hset batch-hash-key :status status)))))))
 
 (defn- job-source-set
-  [job batch-id]
+  [job {:keys [enqueued-job-set retrying-job-set]}]
   (if (job/retried? job)
-    (d/construct-batch-job-set batch-id d/retrying-job-set)
-    (d/construct-batch-job-set batch-id d/enqueued-job-set)))
+    retrying-job-set
+    enqueued-job-set))
 
 (defn- job-destination-set
-  ([job batch-id]
-   (job-destination-set job batch-id nil))
-  ([job batch-id ex]
+  ([job batch-keys]
+   (job-destination-set job batch-keys nil))
+  ([job {:keys [retrying-job-set successful-job-set dead-job-set]} ex]
    (if-not ex
-     (d/construct-batch-job-set batch-id d/successful-job-set)
+     successful-job-set
      (if (goose.retry/max-retries-reached? job)
-       (d/construct-batch-job-set batch-id d/dead-job-set)
-       (d/construct-batch-job-set batch-id d/retrying-job-set)))))
+       dead-job-set
+       retrying-job-set))))
 
 (defn- execute-batch
   [next
    {:keys [redis-conn] :as opts}
    {job-id :id batch-id :batch-id :as job}]
-  (let [src (job-source-set job batch-id)]
+  (let [batch-keys (batch-keys batch-id)
+        src (job-source-set job batch-keys)]
     (try
       (let [response (next opts job)
-            dst (job-destination-set job batch-id)]
+            dst (job-destination-set job batch-keys)]
         (redis-cmds/move-between-sets redis-conn src dst job-id)
         response)
       (catch Exception ex
         (let [failed-job (goose.retry/set-failed-config job ex)
-              dst (job-destination-set failed-job batch-id ex)]
+              dst (job-destination-set failed-job batch-keys ex)]
           (redis-cmds/move-between-sets redis-conn src dst job-id)
           (throw ex)))
       (finally

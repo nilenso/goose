@@ -18,10 +18,6 @@
 (def dead-queue "dead-jobs")
 (def cron-queue "cron-schedules")
 (def cron-entries "cron-entries")
-(def enqueued-job-set "enqueued")
-(def successful-job-set "successful")
-(def retrying-job-set "retrying")
-(def dead-job-set "dead")
 
 (def protected-queues [schedule-queue dead-queue cron-queue cron-entries])
 
@@ -36,12 +32,8 @@
       (second)))
 
 (defn ^:no-doc prefix-batch
-  [batch-id]
-  (str batch-prefix batch-id))
-
-(defn ^:no-doc construct-batch-job-set
-  [batch-id set]
-  (str batch-prefix batch-id "/" set))
+  [id]
+  (str batch-prefix id))
 
 (def ^:no-doc prefixed-schedule-queue (prefix-queue schedule-queue))
 (def ^:no-doc prefixed-retry-schedule-queue (prefix-queue schedule-queue))
