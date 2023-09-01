@@ -33,6 +33,9 @@
 (defn- sec->ms [sec]
   (* 1000 sec))
 
+(defn ms->sec [ms]
+  (int (Math/ceil (/ ms 1000))))
+
 (defn ^:no-doc sec+current-epoch-ms
   ([sec] (+ (sec->ms sec) (epoch-time-ms))))
 
