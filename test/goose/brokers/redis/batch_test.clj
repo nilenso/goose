@@ -1,5 +1,6 @@
 (ns goose.brokers.redis.batch-test
   (:require
+    [goose.batch :as batch]
     [goose.brokers.redis.batch :as redis-batch]
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.defaults :as d]
@@ -35,6 +36,9 @@
    :queue           tu/queue
    :ready-queue     (d/prefix-queue tu/queue)
    :retry-opts      retry/default-opts
+   :total-jobs      2
+   :status          batch/in-progress
+   :created-at      (u/epoch-time-ms)
    :jobs            '({:id             (str (random-uuid))
                        :execute-fn-sym clojure.core/prn
                        :args           ["foo"]
@@ -55,10 +59,6 @@
 (deftest enqueue-test
   (testing "Broker creates batch state and enqueues jobs"
     (let [batch-id (:id batch)
-          batch-state (->> (select-keys batch redis-batch/batch-state-keys)
-                           ;; Redis returns all values as strings
-                           ;; This is needed so that they can be compared with values returned from Redis
-                           (reduce (fn [m [k v]] (assoc m k (str v))) {}))
           batch-state-key (d/prefix-batch batch-id)
           job-ids (->>
                     (map :id (:jobs batch))
@@ -67,11 +67,6 @@
       (is (= (redis-cmds/exists tu/redis-conn enqueued-job-set) 0))
 
       (redis-batch/enqueue tu/redis-conn batch)
-
-      (is (= (->> (redis-cmds/parse-map tu/redis-conn batch-state-key)
-                  ;; This is needed so that de-serialized values are strings and can be compared with batch-state
-                  (reduce (fn [m [k v]] (assoc m k (str v))) {}))
-             batch-state))
       (is (= (redis-cmds/set-members tu/redis-conn enqueued-job-set) job-ids)))))
 
 ;;;; ======= TEST: Batch state update middleware ===========

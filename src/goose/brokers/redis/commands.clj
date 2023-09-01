@@ -252,9 +252,6 @@
 
 ;;; ============ Hashes ============
 
-(defn hset [conn hash & field_value]
-  (wcar* conn (apply car/hset hash field_value)))
-
 (defn hmset* [conn hash m]
   (wcar* conn (car/hmset* hash m)))
 
