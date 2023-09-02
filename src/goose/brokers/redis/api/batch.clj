@@ -31,9 +31,9 @@
             (enqueued-jobs/delete redis-conn job-enqueued-for-retry retry-or-ready-queue)))))))
 
 (defn delete [redis-conn id]
-  (let [{:keys [batch-hash-key enqueued-job-set retrying-job-set successful-job-set dead-job-set]} (batch/batch-keys id)
+  (let [{:keys [batch-hash enqueued-set retrying-set successful-set dead-set]} (batch/batch-keys id)
         batch (batch/get-batch-state redis-conn id)]
 
-    (delete-enqueued-jobs redis-conn batch enqueued-job-set)
-    (delete-retrying-jobs redis-conn batch retrying-job-set)
-    (redis-cmds/del-keys redis-conn batch-hash-key enqueued-job-set retrying-job-set successful-job-set dead-job-set)))
+    (delete-enqueued-jobs redis-conn batch enqueued-set)
+    (delete-retrying-jobs redis-conn batch retrying-set)
+    (redis-cmds/del-keys redis-conn batch-hash enqueued-set retrying-set successful-set dead-set)))

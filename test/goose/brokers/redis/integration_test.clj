@@ -163,8 +163,7 @@
   (deliver @job-dead ex))
 
 (def dead-job-run-count (atom 0))
-(defn dead-fn
-  [_]
+(defn dead-fn [_]
   (swap! dead-job-run-count inc)
   (/ 1 0))
 
