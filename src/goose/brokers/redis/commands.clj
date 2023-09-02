@@ -46,6 +46,15 @@
                (when (pos? next-cursor)
                  (scan-seq conn scan-fn redis-key next-cursor)))))))
 
+(defmacro atomic
+  "A simple wrapper over Carmine's `atomic` macro.
+  Use this wrapper instead of `run-with-transaction` when you
+  need values returned by redis, and not surrounding function."
+  [conn & body]
+  `(car/atomic ~conn
+     atomic-lock-attempts
+     ~@body))
+
 (defn run-with-transaction
   "Runs fn inside a Carmine atomic block, and returns
   whatever fn returns."
