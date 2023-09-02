@@ -11,25 +11,27 @@
     [taoensso.carmine :as car]))
 
 (defn batch-keys [id]
-  {:batch-hash-key     (d/prefix-batch id)
-   :enqueued-job-set   (str (d/prefix-batch id) "/" set "enqueued")
-   :retrying-job-set   (str (d/prefix-batch id) "/" set "successful")
-   :successful-job-set (str (d/prefix-batch id) "/" set "retrying")
-   :dead-job-set       (str (d/prefix-batch id) "/" set "dead")})
+  {:batch-hash     (d/prefix-batch id)
+   :enqueued-set   (str (d/prefix-batch id) "/" set "enqueued")
+   :retrying-set   (str (d/prefix-batch id) "/" set "successful")
+   :successful-set (str (d/prefix-batch id) "/" set "retrying")
+   :dead-set       (str (d/prefix-batch id) "/" set "dead")})
 
 (defn enqueue
   [redis-conn {:keys [id jobs] :as batch}]
-  (let [{:keys [batch-hash-key enqueued-job-set]} (batch-keys id)
+  (let [{:keys [batch-hash enqueued-set]} (batch-keys id)
         batch-field-value-map (dissoc batch :jobs)
         job-ids (map :id jobs)]
     (redis-cmds/atomic
       redis-conn
       (car/multi)
-      (car/hmset* batch-hash-key batch-field-value-map)
-      (apply car/sadd enqueued-job-set job-ids)
+      (car/hmset* batch-hash batch-field-value-map)
+      (apply car/sadd enqueued-set job-ids)
       (doseq [job jobs]
         (car/lpush (:ready-queue job) job)))))
 
+;;; Redis converts primitive data types in a hash to string.
+;;; Post fetching, we restore data types to avoid any surprises.
 (defn- restore-data-types
   [{:keys [linger-sec total status created-at] :as batch}]
   (assoc batch
@@ -40,32 +42,32 @@
 
 (defn get-batch-state
   [redis-conn id]
-  (let [{:keys [batch-hash-key enqueued-job-set retrying-job-set successful-job-set dead-job-set]} (batch-keys id)
+  (let [{:keys [batch-hash enqueued-set retrying-job-set successful-set dead-set]} (batch-keys id)
         [batch enqueued retrying successful dead] (redis-cmds/wcar*
                                                     redis-conn
-                                                    (car/parse-map (car/hgetall batch-hash-key) :keywordize)
-                                                    (car/scard enqueued-job-set)
+                                                    (car/parse-map (car/hgetall batch-hash) :keywordize)
+                                                    (car/scard enqueued-set)
                                                     (car/scard retrying-job-set)
-                                                    (car/scard successful-job-set)
-                                                    (car/scard dead-job-set))]
+                                                    (car/scard successful-set)
+                                                    (car/scard dead-set))]
     (when (not-empty batch)
-      (merge (restore-data-types batch)
-             {:enqueued   enqueued
-              :retrying   retrying
-              :successful successful
-              :dead       dead}))))
+      (assoc (restore-data-types batch)
+        :enqueued enqueued
+        :retrying retrying
+        :successful successful
+        :dead dead))))
 
 (defn- set-batch-expiration
   [redis-conn {:keys [id linger-sec]}]
-  (let [{:keys [batch-hash-key enqueued-job-set retrying-job-set successful-job-set dead-job-set]} (batch-keys id)]
+  (let [{:keys [batch-hash enqueued-set retrying-set successful-set dead-set]} (batch-keys id)]
     (redis-cmds/atomic
       redis-conn
       (car/multi)
-      (car/expire batch-hash-key linger-sec)
-      (car/expire enqueued-job-set linger-sec)
-      (car/expire retrying-job-set linger-sec)
-      (car/expire successful-job-set linger-sec)
-      (car/expire dead-job-set linger-sec))))
+      (car/expire batch-hash linger-sec)
+      (car/expire enqueued-set linger-sec)
+      (car/expire retrying-set linger-sec)
+      (car/expire successful-set linger-sec)
+      (car/expire dead-set linger-sec))))
 
 (defn- record-metrics
   [{:keys [metrics-plugin]}
@@ -82,44 +84,44 @@
   ;; If a job is executed after a batch has been deleted,
   ;; `when-let` guards against nil return from `get-batch-state`.
   (when-let [{:keys [ready-queue] :as batch} (get-batch-state redis-conn id)]
-    (let [{:keys [batch-hash-key]} (batch-keys id)
+    (let [{:keys [batch-hash]} (batch-keys id)
           callback (batch/new-callback batch id status)]
       (redis-cmds/atomic
         redis-conn
         (car/multi)
         (car/rpush ready-queue callback) ; Enqueue callback to front of queue.
-        (car/hset batch-hash-key :status status)))))
+        (car/hset batch-hash :status status)))))
 
 (defn- job-source-set
-  [job {:keys [enqueued-job-set retrying-job-set]}]
+  [job {:keys [enqueued-set retrying-set]}]
   (if (job/retried? job)
-    retrying-job-set
-    enqueued-job-set))
+    retrying-set
+    enqueued-set))
 
 (defn- job-destination-set
   ([job batch-keys]
    (job-destination-set job batch-keys nil))
-  ([job {:keys [retrying-job-set successful-job-set dead-job-set]} ex]
+  ([job {:keys [retrying-set successful-set dead-set]} ex]
    (if-not ex
-     successful-job-set
+     successful-set
      (if (goose.retry/max-retries-reached? job)
-       dead-job-set
-       retrying-job-set))))
+       dead-set
+       retrying-set))))
 
 ;;; Updating a batch & getting status in one transaction will guard against
 ;;; n final batch-jobs completing at same time concurrently.
 ;;; Only 1 of the batch-jobs will receive a terminal status post execution.
 (defn- update-batch-and-get-status-atomically
   [redis-conn src dst job-id batch-keys status]
-  (let [{:keys [enqueued-job-set retrying-job-set successful-job-set dead-job-set]} batch-keys
+  (let [{:keys [enqueued-set retrying-set successful-set dead-set]} batch-keys
         [_ atomic-results] (redis-cmds/atomic
                              redis-conn
                              (car/multi)
                              (car/smove src dst job-id)
-                             (car/scard enqueued-job-set)
-                             (car/scard retrying-job-set)
-                             (car/scard successful-job-set)
-                             (car/scard dead-job-set))
+                             (car/scard enqueued-set)
+                             (car/scard retrying-set)
+                             (car/scard successful-set)
+                             (car/scard dead-set))
         [_ enqueued retrying successful dead] atomic-results]
     (reset! status (batch/status-from-job-states enqueued retrying successful dead))))
 
