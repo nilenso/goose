@@ -235,7 +235,7 @@
       (let [client-opts (assoc-in tu/redis-client-opts [:retry-opts :retry-delay-sec-fn-sym] `immediate-retry)
             batch-id (:id (c/perform-batch client-opts batch-opts `batch-job-fail-pass shared-args))
             worker (w/start tu/redis-worker-opts)]
-        (is (= (deref @callback-fn-executed 2100 :-batch-callback-timed-out)
+        (is (= (deref @callback-fn-executed 2100 :fail-pass-batch-callback-timed-out)
                {:id batch-id :status batch/status-success}))
         (is (= 4 @batch-fail-pass-count))
         (w/stop worker)))
@@ -247,7 +247,7 @@
                                    assoc :max-retries 1 :retry-delay-sec-fn-sym `immediate-retry)
             batch-id (:id (c/perform-batch client-opts batch-opts `dead-fn shared-args))
             worker (w/start tu/redis-worker-opts)]
-        (is (= (deref @callback-fn-executed 2100 :-batch-callback-timed-out)
+        (is (= (deref @callback-fn-executed 2100 :dead-batch-callback-timed-out)
                {:id batch-id :status batch/status-dead}))
         (is (= 4 @dead-job-run-count))
         (w/stop worker)))
@@ -258,7 +258,7 @@
       (let [client-opts (assoc-in tu/redis-client-opts [:retry-opts :max-retries] 0)
             batch-id (:id (c/perform-batch client-opts batch-opts `dead-fn shared-args))
             worker (w/start tu/redis-worker-opts)]
-        (is (= (deref @callback-fn-executed 400 :-batch-callback-timed-out)
+        (is (= (deref @callback-fn-executed 400 :dead-batch-callback-timed-out)
                {:id batch-id :status batch/status-dead}))
         (is (= 2 @dead-job-run-count))
         (w/stop worker)))
@@ -268,6 +268,6 @@
       (let [client-opts (assoc-in tu/redis-client-opts [:retry-opts :max-retries] 0)
             batch-id (:id (c/perform-batch client-opts batch-opts `batch-job-partial-success shared-args))
             worker (w/start tu/redis-worker-opts)]
-        (is (= (deref @callback-fn-executed 400 :-batch-callback-timed-out)
+        (is (= (deref @callback-fn-executed 400 :partial-success-batch-callback-timed-out)
                {:id batch-id :status batch/status-partial-success}))
         (w/stop worker)))))

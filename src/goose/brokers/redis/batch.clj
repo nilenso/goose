@@ -22,7 +22,8 @@
   (let [{:keys [batch-hash-key enqueued-job-set]} (batch-keys id)
         batch-field-value-map (dissoc batch :jobs)
         job-ids (map :id jobs)]
-    (redis-cmds/with-transaction redis-conn
+    (redis-cmds/atomic
+      redis-conn
       (car/multi)
       (car/hmset* batch-hash-key batch-field-value-map)
       (apply car/sadd enqueued-job-set job-ids)
@@ -57,7 +58,8 @@
 (defn- set-batch-expiration
   [redis-conn {:keys [id linger-sec]}]
   (let [{:keys [batch-hash-key enqueued-job-set retrying-job-set successful-job-set dead-job-set]} (batch-keys id)]
-    (redis-cmds/with-transaction redis-conn
+    (redis-cmds/atomic
+      redis-conn
       (car/multi)
       (car/expire batch-hash-key linger-sec)
       (car/expire enqueued-job-set linger-sec)
@@ -82,7 +84,8 @@
   (when-let [{:keys [ready-queue] :as batch} (get-batch-state redis-conn id)]
     (let [{:keys [batch-hash-key]} (batch-keys id)
           callback (batch/new-callback batch id status)]
-      (redis-cmds/with-transaction redis-conn
+      (redis-cmds/atomic
+        redis-conn
         (car/multi)
         (car/rpush ready-queue callback) ; Enqueue callback to front of queue.
         (car/hset batch-hash-key :status status)))))
@@ -103,14 +106,14 @@
        dead-job-set
        retrying-job-set))))
 
-;;; This will guard against n final batch-jobs completing at same time concurrently
-;;; Only 1 of the final batch-jobs will receive a terminal status post batch updation.
+;;; Updating a batch & getting status in one transaction will guard against
+;;; n final batch-jobs completing at same time concurrently.
+;;; Only 1 of the batch-jobs will receive a terminal status post execution.
 (defn- update-batch-and-get-status-atomically
   [redis-conn src dst job-id batch-keys status]
   (let [{:keys [enqueued-job-set retrying-job-set successful-job-set dead-job-set]} batch-keys
-        [_ atomic-results] (car/atomic
+        [_ atomic-results] (redis-cmds/atomic
                              redis-conn
-                             redis-cmds/atomic-lock-attempts
                              (car/multi)
                              (car/smove src dst job-id)
                              (car/scard enqueued-job-set)
