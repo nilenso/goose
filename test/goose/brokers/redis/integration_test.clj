@@ -223,7 +223,7 @@
         (is (= (deref @callback-fn-executed 400 :n-jobs-batch-callback-timed-out)
                {:id batch-id :status batch/status-success}))
         (is (not-empty (batch-api/status tu/redis-producer batch-id)))
-        (u/sleep linger-sec)
+        (u/sleep linger-sec 1)
         (is (empty? (batch-api/status tu/redis-producer batch-id)))
         (is (= (reduce + n-args) @n-jobs-batch-args-sum))
         (w/stop worker)))
