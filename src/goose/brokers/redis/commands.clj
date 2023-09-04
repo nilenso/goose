@@ -132,16 +132,15 @@
   (wcar* conn (car/rpush list element)))
 
 (defn dequeue-and-preserve [conn src dst]
-  ;; `RPOPLPUSH` will be deprecated soon.
-  ;; Switch to `BLMOVE` as soon as Carmine supports that.
-  ;; https://github.com/ptaoussanis/carmine/issues/268
-  ;; `BLMOVE` is not allowed from Lua scripts as well.
+  ;; Whenever moving an element between lists,
+  ;; Goose pops from head of source list and
+  ;; pushes to head of destination list.
 
   ;; Carmine swallows interrupted exception, hence polling timeout
   ;; is too short, i.e. 1 sec. Switch to higher timeout when
   ;; client library doesn't swallow exception.
   ;; https://github.com/ptaoussanis/carmine/issues/266
-  (wcar* conn (car/brpoplpush src dst d/redis-long-polling-timeout-sec)))
+  (wcar* conn (car/blmove src dst "RIGHT" "RIGHT" d/redis-long-polling-timeout-sec)))
 
 (defn list-position [conn list element]
   (wcar* conn (car/lpos list element) "COUNT" 1))

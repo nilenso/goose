@@ -19,8 +19,8 @@
 
 (defn- delete-retrying-jobs
   [redis-conn
-   {{:keys [retry-queue ready-retry-queue]} :retry-opts
-    :keys                                   [queue ready-queue]}
+   {{:keys [retry-queue]} :retry-opts
+    :keys                 [queue]}
    retrying-job-set]
   (let [retried-job-ids (redis-cmds/set-members redis-conn retrying-job-set)]
     (doseq [job-id retried-job-ids]

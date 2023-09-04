@@ -9,9 +9,7 @@
 (defn- replay-orphan-jobs
   [{:keys [redis-conn ready-queue metrics-plugin] :as opts}
    orphan-queue]
-  ;; Enqueuing in-progress jobs to front of queue isn't possible
-  ;; because Carmine doesn't support `LMOVE` function.
-  ;; https://github.com/nilenso/goose/issues/14
+  ;; Orphan jobs are re-enqueued to front of ready queue for prioritized execution.
   (when-let [job (redis-cmds/dequeue-and-preserve redis-conn orphan-queue ready-queue)]
     (m/increment-job-recovery-metric metrics-plugin job)
     #(replay-orphan-jobs opts orphan-queue)))

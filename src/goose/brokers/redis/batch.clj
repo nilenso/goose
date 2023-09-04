@@ -12,10 +12,10 @@
 
 (defn batch-keys [id]
   {:batch-hash   (d/prefix-batch id)
-   :enqueued-set (str (d/prefix-batch id) "/" set "enqueued")
-   :retrying-set (str (d/prefix-batch id) "/" set "retrying")
-   :success-set  (str (d/prefix-batch id) "/" set "success")
-   :dead-set     (str (d/prefix-batch id) "/" set "dead")})
+   :enqueued-set (str (d/prefix-batch id) "/enqueued")
+   :retrying-set (str (d/prefix-batch id) "/retrying")
+   :success-set  (str (d/prefix-batch id) "/success")
+   :dead-set     (str (d/prefix-batch id) "/dead")})
 
 (defn enqueue
   [redis-conn {:keys [id jobs] :as batch}]
@@ -64,12 +64,11 @@
     (redis-cmds/atomic
       redis-conn
       (car/multi)
-      (car/redis-call
-        ["EXPIRE" batch-hash linger-sec "NX"]
-        ["EXPIRE" enqueued-set linger-sec "NX"]
-        ["EXPIRE" retrying-set linger-sec "NX"]
-        ["EXPIRE" success-set linger-sec "NX"]
-        ["EXPIRE" dead-set linger-sec "NX"]))))
+      (car/expire batch-hash linger-sec "NX")
+      (car/expire enqueued-set linger-sec "NX")
+      (car/expire retrying-set linger-sec "NX")
+      (car/expire success-set linger-sec "NX")
+      (car/expire dead-set linger-sec "NX"))))
 
 (defn- record-metrics
   [{:keys [metrics-plugin]}

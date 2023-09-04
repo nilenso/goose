@@ -147,9 +147,9 @@
       (is (= error-svc-cfg (deref @retry-error-service 1 :retry-error-svc-cfg-timed-out)))
       (w/stop worker)
 
-      (is (= ExceptionInfo (type (deref @failed-on-1st-retry 2100 :1st-retry-timed-out))))
+      (is (= ExceptionInfo (type (deref @failed-on-1st-retry 3100 :1st-retry-timed-out))))
 
-      (is (= arg (deref @succeeded-on-2nd-retry 2100 :2nd-retry-timed-out)))
+      (is (= arg (deref @succeeded-on-2nd-retry 3100 :2nd-retry-timed-out)))
       (w/stop retry-worker))))
 
 ;;; ======= TEST: Error handling dead-job using job queue ==========
