@@ -1,5 +1,6 @@
 (ns goose.specs-test
   (:require
+    [goose.batch :as batch]
     [goose.brokers.redis.broker :as redis]
     [goose.brokers.rmq.broker :as rmq]
     [goose.client :as c]
@@ -7,8 +8,8 @@
     [goose.metrics.statsd :as statsd]
     [goose.specs :as specs]
     [goose.test-utils :as tu]
-    [goose.worker :as w]
 
+    [goose.worker :as w]
     [clojure.test :refer [deftest is are]])
   (:import
     (clojure.lang ExceptionInfo)
@@ -48,16 +49,15 @@
       #(c/perform-every tu/redis-client-opts (assoc cron-opts :timezone "invalid-zone-id") `tu/my-fn))
 
     ; :batch-opts
-    (let [batch-opts {:callback-fn-sym `prn :linger-sec 3600}]
-      #(c/perform-batch tu/redis-client-opts batch-opts `unresolvable-fn (map list [1 2]))
-      #(c/perform-batch tu/redis-client-opts batch-opts `single-arity-fn {1 2})
-      #(c/perform-batch tu/redis-client-opts batch-opts `single-arity-fn [1 2])
-      #(c/perform-batch tu/redis-client-opts
-                        (assoc batch-opts :callback-fn-sym `unresolvable-fn)
-                        `single-arity-fn (map list [1 2]))
-      #(c/perform-batch tu/redis-client-opts
-                        (assoc batch-opts :linger-sec "100")
-                        `single-arity-fn (map list [1 2])))
+    #(c/perform-batch tu/redis-client-opts batch/default-opts `unresolvable-fn (map list [1 2]))
+    #(c/perform-batch tu/redis-client-opts batch/default-opts `single-arity-fn {1 2})
+    #(c/perform-batch tu/redis-client-opts batch/default-opts `single-arity-fn [1 2])
+    #(c/perform-batch tu/redis-client-opts
+                      (assoc batch/default-opts :callback-fn-sym `unresolvable-fn)
+                      `single-arity-fn (map list [1 2]))
+    #(c/perform-batch tu/redis-client-opts
+                      (assoc batch/default-opts :linger-sec "100")
+                      `single-arity-fn (map list [1 2]))
 
     ;; Common specs
     ;; :broker

@@ -11,27 +11,28 @@
     [taoensso.carmine :as car]))
 
 (defn batch-keys [id]
-  {:batch-hash     (d/prefix-batch id)
-   :enqueued-set   (str (d/prefix-batch id) "/" set "enqueued")
-   :retrying-set   (str (d/prefix-batch id) "/" set "successful")
-   :successful-set (str (d/prefix-batch id) "/" set "retrying")
-   :dead-set       (str (d/prefix-batch id) "/" set "dead")})
+  {:batch-hash   (d/prefix-batch id)
+   :enqueued-set (str (d/prefix-batch id) "/" set "enqueued")
+   :retrying-set (str (d/prefix-batch id) "/" set "retrying")
+   :success-set  (str (d/prefix-batch id) "/" set "success")
+   :dead-set     (str (d/prefix-batch id) "/" set "dead")})
 
 (defn enqueue
   [redis-conn {:keys [id jobs] :as batch}]
   (let [{:keys [batch-hash enqueued-set]} (batch-keys id)
-        batch-field-value-map (dissoc batch :jobs)
+        pruned-batch-state (dissoc batch :jobs)
         job-ids (map :id jobs)]
     (redis-cmds/atomic
       redis-conn
       (car/multi)
-      (car/hmset* batch-hash batch-field-value-map)
+      (car/hmset* batch-hash pruned-batch-state)
       (apply car/sadd enqueued-set job-ids)
       (doseq [job jobs]
         (car/lpush (:ready-queue job) job)))))
 
-;;; Redis converts primitive data types in a hash to string.
-;;; Post fetching, we restore data types to avoid any surprises.
+;;; When fetching a hash from Redis, primitive data types
+;;; like integer, boolean and keyword get converted to string.
+;;; We restore data types to avoid any type-casting errors.
 (defn- restore-data-types
   [{:keys [linger-sec total status created-at] :as batch}]
   (assoc batch
@@ -40,34 +41,35 @@
     :status (keyword status)
     :created-at (Long/valueOf created-at)))
 
-(defn get-batch-state
+(defn get-batch
   [redis-conn id]
-  (let [{:keys [batch-hash enqueued-set retrying-job-set successful-set dead-set]} (batch-keys id)
-        [batch enqueued retrying successful dead] (redis-cmds/wcar*
-                                                    redis-conn
-                                                    (car/parse-map (car/hgetall batch-hash) :keywordize)
-                                                    (car/scard enqueued-set)
-                                                    (car/scard retrying-job-set)
-                                                    (car/scard successful-set)
-                                                    (car/scard dead-set))]
+  (let [{:keys [batch-hash enqueued-set retrying-job-set success-set dead-set]} (batch-keys id)
+        [batch enqueued retrying success dead] (redis-cmds/wcar*
+                                                 redis-conn
+                                                 (car/parse-map (car/hgetall batch-hash) :keywordize)
+                                                 (car/scard enqueued-set)
+                                                 (car/scard retrying-job-set)
+                                                 (car/scard success-set)
+                                                 (car/scard dead-set))]
     (when (not-empty batch)
       (assoc (restore-data-types batch)
         :enqueued enqueued
         :retrying retrying
-        :successful successful
+        :success success
         :dead dead))))
 
 (defn- set-batch-expiration
   [redis-conn {:keys [id linger-sec]}]
-  (let [{:keys [batch-hash enqueued-set retrying-set successful-set dead-set]} (batch-keys id)]
+  (let [{:keys [batch-hash enqueued-set retrying-set success-set dead-set]} (batch-keys id)]
     (redis-cmds/atomic
       redis-conn
       (car/multi)
-      (car/expire batch-hash linger-sec)
-      (car/expire enqueued-set linger-sec)
-      (car/expire retrying-set linger-sec)
-      (car/expire successful-set linger-sec)
-      (car/expire dead-set linger-sec))))
+      (car/redis-call
+        ["EXPIRE" batch-hash linger-sec "NX"]
+        ["EXPIRE" enqueued-set linger-sec "NX"]
+        ["EXPIRE" retrying-set linger-sec "NX"]
+        ["EXPIRE" success-set linger-sec "NX"]
+        ["EXPIRE" dead-set linger-sec "NX"]))))
 
 (defn- record-metrics
   [{:keys [metrics-plugin]}
@@ -82,8 +84,8 @@
 (defn- enqueue-callback
   [redis-conn id status]
   ;; If a job is executed after a batch has been deleted,
-  ;; `when-let` guards against nil return from `get-batch-state`.
-  (when-let [{:keys [ready-queue] :as batch} (get-batch-state redis-conn id)]
+  ;; `when-let` guards against nil return from `get-batch`.
+  (when-let [{:keys [ready-queue] :as batch} (get-batch redis-conn id)]
     (let [{:keys [batch-hash]} (batch-keys id)
           callback (batch/new-callback batch id status)]
       (redis-cmds/atomic
@@ -101,9 +103,9 @@
 (defn- job-destination-set
   ([job batch-keys]
    (job-destination-set job batch-keys nil))
-  ([job {:keys [retrying-set successful-set dead-set]} ex]
+  ([job {:keys [retrying-set success-set dead-set]} ex]
    (if-not ex
-     successful-set
+     success-set
      (if (goose.retry/max-retries-reached? job)
        dead-set
        retrying-set))))
@@ -113,17 +115,17 @@
 ;;; Only 1 of the batch-jobs will receive a terminal status post execution.
 (defn- update-batch-and-get-status-atomically
   [redis-conn src dst job-id batch-keys status]
-  (let [{:keys [enqueued-set retrying-set successful-set dead-set]} batch-keys
+  (let [{:keys [enqueued-set retrying-set success-set dead-set]} batch-keys
         [_ atomic-results] (redis-cmds/atomic
                              redis-conn
                              (car/multi)
                              (car/smove src dst job-id)
                              (car/scard enqueued-set)
                              (car/scard retrying-set)
-                             (car/scard successful-set)
+                             (car/scard success-set)
                              (car/scard dead-set))
-        [_ enqueued retrying successful dead] atomic-results]
-    (reset! status (batch/status-from-job-states enqueued retrying successful dead))))
+        [_ enqueued retrying success dead] atomic-results]
+    (reset! status (batch/status-from-job-states enqueued retrying success dead))))
 
 (defn- execute-batch
   [next
@@ -149,6 +151,16 @@
         (when (batch/terminal-state? @status)
           (enqueue-callback redis-conn batch-id @status))))))
 
+(defn- execute-callback
+  [next
+   {:keys [redis-conn] :as opts}
+   job
+   batch]
+  (let [response (next opts job)]
+    (set-batch-expiration redis-conn batch)
+    (record-metrics opts job batch)
+    response))
+
 (defn- wrap-batch-execution [next]
   (fn [opts
        {:keys [batch-id] :as job}]
@@ -160,14 +172,11 @@
   (fn [{:keys [redis-conn] :as opts}
        {batch-id :callback-for-batch-id :as job}]
     ;; If a callback is executed after a batch has been deleted,
-    ;; `if-let` guards against nil return from `get-batch-state`.
-    ;; `(and batch-id ...)` exists to avoid fetching batch-state
-    ;; for jobs which aren't a batch callback.
-    (if-let [batch (and batch-id (get-batch-state redis-conn batch-id))]
-      (let [response (next opts job)]
-        (set-batch-expiration redis-conn batch)
-        (record-metrics opts job batch)
-        response)
+    ;; `if-let` guards against nil return from `get-batch`.
+    ;; `(and batch-id ...)` exists to avoid making calls to Redis
+    ;; for jobs which aren't a callback of a batch.
+    (if-let [batch (and batch-id (get-batch redis-conn batch-id))]
+      (execute-callback next opts job batch)
       (next opts job))))
 
 (defn wrap-state-update [next]

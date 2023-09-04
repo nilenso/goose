@@ -93,9 +93,6 @@
 (defn set-size [conn set]
   (wcar* conn (car/scard set)))
 
-(defn move-between-sets [conn src dst member]
-  (wcar* conn (car/smove src dst member)))
-
 (defn set-members [conn key]
   (->> (wcar* conn (car/smembers key))
        (set)))
@@ -260,10 +257,6 @@
   (wcar* conn (car/zremrangebyscore sorted-set sorted-set-min score)))
 
 ;;; ============ Hashes ============
-
-(defn hmset* [conn hash m]
-  (wcar* conn (car/hmset* hash m)))
-
 (defn- scan-for-hashes [conn cursor match count]
   (wcar* conn (car/scan cursor "MATCH" match "COUNT" count "TYPE" "HASH")))
 

@@ -7,9 +7,8 @@
 
 (defn default-callback
   "Sample callback for a batch"
-  [batch-id
-   {:keys [successful dead]}]
-  (log/info "Batch:" batch-id "execution completed. Successful:" successful "Dead:" dead))
+  [batch-id status]
+  (log/info "Batch:" batch-id "execution completed. Status:" status))
 
 (def default-opts
   {:linger-sec      3600
@@ -19,17 +18,17 @@
 (def status-success :success)
 (def status-dead :dead)
 (def status-partial-success :partial-success)
-(def terminal-states [status-success status-dead status-partial-success])
+(def ^:private terminal-states [status-success status-dead status-partial-success])
 
-(defn terminal-state? [status]
+(defn ^:no-doc terminal-state? [status]
   (some #{status} terminal-states))
 
-(defn status-from-job-states
-  [enqueued retrying successful dead]
+(defn ^:no-doc status-from-job-states
+  [enqueued retrying success dead]
   (cond
     (< 0 (+ enqueued retrying)) status-in-progress
     (= 0 dead) status-success
-    (= 0 successful) status-dead
+    (= 0 success) status-dead
     :else status-partial-success))
 
 (defn new

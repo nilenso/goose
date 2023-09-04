@@ -5,9 +5,8 @@
 
 (defn status
   [broker id]
-  (let [batch (b/batch-status broker id)]
-    (when batch
-      (select-keys batch [:id :status :enqueued :retrying :successful :dead :total :created-at]))))
+  (when-let [batch (b/batch-status broker id)]
+    (select-keys batch [:id :status :enqueued :retrying :success :dead :total :created-at])))
 
 (defn delete
   [broker id]

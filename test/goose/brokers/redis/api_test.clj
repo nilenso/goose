@@ -216,19 +216,20 @@
         batch-job? (fn [job] (:batch-id job))]
     (testing "[redis] batch API"
       (let [batch-id (:id (goose.client/perform-batch tu/redis-client-opts batch-opts `tu/my-fn batch-args))
-            expected-batch {:id         batch-id
-                            :status     goose.batch/status-in-progress
-                            :total      1
-                            :enqueued   1
-                            :retrying   0
-                            :successful 0
-                            :dead       0}
+            expected-batch {:id       batch-id
+                            :status   goose.batch/status-in-progress
+                            :total    1
+                            :enqueued 1
+                            :retrying 0
+                            :success  0
+                            :dead     0}
             {:keys [created-at] :as batch} (batch/status tu/redis-producer batch-id)]
         (is (= expected-batch (dissoc batch :created-at)))
         (is (= java.lang.Long (type created-at)))
         (is (= 2 (batch/delete tu/redis-producer batch-id)))))
     (testing "[redis] batch API with invalid id"
-      (is (nil? (batch/status tu/redis-producer "some-id"))))
+      (is (nil? (batch/status tu/redis-producer "some-id")))
+      (is (nil? (batch/delete tu/redis-producer "some-id"))))
     (testing "[redis] batch API with expired batch"
       (reset! callback-fn-atom (promise))
       (let [batch-opts (assoc batch-opts :linger-sec 0)

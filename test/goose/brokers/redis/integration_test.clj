@@ -212,7 +212,7 @@
         linger-sec 1
         batch-opts {:callback-fn-sym `batch-callback
                     :linger-sec      linger-sec}]
-    (testing "[redis][batch-jobs] Enqueued -> Successful"
+    (testing "[redis][batch-jobs] Enqueued -> Success"
       (reset! callback-fn-executed (promise))
       (reset! n-jobs-batch-args-sum 0)
       (let [n-args (range 1 20)
@@ -228,7 +228,7 @@
         (is (= (reduce + n-args) @n-jobs-batch-args-sum))
         (w/stop worker)))
 
-    (testing "[redis][batch-jobs] Enqueued -> Retrying -> Successful"
+    (testing "[redis][batch-jobs] Enqueued -> Retrying -> Success"
       (reset! callback-fn-executed (promise))
       (reset! batch-fail-pass-count 0)
       (let [client-opts (assoc-in tu/redis-client-opts [:retry-opts :retry-delay-sec-fn-sym] `immediate-retry)
@@ -262,7 +262,7 @@
         (is (= 2 @dead-job-run-count))
         (w/stop worker)))
 
-    (testing "[redis][batch-jobs] Enqueued -> Success/Dead -> Partial Successful"
+    (testing "[redis][batch-jobs] Enqueued -> Success/Dead -> Partial Success"
       (reset! callback-fn-executed (promise))
       (let [client-opts (assoc-in tu/redis-client-opts [:retry-opts :max-retries] 0)
             batch-id (:id (c/perform-batch client-opts batch-opts `batch-job-partial-success shared-args))
