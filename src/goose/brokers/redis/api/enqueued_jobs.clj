@@ -1,7 +1,8 @@
 (ns ^:no-doc goose.brokers.redis.api.enqueued-jobs
   (:require
     [goose.brokers.redis.commands :as redis-cmds]
-    [goose.defaults :as d]))
+    [goose.defaults :as d]
+    [goose.job :as job]))
 
 (defn list-all-queues [redis-conn]
   (map d/affix-queue (redis-cmds/find-lists redis-conn (str d/queue-prefix "*"))))
@@ -22,11 +23,9 @@
     (when (redis-cmds/list-position redis-conn ready-queue job)
       (redis-cmds/del-from-list-and-enqueue-front redis-conn ready-queue job))))
 
-(defn delete
-  ([redis-conn job]
-   (delete redis-conn job (:ready-queue job)))
-  ([redis-conn job queue]
-   (= 1 (redis-cmds/del-from-list redis-conn queue job))))
+(defn delete [redis-conn job]
+  (let [queue (job/ready-or-retry-queue job)]
+    (= 1 (redis-cmds/del-from-list redis-conn queue job))))
 
 (defn purge [redis-conn queue]
   (let [ready-queue (d/prefix-queue queue)]

@@ -26,10 +26,9 @@
     (doseq [job-id retried-job-ids]
       (if-let [job-scheduled-for-retry (scheduled-jobs/find-by-id redis-conn job-id)]
         (scheduled-jobs/delete redis-conn job-scheduled-for-retry)
-        (let [queue (or retry-queue queue)
-              retry-or-ready-queue (or ready-retry-queue ready-queue)]
+        (let [queue (or retry-queue queue)]
           (when-let [job-enqueued-for-retry (enqueued-jobs/find-by-id redis-conn queue job-id)]
-            (enqueued-jobs/delete redis-conn job-enqueued-for-retry retry-or-ready-queue)))))))
+            (enqueued-jobs/delete redis-conn job-enqueued-for-retry)))))))
 
 (defn delete [redis-conn id]
   (when-let [batch (batch/get-batch redis-conn id)]
