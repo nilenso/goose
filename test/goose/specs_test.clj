@@ -8,8 +8,8 @@
     [goose.metrics.statsd :as statsd]
     [goose.specs :as specs]
     [goose.test-utils :as tu]
-
     [goose.worker :as w]
+
     [clojure.test :refer [deftest is are]])
   (:import
     (clojure.lang ExceptionInfo)

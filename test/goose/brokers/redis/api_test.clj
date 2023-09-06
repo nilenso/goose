@@ -212,7 +212,7 @@
   (let [arg "foo"
         batch-opts {:linger-sec      1
                     :callback-fn-sym `callback-fn}
-        batch-args [(list arg)]
+        batch-args (map list [arg])
         batch-job? (fn [job] (:batch-id job))]
     (testing "[redis] batch API"
       (let [batch-id (:id (goose.client/perform-batch tu/redis-client-opts batch-opts `tu/my-fn batch-args))

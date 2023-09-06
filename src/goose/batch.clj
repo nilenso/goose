@@ -5,6 +5,10 @@
 
     [clojure.tools.logging :as log]))
 
+(defn construct-args
+  [coll & args]
+  (conj coll args))
+
 (defn default-callback
   "Sample callback for a batch"
   [batch-id status]

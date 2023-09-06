@@ -1,6 +1,7 @@
 (ns goose.brokers.redis.integration-test
   (:require
     [goose.api.batch :as batch-api]
+    [goose.batch :as batch]
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.brokers.redis.consumer :as redis-consumer]
     [goose.client :as c]
@@ -11,8 +12,7 @@
     [goose.utils :as u]
     [goose.worker :as w]
 
-    [clojure.test :refer [deftest is testing use-fixtures]]
-    [goose.batch :as batch])
+    [clojure.test :refer [deftest is testing use-fixtures]])
   (:import
     [clojure.lang ExceptionInfo]
     [java.time Instant]
@@ -188,6 +188,7 @@
 
 ;;; ======= TEST: Batch-jobs execution ==========
 (def batch-arg-1 :foo)
+(def batch-arg-2 :bar)
 (def n-jobs-batch-args-sum (atom 0))
 (defn n-jobs-batch-fn [arg]
   ; For a batch of n jobs, this function
@@ -208,7 +209,9 @@
   (deliver @callback-fn-executed {:id id :status status}))
 
 (deftest perform-batch-test
-  (let [shared-args [(list batch-arg-1) (list :bar)]
+  (let [shared-args (-> []
+                        (batch/construct-args batch-arg-1)
+                        (batch/construct-args batch-arg-2))
         linger-sec 1
         batch-opts {:callback-fn-sym `batch-callback
                     :linger-sec      linger-sec}]

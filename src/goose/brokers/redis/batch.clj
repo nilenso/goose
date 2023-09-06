@@ -85,13 +85,18 @@
   ;; If a job is executed after a batch has been deleted,
   ;; `when-let` guards against nil return from `get-batch`.
   (when-let [{:keys [ready-queue] :as batch} (get-batch redis-conn id)]
-    (let [{:keys [batch-hash]} (batch-keys id)
-          callback (batch/new-callback batch id status)]
-      (redis-cmds/atomic
-        redis-conn
-        (car/multi)
-        (car/rpush ready-queue callback) ; Enqueue callback to front of queue.
-        (car/hset batch-hash :status status)))))
+    ;; If a worker dies after a callback is enqueued,
+    ;; and before a job is deleted from orphan-queue, a batch-job
+    ;; becomes orphan and is retried. Before enqueuing callback,
+    ;; we check if a batch isn't already in terminal state.
+    (when-not (batch/terminal-state? (:status batch))
+      (let [{:keys [batch-hash]} (batch-keys id)
+            callback (batch/new-callback batch id status)]
+        (redis-cmds/atomic
+          redis-conn
+          (car/multi)
+          (car/rpush ready-queue callback) ; Enqueue callback to front of queue.
+          (car/hset batch-hash :status status))))))
 
 (defn- job-source-set
   [job {:keys [enqueued-set retrying-set]}]
@@ -112,6 +117,8 @@
 ;;; Updating a batch & getting status in one transaction will guard against
 ;;; n final batch-jobs completing at same time concurrently.
 ;;; Only 1 of the batch-jobs will receive a terminal status post execution.
+;;; This operation MUST be executed within a transaction, and not a pipeline.
+;;; Reasoning: https://stackoverflow.com/a/29337358/19427982.
 (defn- update-batch-and-get-status-atomically
   [redis-conn src dst job-id batch-keys status]
   (let [{:keys [enqueued-set retrying-set success-set dead-set]} batch-keys
