@@ -58,45 +58,45 @@
         :success success
         :dead dead))))
 
-(defn- set-batch-expiration
-  [redis-conn {:keys [id linger-sec]}]
-  (let [{:keys [batch-hash enqueued-set retrying-set success-set dead-set]} (batch-keys id)]
+(defn- record-metrics
+  [{:keys [metrics-plugin]}
+   {:keys [execute-fn-sym]}
+   {:keys [id queue created-at]}
+   completion-status]
+  (when (m/enabled? metrics-plugin)
+    (let [completion-time (- (u/epoch-time-ms) created-at)
+          tags {:batch-id id :execute-fn-sym execute-fn-sym :queue queue}]
+      (m/increment metrics-plugin (m/format-batch-status completion-status) 1 tags)
+      (m/timing metrics-plugin m/batch-completion-time completion-time tags))))
+
+(defn- enqueue-callback
+  [redis-conn
+   {:keys [id ready-queue linger-sec] :as batch}
+   completion-status]
+  (let [{:keys [batch-hash enqueued-set retrying-set success-set dead-set]} (batch-keys id)
+        callback (batch/new-callback batch id completion-status)]
     (redis-cmds/atomic
       redis-conn
       (car/multi)
+      ;; Enqueue callback to front of queue.
+      (car/rpush ready-queue callback)
+      ;; Update batch status to reflect completion status.
+      (car/hset batch-hash :status completion-status)
+      ;; Terminal job execution marks completion of a batch, NOT callback execution.
+      ;; Clean-up batch after enqueuing callback.
       (car/expire batch-hash linger-sec "NX")
       (car/expire enqueued-set linger-sec "NX")
       (car/expire retrying-set linger-sec "NX")
       (car/expire success-set linger-sec "NX")
       (car/expire dead-set linger-sec "NX"))))
 
-(defn- record-metrics
-  [{:keys [metrics-plugin]}
-   {:keys [execute-fn-sym queue]}
-   {:keys [id created-at status]}]
-  (when (m/enabled? metrics-plugin)
-    (let [completion-time (- (u/epoch-time-ms) created-at)
-          tags {:batch-id id :execute-fn-sym execute-fn-sym :queue queue}]
-      (m/increment metrics-plugin (m/format-batch-status status) 1 tags)
-      (m/timing metrics-plugin m/batch-completion-time completion-time tags))))
-
-(defn- enqueue-callback
-  [redis-conn id status]
+(defn- mark-batch-completion
+  [{:keys [redis-conn] :as opts} job batch-id completion-status]
   ;; If a job is executed after a batch has been deleted,
   ;; `when-let` guards against nil return from `get-batch`.
-  (when-let [{:keys [ready-queue] :as batch} (get-batch redis-conn id)]
-    ;; If a worker dies after a callback is enqueued,
-    ;; and before a job is deleted from orphan-queue, a batch-job
-    ;; becomes orphan and is retried. Before enqueuing callback,
-    ;; we check if a batch isn't already in terminal state.
-    (when-not (batch/terminal-state? (:status batch))
-      (let [{:keys [batch-hash]} (batch-keys id)
-            callback (batch/new-callback batch id status)]
-        (redis-cmds/atomic
-          redis-conn
-          (car/multi)
-          (car/rpush ready-queue callback) ; Enqueue callback to front of queue.
-          (car/hset batch-hash :status status))))))
+  (when-let [batch (get-batch redis-conn batch-id)]
+    (enqueue-callback redis-conn batch completion-status)
+    (record-metrics opts job batch completion-status)))
 
 (defn- job-source-set
   [job {:keys [enqueued-set retrying-set]}]
@@ -155,37 +155,10 @@
         ;; Parent function receives return value of `try/catch` block,
         ;; `finally` block runs at the end, but does not override return value.
         (when (batch/terminal-state? @status)
-          (enqueue-callback redis-conn batch-id @status))))))
+          (mark-batch-completion opts job batch-id @status))))))
 
-(defn- execute-callback
-  [next
-   {:keys [redis-conn] :as opts}
-   job
-   batch]
-  (let [response (next opts job)]
-    (set-batch-expiration redis-conn batch)
-    (record-metrics opts job batch)
-    response))
-
-(defn- wrap-batch-execution [next]
-  (fn [opts
-       {:keys [batch-id] :as job}]
+(defn wrap-state-update [next]
+  (fn [opts {:keys [batch-id] :as job}]
     (if batch-id
       (execute-batch next opts job)
       (next opts job))))
-
-(defn- wrap-callback-execution [next]
-  (fn [{:keys [redis-conn] :as opts}
-       {batch-id :callback-for-batch-id :as job}]
-    ;; If a callback is executed after a batch has been deleted,
-    ;; `if-let` guards against nil return from `get-batch`.
-    ;; `(and batch-id ...)` exists to avoid making calls to Redis
-    ;; for jobs which aren't a callback of a batch.
-    (if-let [batch (and batch-id (get-batch redis-conn batch-id))]
-      (execute-callback next opts job batch)
-      (next opts job))))
-
-(defn wrap-state-update [next]
-  (-> next
-      (wrap-batch-execution)
-      (wrap-callback-execution)))
