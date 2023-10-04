@@ -191,18 +191,18 @@
 (def batch-arg-2 :bar)
 (def n-jobs-batch-args-sum (atom 0))
 (defn n-jobs-batch-fn [arg]
-  ; For a batch of n jobs, this function
-  ; maintains sum of all args for assertion in test.
+  ;; For a batch of n jobs, this function
+  ;; maintains sum of all args for assertion in test.
   (swap! n-jobs-batch-args-sum (fn [n] (+ n arg))))
 (def batch-fail-pass-count (atom 0))
 (defn batch-job-fail-pass [_]
   (swap! batch-fail-pass-count inc)
-  ; For a batch of 2 jobs, this function
-  ; fails on first execution & succeeds on next attempt.
+  ;; For a batch of 2 jobs, this function
+  ;; fails on first execution & succeeds on next attempt.
   (when (> 3 @batch-fail-pass-count) (/ 1 0)))
 (defn batch-job-partial-success [arg]
-  ; For a batch of 2 jobs, this function
-  ; always fails for 1st arg & succeeds for 2nd arg.
+  ;; For a batch of 2 jobs, this function
+  ;; always fails for 1st arg & succeeds for 2nd arg.
   (when (= batch-arg-1 arg) (/ 1 0)))
 (def callback-fn-executed (atom (promise)))
 (defn batch-callback [id status]

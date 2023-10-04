@@ -227,26 +227,29 @@
         (is (= expected-batch (dissoc batch :created-at)))
         (is (= java.lang.Long (type created-at)))
         (is (= 2 (batch/delete tu/redis-producer batch-id)))))
+
     (testing "[redis] batch API with invalid id"
       (is (nil? (batch/status tu/redis-producer "some-id")))
       (is (nil? (batch/delete tu/redis-producer "some-id"))))
-    (testing "[redis] batch API with expired batch"
+
+    (testing "[redis] batch API for a cleaned-up/expired batch"
       (reset! callback-fn-atom (promise))
       (let [batch-opts (assoc batch-opts :linger-sec 0)
             batch-id (:id (goose.client/perform-batch tu/redis-client-opts batch-opts `tu/my-fn batch-args))
             worker (w/start tu/redis-worker-opts)]
         (is (= (deref @callback-fn-atom 200 :api-test-timed-out) batch-id))
-        (Thread/sleep 50) ; Wait for for callback middleware to set batch expiration.
         (is (nil? (batch/status tu/redis-producer batch-id)))
         (w/stop worker)))
-    (testing "[redis] batch/delete for enqueued jobs"
+
+    (testing "[redis] `batch/delete` for enqueued jobs"
       (let [batch-id (:id (goose.client/perform-batch tu/redis-client-opts batch-opts `tu/my-fn batch-args))
             queue (:queue tu/redis-client-opts)]
 
         (is (not-empty (enqueued-jobs/find-by-pattern tu/redis-producer queue batch-job?)))
         (batch/delete tu/redis-producer batch-id)
         (is (empty? (enqueued-jobs/find-by-pattern tu/redis-producer queue batch-job?)))))
-    (testing "[redis] batch/delete for scheduled retrying jobs"
+
+    (testing "[redis] `batch/delete` for scheduled retrying jobs"
       (reset! job-failed-atom (promise))
       (let [batch-id (:id (goose.client/perform-batch tu/redis-client-opts batch-opts `failing-fn batch-args))
             worker (w/start tu/redis-worker-opts)]
@@ -256,7 +259,8 @@
         (is (not-empty (scheduled-jobs/find-by-pattern tu/redis-producer batch-job?)))
         (batch/delete tu/redis-producer batch-id)
         (is (empty? (scheduled-jobs/find-by-pattern tu/redis-producer batch-job?)))))
-    (testing "[redis] batch/delete for enqueued retrying jobs"
+
+    (testing "[redis] `batch/delete` for enqueued retrying jobs"
       (reset! job-failed-atom (promise))
       (let [retry-queue "batch-delete-api-test"
             client-opts (assoc-in tu/redis-client-opts [:retry-opts :retry-queue] retry-queue)
@@ -265,6 +269,7 @@
         (is (= (deref @job-failed-atom 100 :batch-delete-enqueued-retry-test-timed-out) arg))
         (w/stop worker)
         (let [retrying-job (scheduled-jobs/find-by-pattern tu/redis-producer batch-job?)]
+          ;; Move a retrying job from scheduled to ready-queue, and then call `batch/delete`.
           (scheduled-jobs/prioritise-execution tu/redis-producer (first retrying-job)))
 
         (is (not-empty (enqueued-jobs/find-by-pattern tu/redis-producer retry-queue batch-job?)))

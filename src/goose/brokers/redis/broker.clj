@@ -20,14 +20,14 @@
     [this job]
     (redis-cmds/enqueue-back (:redis-conn this) (:ready-queue job) job)
     (select-keys job [:id]))
-  (enqueue-batch
-    [this batch]
-    (batch/enqueue (:redis-conn this) batch)
-    (select-keys batch [:id]))
   (schedule [this schedule-epoch-ms job]
     (redis-scheduler/run-at (:redis-conn this) schedule-epoch-ms job))
   (register-cron [this cron-opts job-description]
     (cron/register (:redis-conn this) cron-opts job-description))
+  (enqueue-batch
+    [this batch]
+    (batch/enqueue (:redis-conn this) batch)
+    (select-keys batch [:id]))
   (start-worker [this worker-opts]
     (redis-worker/start (merge worker-opts (:opts this))))
 

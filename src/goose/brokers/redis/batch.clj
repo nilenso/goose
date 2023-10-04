@@ -36,8 +36,8 @@
 (defn- restore-data-types
   [{:keys [linger-sec total status created-at] :as batch}]
   (assoc batch
-    :linger-sec (Integer/valueOf linger-sec)
-    :total (Integer/valueOf total)
+    :linger-sec (Long/valueOf linger-sec)
+    :total (Long/valueOf total)
     :status (keyword status)
     :created-at (Long/valueOf created-at)))
 
@@ -69,12 +69,12 @@
       (m/increment metrics-plugin (m/format-batch-status completion-status) 1 tags)
       (m/timing metrics-plugin m/batch-completion-time completion-time tags))))
 
-(defn- enqueue-callback
+(defn- enqueue-callback-and-cleanup-batch
   [redis-conn
    {:keys [id ready-queue linger-sec] :as batch}
    completion-status]
   (let [{:keys [batch-hash enqueued-set retrying-set success-set dead-set]} (batch-keys id)
-        callback (batch/new-callback batch id completion-status)]
+        callback (batch/new-callback-job batch id completion-status)]
     (redis-cmds/atomic
       redis-conn
       (car/multi)
@@ -95,7 +95,7 @@
   ;; If a job is executed after a batch has been deleted,
   ;; `when-let` guards against nil return from `get-batch`.
   (when-let [batch (get-batch redis-conn batch-id)]
-    (enqueue-callback redis-conn batch completion-status)
+    (enqueue-callback-and-cleanup-batch redis-conn batch completion-status)
     (record-metrics opts job batch completion-status)))
 
 (defn- job-source-set
@@ -137,8 +137,10 @@
   [next
    {:keys [redis-conn] :as opts}
    {job-id :id batch-id :batch-id :as job}]
-  (let [status (atom nil)
-        batch-keys (batch-keys batch-id)
+  (let [batch-keys (batch-keys batch-id)
+        ;; `status` is an atom because it could be set from
+        ;; either of `try/catch` blocks and is used in `finally` block.
+        status (atom nil)
         src (job-source-set job batch-keys)]
     (try
       (let [response (next opts job)

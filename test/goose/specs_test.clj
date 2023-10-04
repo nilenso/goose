@@ -48,15 +48,17 @@
       #(c/perform-every tu/redis-client-opts (assoc cron-opts :cron-schedule "invalid") `tu/my-fn)
       #(c/perform-every tu/redis-client-opts (assoc cron-opts :timezone "invalid-zone-id") `tu/my-fn))
 
-    ; :batch-opts
+    ;; :perform-batch
     #(c/perform-batch tu/redis-client-opts batch/default-opts `unresolvable-fn (map list [1 2]))
     #(c/perform-batch tu/redis-client-opts batch/default-opts `single-arity-fn {1 2})
     #(c/perform-batch tu/redis-client-opts batch/default-opts `single-arity-fn [1 2])
+
+    ;;  :batch-opts
     #(c/perform-batch tu/redis-client-opts
-                      (assoc batch/default-opts :callback-fn-sym `unresolvable-fn)
+                      {:linger-sec 1 :callback-fn-sym `unresolvable-fn}
                       `single-arity-fn (map list [1 2]))
     #(c/perform-batch tu/redis-client-opts
-                      (assoc batch/default-opts :linger-sec "100")
+                      {:linger-sec "100" :callback-fn-sym `batch/default-callback}
                       `single-arity-fn (map list [1 2]))
 
     ;; Common specs

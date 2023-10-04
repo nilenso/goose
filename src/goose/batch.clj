@@ -51,6 +51,6 @@
      :status          status-in-progress
      :created-at      (u/epoch-time-ms)}))
 
-(defn ^:no-doc new-callback
+(defn ^:no-doc new-callback-job
   [{:keys [callback-fn-sym queue ready-queue retry-opts]} & args]
   (job/new callback-fn-sym args queue ready-queue retry-opts))
