@@ -6,15 +6,25 @@
     [clojure.tools.logging :as log]))
 
 (defn construct-args
+  "A utility function to construct a collection of args for batch-jobs."
   [coll & args]
   (conj coll args))
 
 (defn default-callback
   "Sample callback for a batch"
   [batch-id status]
-  (log/info "Batch:" batch-id "execution completed. Status:" status))
+  (log/infof "Batch: %s execution completed. Status: %s" batch-id status))
 
 (def default-opts
+  "Map of sample configs for batch-jobs.
+
+  #### Mandatory Keys
+  `:linger-sec`      : Number of seconds batch metadata will be preserved
+  in message broker, after a batch has reached completion.
+
+  `:callback-fn-sym` : A fully-qualified function symbol to report status of a batch.\\
+  Takes `batch-id` and `status` as input.\\
+  *Example*          : [[default-callback]]"
   {:linger-sec      3600
    :callback-fn-sym `default-callback})
 
@@ -35,7 +45,7 @@
     (= 0 success) status-dead
     :else status-partial-success))
 
-(defn new
+(defn ^:no-doc new
   [{:keys [queue ready-queue retry-opts]}
    {:keys [callback-fn-sym linger-sec]}
    jobs]
