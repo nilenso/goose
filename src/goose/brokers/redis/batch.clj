@@ -8,7 +8,8 @@
     [goose.retry]
     [goose.utils :as u]
 
-    [taoensso.carmine :as car]))
+    [taoensso.carmine :as car]
+    [clojure.tools.logging :as log]))
 
 (defn batch-keys [id]
   {:batch-hash   (d/prefix-batch id)
@@ -73,7 +74,7 @@
   [redis-conn
    {:keys [id ready-queue linger-sec] :as batch}
    completion-status]
-  (let [{:keys [batch-hash enqueued-set retrying-set success-set dead-set]} (batch-keys id)
+  (let [{:keys [batch-hash success-set dead-set]} (batch-keys id)
         callback (batch/new-callback-job batch id completion-status)]
     (redis-cmds/atomic
       redis-conn
@@ -85,18 +86,17 @@
       ;; Terminal job execution marks completion of a batch, NOT callback execution.
       ;; Clean-up batch after enqueuing callback.
       (car/expire batch-hash linger-sec "NX")
-      (car/expire enqueued-set linger-sec "NX")
-      (car/expire retrying-set linger-sec "NX")
       (car/expire success-set linger-sec "NX")
       (car/expire dead-set linger-sec "NX"))))
 
 (defn- mark-batch-completion
   [{:keys [redis-conn] :as opts} job batch-id completion-status]
-  ;; If a job is executed after a batch has been deleted,
-  ;; `when-let` guards against nil return from `get-batch`.
-  (when-let [batch (get-batch redis-conn batch-id)]
-    (enqueue-callback-and-cleanup-batch redis-conn batch completion-status)
-    (record-metrics opts job batch completion-status)))
+  ;; If a batch-job is executed after a batch has been deleted,
+  ;; `if-let` guards against nil return from `get-batch`.
+  (if-let [batch (get-batch redis-conn batch-id)]
+    (do (enqueue-callback-and-cleanup-batch redis-conn batch completion-status)
+        (record-metrics opts job batch completion-status))
+    (log/warnf "Job executed after batch-id: %s was deleted." batch-id)))
 
 (defn- job-source-set
   [job {:keys [enqueued-set retrying-set]}]

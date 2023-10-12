@@ -1,7 +1,7 @@
 (ns goose.brokers.redis.integration-test
   (:require
-    [goose.api.batch :as batch-api]
     [goose.batch :as batch]
+    [goose.brokers.redis.batch :as redis-batch]
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.brokers.redis.consumer :as redis-consumer]
     [goose.client :as c]
@@ -12,7 +12,8 @@
     [goose.utils :as u]
     [goose.worker :as w]
 
-    [clojure.test :refer [deftest is testing use-fixtures]])
+    [clojure.test :refer [deftest is testing use-fixtures]]
+    [taoensso.carmine :as car])
   (:import
     [clojure.lang ExceptionInfo]
     [java.time Instant]
@@ -207,6 +208,14 @@
 (def callback-fn-executed (atom (promise)))
 (defn batch-callback [id status]
   (deliver @callback-fn-executed {:id id :status status}))
+(defmacro assert-batch-expiration [id]
+  `(let [foo# (redis-batch/batch-keys ~id)]
+    (is (= -2 (redis-cmds/wcar* tu/redis-conn (car/ttl (:enqueued-set foo#)))))
+    (is (= -2 (redis-cmds/wcar* tu/redis-conn (car/ttl (:retrying-set foo#)))))
+
+    (is (not= -1 (redis-cmds/wcar* tu/redis-conn (car/ttl (:batch-hash foo#)))))
+    (is (not= -1 (redis-cmds/wcar* tu/redis-conn (car/ttl (:success-set foo#)))))
+    (is (not= -1 (redis-cmds/wcar* tu/redis-conn (car/ttl (:dead-set foo#)))))))
 
 (deftest perform-batch-test
   (let [shared-args (-> []
@@ -225,10 +234,8 @@
         (is (uuid? (UUID/fromString batch-id)))
         (is (= (deref @callback-fn-executed 400 :n-jobs-batch-callback-timed-out)
                {:id batch-id :status batch/status-success}))
-        (is (not-empty (batch-api/status tu/redis-producer batch-id)))
-        (u/sleep linger-sec)
-        (is (empty? (batch-api/status tu/redis-producer batch-id)))
         (is (= (reduce + n-args) @n-jobs-batch-args-sum))
+        (assert-batch-expiration batch-id)
         (w/stop worker)))
 
     (testing "[redis][batch-jobs] Enqueued -> Retrying -> Success"
@@ -240,6 +247,7 @@
         (is (= (deref @callback-fn-executed 2100 :fail-pass-batch-callback-timed-out)
                {:id batch-id :status batch/status-success}))
         (is (= 4 @batch-fail-pass-count))
+        (assert-batch-expiration batch-id)
         (w/stop worker)))
 
     (testing "[redis][batch-jobs] Enqueued -> Retrying -> Dead"
@@ -252,6 +260,7 @@
         (is (= (deref @callback-fn-executed 2100 :dead-batch-callback-timed-out)
                {:id batch-id :status batch/status-dead}))
         (is (= 4 @dead-job-run-count))
+        (assert-batch-expiration batch-id)
         (w/stop worker)))
 
     (testing "[redis][batch-jobs] Enqueued -> Dead"
@@ -263,6 +272,7 @@
         (is (= (deref @callback-fn-executed 400 :dead-batch-callback-timed-out)
                {:id batch-id :status batch/status-dead}))
         (is (= 2 @dead-job-run-count))
+        (assert-batch-expiration batch-id)
         (w/stop worker)))
 
     (testing "[redis][batch-jobs] Enqueued -> Success/Dead -> Partial Success"
@@ -272,4 +282,5 @@
             worker (w/start tu/redis-worker-opts)]
         (is (= (deref @callback-fn-executed 400 :partial-success-batch-callback-timed-out)
                {:id batch-id :status batch/status-partial-success}))
+        (assert-batch-expiration batch-id)
         (w/stop worker)))))
