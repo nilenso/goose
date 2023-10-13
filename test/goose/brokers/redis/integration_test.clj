@@ -210,12 +210,12 @@
   (deliver @callback-fn-executed {:id id :status status}))
 (defmacro assert-batch-expiration [id]
   `(let [foo# (redis-batch/batch-keys ~id)]
-    (is (= -2 (redis-cmds/wcar* tu/redis-conn (car/ttl (:enqueued-set foo#)))))
-    (is (= -2 (redis-cmds/wcar* tu/redis-conn (car/ttl (:retrying-set foo#)))))
+     (is (= -2 (redis-cmds/wcar* tu/redis-conn (car/ttl (:enqueued-set foo#)))))
+     (is (= -2 (redis-cmds/wcar* tu/redis-conn (car/ttl (:retrying-set foo#)))))
 
-    (is (not= -1 (redis-cmds/wcar* tu/redis-conn (car/ttl (:batch-hash foo#)))))
-    (is (not= -1 (redis-cmds/wcar* tu/redis-conn (car/ttl (:success-set foo#)))))
-    (is (not= -1 (redis-cmds/wcar* tu/redis-conn (car/ttl (:dead-set foo#)))))))
+     (is (not= -1 (redis-cmds/wcar* tu/redis-conn (car/ttl (:batch-hash foo#)))))
+     (is (not= -1 (redis-cmds/wcar* tu/redis-conn (car/ttl (:success-set foo#)))))
+     (is (not= -1 (redis-cmds/wcar* tu/redis-conn (car/ttl (:dead-set foo#)))))))
 
 (deftest perform-batch-test
   (let [shared-args (-> []
