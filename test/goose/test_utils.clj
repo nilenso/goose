@@ -19,9 +19,13 @@
 (defn my-fn [arg & _]
   arg)
 (def queue "test")
+(defn no-op-error-handler [_ _ _])
+(def retry-opts (assoc retry/default-opts
+                  :error-handler-fn-sym `no-op-error-handler
+                  :death-handler-fn-sym `no-op-error-handler))
 (def client-opts
   {:queue      queue
-   :retry-opts retry/default-opts})
+   :retry-opts retry-opts})
 (def worker-opts
   {:threads               1
    :queue                 queue
@@ -32,10 +36,11 @@
   (let [host (or (System/getenv "GOOSE_TEST_REDIS_HOST") "localhost")
         port (or (System/getenv "GOOSE_TEST_REDIS_PORT") "6379")]
     (str "redis://" host ":" port)))
-(def redis-opts {:url redis-url})
-(def redis-conn {:spec {:uri (:url redis-opts)}})
-(def redis-producer (redis/new-producer redis-opts))
-(def redis-consumer (redis/new-consumer redis-opts 1))
+(def redis-producer-opts {:url redis-url})
+(def redis-consumer-opts {:url redis-url :scheduler-polling-interval-sec 1})
+(def redis-conn {:spec {:uri (:url redis-producer-opts)}})
+(def redis-producer (redis/new-producer redis-producer-opts))
+(def redis-consumer (redis/new-consumer redis-consumer-opts 1))
 (def redis-client-opts (assoc client-opts :broker redis-producer))
 (def redis-worker-opts (assoc worker-opts :broker redis-consumer))
 (defn clear-redis []

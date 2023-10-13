@@ -106,6 +106,14 @@
                    ::cron-schedule]
           :opt-un [::timezone]))
 
+;;; ============== Batch ==============
+(s/def ::callback-fn-sym
+  (s/and ::fn-sym #(some #{2} (u/arities %))))
+(s/def ::linger-sec nat-int?)
+(s/def ::batch-opts
+  (s/keys :req-un [::callback-fn-sym ::linger-sec]))
+(s/def ::batch-args (s/and sequential? #(every? sequential? %) (s/* ::args-serializable?)))
+
 ;;; ============== Retry Opts ==============
 (s/def ::max-retries nat-int?)
 (s/def ::retry-queue (s/nilable ::queue))
@@ -197,12 +205,19 @@
                      :args (s/* ::args-serializable?))
         :ret map?)
 
+(s/fdef c/perform-batch
+        :args (s/cat :opts ::client-opts
+                     :batch-opts ::batch-opts
+                     :execute-fn-sym ::fn-sym
+                     :args ::batch-args)
+        :ret map?)
 
 (def ^:private fns-with-specs
   [`c/perform-async
    `c/perform-at
    `c/perform-in-sec
-   `c/perform-every])
+   `c/perform-every
+   `c/perform-batch])
 
 (defn instrument
   "Instruments frequently-called functions.\\

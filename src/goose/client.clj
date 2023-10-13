@@ -1,6 +1,7 @@
 (ns goose.client
   "Functions for executing job in async, scheduled or periodic manner."
   (:require
+    [goose.batch :as batch]
     [goose.broker :as b]
     [goose.defaults :as d]
     [goose.job :as j]
@@ -18,34 +19,40 @@
   [Message Broker wiki](https://github.com/nilenso/goose/wiki/Message-Brokers)
 
   `:queue`      : Destination where client produces to & worker consumes from.\\
-  Example       : [[goose.defaults/default-queue]]
+  *Example*     : [[goose.defaults/default-queue]]
 
   `:retry-opts` : Configuration for handling Job failure.\\
-  Example       : [[goose.retry/default-opts]]\\
+  *Example*     : [[goose.retry/default-opts]]\\
   [Error Handling & Retries wiki](https://github.com/nilenso/goose/wiki/Error-Handling-&-Retries)"
   {:queue      d/default-queue
    :retry-opts retry/default-opts})
 
+(defn- prefix-queues-inside-opts
+  [{:keys [queue retry-opts] :as opts}]
+  (assoc opts
+    :ready-queue (d/prefix-queue queue)
+    :retry-opts (retry/prefix-queue-if-present retry-opts)))
+
 (defn- register-cron-schedule
-  [{:keys [broker queue retry-opts] :as _opts}
+  [{:keys [broker queue ready-queue retry-opts] :as _opts}
    cron-opts
    execute-fn-sym
    args]
-  (let [retry-opts (retry/prefix-queue-if-present retry-opts)
-        ready-queue (d/prefix-queue queue)
-        job-description (j/description execute-fn-sym args queue ready-queue retry-opts)
+  (let [job-description (j/description execute-fn-sym args queue ready-queue retry-opts)
         cron-entry (b/register-cron broker cron-opts job-description)]
     (select-keys cron-entry [:cron-name :cron-schedule :timezone])))
 
+(defn- create-job
+  [{:keys [queue retry-opts ready-queue]} execute-fn-sym args]
+  (j/new execute-fn-sym args queue ready-queue retry-opts))
+
 (defn- enqueue
-  [{:keys [broker queue retry-opts]}
+  [{:keys [broker] :as opts}
    schedule-epoch-ms
    execute-fn-sym
    args]
-  (let [retry-opts (retry/prefix-queue-if-present retry-opts)
-        ready-queue (d/prefix-queue queue)
-        job (j/new execute-fn-sym args queue ready-queue retry-opts)]
-
+  (let [internal-opts (prefix-queues-inside-opts opts)
+        job (create-job internal-opts execute-fn-sym args)]
     (if schedule-epoch-ms
       (b/schedule broker schedule-epoch-ms job)
       (b/enqueue broker job))))
@@ -55,10 +62,10 @@
 
   ### Args
   `client-opts`    : Map of `:broker`, `:queue` & `:retry-opts`.\\
-  Example          : [[default-opts]]
+  *Example*        : [[default-opts]]
 
   `execute-fn-sym` : A fully-qualified function symbol called by worker.\\
-  Example          : `` `my-fn ``, `` `ns-alias/my-fn ``, `'fully-qualified-ns/my-fn`
+  *Example*        : `` `my-fn ``, `` `ns-alias/my-fn ``, `'fully-qualified-ns/my-fn`
 
   `args`           : Variadic values provided in given order when invoking `execute-fn-sym`.\\
    Given values must be serializable by `ptaoussanis/nippy`.
@@ -77,12 +84,12 @@
 
   ### Args
   `client-opts`      : Map of `:broker`, `:queue` & `:retry-opts`.\\
-  Example            : [[default-opts]]
+  *Example*          : [[default-opts]]
 
   `^Instant instant` : `java.time.Instant` at which job should be executed.
 
   `execute-fn-sym`   : A fully-qualified function symbol called by worker.\\
-  Example            : `` `my-fn ``, `` `ns-alias/my-fn ``, `'fully-qualified-ns/my-fn`
+  *Example*          : `` `my-fn ``, `` `ns-alias/my-fn ``, `'fully-qualified-ns/my-fn`
 
   `args`             : Variadic values provided in given order when invoking `execute-fn-sym`.\\
    Given values must be serializable by `ptaoussanis/nippy`.
@@ -102,12 +109,12 @@
 
   ### Args
   `client-opts`    : Map of `:broker`, `:queue` & `:retry-opts`.\\
-  Example          : [[default-opts]]
+  *Example*        : [[default-opts]]
 
   `sec`            : Delay of Job execution in seconds.
 
   `execute-fn-sym` : A fully-qualified function symbol called by worker.\\
-  Example          : `` `my-fn ``, `` `ns-alias/my-fn ``, `'fully-qualified-ns/my-fn`
+  *Example*        : `` `my-fn ``, `` `ns-alias/my-fn ``, `'fully-qualified-ns/my-fn`
 
   `args`           : Variadic values provided in given order when invoking `execute-fn-sym`.\\
    Given values must be serializable by `ptaoussanis/nippy`.
@@ -128,9 +135,9 @@
 
   ### Args
   `client-opts`    : Map of `:broker`, `:queue` & `:retry-opts`.\\
-  Example          : [[default-opts]]
+  *Example*        : [[default-opts]]
 
-  `cron-opts`      : Map of `:cron-name`, `:cron-schedule`, `:timezone`
+  `cron-opts`      : Map of `:cron-name`, `:cron-schedule`, `:timezone`.
   - `:cron-name` (Mandatory)
     - Unique identifier of a periodic job
   - `:cron-schedule` (Mandatory)
@@ -141,7 +148,7 @@
     - Defaults to system timezone
 
   `execute-fn-sym` : A fully-qualified function symbol called by worker.\\
-  Example          : `` `my-fn ``, `` `ns-alias/my-fn ``, `'fully-qualified-ns/my-fn`
+  *Example*        : `` `my-fn ``, `` `ns-alias/my-fn ``, `'fully-qualified-ns/my-fn`
 
   `args`           : Variadic values provided in given order when invoking `execute-fn-sym`.\\
    Given values must be serializable by `ptaoussanis/nippy`.
@@ -156,4 +163,46 @@
 
   - [Periodic Jobs wiki](https://github.com/nilenso/goose/wiki/Periodic-Jobs)"
   [opts cron-opts execute-fn-sym & args]
-  (register-cron-schedule opts cron-opts execute-fn-sym args))
+  (let [internal-opts (prefix-queues-inside-opts opts)]
+    (register-cron-schedule internal-opts cron-opts execute-fn-sym args)))
+
+(defn perform-batch
+  "Enqueues a collection of Jobs for execution in parallel,
+   and tracks them as a single entity. Reports status of a batch
+   via a callback when all Jobs have reached terminal state.
+
+  ### Args
+  `client-opts`    : Map of `:broker`, `:queue` & `:retry-opts`.\\
+  *Example*        : [[default-opts]]
+
+  `batch-opts`     : Map of `:callback-fn-sym`, `:linger-sec`.\\
+  *Example*        : [[goose.batch/default-opts]]
+
+  `execute-fn-sym` : A fully-qualified function symbol called by worker.\\
+  *Example*        : `` `my-fn ``, `` `ns-alias/my-fn ``, `'fully-qualified-ns/my-fn`
+
+  `args-coll`      : A sequential collection of args. Args must be represented as a
+  sequential collection too. This collection is iterated upon for creating Batch-Jobs.\\
+  Number of Jobs in a Batch is equal to the number of elements in args-coll.\\
+  Given values must be serializable by `ptaoussanis/nippy`.
+  *Example*        : `[[1] [2] [:foo :bar] [{:some :map}]]`
+
+  ### Usage
+  ```Clojure
+  (let [batch-opts goose.batch/default-opts
+        ;; For single-arity functions
+        args [1 2 3 4 5]
+        args-coll (map list args)
+        ;; For multi-arity or variadic functions
+        args-coll (-> []
+                      (goose.batch/construct-args :foo :bar :baz)
+                      (goose.batch/construct-args :fizz :buzz))]
+    (perform-batch client-opts batch-opts `send-emails args-coll))
+  ```
+
+  - [Batch Jobs wiki](https://github.com/nilenso/goose/wiki/Batch-Jobs)"
+  ([opts batch-opts execute-fn-sym args-coll]
+   (let [internal-opts (prefix-queues-inside-opts opts)
+         jobs (map #(create-job internal-opts execute-fn-sym %) args-coll)
+         batch (batch/new internal-opts batch-opts jobs)]
+     (b/enqueue-batch (:broker internal-opts) batch))))

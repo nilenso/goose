@@ -8,6 +8,7 @@
    - [Guide to Message Broker Integration](https://github.com/nilenso/goose/wiki/Guide-to-Message-Broker-Integration)"
   ;; client/producer
   (enqueue [this job] "Enqueues a Job for async execution.")
+  (enqueue-batch [this batch] "Enqueues a Batch of Jobs for async execution.")
   (schedule [this schedule-epoch-ms job] "Schedules a Job for execution at given epoch-ms.")
   (register-cron [this cron-opts job-description] "Registers a function for periodic execution in cron-jobs style.")
 
@@ -22,7 +23,7 @@
 
   Some tasks are message-broker specific & need not be implemented by all workers.\\
   For instance, RabbitMQ natively supports scheduled jobs & orphan handling,\\
-  and it need not be explicitly implemented by it's worker.")
+  and it need not be explicitly implemented by its worker.")
 
   ;; enqueued-jobs API
   (enqueued-jobs-list-all-queues [this] "Lists all the queues.")
@@ -30,7 +31,7 @@
   (enqueued-jobs-find-by-id [this queue id] "Finds a Job by `:id` in given queue.")
   (enqueued-jobs-find-by-pattern [this queue match? limit] "Finds a Job by user-defined parameters in given queue.")
   (enqueued-jobs-prioritise-execution [this job] "Brings a Job anywhere in the queue to front of queue.")
-  (enqueued-jobs-delete [this job] "Deletes given Job from it's queue.")
+  (enqueued-jobs-delete [this job] "Deletes given Job from its queue.")
   (enqueued-jobs-purge [this queue] "Purges all the Jobs in given queue.")
 
   ;; scheduled-jobs API
@@ -56,4 +57,8 @@
   (dead-jobs-replay-n-jobs [this n] "Re-enqueues n oldest Dead Jobs to front of queue for execution.")
   (dead-jobs-delete [this job] "Deletes given Dead Job.")
   (dead-jobs-delete-older-than [this epoch-ms] "Deletes Dead Jobs older than given epoch-ms.")
-  (dead-jobs-purge [this] "Purges all the Dead Jobs."))
+  (dead-jobs-purge [this] "Purges all the Dead Jobs.")
+
+  ;; batch API
+  (batch-status [this id] "Finds a Batch by `:id`")
+  (batch-delete [this id] "Deletes given Batch and its jobs."))

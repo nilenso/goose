@@ -12,6 +12,7 @@
     [goose.job :as job]
     [goose.metrics :as m]
     [goose.utils :as u]
+    [goose.brokers.redis.batch :as batch]
 
     [clojure.tools.logging :as log]
     [com.climate.claypoole :as cp])
@@ -50,6 +51,7 @@
     (-> call
         (m/wrap-metrics)
         (job/wrap-latency)
+        (batch/wrap-state-update)
         (redis-retry/wrap-failure))))
 
 (defn start

@@ -1,5 +1,6 @@
 (ns goose.specs-test
   (:require
+    [goose.batch :as batch]
     [goose.brokers.redis.broker :as redis]
     [goose.brokers.rmq.broker :as rmq]
     [goose.client :as c]
@@ -46,6 +47,19 @@
       #(c/perform-every tu/redis-client-opts (assoc cron-opts :cron-name :invalid) `tu/my-fn)
       #(c/perform-every tu/redis-client-opts (assoc cron-opts :cron-schedule "invalid") `tu/my-fn)
       #(c/perform-every tu/redis-client-opts (assoc cron-opts :timezone "invalid-zone-id") `tu/my-fn))
+
+    ;; :perform-batch
+    #(c/perform-batch tu/redis-client-opts batch/default-opts `unresolvable-fn (map list [1 2]))
+    #(c/perform-batch tu/redis-client-opts batch/default-opts `single-arity-fn {1 2})
+    #(c/perform-batch tu/redis-client-opts batch/default-opts `single-arity-fn [1 2])
+
+    ;;  :batch-opts
+    #(c/perform-batch tu/redis-client-opts
+                      {:linger-sec 1 :callback-fn-sym `unresolvable-fn}
+                      `single-arity-fn (map list [1 2]))
+    #(c/perform-batch tu/redis-client-opts
+                      {:linger-sec "100" :callback-fn-sym `batch/default-callback}
+                      `single-arity-fn (map list [1 2]))
 
     ;; Common specs
     ;; :broker

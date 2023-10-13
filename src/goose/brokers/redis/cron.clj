@@ -104,11 +104,12 @@
 
 (defn delete
   [redis-conn entry-name]
-  (let [[_ atomic-results] (car/atomic redis-conn redis-cmds/atomic-lock-attempts
+  (let [[_ atomic-results] (redis-cmds/atomic
+                             redis-conn
                              (car/multi)
                              (car/zrem d/prefixed-cron-queue entry-name)
                              (car/hdel d/prefixed-cron-entries entry-name))]
     (= [1 1] atomic-results)))
 
 (defn purge [redis-conn]
-  (= 2 (redis-cmds/del-keys redis-conn [d/prefixed-cron-entries d/prefixed-cron-queue])))
+  (= 2 (redis-cmds/del-keys redis-conn d/prefixed-cron-entries d/prefixed-cron-queue)))

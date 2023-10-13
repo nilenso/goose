@@ -11,6 +11,7 @@
 (def ^:no-doc in-progress-queue-prefix "goose/in-progress-jobs:")
 (def ^:no-doc process-prefix "goose/processes:")
 (def ^:no-doc heartbeat-prefix "goose/heartbeat:")
+(def ^:no-doc batch-prefix "goose/batch:")
 
 (def default-queue "default")
 (def schedule-queue "scheduled-jobs")
@@ -29,6 +30,10 @@
   (-> queue
       (str/split (re-pattern (str queue-prefix "*")))
       (second)))
+
+(defn ^:no-doc prefix-batch
+  [id]
+  (str batch-prefix id))
 
 (def ^:no-doc prefixed-schedule-queue (prefix-queue schedule-queue))
 (def ^:no-doc prefixed-retry-schedule-queue (prefix-queue schedule-queue))

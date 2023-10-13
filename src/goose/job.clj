@@ -15,15 +15,18 @@
    :retry-opts     retry-opts
    :enqueued-at    (u/epoch-time-ms)})
 
-(defn ready-queue
+(defn retried? [job]
+  (boolean (get-in job [:state :error])))
+
+(defn ready-or-retry-queue
   [job]
-  (if (get-in job [:state :error])
+  (if (retried? job)
     (or (get-in job [:retry-opts :ready-retry-queue]) (:ready-queue job))
     (:ready-queue job)))
 
 (defn description
   "A job description is a description of how the job
-  should be created. It's a job without the id or enqueued-at."
+  should be created. It is a job without the id or enqueued-at."
   [execute-fn-sym args queue ready-queue retry-opts]
   {:execute-fn-sym execute-fn-sym
    :args           args

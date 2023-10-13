@@ -26,6 +26,11 @@
      (* (rand-int 20) (inc retry-count))
      (reduce * (repeat 4 retry-count)))) ; retry-count^4
 
+(defn max-retries-reached?
+  [{{:keys [retry-count]} :state
+    {:keys [max-retries]} :retry-opts}]
+  (>= retry-count max-retries))
+
 (def default-opts
   "Map of sample configs for error handling & retries.\\
   A Job is considered to fail when it throws an exception during execution.\\
@@ -78,10 +83,13 @@
   {:error           (str ex)
    :last-retried-at (when first-failed-at (u/epoch-time-ms))
    :first-failed-at (or first-failed-at (u/epoch-time-ms))
+   ;; `retry-count` denotes the count of job retries, NOT the count of job executions.
+   ;; Maximum possible job executions = max-retries + 1.
+   ;; 5 `max-retries` means a job will be retried upto 5 times, AFTER failure in first execution.
+   ;; In total, a job will be executed 6 times before being marked as dead.
+   ;; 0 `max-retries` means a job will be marked as dead, IF it fails in first execution.
    :retry-count     (if retry-count (inc retry-count) 0)})
 
 (defn ^:no-doc set-failed-config
   [job ex]
-  (assoc
-    job :state
-        (failure-state job ex)))
+  (assoc job :state (failure-state job ex)))

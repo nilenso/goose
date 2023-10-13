@@ -24,13 +24,13 @@
 (defn replay-job [redis-conn job]
   (let [sorted-set d/prefixed-dead-queue]
     (when (redis-cmds/sorted-set-score redis-conn sorted-set job)
-      (redis-cmds/sorted-set->ready-queue redis-conn sorted-set (list job) job/ready-queue))))
+      (redis-cmds/sorted-set->ready-queue redis-conn sorted-set (list job) job/ready-or-retry-queue))))
 
 (defn replay-n-jobs [redis-conn n]
   (let [sorted-set d/prefixed-dead-queue
         jobs (redis-cmds/sorted-set-peek-jobs redis-conn sorted-set n)]
     (when (< 0 (count jobs))
-      (redis-cmds/sorted-set->ready-queue redis-conn sorted-set jobs job/ready-queue))
+      (redis-cmds/sorted-set->ready-queue redis-conn sorted-set jobs job/ready-or-retry-queue))
     (count jobs)))
 
 (defn delete [redis-conn job]
@@ -41,4 +41,4 @@
          redis-conn d/prefixed-dead-queue epoch-ms)))
 
 (defn purge [redis-conn]
-  (= 1 (redis-cmds/del-keys redis-conn [d/prefixed-dead-queue])))
+  (= 1 (redis-cmds/del-keys redis-conn d/prefixed-dead-queue)))

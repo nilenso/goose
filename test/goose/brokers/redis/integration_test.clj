@@ -1,5 +1,7 @@
 (ns goose.brokers.redis.integration-test
   (:require
+    [goose.batch :as batch]
+    [goose.brokers.redis.batch :as redis-batch]
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.brokers.redis.consumer :as redis-consumer]
     [goose.client :as c]
@@ -10,7 +12,8 @@
     [goose.utils :as u]
     [goose.worker :as w]
 
-    [clojure.test :refer [deftest is testing use-fixtures]])
+    [clojure.test :refer [deftest is testing use-fixtures]]
+    [taoensso.carmine :as car])
   (:import
     [clojure.lang ExceptionInfo]
     [java.time Instant]
@@ -25,7 +28,7 @@
   (deliver @perform-async-fn-executed arg))
 
 (deftest perform-async-test
-  (testing "Goose executes a function asynchronously"
+  (testing "[redis] Goose executes a function asynchronously"
     (reset! perform-async-fn-executed (promise))
     (let [arg "async-execute-test"
           _ (is (uuid? (UUID/fromString (:id (c/perform-async tu/redis-client-opts `perform-async-fn arg)))))
@@ -39,7 +42,7 @@
   (deliver @perform-at-fn-executed arg))
 
 (deftest perform-at-test
-  (testing "Goose executes a function scheduled in past"
+  (testing "[redis] Goose executes a function scheduled in past"
     (reset! perform-at-fn-executed (promise))
     (let [arg "scheduling-test"
           _ (is (uuid? (UUID/fromString (:id (c/perform-at tu/redis-client-opts (Instant/now) `perform-at-fn arg)))))
@@ -53,7 +56,7 @@
   (deliver @perform-in-sec-fn-executed arg))
 
 (deftest perform-in-sec-test
-  (testing "Goose executes a function scheduled in future"
+  (testing "[redis] Goose executes a function scheduled in future"
     (reset! perform-in-sec-fn-executed (promise))
     (let [arg "scheduling-test"
           _ (is (uuid? (UUID/fromString (:id (c/perform-in-sec tu/redis-client-opts 1 `perform-in-sec-fn arg)))))
@@ -102,7 +105,7 @@
 
 ;;; ======= TEST: Error handling transient failure job using custom retry queue ==========
 (def retry-queue "test-retry")
-(defn immediate-retry [_] 1)
+(defn immediate-retry [_] 0)
 
 (def failed-on-execute (atom (promise)))
 (def failed-on-1st-retry (atom (promise)))
@@ -124,7 +127,7 @@
     (throw (ex-info "error" {})))
   (deliver @succeeded-on-2nd-retry arg))
 (deftest retry-test
-  (testing "Goose retries an erroneous function"
+  (testing "[redis] Goose retries an erroneous function"
     (reset! failed-on-execute (promise))
     (reset! failed-on-1st-retry (promise))
     (reset! succeeded-on-2nd-retry (promise))
@@ -161,13 +164,12 @@
   (deliver @job-dead ex))
 
 (def dead-job-run-count (atom 0))
-(defn dead-fn
-  []
+(defn dead-fn [_]
   (swap! dead-job-run-count inc)
   (/ 1 0))
 
 (deftest death-test
-  (testing "Goose marks a job as dead upon reaching max retries"
+  (testing "[redis] Goose marks a job as dead upon reaching max retries"
     (reset! job-dead (promise))
     (reset! death-error-service (promise))
     (reset! dead-job-run-count 0)
@@ -176,7 +178,7 @@
                           :retry-delay-sec-fn-sym `immediate-retry
                           :error-handler-fn-sym `dead-test-error-handler
                           :death-handler-fn-sym `dead-test-death-handler)
-          _ (c/perform-async (assoc tu/redis-client-opts :retry-opts dead-job-opts) `dead-fn)
+          _ (c/perform-async (assoc tu/redis-client-opts :retry-opts dead-job-opts) `dead-fn :foo)
           error-svc-cfg :my-death-test-config
           worker-opts (assoc tu/redis-worker-opts :error-service-config error-svc-cfg)
           worker (w/start worker-opts)]
@@ -184,3 +186,101 @@
       (is (= error-svc-cfg (deref @death-error-service 1 :death-error-svc-cfg-timed-out)))
       (is (= 2 @dead-job-run-count))
       (w/stop worker))))
+
+;;; ======= TEST: Batch-jobs execution ==========
+(def batch-arg-1 :foo)
+(def batch-arg-2 :bar)
+(def n-jobs-batch-args-sum (atom 0))
+(defn n-jobs-batch-fn [arg]
+  ;; For a batch of n jobs, this function
+  ;; maintains sum of all args for assertion in test.
+  (swap! n-jobs-batch-args-sum (fn [n] (+ n arg))))
+(def batch-fail-pass-count (atom 0))
+(defn batch-job-fail-pass [_]
+  (swap! batch-fail-pass-count inc)
+  ;; For a batch of 2 jobs, this function
+  ;; fails on first execution & succeeds on next attempt.
+  (when (> 3 @batch-fail-pass-count) (/ 1 0)))
+(defn batch-job-partial-success [arg]
+  ;; For a batch of 2 jobs, this function
+  ;; always fails for 1st arg & succeeds for 2nd arg.
+  (when (= batch-arg-1 arg) (/ 1 0)))
+(def callback-fn-executed (atom (promise)))
+(defn batch-callback [id status]
+  (deliver @callback-fn-executed {:id id :status status}))
+(defmacro assert-batch-expiration [id]
+  `(let [foo# (redis-batch/batch-keys ~id)]
+     (is (= -2 (redis-cmds/wcar* tu/redis-conn (car/ttl (:enqueued-set foo#)))))
+     (is (= -2 (redis-cmds/wcar* tu/redis-conn (car/ttl (:retrying-set foo#)))))
+
+     (is (not= -1 (redis-cmds/wcar* tu/redis-conn (car/ttl (:batch-hash foo#)))))
+     (is (not= -1 (redis-cmds/wcar* tu/redis-conn (car/ttl (:success-set foo#)))))
+     (is (not= -1 (redis-cmds/wcar* tu/redis-conn (car/ttl (:dead-set foo#)))))))
+
+(deftest perform-batch-test
+  (let [shared-args (-> []
+                        (batch/construct-args batch-arg-1)
+                        (batch/construct-args batch-arg-2))
+        linger-sec 1
+        batch-opts {:callback-fn-sym `batch-callback
+                    :linger-sec      linger-sec}]
+    (testing "[redis][batch-jobs] Enqueued -> Success"
+      (reset! callback-fn-executed (promise))
+      (reset! n-jobs-batch-args-sum 0)
+      (let [n-args (range 1 20)
+            batch-args (map list n-args)
+            batch-id (:id (c/perform-batch tu/redis-client-opts batch-opts `n-jobs-batch-fn batch-args))
+            worker (w/start tu/redis-worker-opts)]
+        (is (uuid? (UUID/fromString batch-id)))
+        (is (= (deref @callback-fn-executed 400 :n-jobs-batch-callback-timed-out)
+               {:id batch-id :status batch/status-success}))
+        (is (= (reduce + n-args) @n-jobs-batch-args-sum))
+        (assert-batch-expiration batch-id)
+        (w/stop worker)))
+
+    (testing "[redis][batch-jobs] Enqueued -> Retrying -> Success"
+      (reset! callback-fn-executed (promise))
+      (reset! batch-fail-pass-count 0)
+      (let [client-opts (assoc-in tu/redis-client-opts [:retry-opts :retry-delay-sec-fn-sym] `immediate-retry)
+            batch-id (:id (c/perform-batch client-opts batch-opts `batch-job-fail-pass shared-args))
+            worker (w/start tu/redis-worker-opts)]
+        (is (= (deref @callback-fn-executed 2100 :fail-pass-batch-callback-timed-out)
+               {:id batch-id :status batch/status-success}))
+        (is (= 4 @batch-fail-pass-count))
+        (assert-batch-expiration batch-id)
+        (w/stop worker)))
+
+    (testing "[redis][batch-jobs] Enqueued -> Retrying -> Dead"
+      (reset! callback-fn-executed (promise))
+      (reset! dead-job-run-count 0)
+      (let [client-opts (update-in tu/redis-client-opts [:retry-opts]
+                                   assoc :max-retries 1 :retry-delay-sec-fn-sym `immediate-retry)
+            batch-id (:id (c/perform-batch client-opts batch-opts `dead-fn shared-args))
+            worker (w/start tu/redis-worker-opts)]
+        (is (= (deref @callback-fn-executed 2100 :dead-batch-callback-timed-out)
+               {:id batch-id :status batch/status-dead}))
+        (is (= 4 @dead-job-run-count))
+        (assert-batch-expiration batch-id)
+        (w/stop worker)))
+
+    (testing "[redis][batch-jobs] Enqueued -> Dead"
+      (reset! callback-fn-executed (promise))
+      (reset! dead-job-run-count 0)
+      (let [client-opts (assoc-in tu/redis-client-opts [:retry-opts :max-retries] 0)
+            batch-id (:id (c/perform-batch client-opts batch-opts `dead-fn shared-args))
+            worker (w/start tu/redis-worker-opts)]
+        (is (= (deref @callback-fn-executed 400 :dead-batch-callback-timed-out)
+               {:id batch-id :status batch/status-dead}))
+        (is (= 2 @dead-job-run-count))
+        (assert-batch-expiration batch-id)
+        (w/stop worker)))
+
+    (testing "[redis][batch-jobs] Enqueued -> Success/Dead -> Partial Success"
+      (reset! callback-fn-executed (promise))
+      (let [client-opts (assoc-in tu/redis-client-opts [:retry-opts :max-retries] 0)
+            batch-id (:id (c/perform-batch client-opts batch-opts `batch-job-partial-success shared-args))
+            worker (w/start tu/redis-worker-opts)]
+        (is (= (deref @callback-fn-executed 400 :partial-success-batch-callback-timed-out)
+               {:id batch-id :status batch/status-partial-success}))
+        (assert-batch-expiration batch-id)
+        (w/stop worker)))))

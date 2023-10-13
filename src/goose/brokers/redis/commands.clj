@@ -46,6 +46,15 @@
                (when (pos? next-cursor)
                  (scan-seq conn scan-fn redis-key next-cursor)))))))
 
+(defmacro atomic
+  "A simple wrapper over Carmine's `atomic` macro.
+  Use this wrapper instead of `run-with-transaction` when you
+  need values returned by redis, and not surrounding function."
+  [conn & body]
+  `(car/atomic ~conn
+     atomic-lock-attempts
+     ~@body))
+
 (defn run-with-transaction
   "Runs fn inside a Carmine atomic block, and returns
   whatever fn returns."
@@ -71,8 +80,8 @@
 (defn get-key [conn key]
   (wcar* conn (car/get key)))
 
-(defn del-keys [conn keys]
-  (wcar* conn (apply car/del keys)))
+(defn del-keys [conn key & keys]
+  (wcar* conn (apply car/del key keys)))
 
 ;;; ============== Sets ===============
 (defn add-to-set [conn set member]
@@ -81,11 +90,15 @@
 (defn del-from-set [conn set member]
   (wcar* conn (car/srem set member)))
 
-(defn scan-set [conn set cursor count]
-  (wcar* conn (car/sscan set cursor "COUNT" count)))
-
 (defn set-size [conn set]
   (wcar* conn (car/scard set)))
+
+(defn set-members [conn key]
+  (->> (wcar* conn (car/smembers key))
+       (set)))
+
+(defn scan-set [conn set cursor count]
+  (wcar* conn (car/sscan set cursor "COUNT" count)))
 
 (defn- scan-for-sets [conn cursor match count]
   (wcar* conn (car/scan cursor "MATCH" match "COUNT" count "TYPE" "SET")))
@@ -119,16 +132,15 @@
   (wcar* conn (car/rpush list element)))
 
 (defn dequeue-and-preserve [conn src dst]
-  ;; `RPOPLPUSH` will be deprecated soon.
-  ;; Switch to `BLMOVE` as soon as Carmine supports that.
-  ;; https://github.com/ptaoussanis/carmine/issues/268
-  ;; `BLMOVE` is not allowed from Lua scripts as well.
+  ;; Whenever moving an element between lists,
+  ;; Goose pops from head of source list and
+  ;; pushes to head of destination list.
 
   ;; Carmine swallows interrupted exception, hence polling timeout
   ;; is too short, i.e. 1 sec. Switch to higher timeout when
   ;; client library doesn't swallow exception.
   ;; https://github.com/ptaoussanis/carmine/issues/266
-  (wcar* conn (car/brpoplpush src dst d/redis-long-polling-timeout-sec)))
+  (wcar* conn (car/blmove src dst "RIGHT" "RIGHT" d/redis-long-polling-timeout-sec)))
 
 (defn list-position [conn list element]
   (wcar* conn (car/lpos list element) "COUNT" 1))
@@ -242,3 +254,14 @@
 
 (defn del-from-sorted-set-until [conn sorted-set score]
   (wcar* conn (car/zremrangebyscore sorted-set sorted-set-min score)))
+
+;;; ============ Hashes ============
+(defn- scan-for-hashes [conn cursor match count]
+  (wcar* conn (car/scan cursor "MATCH" match "COUNT" count "TYPE" "HASH")))
+
+(defn find-hashes
+  [conn match-str]
+  (let [scan-fn (fn [conn _ cursor]
+                  (let [count 1]
+                    (scan-for-hashes conn cursor match-str count)))]
+    (doall (scan-seq conn scan-fn))))

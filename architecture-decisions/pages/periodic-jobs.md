@@ -8,7 +8,7 @@ Rationale
 - Implementation details:
   - `:cron-name` is the unique identifier for a Periodic Job
   - We've separated Job description from the actual Job itself
-  - Goose stores the description in a hash-set by the key of it's `:cron-name`
+  - Goose stores the description in a hash-set by the key of its `:cron-name`
   - After storing it in hash-set, Goose creates an entry in a sorted-set with score of next runtime
   - When a job is due, Goose creates a Job from the description & enqueue it to ready-queue
   - Add another entry in sorted-set for next runtime

@@ -1,9 +1,11 @@
 (ns goose.brokers.redis.broker
   (:require
     [goose.broker :as b]
+    [goose.brokers.redis.api.batch :as batch-api]
     [goose.brokers.redis.api.dead-jobs :as dead-jobs]
     [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
     [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
+    [goose.brokers.redis.batch :as batch]
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.brokers.redis.connection :as redis-connection]
     [goose.brokers.redis.cron :as cron]
@@ -22,6 +24,10 @@
     (redis-scheduler/run-at (:redis-conn this) schedule-epoch-ms job))
   (register-cron [this cron-opts job-description]
     (cron/register (:redis-conn this) cron-opts job-description))
+  (enqueue-batch
+    [this batch]
+    (batch/enqueue (:redis-conn this) batch)
+    (select-keys batch [:id]))
   (start-worker [this worker-opts]
     (redis-worker/start (merge worker-opts (:opts this))))
 
@@ -83,7 +89,13 @@
   (dead-jobs-delete-older-than [this epoch-ms]
     (dead-jobs/delete-older-than (:redis-conn this) epoch-ms))
   (dead-jobs-purge [this]
-    (dead-jobs/purge (:redis-conn this))))
+    (dead-jobs/purge (:redis-conn this)))
+
+  ;; batch API
+  (batch-status [this id]
+    (batch-api/status (:redis-conn this) id))
+  (batch-delete [this id]
+    (batch-api/delete (:redis-conn this) id)))
 
 (def default-opts
   "Map of sample config for Redis Message Broker.

@@ -11,20 +11,26 @@
 (defonce ^:no-doc jobs-success "jobs.succeeded")
 (defonce ^:no-doc jobs-failure "jobs.failed")
 (defonce ^:no-doc jobs-recovered "jobs.recovered")
+(defn ^:no-doc format-batch-status [status]
+  ;; Batch status is a keyword.
+  ;; Convert it to string before formatting.
+  (format "batch.%s" (name status)))
 
 (defonce ^:no-doc execution-time "job.execution_time")
+(defonce ^:no-doc batch-completion-time "batch.completion_time")
 
 (defonce ^:no-doc execution-latency "execution.latency")
 (defonce ^:no-doc schedule-latency "scheduled.latency")
 (defonce ^:no-doc cron-schedule-latency "cron_scheduled.latency")
 (defonce ^:no-doc retry-latency "retry.latency")
 
-(defn ^:no-doc format-queue-size [queue]
-  (format "enqueued.%s.size" (d/affix-queue queue)))
-(defonce ^:no-doc total-enqueued-size "total_enqueued.size")
-(defonce ^:no-doc schedule-queue-size "scheduled_queue.size")
-(defonce ^:no-doc periodic-jobs-size "periodic_jobs.size")
-(defonce ^:no-doc dead-queue-size "dead_queue.size")
+(defn ^:no-doc format-queue-count [queue]
+  (format "enqueued_jobs.%s.count" (d/affix-queue queue)))
+(defonce ^:no-doc total-enqueued-jobs-count "total_enqueued_jobs.count")
+(defonce ^:no-doc schedule-jobs-count "scheduled_jobs.count")
+(defonce ^:no-doc periodic-jobs-count "periodic_jobs.count")
+(defonce ^:no-doc dead-jobs-count "dead_jobs.count")
+(defonce ^:no-doc batches-count "batches.count")
 
 (defprotocol Metrics
   "Protocol that Metrics Backends should implement
@@ -50,25 +56,31 @@
     (let [tags {:function execute-fn-sym :queue queue}]
       (increment metrics-plugin jobs-recovered 1 tags))))
 
+(defn- record-metrics
+  [next
+   {:keys [metrics-plugin] :as opts}
+   {[job-type latency] :latency
+    :keys              [execute-fn-sym queue]
+    :as                job}]
+  (let [tags {:function execute-fn-sym :queue queue}
+        start (u/epoch-time-ms)]
+    (try
+      ;; When a job is executed using API, latency might be negative.
+      (when (pos? latency)
+        (timing metrics-plugin job-type latency tags))
+      (next opts job)
+      (increment metrics-plugin jobs-success 1 tags)
+      (catch Exception ex
+        (increment metrics-plugin jobs-failure 1 tags)
+        (throw ex))
+      (finally
+        (increment metrics-plugin jobs-processed 1 tags)
+        (timing metrics-plugin execution-time (- (u/epoch-time-ms) start) tags)))))
+
 (defn ^:no-doc wrap-metrics
   [next]
   (fn [{:keys [metrics-plugin] :as opts}
-       {[job-type latency] :latency
-        :keys              [execute-fn-sym queue]
-        :as                job}]
+       job]
     (if (enabled? metrics-plugin)
-      (let [tags {:function execute-fn-sym :queue queue}
-            start (u/epoch-time-ms)]
-        (try
-          ;; When a job is executed using API, latency might be negative.
-          (when (pos? latency)
-            (timing metrics-plugin job-type latency tags))
-          (next opts job)
-          (increment metrics-plugin jobs-success 1 tags)
-          (catch Exception ex
-            (increment metrics-plugin jobs-failure 1 tags)
-            (throw ex))
-          (finally
-            (increment metrics-plugin jobs-processed 1 tags)
-            (timing metrics-plugin execution-time (- (u/epoch-time-ms) start) tags))))
+      (record-metrics next opts job)
       (next opts job))))
