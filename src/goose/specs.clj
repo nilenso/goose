@@ -12,7 +12,8 @@
     [clojure.string :as str]
     [taoensso.carmine.connections :refer [IConnectionPool]])
   (:import
-    (java.time Instant ZoneId)))
+    (java.time Instant ZoneId)
+    (java.util Arrays)))
 
 ;;; ========== Qualified Function Symbols ==============
 (s/def ::fn-sym (s/and qualified-symbol? resolve #(fn? @(resolve %))))
@@ -157,13 +158,12 @@
 
 ;;; ============== Client ==============
 (s/def ::args-serializable?
-  (s/and
-    #(try (= % (u/decode (u/encode %)))
-          (catch Exception _ false))
-
-    ;; Type check alongwith value equality check past encode/decode.
-    #(= (type %) (type (u/decode (u/encode %))))))
-
+  ;; Goose checks for consistency in encoding
+  ;; to determine serializability of given args.
+  #(try (let [encoding (u/encode %)
+              re-encoding (u/encode (u/decode encoding))]
+          (Arrays/equals ^"[B" encoding ^"[B" re-encoding))
+        (catch Exception _ false)))
 (s/def ::instant #(instance? Instant %))
 (s/def ::client-opts (s/keys :req-un [::broker ::queue ::retry-opts]))
 

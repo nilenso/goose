@@ -19,6 +19,15 @@
 (defn single-arity-fn [_] "dummy")
 (def now (Instant/now))
 
+;;; A tech.v3.DS was reported to have mis-matching types post
+;;; de/serialization. This ugliness is the ONLY way to reproduce this bug.
+(def tech-v3-dataset-sample
+  (assoc (-> {:1 1 :2 2 :3 3 :4 4 :5 5 :6 6 :7 7 :8 8}
+             ds/->dataset
+             ds/mapseq-reader
+             first)
+    :9 9))
+
 (deftest specs-test
   (specs/instrument)
   (are [sut]
@@ -35,11 +44,7 @@
     #(c/perform-async tu/redis-client-opts `tu/redis-client-opts)
 
     ;; :args
-    #(c/perform-async tu/redis-client-opts `tu/my-fn specs-test)
-    #(c/perform-async tu/redis-client-opts `tu/my-fn (-> {:1 1}
-                                                          ds/->dataset
-                                                          ds/mapseq-reader
-                                                          first))
+    #(c/perform-async tu/redis-client-opts `tu/my-fn tech-v3-dataset-sample)
 
     ;; :sec
     #(c/perform-in-sec tu/redis-client-opts 0.2 `tu/my-fn)
