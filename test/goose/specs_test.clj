@@ -8,30 +8,40 @@
     [goose.metrics.statsd :as statsd]
     [goose.specs :as specs]
     [goose.test-utils :as tu]
+    [goose.utils :as u]
     [goose.worker :as w]
 
-    [clojure.test :refer [deftest is are]]
-    [tech.v3.dataset :as ds])
+    [clojure.spec.alpha :as s]
+    [clojure.test :refer [deftest is are]])
   (:import
     (clojure.lang ExceptionInfo)
-    (java.time Instant)))
+    (java.time Instant)
+    (java.util HashMap)
+    (tech.v3.datatype FastStruct)))
 
 (defn single-arity-fn [_] "dummy")
 (def now (Instant/now))
 
-;;; A tech.v3.DS was reported to have mis-matching types post
-;;; de/serialization. This ugliness is the ONLY way to reproduce this bug.
-(def tech-v3-dataset-sample
-  (assoc (-> {:1 1 :2 2 :3 3 :4 4 :5 5 :6 6 :7 7 :8 8}
-             ds/->dataset
-             ds/mapseq-reader
-             first)
-    :9 9))
+(deftest args-encoding-consistency-test
+  ;; Not extending nippy serialization for custom data-types can lead to unexpected bugs.
+  ;; For instance, a de/serialized FastStruct object's value will be equal to original.
+  ;; However, the de/serialized object's type gets implicitly altered to PersistentHashMap.
+  ;; This type change leads to inconsistent encoding, leading to BUG #141.
+  ;; TODO: Reproduce value-equality & type-mismatch bug without dependency on a 3rd party library.
+  (let [;; Encoding inconsistency happens only when count of keys in FastStruct are greater than 8.
+        slots (HashMap. {:a 0 :b 1 :c 2 :d 3 :e 4 :f 5 :g 6 :h 7 :i 8})
+        vals [1 2 3 4 5 6 7 8 9]
+        arg (FastStruct. slots vals)]
+    ;; Test value-equality post de/serialization.
+    (is (= arg (u/decode (u/encode arg))))
+    ;; Expect encoding inconsistency post de/serialization.
+    (is (false? (s/valid? ::specs/args-serializable? arg)))))
 
 (deftest specs-test
   (specs/instrument)
   (are [sut]
     (is
+      ;; When specs are instrumented, expect exceptions for incorrect parameters.
       (thrown-with-msg?
         ExceptionInfo
         #"Call to goose.* did not conform to spec."
@@ -44,7 +54,7 @@
     #(c/perform-async tu/redis-client-opts `tu/redis-client-opts)
 
     ;; :args
-    #(c/perform-async tu/redis-client-opts `tu/my-fn tech-v3-dataset-sample)
+    #(c/perform-async tu/redis-client-opts `tu/my-fn specs-test)
 
     ;; :sec
     #(c/perform-in-sec tu/redis-client-opts 0.2 `tu/my-fn)

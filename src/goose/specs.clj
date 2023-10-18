@@ -158,8 +158,9 @@
 
 ;;; ============== Client ==============
 (s/def ::args-serializable?
-  ;; Goose checks for consistency in encoding
-  ;; to determine serializability of given args.
+  ;; Serializability of args is determined by consistency in encoding.
+  ;; If this spec fails, serialize your custom data type as follows:
+  ;; https://github.com/nilenso/goose/wiki/Serializing-Custom-data-types
   #(try (let [encoding (u/encode %)
               re-encoding (u/encode (u/decode encoding))]
           (Arrays/equals ^"[B" encoding ^"[B" re-encoding))
