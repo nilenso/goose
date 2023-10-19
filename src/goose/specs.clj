@@ -12,7 +12,8 @@
     [clojure.string :as str]
     [taoensso.carmine.connections :refer [IConnectionPool]])
   (:import
-    (java.time Instant ZoneId)))
+    (java.time Instant ZoneId)
+    (java.util Arrays)))
 
 ;;; ========== Qualified Function Symbols ==============
 (s/def ::fn-sym (s/and qualified-symbol? resolve #(fn? @(resolve %))))
@@ -157,7 +158,12 @@
 
 ;;; ============== Client ==============
 (s/def ::args-serializable?
-  #(try (= % (u/decode (u/encode %)))
+  ;; Serializability of args is determined by consistency in encoding.
+  ;; If this spec fails, serialize your custom data type as follows:
+  ;; https://github.com/nilenso/goose/wiki/Serializing-Custom-data-types
+  #(try (let [encoding (u/encode %)
+              re-encoding (u/encode (u/decode encoding))]
+          (Arrays/equals ^"[B" encoding ^"[B" re-encoding))
         (catch Exception _ false)))
 (s/def ::instant #(instance? Instant %))
 (s/def ::client-opts (s/keys :req-un [::broker ::queue ::retry-opts]))
