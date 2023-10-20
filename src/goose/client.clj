@@ -184,7 +184,7 @@
   `args-coll`      : A sequential collection of args. Args must be represented as a
   sequential collection too. This collection is iterated upon for creating Batch-Jobs.\\
   Number of Jobs in a Batch is equal to the number of elements in args-coll.\\
-  Given values must be serializable by `ptaoussanis/nippy`.
+  Given values must be serializable by `ptaoussanis/nippy`.\\
   *Example*        : `[[1] [2] [:foo :bar] [{:some :map}]]`
 
   ### Usage

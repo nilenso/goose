@@ -26,7 +26,7 @@
      (* (rand-int 20) (inc retry-count))
      (reduce * (repeat 4 retry-count)))) ; retry-count^4
 
-(defn max-retries-reached?
+(defn ^:no-doc max-retries-reached?
   [{{:keys [retry-count]} :state
     {:keys [max-retries]} :retry-opts}]
   (>= retry-count max-retries))
