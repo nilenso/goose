@@ -4,11 +4,21 @@ All notable changes to Goose will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## [Unreleased] - ???
+## [Unreleased]
 
 ### Added
 ### Changed
 ### Fixed
+
+## [0.4.0] - 20-Oct-2023
+
+### Added
+- Batch processing of Jobs
+### Changed
+- Metrics names from `size` to `count`
+### Fixed
+- Infinite loop in find Jobs API
+- Validation of args serializability
 
 ## [0.3.2] - 07-Mar-2023
 
