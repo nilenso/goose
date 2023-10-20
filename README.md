@@ -17,6 +17,7 @@ Features
 - Native support for RabbitMQ & Redis
 - Pluggable [Message Broker](https://github.com/nilenso/goose/wiki/Guide-to-Message-Broker-Integration) & [Metrics Backend](https://github.com/nilenso/goose/wiki/Guide-to-Custom-Metrics-Backend)
 - [Scheduled Jobs](https://github.com/nilenso/goose/wiki/Scheduled-Jobs)
+- [Batch Jobs](https://github.com/nilenso/goose/wiki/Batch-Jobs)
 - [Periodic Jobs](https://github.com/nilenso/goose/wiki/Periodic-Jobs)
 - [Error Handling & Retries](https://github.com/nilenso/goose/wiki/Error-Handling-&-Retries)
 - Extensible using [Middlewares](https://github.com/nilenso/goose/wiki/Middlewares)
@@ -30,10 +31,10 @@ Getting Started
 ### Add Goose as a dependency
 ```Clojure
 ;;; Clojure CLI/deps.edn
-com.nilenso/goose {:mvn/version "0.3.2"}
+com.nilenso/goose {:mvn/version "0.4.0"}
 
 ;;; Leiningen/Boot
-[com.nilenso/goose "0.3.2"]
+[com.nilenso/goose "0.4.0"]
 ```
 
 ### Client
