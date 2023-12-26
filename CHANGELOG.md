@@ -15,7 +15,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Added
 - Batch processing of Jobs
 ### Changed
-- Metrics names from `size` to `count`
+- Gauge metrics suffixes from `size` to `count` as the latter was more accurate
+- Gauge metrics prefixes from `_queue` to `_jobs`
 ### Fixed
 - Infinite loop in find Jobs API
 - Validation of args serializability
