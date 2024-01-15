@@ -30,7 +30,7 @@ $ docker-compose down                    # ...when you're done.
 
 Linting
 --------
-- Install [clj-kondo](https://github.com/clj-kondo/clj-kondo/blob/master/doc/install.md#installation-script-macos-and-linux)
+- Install [clj-kondo v2022.10.05](https://github.com/clj-kondo/clj-kondo/blob/master/doc/install.md#installation-script-macos-and-linux)
 
 ```shell
 $ clj-kondo --lint src                   # Linting src dir.
@@ -73,3 +73,17 @@ Documentation Guidelines
   - Wrap positional args with backtick (example: `:broker`).
   - Link to other functions/data in Goose using [API Wikilinks syntax](https://github.com/cljdoc/cljdoc/blob/master/doc/userguide/for-library-authors.adoc#use-api-wikilinks-from-docstrings) (example: `[[goose.retry/default-opts]]`).
     - In API Wikilinks, use fully-qualified namespaces and avoid alias or relative paths for namespaces.
+
+Making a Release
+--------
+
+After feature-completion or bug-fix, we release a new version by marking a tag on Github, and publishing the new package to Clojars. Follow below steps when making a release:
+
+1. Compare code-changes between previous release and HEAD branch main by [following this link](https://github.com/nilenso/goose/compare/0.4.0...main).
+1. Choose a new release version based on [semantic versioning](https://semver.org/) guidelines.
+1. Commit new release version to [README.md](./README.md), [CHANGELOG](./CHANGELOG.md) and [pom.xml](./pom.xml).
+1. Draft a new release by going to [this link](https://github.com/nilenso/goose/releases/new)
+1. While choosing a tag, enter the release number to be created on publish.
+1. Click on `Generate release notes`, and review the generated notes.
+1. Click on `Publish release`, and [track the status of new package publishing in CI](https://github.com/nilenso/goose/actions/workflows/publish.yml).
+1. Verify Goose is released on [Clojars](https://clojars.org/com.nilenso/goose) and docs are updated on [cljdoc.org](https://cljdoc.org/d/com.nilenso/goose/).
