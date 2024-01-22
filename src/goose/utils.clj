@@ -102,3 +102,7 @@
 
 (defmacro ^:no-doc with-retry [{:keys [count retry-delay-ms]} & body]
   `(with-retry* ~count ~retry-delay-ms (fn [] ~@body)))
+
+(defn route-prefixer [prefix]
+  (fn [route]
+    (str prefix route)))
