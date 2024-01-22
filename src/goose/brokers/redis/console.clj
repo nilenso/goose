@@ -1,6 +1,11 @@
 (ns goose.brokers.redis.console
   (:require [hiccup.page :refer [html5 include-css]]
-            [ring.util.response :as response]))
+            [ring.util.response :as response]
+
+            [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
+            [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
+            [goose.brokers.redis.cron :as periodic-jobs]
+            [goose.brokers.redis.api.dead-jobs :as dead-jobs]))
 
 (defn landing-page [stats-map]
   (html5 [:head
@@ -29,10 +34,19 @@
                [:span.number (str (get stats-map (:id stat)))]
                [:span.label (:label stat)]])]]]))
 
-(defn handler [_broker {:keys [uri]}]
+(defn- jobs-size [broker]
+  (let [queues (enqueued-jobs/list-all-queues broker)
+        enqueued (reduce (fn [total queue]
+                           (+ total (enqueued-jobs/size broker queue))) 0 queues)
+        scheduled (scheduled-jobs/size broker)
+        periodic (periodic-jobs/size broker)
+        dead (dead-jobs/size broker)]
+    {:enqueued  enqueued
+     :scheduled scheduled
+     :periodic  periodic
+     :dead      dead}))
+
+(defn handler [broker {:keys [uri]}]
   (case uri
-    "/" (response/response (landing-page {:enqueued  2
-                                          :scheduled 10
-                                          :periodic  12
-                                          :dead      1}))
+    "/" (response/response (landing-page (jobs-size broker)))
     (response/not-found "<div> Not found </div>")))
