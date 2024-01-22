@@ -7,32 +7,45 @@
             [goose.brokers.redis.cron :as periodic-jobs]
             [goose.brokers.redis.api.dead-jobs :as dead-jobs]))
 
-(defn landing-page [stats-map]
-  (html5 [:head
-          [:meta {:charset "UTF-8"}]
-          [:meta {:name "viewport" :content "width=device-width, initial-scale=1.0"}]
-          [:title "Goose Dashboard"]]
-         (include-css "css/style.css")
-         [:body
-          [:header
-           [:nav
-            [:div.nav-start
-             [:div#logo "AppName"]
-             [:div#menu
-              [:a {:href "/enqueued"} "Enqueued"]
-              [:a {:href "/scheduled"} "Scheduled"]
-              [:a {:href "/periodic"} "Periodic"]
-              [:a {:href "/batch"} "Batch"]
-              [:a {:href "/dead"} "Dead"]]]]]
-          [:main
-           [:section.statistics
-            (for [stat [{:id :enqueued :label "Enqueued"}
-                        {:id :scheduled :label "Scheduled"}
-                        {:id :periodic :label "Periodic"}
-                        {:id :dead :label "Dead"}]]
-              [:div.stat {:id (:id stat)}
-               [:span.number (str (get stats-map (:id stat)))]
-               [:span.label (:label stat)]])]]]))
+
+;View
+(defn- layout [& components]
+  (fn [title data]
+    (html5 [:head
+            [:meta {:charset "UTF-8"}]
+            [:meta {:name "viewport" :content "width=device-width, initial-scale=1.0"}]
+            [:title title]
+            (include-css "css/style.css")]
+           [:body
+            (map (fn [c] (c data)) components)])))
+
+(defn- header [{:keys [app-name] :or {app-name ""}}]
+  [:header
+   [:nav
+    [:div.nav-start
+     [:div.goose-logo
+      [:a {:href "/"}
+       [:img {:src "img/goose-logo.png" :alt "goose-logo"}]]]
+     [:a {:href "/"}
+      [:div#app-name app-name]]
+     [:div#menu
+      [:a {:href "/enqueued"} "Enqueued"]
+      [:a {:href "/scheduled"} "Scheduled"]
+      [:a {:href "/periodic"} "Periodic"]
+      [:a {:href "/batch"} "Batch"]
+      [:a {:href "/dead"} "Dead"]]]]])
+
+(defn- stats-bar [page-data]
+  [:main
+   [:section.statistics
+    (for [stat [{:id :enqueued :label "Enqueued" :route "/enqueued"}
+                {:id :scheduled :label "Scheduled" :route "/scheduled"}
+                {:id :periodic :label "Periodic" :route "/periodic"}
+                {:id :dead :label "Dead" :route "/dead"}]]
+      [:div.stat {:id (:id stat)}
+       [:span.number (str (get page-data (:id stat)))]
+       [:a {:href (:route stat)}
+        [:span.label (:label stat)]]])]])
 
 (defn- jobs-size [broker]
   (let [queues (enqueued-jobs/list-all-queues broker)
@@ -46,7 +59,12 @@
      :periodic  periodic
      :dead      dead}))
 
-(defn handler [broker {:keys [uri]}]
+(defn- home-page [broker {:keys [app-name]}]
+  (let [view (layout header stats-bar)
+        data (jobs-size broker)]
+    (response/response (view "Home" (assoc data :app-name app-name)))))
+
+(defn handler [broker {:keys [uri] :as req}]
   (case uri
-    "/" (response/response (landing-page (jobs-size broker)))
+    "/" (home-page broker req)
     (response/not-found "<div> Not found </div>")))
