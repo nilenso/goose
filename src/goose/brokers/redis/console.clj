@@ -18,35 +18,35 @@
            [:body
             (map (fn [c] (c data)) components)])))
 
-(defn- header [{:keys [prefixed-route app-name] :or {app-name ""}}]
+(defn- header [{:keys [app-name] :or {app-name ""}}]
   [:header
    [:nav
     [:div.nav-start
      [:div.goose-logo
-      [:a {:href (prefixed-route "/")}
+      [:a {:href ""}
        [:img {:src "img/goose-logo.png" :alt "goose-logo"}]]]
-     [:a {:href (prefixed-route "/")}
+     [:a {:href ""}
       [:div#app-name app-name]]
      [:div#menu
-      [:a {:href (prefixed-route "/enqueued")} "Enqueued"]
-      [:a {:href (prefixed-route "/scheduled")} "Scheduled"]
-      [:a {:href (prefixed-route "/periodic")} "Periodic"]
-      [:a {:href (prefixed-route "/batch")} "Batch"]
-      [:a {:href (prefixed-route "/dead")} "Dead"]]]]])
+      [:a {:href "enqueued"} "Enqueued"]
+      [:a {:href "scheduled"} "Scheduled"]
+      [:a {:href "periodic"} "Periodic"]
+      [:a {:href "batch"} "Batch"]
+      [:a {:href "dead"} "Dead"]]]]])
 
-(defn- stats-bar [{:keys [prefixed-route] :as page-data}]
+(defn- stats-bar [page-data]
   [:main
    [:section.statistics
-    (for [stat [{:id :enqueued :label "Enqueued" :route (prefixed-route "/enqueued")}
-                {:id :scheduled :label "Scheduled" :route (prefixed-route "/scheduled")}
-                {:id :periodic :label "Periodic" :route (prefixed-route "/periodic")}
-                {:id :dead :label "Dead" :route (prefixed-route "/dead")}]]
+    (for [stat [{:id :enqueued :label "Enqueued" :route "enqueued"}
+                {:id :scheduled :label "Scheduled" :route "scheduled"}
+                {:id :periodic :label "Periodic" :route "periodic"}
+                {:id :dead :label "Dead" :route "dead"}]]
       [:div.stat {:id (:id stat)}
        [:span.number (str (get page-data (:id stat)))]
        [:a {:href (:route stat)}
         [:span.label (:label stat)]]])]])
 
-;Data
+;Broker Data
 (defn- jobs-size [broker]
   (let [queues (enqueued-jobs/list-all-queues broker)
         enqueued (reduce (fn [total queue]
@@ -59,11 +59,11 @@
      :periodic  periodic
      :dead      dead}))
 
-(defn- home-page [broker {:keys [app-name prefixed-route]}]
+;;Page handler
+(defn- home-page [broker {:keys [app-name]}]
   (let [view (layout header stats-bar)
         data (jobs-size broker)]
-    (response/response (view "Home" (assoc data :app-name app-name
-                                                :prefixed-route prefixed-route)))))
+    (response/response (view "Home" (assoc data :app-name app-name)))))
 
 (defn handler [broker {:keys [uri] :as req}]
   (case uri
