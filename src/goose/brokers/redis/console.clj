@@ -72,6 +72,7 @@
                  re-pattern
                  (string/replace route-prefix ""))]
     (case path
+      "" (response/redirect (str route-prefix "/"))
       "/" (home-page broker req)
       "/css/style.css" (response/resource-response "css/style.css")
       "/img/goose-logo.png" (response/resource-response "img/goose-logo.png")
