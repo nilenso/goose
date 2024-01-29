@@ -1,11 +1,11 @@
 (ns goose.brokers.redis.console
-  (:require [hiccup.page :refer [html5 include-css]]
-            [ring.util.response :as response]
-
+  (:require [clojure.string :as string]
+            [goose.brokers.redis.api.dead-jobs :as dead-jobs]
             [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
             [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
             [goose.brokers.redis.cron :as periodic-jobs]
-            [goose.brokers.redis.api.dead-jobs :as dead-jobs]))
+            [hiccup.page :refer [html5 include-css]]
+            [ring.util.response :as response]))
 
 ;View
 (defn- layout [& components]
@@ -66,6 +66,11 @@
     (response/response (view "Home" (assoc data :app-name app-name)))))
 
 (defn handler [broker {:keys [uri] :as req}]
-  (case uri
-    "/" (home-page broker req)
-    (response/not-found "<div> Not found </div>")))
+  (let [path (-> uri
+                 re-pattern
+                 (string/replace route-prefix ""))]
+    (case path
+      "/" (home-page broker req)
+      "/css/style.css" (response/resource-response "css/style.css")
+      "/img/goose-logo.png" (response/resource-response "img/goose-logo.png")
+      (response/not-found "<div> Not found </div>"))))

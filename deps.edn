@@ -9,7 +9,7 @@
            org.clojure/tools.logging {:mvn/version "1.2.4"}
            ring/ring-core            {:mvn/version "1.11.0"}
            hiccup/hiccup             {:mvn/version "2.0.0-RC2"}}
- :paths   ["src" "resources"]
+ :paths   ["src" "resources/public"]
 
  :aliases {:test       {:extra-paths ["test"]
                         :extra-deps  {io.github.cognitect-labs/test-runner {:git/tag "v0.5.0" :git/sha "b3fd0d2"}
