@@ -60,12 +60,14 @@
      :dead      dead}))
 
 ;;Page handler
-(defn- home-page [broker {:keys [app-name]}]
+(defn- home-page [broker {{:keys [app-name]} :client-opts}]
   (let [view (layout header stats-bar)
         data (jobs-size broker)]
     (response/response (view "Home" (assoc data :app-name app-name)))))
 
-(defn handler [broker {:keys [uri] :as req}]
+(defn handler [broker {:keys [uri]
+                       {:keys [route-prefix]} :client-opts
+                       :as req}]
   (let [path (-> uri
                  re-pattern
                  (string/replace route-prefix ""))]
