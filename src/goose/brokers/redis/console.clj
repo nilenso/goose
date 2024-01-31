@@ -46,23 +46,23 @@
        [:a {:href (:route stat)}
         [:span.label (:label stat)]]])]])
 
-;Broker Data
-(defn- jobs-size [broker]
-  (let [queues (enqueued-jobs/list-all-queues broker)
+;;Jobs Data from Broker
+(defn jobs-size [redis-conn]
+  (let [queues (enqueued-jobs/list-all-queues redis-conn)
         enqueued (reduce (fn [total queue]
-                           (+ total (enqueued-jobs/size broker queue))) 0 queues)
-        scheduled (scheduled-jobs/size broker)
-        periodic (periodic-jobs/size broker)
-        dead (dead-jobs/size broker)]
+                           (+ total (enqueued-jobs/size redis-conn queue))) 0 queues)
+        scheduled (scheduled-jobs/size redis-conn)
+        periodic (periodic-jobs/size redis-conn)
+        dead (dead-jobs/size redis-conn)]
     {:enqueued  enqueued
      :scheduled scheduled
      :periodic  periodic
      :dead      dead}))
 
 ;;Page handler
-(defn- home-page [broker {{:keys [app-name]} :client-opts}]
+(defn home-page [broker {{:keys [app-name]} :client-opts}]
   (let [view (layout header stats-bar)
-        data (jobs-size broker)]
+        data (jobs-size (:redis-conn broker))]
     (response/response (view "Home" (assoc data :app-name app-name)))))
 
 (defn handler [broker {:keys [uri]
