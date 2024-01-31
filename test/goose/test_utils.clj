@@ -2,15 +2,18 @@
   (:require
     [goose.brokers.redis.broker :as redis]
     [goose.brokers.redis.commands :as redis-cmds]
+    [goose.brokers.redis.cron :as cron]
+    [goose.brokers.redis.scheduler :as scheduler]
     [goose.brokers.rmq.broker :as rmq]
     [goose.brokers.rmq.publisher-confirms :as rmq-publisher-confirms]
     [goose.brokers.rmq.queue :as rmq-queue]
     [goose.brokers.rmq.return-listener :as return-listener]
     [goose.brokers.rmq.shutdown-listener :as shutdown-listener]
     [goose.defaults :as d]
+    [goose.job :as j]
+    [goose.metrics.statsd :as statsd]
     [goose.retry :as retry]
     [goose.specs :as specs]
-    [goose.metrics.statsd :as statsd]
     [goose.utils :as u]
 
     [langohr.queue :as lq]
@@ -55,6 +58,69 @@
 
   (clear-redis))
 
+(def called? (atom false))
+(defn get-called? [] @called?)
+(defn set-called? [value] (reset! called? value))
+
+(defn reset-called?-fixture
+  [f]
+  (set-called? false)
+  (f))
+
+(defn stub [f]
+  (fn [& args]
+    (set-called? true)
+    (apply f args)))
+
+(defn job [overrides]
+  (merge (j/new `println (list "foobar") queue (d/prefix-queue queue) retry/default-opts)
+         overrides))
+
+(defn job-description [overrides]
+  (merge (j/description `println (list "foobar") queue (d/prefix-queue queue) retry/default-opts)
+         overrides))
+
+(defn cron-opts [overrides]
+  (merge {:cron-name     (str (random-uuid))
+          :cron-schedule "*/3 * * * *"
+          :timezone      "US/Pacific"} overrides))
+
+(defn enqueue-job [& [overrides]]
+  (let [j (job overrides)]
+    (redis-cmds/enqueue-back redis-conn (:ready-queue j) j)
+    (:id j)))
+
+(defn schedule-job [& [overrides]]
+  (let [{:keys [scheduled-at] :as j} (job (merge {:scheduled-at (u/epoch-time-ms)} overrides))]
+    (scheduler/run-at redis-conn scheduled-at j)
+    (:id j)))
+
+(defn periodic-job [& [overrides]]
+  (let [job-desc (job-description (:job-description overrides))
+        cron-opts (cron-opts (:cron-opts overrides))]
+    (cron/register redis-conn cron-opts job-desc)
+    cron-opts))
+
+(defn dead-job [& [overrides]]
+  (let [error-state {:state {:error           "Error"
+                             :last-retried-at (u/epoch-time-ms),
+                             :first-failed-at 1701344365468,
+                             :retry-count     27,
+                             :retry-at        1701344433359}}
+        j (job (merge error-state overrides))]
+    (redis-cmds/enqueue-sorted-set redis-conn d/prefixed-dead-queue
+                                   (get-in j [:state :last-retried-at]) j)
+    (:id j)))
+
+(defn add-jobs [{:keys [enqueued scheduled periodic dead]} & [overrides]]
+  (let [add-if (fn [n f & args]
+                 (when n (dotimes [_ n] (apply f args))))]
+    (add-if enqueued enqueue-job (:enqueued overrides))
+    (add-if scheduled schedule-job (:scheduled overrides))
+    (add-if periodic periodic-job (:periodic overrides))
+    (add-if dead dead-job (:dead overrides))))
+
+;; RMQ ---------
 (def rmq-url
   (let [host (or (System/getenv "GOOSE_TEST_RABBITMQ_HOST") "localhost")
         port (or (System/getenv "GOOSE_TEST_RABBITMQ_PORT") "5672")

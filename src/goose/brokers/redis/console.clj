@@ -65,6 +65,7 @@
         data (jobs-size (:redis-conn broker))]
     (response/response (view "Home" (assoc data :app-name app-name)))))
 
+;; Main Handler
 (defn handler [broker {:keys [uri]
                        {:keys [route-prefix]} :client-opts
                        :as req}]
@@ -74,6 +75,8 @@
     (case path
       "" (response/redirect (str route-prefix "/"))
       "/" (home-page broker req)
-      "/css/style.css" (response/resource-response "css/style.css")
-      "/img/goose-logo.png" (response/resource-response "img/goose-logo.png")
+      "/css/style.css" (-> (response/resource-response "css/style.css")
+                           (response/header "Content-Type" "text/css"))
+      "/img/goose-logo.png" (-> (response/resource-response "img/goose-logo.png")
+                                (response/header "Content-Type" "image/png"))
       (response/not-found "<div> Not found </div>"))))
