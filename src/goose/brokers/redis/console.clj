@@ -66,9 +66,9 @@
     (response/response (view "Home" (assoc data :app-name app-name)))))
 
 ;; Main Handler
-(defn handler [broker {:keys [uri]
+(defn handler [broker {:keys                  [uri]
                        {:keys [route-prefix]} :client-opts
-                       :as req}]
+                       :as                    req}]
   (let [path (-> uri
                  re-pattern
                  (string/replace route-prefix ""))]
