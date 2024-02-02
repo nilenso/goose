@@ -48,4 +48,12 @@
                                                                              :route-prefix "foo"})))
            {:status  302
             :headers {"Location" "foo/"}
-            :body    ""}))))
+            :body    ""})))
+  (testing "Should show not found page given invalid route"
+    (is (= (redis-console/handler tu/redis-producer (-> (mock/request :get "foo/invalid")
+                                                        (assoc :client-opts {:broker tu/redis-producer
+                                                                             :app-name ""
+                                                                             :route-prefix "foo"})))
+           {:body    "<div> Not found </div>"
+            :headers {}
+            :status  404}))))
