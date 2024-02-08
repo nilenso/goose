@@ -18,15 +18,33 @@
         match? (fn [job] (= (:id job) id))]
     (first (find-by-pattern redis-conn queue match? limit))))
 
-(defn prioritise-execution [redis-conn job]
-  (let [ready-queue (:ready-queue job)]
-    (when (redis-cmds/list-position redis-conn ready-queue job)
-      (redis-cmds/del-from-list-and-enqueue-front redis-conn ready-queue job))))
+(defn prioritise-execution
+  ([redis-conn {:keys [ready-queue] :as job}]
+   (when (redis-cmds/list-position redis-conn ready-queue job)
+     (redis-cmds/del-from-list-and-enqueue-front redis-conn ready-queue job)))
 
-(defn delete [redis-conn job]
-  (let [queue (job/ready-or-retry-queue job)]
-    (= 1 (redis-cmds/del-from-list redis-conn queue job))))
+  ;; This isn't exposed by Broker API and is used internally by console
+  ([redis-conn queue jobs]
+   (let [remove-jobs-with-invalid-positions-fn (fn [p j] (->> (mapv vector p j)
+                                                              (remove #(nil? (first %)))
+                                                              (mapv second)))
+         positions (redis-cmds/list-position-multiple redis-conn (d/prefix-queue queue) jobs)
+         jobs (remove-jobs-with-invalid-positions-fn positions jobs)]
+     (redis-cmds/del-from-list-and-enqueue-front-multiple redis-conn (d/prefix-queue queue) jobs))))
+
+(defn delete
+  ([redis-conn job]
+   (let [queue (job/ready-or-retry-queue job)]
+     (= 1 (redis-cmds/del-from-list redis-conn queue job))))
+
+  ;; Used internally by console
+  ([redis-conn queue jobs]
+   (not-any? #{0} (redis-cmds/del-from-list-multiple redis-conn (d/prefix-queue queue) jobs))))
 
 (defn purge [redis-conn queue]
   (let [ready-queue (d/prefix-queue queue)]
     (= 1 (redis-cmds/del-keys redis-conn ready-queue))))
+
+;;Used internally by console
+(defn get-by-range [redis-conn queue start stop]
+  (redis-cmds/range-from-front redis-conn (d/prefix-queue queue) start stop))
