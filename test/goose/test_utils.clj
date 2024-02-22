@@ -55,20 +55,6 @@
 
   (clear-redis))
 
-(def called? (atom false))
-(defn get-called? [] @called?)
-(defn set-called? [value] (reset! called? value))
-
-(defn reset-stubs
-  [f]
-  (set-called? false)
-  (f))
-
-(defn stub [f]
-  (fn [& args]
-    (set-called? true)
-    (apply f args)))
-
 ;; RMQ ---------
 (def rmq-url
   (let [host (or (System/getenv "GOOSE_TEST_RABBITMQ_HOST") "localhost")
