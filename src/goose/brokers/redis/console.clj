@@ -7,7 +7,7 @@
             [hiccup.page :refer [html5 include-css]]
             [ring.util.response :as response]))
 
-;View
+
 (defn- layout [& components]
   (fn [title data]
     (html5 [:head
@@ -46,7 +46,6 @@
        [:a {:href (:route stat)}
         [:span.label (:label stat)]]])]])
 
-;;Jobs Data from Broker
 (defn jobs-size [redis-conn]
   (let [queues (enqueued-jobs/list-all-queues redis-conn)
         enqueued (reduce (fn [total queue]
@@ -59,13 +58,11 @@
      :periodic  periodic
      :dead      dead}))
 
-;;Page handler
 (defn home-page [broker {{:keys [app-name]} :client-opts}]
   (let [view (layout header stats-bar)
         data (jobs-size (:redis-conn broker))]
     (response/response (view "Home" (assoc data :app-name app-name)))))
 
-;; Main Handler
 (defn handler [broker {:keys                  [uri]
                        {:keys [route-prefix]} :client-opts
                        :as                    req}]

@@ -7,7 +7,7 @@
             [ring.mock.request :as mock])
   (:import (java.lang AbstractMethodError IllegalArgumentException)))
 
-(use-fixtures :each tu/redis-fixture tu/reset-called?-fixture)
+(use-fixtures :each tu/redis-fixture tu/reset-stubs)
 
 (deftest dispatch-handler-test
   (testing "Should dispatch to redis handler when app-handler is given redis broker details"
