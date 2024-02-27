@@ -1,0 +1,75 @@
+body {
+    font-family: sans-serif, Arial;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+header nav {
+    background-color: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+main {
+    height: 50vh;
+    display: flex;
+    align-items: center;
+}
+
+.nav-start {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+a {
+    text-decoration: none;
+}
+#app-name {
+    font-size: 1.5rem;
+    color: #333;
+    margin-left: 15px;
+}
+.goose-logo a img{
+    margin-left: 15px;
+    height: 35px;
+    float: left;
+    overflow: auto;
+}
+
+
+#menu a {
+    text-decoration: none;
+    color: #333;
+    margin-left: 2rem;
+}
+
+.statistics {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: white;
+    margin: 2rem;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    width: -webkit-fill-available;
+}
+
+.stat {
+    text-align: center;
+    display: grid;
+}
+
+.stat .number {
+    color: #C87021; /* or any other color you prefer */
+    font-size: 36px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.stat .label {
+    color: #333;
+    font-size: 18px;
+}

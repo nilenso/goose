@@ -1,18 +1,20 @@
 (ns goose.specs-test
   (:require
+    [clojure.spec.alpha :as s]
+    [clojure.test :refer [are deftest is]]
     [goose.batch :as batch]
     [goose.brokers.redis.broker :as redis]
     [goose.brokers.rmq.broker :as rmq]
     [goose.client :as c]
+    [goose.console :as console]
     [goose.defaults :as d]
     [goose.metrics.statsd :as statsd]
     [goose.specs :as specs]
     [goose.test-utils :as tu]
-    [goose.utils :as u]
-    [goose.worker :as w]
+    [ring.mock.request :as mock]
 
-    [clojure.spec.alpha :as s]
-    [clojure.test :refer [deftest is are]])
+    [goose.utils :as u]
+    [goose.worker :as w])
   (:import
     (clojure.lang ExceptionInfo)
     (java.time Instant)
@@ -147,4 +149,17 @@
     #(statsd/new (assoc statsd/default-opts :port "8125"))
     #(statsd/new (assoc statsd/default-opts :prefix :symbol))
     #(statsd/new (assoc statsd/default-opts :sample-rate 1))
-    #(statsd/new (assoc statsd/default-opts :tags '("service:maverick")))))
+    #(statsd/new (assoc statsd/default-opts :tags '("service:maverick")))
+
+    ;; :console
+    (let [opts {:broker       tu/redis-producer
+                :app-name     ""
+                :route-prefix ""}
+          req (mock/request :get "/")]
+      (console/app-handler (assoc opts :broker {}) req)
+      (console/app-handler (dissoc opts :broker) req)
+      (console/app-handler (dissoc opts :route-prefix) req)
+      (console/app-handler (dissoc opts :app-name) req)
+      (console/app-handler (assoc opts :app-name "morethan8chars") req)
+      (console/app-handler (assoc opts :app-name :invalid-type) req)
+      (console/app-handler (assoc opts :route-prefix :invalid-type) req))))

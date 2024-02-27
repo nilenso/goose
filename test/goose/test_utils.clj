@@ -8,9 +8,9 @@
     [goose.brokers.rmq.return-listener :as return-listener]
     [goose.brokers.rmq.shutdown-listener :as shutdown-listener]
     [goose.defaults :as d]
+    [goose.metrics.statsd :as statsd]
     [goose.retry :as retry]
     [goose.specs :as specs]
-    [goose.metrics.statsd :as statsd]
     [goose.utils :as u]
 
     [langohr.queue :as lq]
@@ -55,6 +55,7 @@
 
   (clear-redis))
 
+;; RMQ ---------
 (def rmq-url
   (let [host (or (System/getenv "GOOSE_TEST_RABBITMQ_HOST") "localhost")
         port (or (System/getenv "GOOSE_TEST_RABBITMQ_PORT") "5672")

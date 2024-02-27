@@ -6,6 +6,7 @@
     [goose.defaults :as d]
     [goose.metrics :as m]
     [goose.utils :as u]
+    [goose.console :as console]
 
     [clojure.spec.alpha :as s]
     [clojure.spec.test.alpha :as st]
@@ -183,6 +184,16 @@
                    ::error-service-config
                    ::metrics-plugin]))
 
+;;; ============== Console ============
+(s/def ::app-name (s/and string? #(< (count %) 8)))
+(s/def ::route-prefix string?)
+(s/def ::console-opts (s/keys :req-un [::route-prefix
+                                       ::broker
+                                       ::app-name]))
+(s/fdef console/app-handler
+        :args (s/cat :client-opts ::console-opts
+                     :req map?))
+
 ;;; ============== FDEFs ==============
 (s/fdef c/perform-async
         :args (s/cat :opts ::client-opts
@@ -223,7 +234,8 @@
    `c/perform-at
    `c/perform-in-sec
    `c/perform-every
-   `c/perform-batch])
+   `c/perform-batch
+   `console/app-handler])
 
 (defn instrument
   "Instruments frequently-called functions.\\
