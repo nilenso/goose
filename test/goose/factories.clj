@@ -27,7 +27,7 @@
     (:id j)))
 
 (defn schedule-job [& [overrides]]
-  (let [{:keys [scheduled-at] :as j} (job (merge {:scheduled-at (u/epoch-time-ms)} overrides))]
+  (let [{:keys [scheduled-at] :as j} (job (merge {:scheduled-at (+ (u/epoch-time-ms) 1000000)} overrides))]
     (scheduler/run-at tu/redis-conn scheduled-at j)
     (:id j)))
 
