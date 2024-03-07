@@ -1,6 +1,7 @@
 (ns goose.console-test
   (:require [clojure.test :refer [deftest is testing use-fixtures]]
             [goose.broker :as broker]
+            [goose.brokers.redis.broker :as redis]
             [goose.brokers.redis.console :as redis-console]
             [goose.client :as c]
             [goose.console :as console]
@@ -13,6 +14,21 @@
   (:import (java.lang AbstractMethodError IllegalArgumentException)))
 
 (use-fixtures :each tu/redis-fixture)
+
+(deftest app-handler-test
+  (let [client-opts {:app-name     ""
+                     :route-prefix ""
+                     :broker       (redis/new-producer redis/default-opts)}]
+    (testing "Should append query-params to request, when url contains query parameters"
+      (with-redefs [console/handler (fn [req] (:query-params req))]
+        (is (= {"page" "2"} (console/app-handler client-opts (mock/request :get "/goose/console/enqueue?page=2"))))
+        (is (= {"foo" "bar"} (console/app-handler client-opts (mock/request :get "/goose/console/enqueue?foo=bar"))))
+        (is (= {} (console/app-handler client-opts (mock/request :get "/goose/console/enqueue"))))))
+    (testing "Should keywordize the params given a request"
+      (with-redefs [console/handler (fn [req] (:params req))]
+        (is (= {:page "2"} (console/app-handler client-opts (mock/request :get "/goose/console/enqueue?page=2"))))
+        (is (= {:foo "bar"} (console/app-handler client-opts (mock/request :get "/goose/console/enqueue?foo=bar"))))
+        (is (= {} (console/app-handler client-opts (mock/request :get "/goose/console/enqueue"))))))))
 
 (deftest dispatch-handler-test
   (testing "Should dispatch to redis handler when app-handler is given redis broker details"
@@ -68,3 +84,4 @@
       (is (thrown? AbstractMethodError (broker/handler tu/rmq-producer req-with-client-opts))))
     (testing "Should throw IllegalArgumentException given invalid broker"
       (is (thrown? IllegalArgumentException (broker/handler {:broker :invalid-broker} req-with-client-opts))))))
+
