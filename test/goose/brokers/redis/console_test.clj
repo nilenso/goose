@@ -26,11 +26,11 @@
     (let [response (redis-console/handler tu/redis-producer (-> (mock/request :get "/goose/console/css/style.css")
                                                                 (assoc :client-opts {:broker       tu/redis-producer
                                                                                      :app-name     ""
-                                                                                     :route-prefix "goose/console/"})))]
+                                                                                     :route-prefix "/goose/console"})))]
       (is (= (:status response) 200))
       (is (= (type (:body response)) File))
       (is (= (get-in response [:headers "Content-Type"]) "text/css"))))
-  (testing "Should serve goose logo on GET request at img/goose-logo.png route"
+  (testing "Should serve goose logo on GET request at /img/goose-logo.png route"
     (let [response (redis-console/handler tu/redis-producer (-> (mock/request :get "foo/img/goose-logo.png")
                                                                 (assoc :client-opts {:broker       tu/redis-producer
                                                                                      :app-name     ""
@@ -46,7 +46,7 @@
            {:status  302
             :headers {"Location" "foo/"}
             :body    ""})))
-  (testing "Should show not found page given invalid route"
+  (testing "Should show not-found page given invalid route"
     (is (= (redis-console/handler tu/redis-producer (-> (mock/request :get "foo/invalid")
                                                         (assoc :client-opts {:broker       tu/redis-producer
                                                                              :app-name     ""
