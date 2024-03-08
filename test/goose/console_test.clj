@@ -24,13 +24,24 @@
                            (mock/request :get "/goose/console/"))
       (is (true? (spy/called? redis-console/handler))))))
 
+(def dead-fn-atom (atom 0))
+(defn dead-fn
+  [id]
+  (swap! dead-fn-atom inc)
+  (throw (Exception. (str id " died!"))))
+
 (deftest homepage-view-test
   (testing "Stats bar view should have should have 2 enqueued, 1 scheduled, 1 periodic and 1 dead job"
 
     ;;Simulate failed job
-    (c/perform-async (assoc tu/redis-client-opts :retry-opts (assoc tu/retry-opts :max-retries 0))
-                     `/ 10 0)
-    (w/stop (w/start tu/redis-worker-opts))
+    (let [worker (w/start tu/redis-worker-opts)
+          _ (c/perform-async (assoc tu/redis-client-opts :retry-opts (assoc tu/retry-opts :max-retries 0))
+                             `dead-fn 10) 
+          circuit-breaker (atom 0)]
+      (while (and (< @circuit-breaker 1) (not= @dead-fn-atom 1))
+        (swap! circuit-breaker inc)
+        (Thread/sleep 40))
+      (w/stop worker))
 
     (c/perform-async tu/redis-client-opts `tu/my-fn 1)
     (c/perform-async tu/redis-client-opts `tu/my-fn 2)
