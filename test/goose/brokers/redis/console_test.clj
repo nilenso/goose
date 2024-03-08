@@ -17,8 +17,8 @@
                                                     :periodic 2 :dead 3})))
   (testing "Should return jobs size given jobs exist in multiple queues"
     (f/add-jobs {:enqueued 3 :scheduled 3 :periodic 1 :dead 1}
-                 {:enqueued {:queue       "queue1"
-                             :ready-queue "goose/queue:queue1"}})
+                {:enqueued {:queue       "queue1"
+                            :ready-queue "goose/queue:queue1"}})
     (is (= (redis-console/jobs-size tu/redis-conn) {:enqueued 5 :scheduled 6 :periodic 3 :dead 4}))))
 
 (deftest handler-test
