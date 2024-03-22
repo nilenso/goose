@@ -5,7 +5,7 @@ Goose
 [![cljdoc badge](https://cljdoc.org/badge/com.nilenso/goose)](https://cljdoc.org/d/com.nilenso/goose)
 
 The Next-Level background job processing library for Clojure.
-> **Reliable. Scalable. Pluggable. Extensible.**
+> **Simple. Pluggable. Reliable. Extensible. Scalable.**
 
 Performance
 ---------
