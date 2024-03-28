@@ -142,9 +142,6 @@
   ;; https://github.com/ptaoussanis/carmine/issues/266
   (wcar* conn (car/blmove src dst "RIGHT" "RIGHT" d/redis-long-polling-timeout-sec)))
 
-(defn list-position [conn list element]
-  (wcar* conn (car/lpos list element) "COUNT" 1))
-
 (defn del-from-list-and-enqueue-front [conn list element]
   (car/atomic
     conn atomic-lock-attempts
@@ -152,8 +149,25 @@
     (car/lrem list 1 element)
     (car/rpush list element)))
 
-(defn del-from-list [conn list element]
-  (wcar* conn (car/lrem list 1 element)))
+;; Multiple txns execution as pipeline returns nil, whereas single txn returns a list
+;; of response.
+;; Hence, a separate fn is created to handle multiple elements instead of changing original fn
+;; to take variadic `elements`
+ (defn del-from-list-and-enqueue-front-multiple [conn list elements]
+  (wcar* conn :as-pipeline (doseq [e elements]
+                             (car/atomic
+                               conn atomic-lock-attempts
+                               (car/multi)
+                               (car/lrem list 1 e)
+                               (car/rpush list e)))))
+
+(defn list-position [conn list & elements]
+  (wcar* conn :as-pipeline (doseq [e elements]
+                             (car/lpos list e))))
+
+(defn del-from-list [conn list & elements]
+  (wcar* conn :as-pipeline (doseq [e elements]
+                             (car/lrem list 1 e))))
 
 (defn list-size [conn list]
   (wcar* conn (car/llen list)))
@@ -179,9 +193,16 @@
                   ;; and the front of a queue is the right side (the tail).
                   (let [next-cursor (dec cursor)
                         elements (wcar* conn
-                                   (car/lrange redis-key (dec cursor) (dec cursor)))]
+                                        (car/lrange redis-key (dec cursor) (dec cursor)))]
                     [next-cursor elements]))]
     (scan-seq conn scan-fn list-key size)))
+
+(defn range-from-front
+  "Fetches range of elements from front where start and stop positions are relative to the front of list"
+  [conn list-key start stop]
+  (let [begin (- (* stop -1) 1)
+        end (- (* start -1) 1)]
+    (reverse (wcar* conn (car/lrange list-key begin end)))))
 
 (defn find-in-list
   [conn queue match? limit]
