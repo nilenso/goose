@@ -28,26 +28,24 @@
 
 (defn prioritise-execution
   "Moves job/s to front of the queue after verification of existence"
-  ([redis-conn {:keys [ready-queue] :as job}]
-   (when (redis-cmds/list-position redis-conn ready-queue job)
-     (redis-cmds/del-from-list-and-enqueue-front redis-conn ready-queue job)))
+  ([redis-conn job]
+   (first (prioritise-execution redis-conn (d/affix-queue (job/ready-or-retry-queue job)) [job])))
 
   ([redis-conn queue jobs]
    (let [remove-jobs-with-invalid-positions-fn (fn [p j] (->> (mapv vector p j)
                                                               (remove #(nil? (first %)))
                                                               (mapv second)))
-         positions (redis-cmds/list-position-multiple redis-conn (d/prefix-queue queue) jobs)
+         positions (apply redis-cmds/list-position redis-conn (d/prefix-queue queue) jobs)
          jobs (remove-jobs-with-invalid-positions-fn positions jobs)]
-     (redis-cmds/del-from-list-and-enqueue-front-multiple redis-conn (d/prefix-queue queue) jobs))))
+     (apply redis-cmds/del-from-list-and-enqueue-front redis-conn (d/prefix-queue queue) jobs))))
 
 (defn delete
   "Delete job/s from its queue"
   ([redis-conn job]
-   (let [queue (job/ready-or-retry-queue job)]
-     (= 1 (redis-cmds/del-from-list redis-conn queue job))))
+   (delete redis-conn (d/affix-queue (job/ready-or-retry-queue job)) [job]))
 
   ([redis-conn queue jobs]
-   (not-any? #{0} (redis-cmds/del-from-list-multiple redis-conn (d/prefix-queue queue) jobs))))
+   (not-any? #{0} (apply redis-cmds/del-from-list redis-conn (d/prefix-queue queue) jobs))))
 
 (defn purge
   "Purges all the jobs in the queue"

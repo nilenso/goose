@@ -66,13 +66,13 @@
       (is (= list-members
              (redis-cmds/list-seq tu/redis-conn "my-list"))))))
 
-(deftest list-position-multiple-test
+(deftest list-position-test
   (testing "iterating over a list from start to stop"
     (let [list-members (map #(str "foo" %) (range 5))]
       (doseq [member list-members]
         (redis-cmds/enqueue-front tu/redis-conn "my-list" member))
-      (is (= [0] (redis-cmds/list-position-multiple tu/redis-conn "my-list" ["foo0"])))
-      (is (= [2 1] (redis-cmds/list-position-multiple tu/redis-conn "my-list" ["foo2" "foo1"]))))))
+      (is (= [0] (redis-cmds/list-position tu/redis-conn "my-list" "foo0")))
+      (is (= [2 1] (redis-cmds/list-position tu/redis-conn "my-list" "foo2" "foo1"))))))
 
 (deftest range-from-front-test
   (testing "should get the range from the front of the queue"
@@ -89,10 +89,10 @@
     (let [list-members (map #(str "foo" %) (range 5))]
       (doseq [member list-members]
         (redis-cmds/enqueue-back tu/redis-conn "my-list" member)))
-    (is (= [1 1 0] (redis-cmds/del-from-list-multiple tu/redis-conn "my-list" ["foo0" "foo1" "abc"])))
+    (is (= [1 1 0] (redis-cmds/del-from-list tu/redis-conn "my-list" "foo0" "foo1" "abc")))
     (is (= ["foo2" "foo3" "foo4"] (redis-cmds/range-from-front tu/redis-conn "my-list" 0 2)))
 
-    (is (= [1] (redis-cmds/del-from-list-multiple tu/redis-conn "my-list" ["foo3"])))
+    (is (= [1] (redis-cmds/del-from-list tu/redis-conn "my-list" "foo3")))
     (is (= ["foo2" "foo4"] (redis-cmds/range-from-front tu/redis-conn "my-list" 0 1)))))
 
 (deftest del-from-list-and-enqueue-front-multiple-test
@@ -101,10 +101,11 @@
       (doseq [member list-members]
         (redis-cmds/enqueue-back tu/redis-conn "my-list" member)))
     (is (= ["foo0" "foo1" "foo2" "foo3" "foo4"] (redis-cmds/range-from-front tu/redis-conn "my-list" 0 4)))
-    (redis-cmds/del-from-list-and-enqueue-front-multiple tu/redis-conn "my-list" ["foo2" "foo0"])
+    (is (= [[["OK" "QUEUED" "QUEUED"] [1 5]] [["OK" "QUEUED" "QUEUED"] [1 5]]]
+           (redis-cmds/del-from-list-and-enqueue-front tu/redis-conn "my-list" "foo2" "foo0")))
     (is (= ["foo0" "foo2" "foo1" "foo3" "foo4"] (redis-cmds/range-from-front tu/redis-conn "my-list" 0 4)))
 
-    (redis-cmds/del-from-list-and-enqueue-front-multiple tu/redis-conn "my-list" ["foo3"])
+    (is (= [[["OK" "QUEUED" "QUEUED"] [1 5]]](redis-cmds/del-from-list-and-enqueue-front tu/redis-conn "my-list" "foo3")))
     (is (= ["foo3" "foo0" "foo2" "foo1" "foo4"] (redis-cmds/range-from-front tu/redis-conn "my-list" 0 4)))))
 
 (deftest find-in-list-test

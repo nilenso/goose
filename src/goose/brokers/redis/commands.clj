@@ -142,40 +142,30 @@
   ;; https://github.com/ptaoussanis/carmine/issues/266
   (wcar* conn (car/blmove src dst "RIGHT" "RIGHT" d/redis-long-polling-timeout-sec)))
 
-(defn list-position [conn list element]
-  (wcar* conn (car/lpos list element) "COUNT" 1))
+(defn del-from-list-and-enqueue-front [conn list & elements]
+  (->> (wcar* conn :as-pipeline (doseq [element elements]
+                                  (car/multi)
+                                  (car/lrem list 1 element)
+                                  (car/rpush list element)
+                                  (car/exec)))
+       ;; To ensure consistency with the contract for handling individual element responses(used earlier using
+       ;; car/atomic), the response format for multiple elements is constructed as sequence of these single element
+       ;; responses.
 
-(defn del-from-list-and-enqueue-front [conn list element]
-  (car/atomic
-    conn atomic-lock-attempts
-    (car/multi)
-    (car/lrem list 1 element)
-    (car/rpush list element)))
+       ;; the response is a flattened list containing result of individual commands
+       ;; ex i/p: ["OK" "QUEUED" "QUEUED" [0 1] "OK" "QUEUED" "QUEUED" [0 1]]
+       ;; the final response is partitioned into vectors with 4 results (i.e response for 1 `element`)
+       ;; ex o/p: [[["OK" "QUEUED" "QUEUED"] [0 1]] [["OK" "QUEUED" "QUEUED"] [0 1]]]
+       (partition 4)
+       (mapv #(conj [] (vec (butlast %)) (last %)))))
 
-(defn del-from-list [conn list element]
-  (wcar* conn (car/lrem list 1 element)))
+(defn list-position [conn list & elements]
+  (wcar* conn :as-pipeline (doseq [e elements]
+                             (car/lpos list e))))
 
-(defn list-position-multiple [conn list elements]
-  (let [response (wcar* conn (doseq [e elements]
-                               (car/lpos list e)))]
-    (if (= (count elements) 1)
-      (vector response)
-      response)))
-
-(defn del-from-list-multiple [conn list elements]
-  (let [response (wcar* conn (doseq [e elements]
-                               (car/lrem list 1 e)))]
-    (if (= (count elements) 1)
-      (vector response)
-      response)))
-
-(defn del-from-list-and-enqueue-front-multiple [conn list elements]
-  (wcar* conn (doseq [e elements]
-                (car/atomic
-                  conn atomic-lock-attempts
-                  (car/multi)
-                  (car/lrem list 1 e)
-                  (car/rpush list e)))))
+(defn del-from-list [conn list & elements]
+  (wcar* conn :as-pipeline (doseq [e elements]
+                             (car/lrem list 1 e))))
 
 (defn list-size [conn list]
   (wcar* conn (car/llen list)))
