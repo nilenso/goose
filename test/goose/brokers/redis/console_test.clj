@@ -15,11 +15,12 @@
     (f/add-jobs {:enqueued 2 :scheduled 3 :periodic 2 :dead 3})
     (is (= (redis-console/jobs-size tu/redis-conn) {:enqueued 2 :scheduled 3
                                                     :periodic 2 :dead 3})))
+  (tu/clear-redis)
   (testing "Should return jobs size given jobs exist in multiple queues"
     (f/add-jobs {:enqueued 3 :scheduled 3 :periodic 1 :dead 1}
                 {:enqueued {:queue       "queue1"
                             :ready-queue "goose/queue:queue1"}})
-    (is (= (redis-console/jobs-size tu/redis-conn) {:enqueued 5 :scheduled 6 :periodic 3 :dead 4}))))
+    (is (= (redis-console/jobs-size tu/redis-conn) {:enqueued 3 :scheduled 3 :periodic 1 :dead 1}))))
 
 (deftest handler-test
   (testing "Should serve css file on GET request at /css/style.css route"
