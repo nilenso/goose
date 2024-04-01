@@ -1,8 +1,5 @@
 (ns goose.console
   (:require [goose.broker :as b]))
 
-(defn- handler [{{:keys [broker]} :console-opts :as req}]
-  (b/handler broker req))
-
-(defn app-handler [console-opts req]
-  (handler (assoc req :console-opts console-opts)))
+(defn app-handler [{:keys [broker] :as console-opts} req]
+  (b/handler broker (assoc req :console-opts console-opts)))
