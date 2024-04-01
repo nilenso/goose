@@ -190,9 +190,6 @@
 (s/def ::console-opts (s/keys :req-un [::route-prefix
                                        ::broker
                                        ::app-name]))
-(s/fdef console/app-handler
-        :args (s/cat :client-opts ::console-opts
-                     :req map?))
 
 ;;; ============== FDEFs ==============
 (s/fdef c/perform-async
@@ -228,6 +225,10 @@
                      :execute-fn-sym ::fn-sym
                      :args ::batch-args)
         :ret map?)
+
+(s/fdef console/app-handler
+        :args (s/cat :console-opts ::console-opts
+                     :req map?))
 
 (def ^:private fns-with-specs
   [`c/perform-async

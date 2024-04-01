@@ -60,13 +60,13 @@
      :periodic  periodic
      :dead      dead}))
 
-(defn home-page [broker {{:keys [app-name]} :client-opts}]
+(defn home-page [broker {{:keys [app-name]} :console-opts}]
   (let [view (layout header stats-bar)
         data (jobs-size (:redis-conn broker))]
     (response/response (view "Home" (assoc data :app-name app-name)))))
 
 (defn handler [broker {:keys                  [uri]
-                       {:keys [route-prefix]} :client-opts
+                       {:keys [route-prefix]} :console-opts
                        :as                    req}]
   (let [path (string/replace uri (re-pattern route-prefix) "")]
     (case path

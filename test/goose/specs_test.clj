@@ -1,7 +1,7 @@
 (ns goose.specs-test
   (:require
     [clojure.spec.alpha :as s]
-    [clojure.test :refer [are deftest is testing]]
+    [clojure.test :refer [are deftest is]]
     [goose.batch :as batch]
     [goose.brokers.redis.broker :as redis]
     [goose.brokers.rmq.broker :as rmq]
