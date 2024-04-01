@@ -12,12 +12,12 @@
   (testing "Should return job size for enqueued, scheduled, periodic and dead jobs"
     (is (= (redis-console/jobs-size tu/redis-conn) {:enqueued 0 :scheduled 0
                                                     :periodic 0 :dead 0}))
-    (f/add-jobs {:enqueued 2 :scheduled 3 :periodic 2 :dead 3})
+    (f/create-jobs {:enqueued 2 :scheduled 3 :periodic 2 :dead 3})
     (is (= (redis-console/jobs-size tu/redis-conn) {:enqueued 2 :scheduled 3
                                                     :periodic 2 :dead 3})))
   (tu/clear-redis)
   (testing "Should return jobs size given jobs exist in multiple queues"
-    (f/add-jobs {:enqueued 3 :scheduled 3 :periodic 1 :dead 1}
+    (f/create-jobs {:enqueued 3 :scheduled 3 :periodic 1 :dead 1}
                 {:enqueued {:queue       "queue1"
                             :ready-queue "goose/queue:queue1"}})
     (is (= (redis-console/jobs-size tu/redis-conn) {:enqueued 3 :scheduled 3 :periodic 1 :dead 1}))))
