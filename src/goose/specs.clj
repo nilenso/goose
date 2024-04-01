@@ -185,7 +185,7 @@
                    ::metrics-plugin]))
 
 ;;; ============== Console ============
-(s/def ::app-name (s/and string? #(< (count %) 8)))
+(s/def ::app-name string?)
 (s/def ::route-prefix string?)
 (s/def ::console-opts (s/keys :req-un [::route-prefix
                                        ::broker
