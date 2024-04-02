@@ -84,7 +84,7 @@
     (is (= ["foo2" "foo3"] (redis-cmds/range-from-front tu/redis-conn "my-list" 2 3)))
     (is (= ["foo2" "foo3" "foo4"] (redis-cmds/range-from-front tu/redis-conn "my-list" 2 6)))))
 
-(deftest del-from-list-multiple-test
+(deftest del-from-list-test
   (testing "should delete multiple members from list"
     (let [list-members (map #(str "foo" %) (range 5))]
       (doseq [member list-members]
@@ -95,7 +95,7 @@
     (is (= [1] (redis-cmds/del-from-list tu/redis-conn "my-list" "foo3")))
     (is (= ["foo2" "foo4"] (redis-cmds/range-from-front tu/redis-conn "my-list" 0 1)))))
 
-(deftest del-from-list-and-enqueue-front-multiple-test
+(deftest del-from-list-and-enqueue-front-test
   (testing "should prioritise execution of multiple jobs"
     (let [list-members (map #(str "foo" %) (range 5))]
       (doseq [member list-members]

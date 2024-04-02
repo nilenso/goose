@@ -55,6 +55,11 @@
 
   (clear-redis))
 
+(def redis-console-opts {:broker       redis-producer
+                         :app-name     ""
+                         :route-prefix ""})
+
+
 ;; RMQ ---------
 (def rmq-url
   (let [host (or (System/getenv "GOOSE_TEST_RABBITMQ_HOST") "localhost")

@@ -21,23 +21,23 @@
           :cron-schedule "*/3 * * * *"
           :timezone      "US/Pacific"} overrides))
 
-(defn enqueue-job [& [overrides]]
+(defn create-async-job [& [overrides]]
   (let [j (job overrides)]
     (redis-cmds/enqueue-back tu/redis-conn (:ready-queue j) j)
     (:id j)))
 
-(defn schedule-job [& [overrides]]
+(defn create-schedule-job [& [overrides]]
   (let [{:keys [scheduled-at] :as j} (job (merge {:scheduled-at (+ (u/epoch-time-ms) 1000000)} overrides))]
     (scheduler/run-at tu/redis-conn scheduled-at j)
     (:id j)))
 
-(defn periodic-job [& [overrides]]
+(defn create-periodic-job [& [overrides]]
   (let [job-desc (job-description (:job-description overrides))
         cron-opts (cron-opts (:cron-opts overrides))]
     (cron/register tu/redis-conn cron-opts job-desc)
     cron-opts))
 
-(defn dead-job [& [overrides]]
+(defn create-dead-job [& [overrides]]
   (let [error-state {:state {:error           "Error"
                              :last-retried-at (u/epoch-time-ms),
                              :first-failed-at 1701344365468,
@@ -48,11 +48,11 @@
                                    (get-in j [:state :last-retried-at]) j)
     (:id j)))
 
-(defn add-jobs [{:keys [enqueued scheduled periodic dead]
-                 :or   {enqueued 0 scheduled 0 periodic 0 dead 0}} & [overrides]]
+(defn create-jobs [{:keys [enqueued scheduled periodic dead]
+                    :or   {enqueued 0 scheduled 0 periodic 0 dead 0}} & [overrides]]
   (let [apply-fn-n-times (fn [n f & args]
                            (dotimes [_ n] (apply f args)))]
-    (apply-fn-n-times enqueued enqueue-job (:enqueued overrides))
-    (apply-fn-n-times scheduled schedule-job (:scheduled overrides))
-    (apply-fn-n-times periodic periodic-job (:periodic overrides))
-    (apply-fn-n-times dead dead-job (:dead overrides))))
+    (apply-fn-n-times enqueued create-async-job (:enqueued overrides))
+    (apply-fn-n-times scheduled create-schedule-job (:scheduled overrides))
+    (apply-fn-n-times periodic create-periodic-job (:periodic overrides))
+    (apply-fn-n-times dead create-dead-job (:dead overrides))))

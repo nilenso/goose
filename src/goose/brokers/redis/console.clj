@@ -7,7 +7,6 @@
             [hiccup.page :refer [html5 include-css]]
             [ring.util.response :as response]))
 
-
 (defn- layout [& components]
   (fn [title data]
     (html5 [:head
@@ -19,20 +18,23 @@
             (map (fn [c] (c data)) components)])))
 
 (defn- header [{:keys [app-name] :or {app-name ""}}]
-  [:header
-   [:nav
-    [:div.nav-start
-     [:div.goose-logo
-      [:a {:href ""}
-       [:img {:src "img/goose-logo.png" :alt "goose-logo"}]]]
-     [:a {:href ""}
-      [:div#app-name app-name]]
-     [:div#menu
-      [:a {:href "enqueued"} "Enqueued"]
-      [:a {:href "scheduled"} "Scheduled"]
-      [:a {:href "periodic"} "Periodic"]
-      [:a {:href "batch"} "Batch"]
-      [:a {:href "dead"} "Dead"]]]]])
+  (let [short-app-name (if (> (count app-name) 20)
+                         (str (subs app-name 0 17) "..")
+                         app-name)]
+    [:header
+     [:nav
+      [:div.nav-start
+       [:div.goose-logo
+        [:a {:href ""}
+         [:img {:src "img/goose-logo.png" :alt "goose-logo"}]]]
+       [:a {:href ""}
+        [:div#app-name short-app-name]]
+       [:div#menu
+        [:a {:href "enqueued"} "Enqueued"]
+        [:a {:href "scheduled"} "Scheduled"]
+        [:a {:href "periodic"} "Periodic"]
+        [:a {:href "batch"} "Batch"]
+        [:a {:href "dead"} "Dead"]]]]]))
 
 (defn- stats-bar [page-data]
   [:main
@@ -58,13 +60,13 @@
      :periodic  periodic
      :dead      dead}))
 
-(defn home-page [broker {{:keys [app-name]} :client-opts}]
+(defn home-page [broker {{:keys [app-name]} :console-opts}]
   (let [view (layout header stats-bar)
         data (jobs-size (:redis-conn broker))]
     (response/response (view "Home" (assoc data :app-name app-name)))))
 
 (defn handler [broker {:keys                  [uri]
-                       {:keys [route-prefix]} :client-opts
+                       {:keys [route-prefix]} :console-opts
                        :as                    req}]
   (let [path (string/replace uri (re-pattern route-prefix) "")]
     (case path
