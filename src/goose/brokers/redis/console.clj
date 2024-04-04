@@ -30,11 +30,7 @@
          [:img {:src (prefix-route "/img/goose-logo.png") :alt "goose-logo"}]]]
        [:div#menu
         [:a {:href (prefix-route "") :class "app-name"} short-app-name]
-        [:a {:href (prefix-route "/enqueued")} "Enqueued"]
-        [:a {:href (prefix-route "/scheduled")} "Scheduled"]
-        [:a {:href (prefix-route "/periodic")} "Periodic"]
-        [:a {:href (prefix-route "/batch")} "Batch"]
-        [:a {:href (prefix-route "/dead")} "Dead"]]]]]))
+        [:a {:href (prefix-route "/enqueued")} "Enqueued"]]]]]))
 
 (defn- stats-bar [{:keys [prefix-route] :as page-data}]
   [:main
