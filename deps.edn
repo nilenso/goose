@@ -8,7 +8,8 @@
            org.clojure/clojure       {:mvn/version "1.11.0"}
            org.clojure/tools.logging {:mvn/version "1.2.4"}
            ring/ring-core            {:mvn/version "1.11.0"}
-           hiccup/hiccup             {:mvn/version "2.0.0-RC2"}}
+           hiccup/hiccup             {:mvn/version "2.0.0-RC2"}
+           bidi/bidi                 {:mvn/version "2.1.6"}}
  :paths   ["src" "resources/public"]
 
  :aliases {:test       {:extra-paths ["test"]

@@ -1,5 +1,5 @@
 (ns goose.brokers.redis.console
-  (:require [clojure.string :as string]
+  (:require [bidi.bidi :as bidi]
             [goose.brokers.redis.api.dead-jobs :as dead-jobs]
             [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
             [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
@@ -60,20 +60,39 @@
      :periodic  periodic
      :dead      dead}))
 
-(defn home-page [broker {{:keys [app-name]} :console-opts}]
+(defn home-page [{{:keys [app-name broker]} :console-opts}]
   (let [view (layout header stats-bar)
         data (jobs-size (:redis-conn broker))]
     (response/response (view "Home" (assoc data :app-name app-name)))))
 
-(defn handler [broker {:keys                  [uri]
-                       {:keys [route-prefix]} :console-opts
-                       :as                    req}]
-  (let [path (string/replace uri (re-pattern route-prefix) "")]
-    (case path
-      "" (response/redirect (str route-prefix "/"))
-      "/" (home-page broker req)
-      "/css/style.css" (-> (response/resource-response "css/style.css")
-                           (response/header "Content-Type" "text/css"))
-      "/img/goose-logo.png" (-> (response/resource-response "img/goose-logo.png")
-                                (response/header "Content-Type" "image/png"))
-      (response/not-found "<div> Not found </div>"))))
+(defn- load-css [_]
+  (-> "css/style.css"
+      response/resource-response
+      (response/header "Content-Type" "text/css")))
+
+(defn- load-img [_]
+  (-> "img/goose-logo.png"
+      response/resource-response
+      (response/header "Content-Type" "image/png")))
+
+(defn- redirect-to-home-page [{{:keys [route-prefix]} :console-opts}]
+  (response/redirect (str route-prefix "/")))
+
+(defn- not-found [_]
+  (response/not-found "<div> Not found </div>"))
+
+(defn routes [route-prefix]
+  [route-prefix [["" redirect-to-home-page]
+                 ["/" home-page]
+                 ["/css/style.css" load-css]
+                 ["/img/goose-logo.png" load-img]
+                 [true not-found]]])
+
+(defn handler [_ {:keys                  [uri]
+                  {:keys [route-prefix]} :console-opts
+                  :as                    req}]
+  (let [page-handler (-> route-prefix
+                         routes
+                         (bidi/match-route uri)
+                         (get :handler))]
+    (page-handler req)))
