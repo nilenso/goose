@@ -96,14 +96,14 @@
      :periodic  periodic
      :dead      dead}))
 
-(defn enqueued-page-data [redis-conn]
+(defn enqueued-page-data [redis-conn queue]
   (let [queues (enqueued-jobs/list-all-queues redis-conn)
-        queue (first queues)
+        queue (or queue (first queues))
         jobs (when queue
                (enqueued-jobs/get-by-range redis-conn queue 0 10))]
     {:queues queues
      :jobs   jobs
-     :queue queue}))
+     :queue  queue}))
 
 
 (defn home-page [{:keys                     [prefix-route]
@@ -115,9 +115,10 @@
 
 
 (defn enqueued-page [{:keys                     [prefix-route]
-                      {:keys [app-name broker]} :console-opts}]
+                      {:keys [app-name broker]} :console-opts
+                      {:keys [queue]}           :route-params}]
   (let [view (layout header enqueued-page-view)
-        data (enqueued-page-data (:redis-conn broker))]
+        data (enqueued-page-data (:redis-conn broker) queue)]
     (response/response (view "Enqueued" (assoc data :app-name app-name
                                                     :prefix-route prefix-route)))))
 
@@ -140,7 +141,8 @@
 (defn routes [route-prefix]
   [route-prefix [["" redirect-to-home-page]
                  ["/" home-page]
-                 ["/enqueued" {""                 enqueued-page}]
+                 ["/enqueued" {""                 enqueued-page
+                               ["/queue/" :queue] enqueued-page}]
                  ["/css/style.css" load-css]
                  ["/img/goose-logo.png" load-img]
                  [true not-found]]])
@@ -148,8 +150,10 @@
 (defn handler [_ {:keys                  [uri]
                   {:keys [route-prefix]} :console-opts
                   :as                    req}]
-  (let [page-handler (-> route-prefix
-                         routes
-                         (bidi/match-route uri)
-                         (get :handler))]
-    (page-handler req)))
+  (let [{page-handler :handler
+         route-params :route-params} (-> route-prefix
+                                         routes
+                                         (bidi/match-route uri))]
+    (-> req
+        (assoc :route-params route-params)
+        page-handler)))
