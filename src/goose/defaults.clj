@@ -75,3 +75,8 @@
 (def ^:no-doc rmq-delay-exchange-type "x-delayed-message")
 (def ^:no-doc rmq-low-priority 0)
 (def ^:no-doc rmq-high-priority 1)
+
+;;; ======== Console ========
+
+(def page-size 10)
+(def page "1")
