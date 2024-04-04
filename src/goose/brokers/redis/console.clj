@@ -17,7 +17,7 @@
            [:body
             (map (fn [c] (c data)) components)])))
 
-(defn- header [{:keys [app-name] :or {app-name ""}}]
+(defn- header [{:keys [app-name prefix-route] :or {app-name ""}}]
   (let [short-app-name (if (> (count app-name) 20)
                          (str (subs app-name 0 17) "..")
                          app-name)]
@@ -30,23 +30,23 @@
        [:a {:href ""}
         [:div#app-name short-app-name]]
        [:div#menu
-        [:a {:href "enqueued"} "Enqueued"]
-        [:a {:href "scheduled"} "Scheduled"]
-        [:a {:href "periodic"} "Periodic"]
-        [:a {:href "batch"} "Batch"]
-        [:a {:href "dead"} "Dead"]]]]]))
+        [:a {:href (prefix-route "/enqueued")} "Enqueued"]
+        [:a {:href (prefix-route "/scheduled")} "Scheduled"]
+        [:a {:href (prefix-route "/periodic")} "Periodic"]
+        [:a {:href (prefix-route "/batch")} "Batch"]
+        [:a {:href (prefix-route "/dead")} "Dead"]]]]]))
 
-(defn- stats-bar [page-data]
+(defn- stats-bar [{:keys [prefix-route] :as page-data}]
   [:main
    [:section.statistics
-    (for [stat [{:id :enqueued :label "Enqueued" :route "enqueued"}
-                {:id :scheduled :label "Scheduled" :route "scheduled"}
-                {:id :periodic :label "Periodic" :route "periodic"}
-                {:id :dead :label "Dead" :route "dead"}]]
-      [:div.stat {:id (:id stat)}
-       [:span.number (str (get page-data (:id stat)))]
-       [:a {:href (:route stat)}
-        [:span.label (:label stat)]]])]])
+    (for [{:keys [id label route]} [{:id :enqueued :label "Enqueued" :route "/enqueued"}
+                                    {:id :scheduled :label "Scheduled" :route "/scheduled"}
+                                    {:id :periodic :label "Periodic" :route "/periodic"}
+                                    {:id :dead :label "Dead" :route "/dead"}]]
+      [:div.stat {:id id}
+       [:span.number (str (get page-data id))]
+       [:a {:href (prefix-route route)}
+        [:span.label label]]])]])
 
 (defn jobs-size [redis-conn]
   (let [queues (enqueued-jobs/list-all-queues redis-conn)
@@ -60,10 +60,12 @@
      :periodic  periodic
      :dead      dead}))
 
-(defn home-page [{{:keys [app-name broker]} :console-opts}]
+(defn home-page [{:keys                     [prefix-route]
+                  {:keys [app-name broker]} :console-opts}]
   (let [view (layout header stats-bar)
         data (jobs-size (:redis-conn broker))]
-    (response/response (view "Home" (assoc data :app-name app-name)))))
+    (response/response (view "Home" (assoc data :app-name app-name
+                                                :prefix-route prefix-route)))))
 
 (defn- load-css [_]
   (-> "css/style.css"
@@ -75,8 +77,8 @@
       response/resource-response
       (response/header "Content-Type" "image/png")))
 
-(defn- redirect-to-home-page [{{:keys [route-prefix]} :console-opts}]
-  (response/redirect (str route-prefix "/")))
+(defn- redirect-to-home-page [ {:keys [prefix-route]}]
+  (response/redirect (prefix-route "/")))
 
 (defn- not-found [_]
   (response/not-found "<div> Not found </div>"))

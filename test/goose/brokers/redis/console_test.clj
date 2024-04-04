@@ -43,7 +43,8 @@
     (is (= (redis-console/handler tu/redis-producer (-> (mock/request :get "foo")
                                                         (assoc :console-opts {:broker       tu/redis-producer
                                                                               :app-name     ""
-                                                                              :route-prefix "foo"})))
+                                                                              :route-prefix "foo"}
+                                                               :prefix-route (partial str "foo"))))
            {:status  302
             :headers {"Location" "foo/"}
             :body    ""})))

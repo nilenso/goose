@@ -85,7 +85,8 @@
   (let [req-with-client-opts (assoc (mock/request :get "foo/")
                                :console-opts {:broker       tu/redis-producer
                                               :app-name     ""
-                                              :route-prefix "foo"})]
+                                              :route-prefix "foo"}
+                               :prefix-route (partial str "foo"))]
     (testing "Should call redis-handler given redis-broker"
       (with-redefs [redis-console/handler (spy/spy redis-console/handler)]
         (is (true? (spy/not-called? redis-console/handler)))
