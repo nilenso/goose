@@ -1,6 +1,7 @@
 (ns goose.brokers.redis.console-test
   (:require [clojure.test :refer [deftest is testing use-fixtures]]
             [goose.brokers.redis.console :as redis-console]
+            [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
             [goose.defaults :as d]
             [goose.factories :as f]
             [goose.test-utils :as tu]
@@ -49,12 +50,26 @@
     (f/create-async-job)
     (f/create-async-job {:queue       "queue1"
                          :ready-queue "goose/queue:queue1"})
-    (is (= [tu/queue "queue1"] (-> (redis-console/enqueued-page-data tu/redis-conn tu/queue nil) (get :queues)))))
+    (is (true? (every? #{tu/queue "queue1"} (-> (redis-console/enqueued-page-data tu/redis-conn tu/queue nil) (get :queues))))))
   (tu/clear-redis)
   (testing "Should get no jobs data given no jobs exist in redis"
     (let [{:keys [jobs total-jobs]} (redis-console/enqueued-page-data tu/redis-conn tu/queue nil)]
       (is (= [] jobs))
       (is (= 0 total-jobs)))))
+
+(deftest purge-queue-test
+  (testing "Should purge a queue"
+    (f/create-async-job)
+    (f/create-async-job {:queue       "queue1"
+                         :ready-queue "goose/queue:queue1"})
+    (is (true? (every? #{tu/queue "queue1"} (enqueued-jobs/list-all-queues tu/redis-conn))))
+    (is (= 2 (count (enqueued-jobs/list-all-queues tu/redis-conn))))
+    (is (= {:body    ""
+            :headers {"Location" "/enqueued"}
+            :status  302} (redis-console/purge-queue {:console-opts tu/redis-console-opts
+                                                      :params       {:queue tu/queue}
+                                                      :prefix-route str})))
+    (is (= ["queue1"] (enqueued-jobs/list-all-queues tu/redis-conn)))))
 
 (deftest page-handler-test
   (testing "Main handler should invoke home-page handler"
@@ -74,7 +89,11 @@
       (true? (spy/called-once? redis-console/enqueued-page))
       (is (= [{:status 200
                :body   "Mocked resp"}] (spy/responses redis-console/enqueued-page)))
-      (is (= "default" (get-in (first (spy/first-call redis-console/enqueued-page)) [:route-params :queue]))))))
+      (is (= "default" (get-in (first (spy/first-call redis-console/enqueued-page)) [:route-params :queue]))))
+    (with-redefs [redis-console/purge-queue (spy/stub {:status 302 :headers {"Location" "/enqueued"} :body ""})]
+      (redis-console/handler tu/redis-producer (mock/request :delete "/enqueued/queue/default"))
+      (true? (spy/called-once? redis-console/purge-queue))
+      (is (= [{:status 302 :headers {"Location" "/enqueued"} :body ""}] (spy/responses redis-console/purge-queue))))))
 
 (deftest handler-test
   (testing "Should serve css file on GET request at /css/style.css route"

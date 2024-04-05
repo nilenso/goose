@@ -1,7 +1,6 @@
 (ns goose.console-test
   (:require [clojure.test :refer [deftest is testing use-fixtures]]
             [goose.broker :as broker]
-            [goose.brokers.redis.broker :as redis]
             [goose.brokers.redis.console :as redis-console]
             [goose.client :as c]
             [goose.console :as console]

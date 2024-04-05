@@ -6,7 +6,7 @@
             [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
             [goose.brokers.redis.cron :as periodic-jobs]
             [goose.defaults :as d]
-            [hiccup.page :refer [html5 include-css]]
+            [hiccup.page :refer [html5 include-css include-js]]
             [hiccup.util :as hiccup-util]
             [ring.util.response :as response])
   (:import
@@ -19,7 +19,8 @@
             [:meta {:charset "UTF-8"}]
             [:meta {:name "viewport" :content "width=device-width, initial-scale=1.0"}]
             [:title title]
-            (include-css (prefix-route "/css/style.css"))]
+            (include-css (prefix-route "/css/style.css"))
+            (include-js (prefix-route "/js/index.js"))]
            [:body
             (map (fn [c] (c data)) components)])))
 
@@ -73,7 +74,7 @@
        [:td.id id]
        [:td.execute-fn-sym execute-fn-sym]
        [:td.args (string/join ", " args)]
-       [:td.enqueued-at (str (Date. enqueued-at))]])]])
+       [:td.enqueued-at (Date. ^Long enqueued-at)]])]])
 
 (defn pagination-stats [first-page curr-page last-page]
   {:first-page first-page
@@ -98,6 +99,17 @@
      (hyperlink next-page next-page (< curr-page last-page) false)
      (hyperlink last-page (hiccup-util/escape-html ">>") ((comp not =) first-page curr-page last-page) (= curr-page last-page))]))
 
+(defn confirmation-dialog [{:keys [prefix-route queue]}]
+  [:dialog {:class "purge-dialog"}
+   [:div "Are you sure, you want to purge the " [:span.highlight queue] " queue?"]
+   [:form {:action (prefix-route "/enqueued/queue/" queue)
+           :method "post"
+           :class  "dialog-btns"}
+    [:input {:name "_method" :type "hidden" :value "delete"}]
+    [:input {:name "queue" :value queue :type "hidden"}]
+    [:input {:type "button" :value "Cancel" :class "btn btn-md btn-cancel cancel"}]
+    [:input {:type "submit" :value "Confirm" :class "btn btn-danger btn-md"}]]])
+
 (defn- enqueued-page-view [{:keys [jobs total-jobs] :as data}]
   [:div.redis-enqueued-main-content
    [:h1 "Enqueued Jobs"]
@@ -109,7 +121,8 @@
      (enqueued-jobs-table jobs)
      (when (> total-jobs 0)
        [:div.bottom
-        [:button.btn.btn-danger.btn-lg "Purge"]])]]])
+        (confirmation-dialog data)
+        [:button {:class "btn btn-danger btn-lg purge-dialog-show"} "Purge"]])]]])
 
 (defn jobs-size [redis-conn]
   (let [queues (enqueued-jobs/list-all-queues redis-conn)
@@ -139,14 +152,17 @@
      :jobs       jobs
      :total-jobs total-jobs}))
 
-
 (defn home-page [{:keys                     [prefix-route]
                   {:keys [app-name broker]} :console-opts}]
   (let [view (layout header stats-bar)
         data (jobs-size (:redis-conn broker))]
     (response/response (view "Home" (assoc data :app-name app-name
                                                 :prefix-route prefix-route)))))
-
+(defn purge-queue [{{:keys [broker]} :console-opts
+                    {:keys [queue]}  :params
+                    :keys            [prefix-route]}]
+  (enqueued-jobs/purge (:redis-conn broker) queue)
+  (response/redirect (prefix-route "/enqueued")))
 
 (defn enqueued-page [{:keys                     [prefix-route]
                       {:keys [app-name broker]} :console-opts
@@ -167,6 +183,11 @@
       response/resource-response
       (response/header "Content-Type" "image/png")))
 
+(defn- load-js [_]
+  (-> "js/index.js"
+      response/resource-response
+      (response/header "Content-Type" "text/javascript")))
+
 (defn- redirect-to-home-page [{:keys [prefix-route]}]
   (response/redirect (prefix-route "/")))
 
@@ -177,18 +198,20 @@
   [route-prefix [["" redirect-to-home-page]
                  ["/" home-page]
                  ["/enqueued" {""                 enqueued-page
-                               ["/queue/" :queue] enqueued-page}]
+                               ["/queue/" :queue] [[:get enqueued-page]
+                                                   [:delete purge-queue]]}]
                  ["/css/style.css" load-css]
                  ["/img/goose-logo.png" load-img]
+                 ["/js/index.js" load-js]
                  [true not-found]]])
 
-(defn handler [_ {:keys                  [uri]
+(defn handler [_ {:keys                                        [uri request-method]
                   {:keys [route-prefix] :or {route-prefix ""}} :console-opts
-                  :as                    req}]
+                  :as                                          req}]
   (let [{page-handler :handler
          route-params :route-params} (-> route-prefix
                                          routes
-                                         (bidi/match-route uri))]
+                                         (bidi/match-route uri {:request-method request-method}))]
     (-> req
         (assoc :route-params route-params)
         page-handler)))

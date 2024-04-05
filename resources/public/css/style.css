@@ -35,6 +35,10 @@ a{
   color: #5881D8;
 }
 
+dialog {
+  border: none;
+}
+
 #menu .app-name {
   font-size: 1.3rem;
   color: #585454;
@@ -131,6 +135,11 @@ a{
   background-color: #fff;
   color: #DB460F;
   border: #DB460F solid 1px;
+}
+
+.btn-cancel {
+  color: #5881D8;
+  background-color: #d9d9d9;
 }
 
 button:active {
@@ -295,4 +304,14 @@ select {
   margin-top: 50px;
   justify-content: end;
   display: flex;
+}
+
+::backdrop {
+  opacity: 0.75;
+}
+
+.dialog-btns {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
 }
