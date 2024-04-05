@@ -183,7 +183,7 @@
                  [true not-found]]])
 
 (defn handler [_ {:keys                  [uri]
-                  {:keys [route-prefix]} :console-opts
+                  {:keys [route-prefix] :or {route-prefix ""}} :console-opts
                   :as                    req}]
   (let [{page-handler :handler
          route-params :route-params} (-> route-prefix
