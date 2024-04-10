@@ -79,4 +79,4 @@
 ;;; ======== Console ========
 
 (def page-size 10)
-(def page "1")
+(def page 1)

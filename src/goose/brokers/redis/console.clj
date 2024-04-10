@@ -1,5 +1,6 @@
 (ns goose.brokers.redis.console
   (:require [bidi.bidi :as bidi]
+            [clojure.spec.alpha :as s]
             [clojure.string :as string]
             [goose.brokers.redis.api.dead-jobs :as dead-jobs]
             [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
@@ -10,8 +11,16 @@
             [hiccup.util :as hiccup-util]
             [ring.util.response :as response])
   (:import
-    (java.util Date)
-    (java.lang Math)))
+    (java.lang Math)
+    (java.util Date)))
+
+(s/def ::page (s/and pos-int?))
+(defn str->long
+  [str]
+  (if (= (type str) java.lang.Long)
+    str
+    (try (Long/parseLong str)
+         (catch Exception _ :clojure.spec.alpha/invalid))))
 
 (defn- layout [& components]
   (fn [title {:keys [prefix-route] :as data}]
@@ -85,19 +94,20 @@
 
 (defn- pagination [{:keys [prefix-route queue page total-jobs]}]
   (let [{:keys [first-page prev-page curr-page
-                next-page last-page]} (pagination-stats (Integer/parseInt d/page) page
+                next-page last-page]} (pagination-stats d/page page
                                                         (Math/ceilDiv total-jobs d/page-size))
         page-uri (fn [p] (prefix-route "/enqueued/queue/" queue "?page=" p))
         hyperlink (fn [page label visible? disabled? & class]
                     (when visible?
                       [:a {:class (conj class (when disabled? "disabled"))
-                           :href  (page-uri page)} label]))]
+                           :href  (page-uri page)} label]))
+        single-page? (<= total-jobs d/page-size)]
     [:div
-     (hyperlink first-page (hiccup-util/escape-html "<<") ((comp not =) first-page curr-page last-page) (= curr-page first-page))
+     (hyperlink first-page (hiccup-util/escape-html "<<") (not single-page?) (= curr-page first-page))
      (hyperlink prev-page prev-page (> curr-page first-page) false)
-     (hyperlink curr-page curr-page ((comp not =) first-page curr-page last-page) true "highlight")
+     (hyperlink curr-page curr-page (not single-page?) true "highlight")
      (hyperlink next-page next-page (< curr-page last-page) false)
-     (hyperlink last-page (hiccup-util/escape-html ">>") ((comp not =) first-page curr-page last-page) (= curr-page last-page))]))
+     (hyperlink last-page (hiccup-util/escape-html ">>") (not single-page?) (= curr-page last-page))]))
 
 (defn confirmation-dialog [{:keys [prefix-route queue]}]
   [:dialog {:class "purge-dialog"}
@@ -138,7 +148,9 @@
 
 (defn enqueued-page-data
   [redis-conn queue page]
-  (let [page (Integer/parseInt (or page d/page))
+  (let [page (if (s/valid? ::page (str->long page))
+               (str->long page)
+               d/page)
         start (* (- page 1) d/page-size)
         end (- (* page d/page-size) 1)
 
