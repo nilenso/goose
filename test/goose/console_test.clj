@@ -1,7 +1,6 @@
 (ns goose.console-test
   (:require [clojure.test :refer [deftest is testing use-fixtures]]
             [goose.broker :as broker]
-            [goose.brokers.redis.broker :as redis]
             [goose.brokers.redis.console :as redis-console]
             [goose.client :as c]
             [goose.console :as console]
@@ -16,19 +15,22 @@
 (use-fixtures :each tu/redis-fixture)
 
 (deftest app-handler-test
-  (let [client-opts {:app-name     ""
-                     :route-prefix ""
-                     :broker       (redis/new-producer redis/default-opts)}]
-    (testing "Should append query-params to request, when url contains query parameters"
-      (with-redefs [redis-console/handler (fn [_ req] (:query-params req))]
-        (is (= {"page" "2"} (console/app-handler client-opts (mock/request :get "/enqueue?page=2"))))
-        (is (= {"foo" "bar"} (console/app-handler client-opts (mock/request :get "/enqueue?foo=bar"))))
-        (is (= {} (console/app-handler client-opts (mock/request :get "/enqueue"))))))
-    (testing "Should keywordize the params given a request"
-      (with-redefs [redis-console/handler (fn [_ req] (:params req))]
-        (is (= {:page "2"} (console/app-handler client-opts (mock/request :get "/enqueue?page=2"))))
-        (is (= {:foo "bar"} (console/app-handler client-opts (mock/request :get "/enqueue?foo=bar"))))
-        (is (= {} (console/app-handler client-opts (mock/request :get "/enqueue"))))))))
+  (testing "Should append query-params to request, when url contains query parameters"
+    (with-redefs [redis-console/handler (fn [_ req] (:query-params req))]
+      (is (= {"page" "2"} (console/app-handler tu/redis-console-opts (mock/request :get "/enqueue?page=2"))))
+      (is (= {"foo" "bar"} (console/app-handler tu/redis-console-opts (mock/request :get "/enqueue?foo=bar"))))
+      (is (= {} (console/app-handler tu/redis-console-opts (mock/request :get "/enqueue"))))))
+  (testing "Should keywordize the params given a request"
+    (with-redefs [redis-console/handler (fn [_ req] (:params req))]
+      (is (= {:page "2"} (console/app-handler tu/redis-console-opts (mock/request :get "/enqueue?page=2"))))
+      (is (= {:foo "bar"} (console/app-handler tu/redis-console-opts (mock/request :get "/enqueue?foo=bar"))))
+      (is (= {} (console/app-handler tu/redis-console-opts (mock/request :get "/enqueue"))))))
+  (testing "Should override request-method if form field contains _method"
+    (with-redefs [redis-console/handler (fn [_ req] (:request-method req))]
+      (is (= :delete (console/app-handler tu/redis-console-opts (mock/request :post "/enqueue/queue/default"
+                                                                         {"_method" "delete" "queue" "default"}))))
+      (is (= :patch (console/app-handler tu/redis-console-opts (mock/request :post "/enqueue/queue/default"
+                                                                              {"_method" "patch"})))))))
 
 (deftest dispatch-handler-test
   (testing "Should dispatch to redis handler when app-handler is given redis broker details"
@@ -85,7 +87,8 @@
   (let [req-with-client-opts (assoc (mock/request :get "foo/")
                                :console-opts {:broker       tu/redis-producer
                                               :app-name     ""
-                                              :route-prefix "foo"})]
+                                              :route-prefix "foo"}
+                               :prefix-route (partial str "foo"))]
     (testing "Should call redis-handler given redis-broker"
       (with-redefs [redis-console/handler (spy/spy redis-console/handler)]
         (is (true? (spy/not-called? redis-console/handler)))
