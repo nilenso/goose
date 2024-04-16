@@ -4,6 +4,7 @@
             [goose.brokers.redis.console :as console]
             [goose.brokers.redis.console.pages.enqueued :as enqueued]
             [goose.brokers.redis.console.pages.home :as home]
+            [goose.defaults :as d]
             [goose.factories :as f]
             [goose.test-utils :as tu]
             [ring.mock.request :as mock]
@@ -25,6 +26,47 @@
                                                  :prefix-route str})))
     (is (= ["queue1"] (enqueued-jobs/list-all-queues tu/redis-conn)))))
 
+(deftest enqueued-jobs-validations-test
+  (testing "Should set req params to default values if values do not conform specs"
+    (let [random-id (str (random-uuid))]
+      (is (= 1 (:page (enqueued/validate-get-jobs {}))))
+      (is (= 1 (:page (enqueued/validate-get-jobs {:page nil}))))
+      (is (= 2 (:page (enqueued/validate-get-jobs {:page "2"}))))
+      (is (= 1 (:page (enqueued/validate-get-jobs {:page "two"}))))
+      (is (= 1 (:page (enqueued/validate-get-jobs {:page "2w"}))))
+
+      (is (= nil (:queue (enqueued/validate-get-jobs {}))))
+      (is (= nil (:queue (enqueued/validate-get-jobs {:queue nil}))))
+      (is (= "queue" (:queue (enqueued/validate-get-jobs {:queue "queue"}))))
+      (is (= nil (:queue (enqueued/validate-get-jobs {:queue :queue}))))
+
+      (let [valid-filter-type ["id" "execute-fn-sym" "type"]
+            random-filter-type (rand-nth ["id" "execute-fn-sym" "type"])]
+        (is (some #(= % (:filter-type (enqueued/validate-get-jobs {:filter-type  random-filter-type
+                                                                   :filter-value ""})))
+                  valid-filter-type)))
+
+      (is (= random-id (:filter-value (enqueued/validate-get-jobs {:filter-type  "id"
+                                                                   :filter-value random-id}))))
+      (is (nil? (:filter-value (enqueued/validate-get-jobs {:filter-type  "id"
+                                                            :filter-value (rand-nth ["abcd" ""])}))))
+
+      (is (= "some-namespace/fn-name" (:filter-value (enqueued/validate-get-jobs {:filter-type  "execute-fn-sym"
+                                                                                  :filter-value "some-namespace/fn-name"}))))
+      (is (nil? (:filter-value (enqueued/validate-get-jobs {:filter-type  "execute-fn-sym"
+                                                            :filter-value (rand-nth [123 nil])}))))
+
+      (let [valid-type ["failed" "unexecuted"]
+            random-valid-type (rand-nth ["failed" "unexecuted"])]
+        (is (some #(= % (:filter-value (enqueued/validate-get-jobs {:filter-type  "type"
+                                                                    :filter-value random-valid-type})))
+                  valid-type)))
+      (is (nil? (:filter-value (enqueued/validate-get-jobs {:filter-type  "type"
+                                                            :filter-value (rand-nth [true false "retried"])}))))
+
+      (is (= 3 (:limit (enqueued/validate-get-jobs {:limit "3"}))))
+      (is (= d/limit (:limit (enqueued/validate-get-jobs {:limit (rand-nth ["21w" "one" :1])})))))))
+
 (deftest page-handler-test
   (testing "Main handler should invoke home-page handler"
     (with-redefs [home/page (spy/stub {:status 200 :body "Mocked resp"})]
@@ -33,17 +75,17 @@
       (is (= [{:status 200
                :body   "Mocked resp"}] (spy/responses home/page)))))
   (testing "Main Handler should invoke enqueued-page handler"
-    (with-redefs [enqueued/page (spy/stub {:status 200 :body "Mocked resp"})]
+    (with-redefs [enqueued/get-jobs (spy/stub {:status 200 :body "Mocked resp"})]
       (console/handler tu/redis-producer (mock/request :get "/enqueued"))
-      (true? (spy/called-once? enqueued/page))
+      (true? (spy/called-once? enqueued/get-jobs))
       (is (= [{:status 200
-               :body   "Mocked resp"}] (spy/responses enqueued/page))))
-    (with-redefs [enqueued/page (spy/stub {:status 200 :body "Mocked resp"})]
+               :body   "Mocked resp"}] (spy/responses enqueued/get-jobs))))
+    (with-redefs [enqueued/get-jobs (spy/stub {:status 200 :body "Mocked resp"})]
       (console/handler tu/redis-producer (mock/request :get "/enqueued/queue/default"))
-      (true? (spy/called-once? enqueued/page))
+      (true? (spy/called-once? enqueued/get-jobs))
       (is (= [{:status 200
-               :body   "Mocked resp"}] (spy/responses enqueued/page)))
-      (is (= "default" (get-in (first (spy/first-call enqueued/page)) [:route-params :queue]))))
+               :body   "Mocked resp"}] (spy/responses enqueued/get-jobs)))
+      (is (= "default" (get-in (first (spy/first-call enqueued/get-jobs)) [:params :queue]))))
     (with-redefs [enqueued/purge-queue (spy/stub {:status 302 :headers {"Location" "/enqueued"} :body ""})]
       (console/handler tu/redis-producer (mock/request :delete "/enqueued/queue/default"))
       (true? (spy/called-once? enqueued/purge-queue))

@@ -28,8 +28,8 @@
 (defn routes [route-prefix]
   [route-prefix [["" redirect-to-home-page]
                  ["/" home/page]
-                 ["/enqueued" {""                 enqueued/page
-                               ["/queue/" :queue] [[:get enqueued/page]
+                 ["/enqueued" {""                 enqueued/get-jobs
+                               ["/queue/" :queue] [[:get enqueued/get-jobs]
                                                    [:delete enqueued/purge-queue]]}]
                  ["/css/style.css" load-css]
                  ["/img/goose-logo.png" load-img]
@@ -47,5 +47,5 @@
                                            {:request-method
                                             request-method}))]
     (-> req
-        (assoc :route-params route-params)
+        (update :params merge route-params)
         page-handler)))
