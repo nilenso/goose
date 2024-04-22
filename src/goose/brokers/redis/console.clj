@@ -30,7 +30,9 @@
                  ["/" home/page]
                  ["/enqueued" {""                 enqueued/get-jobs
                                ["/queue/" :queue] [[:get enqueued/get-jobs]
-                                                   [:delete enqueued/purge-queue]]}]
+                                                   [:delete enqueued/purge-queue]
+                                                   ["/jobs" [[:delete enqueued/delete-jobs]
+                                                             [:post enqueued/prioritise-jobs]]]]}]
                  ["/css/style.css" load-css]
                  ["/img/goose-logo.png" load-img]
                  ["/js/index.js" load-js]
