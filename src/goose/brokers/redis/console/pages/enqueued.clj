@@ -6,10 +6,11 @@
             [goose.brokers.redis.console.specs :as specs]
             [goose.defaults :as d]
             [hiccup.util :as hiccup-util]
-            [ring.util.response :as response])
+            [ring.util.response :as response]
+            [goose.utils :as utils])
   (:import
-    (java.lang Math)
-    (java.util Date)))
+   (java.lang Math)
+   (java.util Date)))
 
 (defn- sidebar [{:keys [prefix-route queues queue]}]
   [:div#sidebar
@@ -20,22 +21,6 @@
        [:a {:href  (prefix-route "/enqueued/queue/" q)
             :class (when (= q queue) "highlight")}
         [:li.queue-list-item q]])]]])
-
-(defn- enqueued-jobs-table [jobs]
-  [:table.job-table
-   [:thead
-    [:tr
-     [:th.id-h "Id"]
-     [:th.execute-fn-sym-h "Execute fn symbol"]
-     [:th.args-h "Args"]
-     [:th.enqueued-at-h "Enqueued-at"]]]
-   [:tbody
-    (for [{:keys [id execute-fn-sym args enqueued-at]} jobs]
-      [:tr
-       [:td.id id]
-       [:td.execute-fn-sym (str execute-fn-sym)]
-       [:td.args (string/join ", " args)]
-       [:td.enqueued-at (Date. ^Long enqueued-at)]])]])
 
 (defn pagination-stats [first-page curr-page last-page]
   {:first-page first-page
@@ -61,9 +46,9 @@
      (hyperlink next-page next-page (< curr-page last-page) false)
      (hyperlink last-page (hiccup-util/escape-html ">>") (not single-page?) (= curr-page last-page))]))
 
-(defn- confirmation-dialog [{:keys [prefix-route queue]}]
+(defn- purge-confirmation-dialog [{:keys [prefix-route queue]}]
   [:dialog {:class "purge-dialog"}
-   [:div "Are you sure, you want to purge the " [:span.highlight queue] " queue?"]
+   [:div "Are you sure, you want to " [:b "purge "] "the " [:span.highlight queue] " queue?"]
    [:form {:action (prefix-route "/enqueued/queue/" queue)
            :method "post"
            :class  "dialog-btns"}
@@ -101,7 +86,39 @@
       [:a. {:href (prefix-route "/enqueued/queue/" queue) :class "cursor-default"} "Clear"]]
      [:button.btn {:type "submit"} "Apply"]]]])
 
-(defn- jobs-page-view [{:keys [jobs total-jobs] :as data}]
+(defn- delete-confirmation-dialog [queue]
+  [:dialog {:class "delete-dialog"}
+   [:div "Are you sure, you want to " [:b "delete"] " jobs from " [:span.highlight queue] " queue?"]
+   [:div {:class "dialog-btns"}
+    [:input {:type "button" :value "cancel" :class "btn btn-md btn-cancel cancel"}]
+    [:input {:type "submit" :name "_method" :value "delete" :class "btn btn-danger btn-md"}]]])
+
+(defn jobs-table [{:keys [prefix-route queue jobs]}]
+  [:form {:action (prefix-route "/enqueued/queue/" queue "/jobs")
+          :method "post"}
+   (delete-confirmation-dialog queue)
+   [:div.actions
+    [:input {:name "queue" :value queue :type "hidden"}]
+    [:input.btn {:type "submit" :value "Prioritise"}]
+    [:input.btn.btn-danger {:type "button" :value "Delete" :class "delete-dialog-show"}]]
+   [:table.job-table
+    [:thead
+     [:tr
+      [:th.id-h "Id"]
+      [:th.execute-fn-sym-h "Execute fn symbol"]
+      [:th.args-h "Args"]
+      [:th.enqueued-at-h "Enqueued at"]
+      [:th.checkbox-h [:input {:type "checkbox" :id "checkbox-h"}]]]]
+    [:tbody
+     (for [{:keys [id execute-fn-sym args enqueued-at] :as j} jobs]
+       [:tr
+        [:td [:div.id id]]
+        [:td [:div.execute-fn-sym (str execute-fn-sym)]]
+        [:td [:div.args (string/join ", " args)]]
+        [:td [:div.enqueued-at] (Date. ^Long enqueued-at)]
+        [:td [:div.checkbox-div [:input {:name "jobs" :type "checkbox" :class "checkbox" :value (utils/encode-to-str j)}]]]])]]])
+
+(defn- jobs-page-view [{:keys [total-jobs] :as data}]
   [:div.redis-enqueued-main-content
    [:h1 "Enqueued Jobs"]
    [:div.content
@@ -111,10 +128,10 @@
      [:div.pagination
       (when total-jobs
         (pagination data))]
-     (enqueued-jobs-table jobs)
+     (jobs-table data)
      (when (and total-jobs (> total-jobs 0))
        [:div.bottom
-        (confirmation-dialog data)
+        (purge-confirmation-dialog data)
         [:button {:class "btn btn-danger btn-lg purge-dialog-show"} "Purge"]])]]])
 
 (defn validate-get-jobs [{:keys [page filter-type limit filter-value queue]}]
@@ -143,6 +160,11 @@
      :filter-value f-val
      :limit        limit}))
 
+(defn validate-jobs [jobs]
+  (if (sequential? jobs)
+    jobs
+    (conj [] jobs)))
+
 (defn get-jobs [{:keys                     [prefix-route]
                  {:keys [app-name broker]} :console-opts
                  params                    :params}]
@@ -150,11 +172,29 @@
         validated-params (validate-get-jobs params)
         data (data/enqueued-page-data (:redis-conn broker) validated-params)]
     (response/response (view "Enqueued" (assoc data :params params
-                                                    :app-name app-name
-                                                    :prefix-route prefix-route)))))
+                                               :app-name app-name
+                                               :prefix-route prefix-route)))))
 
 (defn purge-queue [{{:keys [broker]} :console-opts
                     {:keys [queue]}  :params
                     :keys            [prefix-route]}]
   (enqueued-jobs/purge (:redis-conn broker) queue)
   (response/redirect (prefix-route "/enqueued")))
+
+(defn prioritise-jobs [{{:keys [broker]}     :console-opts
+                        :keys                [prefix-route]
+                        {:keys [queue jobs]} :params}]
+  (let [jobs (->> jobs
+                  validate-jobs
+                  (mapv utils/decode-from-str))]
+    (enqueued-jobs/prioritise-execution (:redis-conn broker) queue jobs)
+    (response/redirect (prefix-route "/enqueued/queue/" queue))))
+
+(defn delete-jobs [{{:keys [broker]}     :console-opts
+                    :keys                [prefix-route]
+                    {:keys [queue jobs]} :params}]
+  (let [jobs (->> jobs
+                  validate-jobs
+                  (mapv utils/decode-from-str))]
+    (enqueued-jobs/delete (:redis-conn broker) queue jobs)
+    (response/redirect (prefix-route "/enqueued/queue/" queue))))

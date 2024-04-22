@@ -15,11 +15,21 @@
   [x]
   (nippy/freeze x))
 
+(defn encode-to-str
+  "Serializes input to string using `taoensso.nippy/freeze-to-string`"
+  [x]
+  (nippy/freeze-to-string x))
+
 (defn decode
   "Deserializes a frozen Nippy byte array to its original Clojure data type.\\
    To thaw custom types, extend the Clojure reader or use `taoensso.nippy/extend-thaw`."
   [o]
   (nippy/thaw o))
+
+(defn decode-from-str
+  "Deserialize from a frozen Nippy string to its original Clojure data type."
+  [x]
+  (nippy/thaw-from-string x))
 
 (defmacro ^:no-doc log-on-exceptions
   "Catch any Exception from the body and log it."

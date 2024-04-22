@@ -11,6 +11,19 @@ window.onload = () => {
       cancelPurgeDialog.addEventListener("click", (event) => {
         purgeDialog.close()
       })
+    }}
+
+  function attachDeleteDialogEventListener() {
+    const deleteDialog = document.querySelector(".delete-dialog")
+    const showDeleteDialogBtn = document.querySelector(".delete-dialog-show")
+    const cancelDeleteDialogBtn = document.querySelector(".delete-dialog .cancel")
+    if (deleteDialog) {
+      showDeleteDialogBtn.addEventListener("click", (event) => {
+        deleteDialog.showModal()
+      })
+      cancelDeleteDialogBtn.addEventListener("click", (event) => {
+        deleteDialog.close()
+      })
     }
   }
 
@@ -66,6 +79,20 @@ window.onload = () => {
     });
   }
 
+
+  function attachSelectAllCheckboxEventListener () {
+    const headerCheckbox = document.getElementById('checkbox-h');
+    const checkboxes = document.querySelectorAll('.checkbox');
+
+    headerCheckbox.addEventListener('change', function() {
+      checkboxes.forEach(function(checkbox) {
+        checkbox.checked = headerCheckbox.checked;
+      });
+    });
+  }
+
+  attachSelectAllCheckboxEventListener();
   attachPurgeDialogEventListener();
   attachFilterTypeEventListener();
+  attachDeleteDialogEventListener();
 }
