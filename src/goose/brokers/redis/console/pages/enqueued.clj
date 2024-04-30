@@ -187,19 +187,25 @@
        [:td "Retry at"]
        [:td (Date. ^Long (get-in job [:state :retry-at]))]]])])
 
-(defn- job-page-view [{:keys [job prefix-route queue]}]
+(defn- job-page-view [{:keys [prefix-route queue]
+                       {:keys [id]
+                        :as job} :job}]
   [:div.redis-enqueued-main-content
    [:h1 "Enqueued Job"]
    [:div
-    (delete-job-confirm-dialog (:id job))
-    [:form {:action (prefix-route "/enqueued/queue/" queue "/job")
+    [:form {:action (prefix-route "/enqueued/queue/" queue "/job/" id)
             :method "post"}
+     (delete-job-confirm-dialog id)
      [:div.actions
       [:input.btn {:type "submit" :value "Prioritise"}]
       [:input.btn.btn-danger
-       {:type "button" :value "Delete" :class "delete-dialog-show"}]]]
-    [:table
-     (when job (job-table job))]]])
+       {:type "button" :value "Delete" :class "delete-dialog-show"}]
+      [:input {:name  "job"
+               :type "hidden"
+               :value (utils/encode-to-str job)}]]
+
+     [:table
+      (when job (job-table job))]]]])
 
 (defn- jobs-page-view [{:keys [total-jobs] :as data}]
   [:div.redis-enqueued-main-content
@@ -300,4 +306,20 @@
                   validate-jobs
                   (mapv utils/decode-from-str))]
     (enqueued-jobs/delete (:redis-conn broker) queue jobs)
+    (response/redirect (prefix-route "/enqueued/queue/" queue))))
+
+(defn prioritise-job [{:keys                          [prefix-route]
+                       {{:keys [redis-conn]} :broker} :console-opts
+                       {:keys [queue]
+                        encoded-job :job}           :params}]
+  (let [job (utils/decode-from-str encoded-job)]
+    (enqueued-jobs/prioritise-execution redis-conn job)
+    (response/redirect (prefix-route "/enqueued/queue/" queue))))
+
+(defn delete-job [{:keys                          [prefix-route]
+                       {{:keys [redis-conn]} :broker} :console-opts
+                       {:keys [queue]
+                        encoded-job :job}           :params}]
+  (let [job (utils/decode-from-str encoded-job)]
+    (enqueued-jobs/delete redis-conn job)
     (response/redirect (prefix-route "/enqueued/queue/" queue))))
