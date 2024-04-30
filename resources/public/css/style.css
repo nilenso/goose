@@ -69,6 +69,10 @@ dialog {
   font-weight: bold;
 }
 
+.cursor-default {
+  cursor: default;
+}
+
 .statistics {
   display: flex;
   justify-content: space-around;
@@ -242,8 +246,17 @@ select {
   justify-content: space-between;
 }
 
+.redis-enqueued-main-content .header .filter-opts-items .filter-type {
+  background-color: #c4d0ec;
+  color: #585454;
+}
+
+.redis-enqueued-main-content .header .filter-opts-items .filter-values{
+  display: flex;
+}
+
 .redis-enqueued-main-content .header .filter-opts-items .limit {
-  background-color: #fff;
+  background-color: #c4d0ec;
   font-size: small;
   margin: auto;
   padding: 7px 20px;

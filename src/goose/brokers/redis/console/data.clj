@@ -1,11 +1,10 @@
 (ns goose.brokers.redis.console.data
-  (:require [clojure.spec.alpha :as s]
-            [goose.brokers.redis.api.dead-jobs :as dead-jobs]
+  (:require [goose.brokers.redis.api.dead-jobs :as dead-jobs]
             [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
             [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
             [goose.brokers.redis.cron :as periodic-jobs]
             [goose.defaults :as d]
-            [goose.brokers.redis.console.specs :as specs]))
+            [goose.job :as job]))
 
 (defn jobs-size [redis-conn]
   (let [queues (enqueued-jobs/list-all-queues redis-conn)
@@ -19,20 +18,44 @@
      :periodic  periodic
      :dead      dead}))
 
-(defn enqueued-page-data
-  [redis-conn queue page]
-  (let [page (if (s/valid? ::specs/page (specs/str->long page))
-               (specs/str->long page)
-               d/page)
-        start (* (- page 1) d/page-size)
-        end (- (* page d/page-size) 1)
+(defn- filter-jobs [redis-conn queue {:keys [filter-type filter-value limit]}]
+  (case filter-type
+    "id" [(enqueued-jobs/find-by-id redis-conn queue filter-value)]
+    "execute-fn-sym" (enqueued-jobs/find-by-pattern redis-conn
+                                                    queue
+                                                    (fn [j]
+                                                      (= (:execute-fn-sym j)
+                                                         (symbol filter-value)))
+                                                    limit)
+    "type" (case filter-value
+             "failed"
+             (enqueued-jobs/find-by-pattern redis-conn queue job/retried? limit)
 
-        queues (enqueued-jobs/list-all-queues redis-conn)
+             "unexecuted"
+             (enqueued-jobs/find-by-pattern redis-conn
+                                            queue (comp not job/retried?) limit)
+
+             nil)
+    nil))
+
+(defn- paginated-jobs [redis-conn queue page]
+  (let [start (* (- page 1) d/page-size)
+        end (- (* page d/page-size) 1)]
+    (enqueued-jobs/get-by-range redis-conn queue start end)))
+
+(defn enqueued-page-data
+  [redis-conn {:keys [page queue filter-type filter-value] :as params}]
+  (let [queues (enqueued-jobs/list-all-queues redis-conn)
         queue (or queue (first queues))
-        total-jobs (enqueued-jobs/size redis-conn queue)
-        jobs (enqueued-jobs/get-by-range redis-conn queue start end)]
-    {:queues     queues
-     :page       page
-     :queue      queue
-     :jobs       jobs
-     :total-jobs total-jobs}))
+        base-result {:queues queues
+                     :page   page
+                     :queue  queue}]
+    (cond
+      (and filter-type filter-value)
+      (assoc base-result :jobs (filter-jobs redis-conn queue params))
+
+      (nil? (or filter-type filter-value))
+      (assoc base-result :jobs (paginated-jobs redis-conn queue page)
+                         :total-jobs (enqueued-jobs/size redis-conn queue))
+
+      :else base-result)))
