@@ -5,12 +5,13 @@
             [goose.brokers.redis.console.pages.components :as c]
             [goose.brokers.redis.console.specs :as specs]
             [goose.defaults :as d]
+            [goose.job :as job]
+            [goose.utils :as utils]
             [hiccup.util :as hiccup-util]
-            [ring.util.response :as response]
-            [goose.utils :as utils])
+            [ring.util.response :as response])
   (:import
-   (java.lang Math)
-   (java.util Date)))
+    (java.lang Math)
+    (java.util Date)))
 
 (defn- sidebar [{:keys [prefix-route queues queue]}]
   [:div#sidebar
@@ -91,7 +92,7 @@
    [:div "Are you sure, you want to " [:b "delete"] " jobs from " [:span.highlight queue] " queue?"]
    [:div {:class "dialog-btns"}
     [:input {:type "button" :value "cancel" :class "btn btn-md btn-cancel cancel"}]
-    [:input {:type "submit" :name "_method" :value "delete" :class "btn btn-danger btn-md"}]]])
+    [:input.btn.btn-danger.btn-md {:type "submit" :name "_method" :value "delete"}]]])
 
 (defn jobs-table [{:keys [prefix-route queue jobs]}]
   [:form {:action (prefix-route "/enqueued/queue/" queue "/jobs")
@@ -123,6 +124,83 @@
                        :class "checkbox"
                        :value (utils/encode-to-str j)}]]]])]]])
 
+(defn- delete-job-confirm-dialog [id]
+  [:dialog {:class "delete-dialog"}
+   [:div "Are you sure, you want to delete job " [:b id] " ?"]
+   [:div.dialog-btns
+    [:input.btn.btn-md.btn-cancel {:type "button" :value "cancel" :class "cancel"}]
+    [:input.btn.btn-md.btn-danger {:type "submit" :name "_method" :value "delete"}]]])
+
+(defn- job-table [job]
+  [:table.job-table
+   [:tr
+    [:td "Id"]
+    [:td (:id job)]]
+   [:tr
+    [:td "Execute fn symbol"]
+    [:td (str (:execute-fn-sym job))]]
+   [:tr
+    [:td "Args"]
+    [:td (string/join ", " (:args job))]]
+   [:tr
+    [:td "Queue"]
+    [:td (:queue job)]]
+   [:tr
+    [:td "Ready queue"]
+    [:td (:ready-queue job)]]
+   [:tr
+    [:td "Enqueued at"]
+    [:td (Date. ^Long (:enqueued-at job))]]
+   [:tr
+    [:td "Max retries"]
+    [:td (get-in job [:retry-opts :max-retries])]]
+   [:tr
+    [:td "Retry delay sec fn symbol"]
+    [:td (str (get-in job [:retry-opts :retry-delay-sec-fn-sym]))]]
+   [:tr
+    [:td "Retry queue"]
+    [:td (get-in job [:retry-opts :retry-delay-sec-fn-sym])]]
+   [:tr
+    [:td "Error handler fn symbol"]
+    [:td (str (get-in job [:retry-opts :error-handler-fn-sym]))]]
+   [:tr
+    [:td "Death handler fn symbol"]
+    [:td (str (get-in job [:retry-opts :death-handler-fn-sym]))]]
+   [:tr
+    [:td "Skip dead queue"]
+    [:td (get-in job [:retry-opts :skip-dead-queue])]]
+   (when (job/retried? job)
+     [:div
+      [:tr
+       [:td "Error"]
+       [:td (get-in job [:state :error])]]
+      [:tr
+       [:td "Last retried at"]
+       [:td (Date. ^Long (get-in job [:state :last-retried-at]))]]
+      [:tr
+       [:td "First failed at"]
+       [:td (Date. ^Long (get-in job [:state :first-failed-at]))]]
+      [:tr
+       [:td "Retry count"]
+       [:td (get-in job [:state :retry-count])]]
+      [:tr
+       [:td "Retry at"]
+       [:td (Date. ^Long (get-in job [:state :retry-at]))]]])])
+
+(defn- job-page-view [{:keys [job prefix-route queue]}]
+  [:div.redis-enqueued-main-content
+   [:h1 "Enqueued Job"]
+   [:div
+    (delete-job-confirm-dialog (:id job))
+    [:form {:action (prefix-route "/enqueued/queue/" queue "/job")
+            :method "post"}
+     [:div.actions
+      [:input.btn {:type "submit" :value "Prioritise"}]
+      [:input.btn.btn-danger
+       {:type "button" :value "Delete" :class "delete-dialog-show"}]]]
+    [:table
+     (when job (job-table job))]]])
+
 (defn- jobs-page-view [{:keys [total-jobs] :as data}]
   [:div.redis-enqueued-main-content
    [:h1 "Enqueued Jobs"]
@@ -147,7 +225,7 @@
         queue (specs/validate-or-default ::specs/queue queue)
         f-type (specs/validate-or-default ::specs/filter-type filter-type)
         f-val (case f-type
-                "id" (specs/validate-or-default ::specs/filter-value-id
+                "id" (specs/validate-or-default ::specs/job-id
                                                 (parse-uuid filter-value)
                                                 filter-value)
                 "execute-fn-sym" (specs/validate-or-default ::specs/filter-value-sym
@@ -170,6 +248,26 @@
     jobs
     (conj [] jobs)))
 
+(defn validate-job-params [{:keys [id queue]}]
+  {:id    (specs/validate-or-default ::specs/job-id (parse-uuid id) id)
+   :queue (specs/validate-or-default ::specs/queue queue)})
+
+(defn job-page [{:keys                          [prefix-route]
+                 {:keys                [app-name]
+                  {:keys [redis-conn]} :broker} :console-opts
+                 params                         :params}]
+  (let [view (c/layout c/header job-page-view)
+        {:keys [id queue]} (validate-job-params params)]
+    (if id
+      (response/response (view "Enqueued" (-> {:job (enqueued-jobs/find-by-id
+                                                      redis-conn
+                                                      queue
+                                                      id)}
+                                              (assoc :queue queue
+                                                     :app-name app-name
+                                                     :prefix-route prefix-route))))
+      (response/redirect (prefix-route "/enqueued/queue/" queue)))))
+
 (defn get-jobs [{:keys                     [prefix-route]
                  {:keys [app-name broker]} :console-opts
                  params                    :params}]
@@ -177,8 +275,8 @@
         validated-params (validate-get-jobs params)
         data (data/enqueued-page-data (:redis-conn broker) validated-params)]
     (response/response (view "Enqueued" (assoc data :params params
-                                               :app-name app-name
-                                               :prefix-route prefix-route)))))
+                                                    :app-name app-name
+                                                    :prefix-route prefix-route)))))
 
 (defn purge-queue [{{:keys [broker]} :console-opts
                     {:keys [queue]}  :params

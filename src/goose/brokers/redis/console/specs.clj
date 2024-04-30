@@ -7,7 +7,7 @@
 (s/def ::queue (s/and string?))
 
 (s/def ::filter-type #{"id" "execute-fn-sym" "type"})
-(s/def ::filter-value-id uuid?)
+(s/def ::job-id uuid?)
 (s/def ::filter-value-sym string?)
 (s/def ::filter-value-type #{"unexecuted" "failed"})
 (s/def ::limit nat-int?)
