@@ -134,16 +134,17 @@
     [:input.btn.btn-md.btn-danger {:type "submit" :name "_method" :value "delete"}]]])
 
 (defn- job-table [job]
-  [:table.job-table
+  [:table.job-table.table-stripped
    [:tr
     [:td "Id"]
-    [:td (:id job)]]
+    [:td.blue (:id job)]]
    [:tr
     [:td "Execute fn symbol"]
-    [:td (str (:execute-fn-sym job))]]
+    [:td.execute-fn-sym
+     (str (:execute-fn-sym job))]]
    [:tr
     [:td "Args"]
-    [:td (string/join ", " (:args job))]]
+    [:td.args  (string/join ", " (:args job))]]
    [:tr
     [:td "Queue"]
     [:td (:queue job)]]
@@ -192,7 +193,7 @@
 (defn- job-page-view [{:keys [prefix-route queue]
                        {:keys [id]
                         :as job} :job}]
-  [:div.redis-enqueued-main-content
+  [:div.redis-enqueued
    [:h1 "Enqueued Job"]
    [:div
     [:form {:action (prefix-route "/enqueued/queue/" queue "/job/" id)
@@ -205,12 +206,10 @@
       [:input {:name  "job"
                :type "hidden"
                :value (utils/encode-to-str job)}]]
-
-     [:table
-      (when job (job-table job))]]]])
+     (when job (job-table job))]]])
 
 (defn- jobs-page-view [{:keys [total-jobs] :as data}]
-  [:div.redis-enqueued-main-content
+  [:div.redis-enqueued
    [:h1 "Enqueued Jobs"]
    [:div.content
     (sidebar data)
