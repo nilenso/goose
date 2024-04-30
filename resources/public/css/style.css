@@ -30,6 +30,10 @@ a:hover {
   color: #5881D8 !important;
 }
 
+.underline:hover {
+  text-decoration: underline;
+}
+
 a{
   text-decoration: none;
   color: #5881D8;

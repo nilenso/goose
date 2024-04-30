@@ -114,7 +114,9 @@
     [:tbody
      (for [{:keys [id execute-fn-sym args enqueued-at] :as j} jobs]
        [:tr
-        [:td [:div.id id]]
+        [:td [:a {:href (prefix-route "/enqueued/queue/" queue "/job/" id)
+                  :class "underline"}
+              [:div.id id]]]
         [:td [:div.execute-fn-sym (str execute-fn-sym)]]
         [:td [:div.args (string/join ", " args)]]
         [:td [:div.enqueued-at] (Date. ^Long enqueued-at)]
@@ -126,7 +128,7 @@
 
 (defn- delete-job-confirm-dialog [id]
   [:dialog {:class "delete-dialog"}
-   [:div "Are you sure, you want to delete job " [:b id] " ?"]
+   [:div "Are you sure, you want to delete job with id " [:b id] " ?"]
    [:div.dialog-btns
     [:input.btn.btn-md.btn-cancel {:type "button" :value "cancel" :class "cancel"}]
     [:input.btn.btn-md.btn-danger {:type "submit" :name "_method" :value "delete"}]]])
