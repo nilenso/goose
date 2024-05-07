@@ -150,6 +150,9 @@ button:active {
   opacity: 0.8;
 }
 
+input:disabled, input[disabled], button[disabled], button:disabled{
+  opacity: 0.6;
+}
 /* Redis Enqueued Page  */
 
 .redis-enqueued-main-content {
@@ -299,43 +302,43 @@ select {
   max-height: 100px;
   word-break: break-all;
 }
-.redis-enqueued-main-content .job-table {
+.redis-enqueued-main-content .jobs-table {
   width: 100%;
   border-collapse: collapse;
   text-align: justify;
 }
 
-.redis-enqueued-main-content .job-table th, td {
+.redis-enqueued-main-content .jobs-table th, td {
   padding: 8px;
   border: 1px solid #ddd;
   line-height: 1.4;
 }
 
-.redis-enqueued-main-content .job-table th {
+.redis-enqueued-main-content .jobs-table th {
   background-color: #fff;
 }
 
-.redis-enqueued-main-content .job-table th .id-h {
+.redis-enqueued-main-content .jobs-table th .id-h {
   width: 40%;
 }
 
-.redis-enqueued-main-content .job-table .id {
+.redis-enqueued-main-content .jobs-table .id {
   color: #5881D8;
 }
 
-.redis-enqueued-main-content .job-table .execute-fn-symbol-h {
+.redis-enqueued-main-content .jobs-table .execute-fn-symbol-h {
   width: 10%;
 }
 
-.redis-enqueued-main-content .job-table .args-h {
+.redis-enqueued-main-content .jobs-table .args-h {
   width: 20%;
 }
 
-.redis-enqueued-main-content .job-table .enqueued-at-h {
+.redis-enqueued-main-content .jobs-table .enqueued-at-h {
   width: 17%;
 }
 
-.redis-enqueued-main-content .job-table .checkbox-h {
+.redis-enqueued-main-content .jobs-table .checkbox-h {
   width: 13%;
   text-align: center;
 }

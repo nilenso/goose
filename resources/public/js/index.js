@@ -55,44 +55,71 @@ window.onload = () => {
     const SELECT_FILTER_TYPES = ["type"];
     const INPUT_FILTER_TYPES = ["id", "execute-fn-sym"];
     const filterTypeSelect = document.querySelector(".filter-type");
+    if(filterTypeSelect) {
+      filterTypeSelect.addEventListener("change", (event) => {
+        const filterValuesDiv = document.querySelector(".filter-values");
+        const selectedFilterType = filterTypeSelect.value;
+        const currentFilterValueElement = document.querySelector(".filter-opts-items .filter-value");
 
-    filterTypeSelect.addEventListener("change", (event) => {
-      const filterValuesDiv = document.querySelector(".filter-values");
-      const selectedFilterType = filterTypeSelect.value;
-      const currentFilterValueElement = document.querySelector(".filter-opts-items .filter-value");
+        let newFilterValueElement;
 
-      let newFilterValueElement;
+        switch (true) {
+          case SELECT_FILTER_TYPES.includes(selectedFilterType):
+            newFilterValueElement = createFilterValueSelectElement();
+            break;
+          case INPUT_FILTER_TYPES.includes(selectedFilterType):
+            newFilterValueElement = createFilterValueInputElement();
+            break;
+        }
 
-      switch (true) {
-        case SELECT_FILTER_TYPES.includes(selectedFilterType):
-          newFilterValueElement = createFilterValueSelectElement();
-          break;
-        case INPUT_FILTER_TYPES.includes(selectedFilterType):
-          newFilterValueElement = createFilterValueInputElement();
-          break;
-      }
+        if (newFilterValueElement) {
+          currentFilterValueElement.remove();
+          filterValuesDiv.appendChild(newFilterValueElement);
+        }
+    });
+  }}
+  function toggleActionButtonsVisibility() {
+    const actionButtons = document.querySelectorAll('.actions input');
+    const checkboxes = document.querySelectorAll('.checkbox');
+    const checkedBoxesCount = Array.from(checkboxes).filter(c => c.checked).length;
 
-      if (newFilterValueElement) {
-        currentFilterValueElement.remove();
-        filterValuesDiv.appendChild(newFilterValueElement);
+    actionButtons.forEach((button) => {
+      if (checkedBoxesCount > 0) {
+        button.removeAttribute("disabled");
+      } else {
+        button.setAttribute("disabled", "");
       }
     });
   }
+  function attachCheckboxListeners() {
+    const checkboxes = document.querySelectorAll('.checkbox');
 
+    if(checkboxes)
+    {
+      checkboxes.forEach((checkbox) => {
+        checkbox.addEventListener('change', toggleActionButtonsVisibility)
+      })
+    }
+  }
 
   function attachSelectAllCheckboxEventListener () {
     const headerCheckbox = document.getElementById('checkbox-h');
     const checkboxes = document.querySelectorAll('.checkbox');
-
-    headerCheckbox.addEventListener('change', function() {
-      checkboxes.forEach(function(checkbox) {
-        checkbox.checked = headerCheckbox.checked;
+    if (headerCheckbox) {
+      headerCheckbox.addEventListener('change', function() {
+        checkboxes.forEach(function(checkbox) {
+          checkbox.checked = headerCheckbox.checked;
+          // To trigger visibility of action buttons
+          const event = new Event('change');
+          checkbox.dispatchEvent(event);
+        });
       });
-    });
+    }
   }
 
   attachSelectAllCheckboxEventListener();
   attachPurgeDialogEventListener();
   attachFilterTypeEventListener();
   attachDeleteDialogEventListener();
+  attachCheckboxListeners();
 }

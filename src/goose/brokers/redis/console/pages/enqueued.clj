@@ -99,9 +99,10 @@
    (delete-confirmation-dialog queue)
    [:div.actions
     [:input {:name "queue" :value queue :type "hidden"}]
-    [:input.btn {:type "submit" :value "Prioritise"}]
-    [:input.btn.btn-danger {:type "button" :value "Delete" :class "delete-dialog-show"}]]
-   [:table.job-table
+    [:input.btn {:type "submit" :value "Prioritise" :disabled true}]
+    [:input.btn.btn-danger
+     {:type "button" :value "Delete" :class "delete-dialog-show" :disabled true}]]
+   [:table.jobs-table
     [:thead
      [:tr
       [:th.id-h "Id"]
@@ -116,7 +117,11 @@
         [:td [:div.execute-fn-sym (str execute-fn-sym)]]
         [:td [:div.args (string/join ", " args)]]
         [:td [:div.enqueued-at] (Date. ^Long enqueued-at)]
-        [:td [:div.checkbox-div [:input {:name "jobs" :type "checkbox" :class "checkbox" :value (utils/encode-to-str j)}]]]])]]])
+        [:td [:div.checkbox-div
+              [:input {:name  "jobs"
+                       :type  "checkbox"
+                       :class "checkbox"
+                       :value (utils/encode-to-str j)}]]]])]]])
 
 (defn- jobs-page-view [{:keys [total-jobs] :as data}]
   [:div.redis-enqueued-main-content
