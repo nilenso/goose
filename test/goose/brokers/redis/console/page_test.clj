@@ -13,7 +13,7 @@
 
 (use-fixtures :each tu/redis-fixture)
 
-(deftest enqueued-jobs-validations-test
+(deftest validate-get-jobs-test
   (testing "Should set req params to default values if values do not conform specs"
     (let [random-id (str (random-uuid))]
       (is (= 1 (:page (enqueued/validate-get-jobs {}))))
@@ -54,11 +54,26 @@
       (is (= 3 (:limit (enqueued/validate-get-jobs {:limit "3"}))))
       (is (= d/limit (:limit (enqueued/validate-get-jobs {:limit (rand-nth ["21w" "one" :1])})))))))
 
-(deftest jobs-validation-test
-  (testing "Should not modify jobs given sequential jobs"
-    (is (= ["encoded-job-1" "encoded-job-2"] (enqueued/validate-jobs ["encoded-job-1" "encoded-job-2"]))))
-  (testing "Should convert to sequential structure given non-seq jobs"
-    (is (= ["encoded-job-1"] (enqueued/validate-jobs "encoded-job-1")))))
+(deftest validate-req-params-test
+  (testing "Should set req params of job to default value if do not conform spec"
+    (let [uuid (str (random-uuid))]
+      (is (= uuid (:id (enqueued/validate-req-params {:id uuid})))))
+    (is (nil? (:id (enqueued/validate-req-params {:id "not-uuid"}))))
+
+    (is (= "valid-queue" (:queue (enqueued/validate-req-params {:queue "valid-queue"}))))
+    (is (nil? (:queue (enqueued/validate-req-params {:queue :not-string}))))
+
+    (is (= "some-encoded-job" (:encoded-job (enqueued/validate-req-params
+                                              {:job "some-encoded-job"}))))
+    (is (nil? (:encoded-job (enqueued/validate-req-params
+                                              {:job {:id "123"}}))))
+
+    (is (= ["some-encoded-job"] (:encoded-jobs (enqueued/validate-req-params
+                                               {:jobs "some-encoded-job"}))))
+    (is (= ["some-encoded-job1"
+            "some-encoded-job2"] (:encoded-jobs (enqueued/validate-req-params
+                                                 {:jobs ["some-encoded-job1"
+                                                         "some-encoded-job2"]}))))))
 
 (deftest page-handler-test
   (testing "Main handler should invoke home-page handler"

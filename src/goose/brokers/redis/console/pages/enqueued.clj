@@ -114,7 +114,7 @@
     [:tbody
      (for [{:keys [id execute-fn-sym args enqueued-at] :as j} jobs]
        [:tr
-        [:td [:a {:href (prefix-route "/enqueued/queue/" queue "/job/" id)
+        [:td [:a {:href  (prefix-route "/enqueued/queue/" queue "/job/" id)
                   :class "underline"}
               [:div.id id]]]
         [:td [:div.execute-fn-sym (str execute-fn-sym)]]
@@ -144,7 +144,7 @@
      (str (:execute-fn-sym job))]]
    [:tr
     [:td "Args"]
-    [:td.args  (string/join ", " (:args job))]]
+    [:td.args (string/join ", " (:args job))]]
    [:tr
     [:td "Queue"]
     [:td (:queue job)]]
@@ -190,9 +190,9 @@
        [:td "Retry at"]
        [:td (Date. ^Long (get-in job [:state :retry-at]))]]])])
 
-(defn- job-page-view [{:keys [prefix-route queue]
+(defn- job-page-view [{:keys       [prefix-route queue]
                        {:keys [id]
-                        :as job} :job}]
+                        :as   job} :job}]
   [:div.redis-enqueued
    [:h1 "Enqueued Job"]
    [:div
@@ -204,7 +204,7 @@
       [:input.btn.btn-danger
        {:type "button" :value "Delete" :class "delete-dialog-show"}]
       [:input {:name  "job"
-               :type "hidden"
+               :type  "hidden"
                :value (utils/encode-to-str job)}]]
      (when job (job-table job))]]])
 
@@ -250,21 +250,20 @@
      :filter-value f-val
      :limit        limit}))
 
-(defn validate-jobs [jobs]
-  (if (sequential? jobs)
-    jobs
-    (conj [] jobs)))
+(defn validate-req-params [{:keys [id queue job jobs]}]
+  {:id           (specs/validate-or-default ::specs/job-id (-> id str parse-uuid) id)
+   :queue        (specs/validate-or-default ::specs/queue queue)
+   :encoded-job  (specs/validate-or-default ::specs/encoded-job job job)
+   :encoded-jobs (specs/validate-or-default ::specs/encoded-jobs
+                                            (specs/->coll jobs)
+                                            (specs/->coll jobs))})
 
-(defn validate-job-params [{:keys [id queue]}]
-  {:id    (specs/validate-or-default ::specs/job-id (parse-uuid id) id)
-   :queue (specs/validate-or-default ::specs/queue queue)})
-
-(defn job-page [{:keys                          [prefix-route]
-                 {:keys                [app-name]
-                  {:keys [redis-conn]} :broker} :console-opts
-                 params                         :params}]
+(defn get-job [{:keys                          [prefix-route]
+                {:keys                [app-name]
+                 {:keys [redis-conn]} :broker} :console-opts
+                params                         :params}]
   (let [view (c/layout c/header job-page-view)
-        {:keys [id queue]} (validate-job-params params)]
+        {:keys [id queue]} (validate-req-params params)]
     (if id
       (response/response (view "Enqueued" (-> {:job (enqueued-jobs/find-by-id
                                                       redis-conn
@@ -286,41 +285,40 @@
                                                     :prefix-route prefix-route)))))
 
 (defn purge-queue [{{:keys [broker]} :console-opts
-                    {:keys [queue]}  :params
+                    params           :params
                     :keys            [prefix-route]}]
-  (enqueued-jobs/purge (:redis-conn broker) queue)
-  (response/redirect (prefix-route "/enqueued")))
+  (let [{:keys [queue]} (validate-req-params params)]
+    (enqueued-jobs/purge (:redis-conn broker) queue)
+    (response/redirect (prefix-route "/enqueued"))))
 
-(defn prioritise-jobs [{{:keys [broker]}     :console-opts
-                        :keys                [prefix-route]
-                        {:keys [queue jobs]} :params}]
-  (let [jobs (->> jobs
-                  validate-jobs
-                  (mapv utils/decode-from-str))]
+(defn prioritise-jobs [{{:keys [broker]} :console-opts
+                        :keys            [prefix-route]
+                        params           :params}]
+  (let [{:keys [queue encoded-jobs]} (validate-req-params params)
+        jobs (mapv utils/decode-from-str encoded-jobs)]
     (enqueued-jobs/prioritise-execution (:redis-conn broker) queue jobs)
     (response/redirect (prefix-route "/enqueued/queue/" queue))))
 
-(defn delete-jobs [{{:keys [broker]}     :console-opts
-                    :keys                [prefix-route]
-                    {:keys [queue jobs]} :params}]
-  (let [jobs (->> jobs
-                  validate-jobs
-                  (mapv utils/decode-from-str))]
+(defn delete-jobs [{{:keys [broker]} :console-opts
+                    :keys            [prefix-route]
+                    params           :params}]
+  (let [{:keys [queue encoded-jobs]} (validate-req-params params)
+        jobs (mapv utils/decode-from-str encoded-jobs)]
     (enqueued-jobs/delete (:redis-conn broker) queue jobs)
     (response/redirect (prefix-route "/enqueued/queue/" queue))))
 
 (defn prioritise-job [{:keys                          [prefix-route]
                        {{:keys [redis-conn]} :broker} :console-opts
-                       {:keys [queue]
-                        encoded-job :job}           :params}]
-  (let [job (utils/decode-from-str encoded-job)]
+                       params                         :params}]
+  (let [{:keys [queue encoded-job]} (validate-req-params params)
+        job (utils/decode-from-str encoded-job)]
     (enqueued-jobs/prioritise-execution redis-conn job)
     (response/redirect (prefix-route "/enqueued/queue/" queue))))
 
 (defn delete-job [{:keys                          [prefix-route]
-                       {{:keys [redis-conn]} :broker} :console-opts
-                       {:keys [queue]
-                        encoded-job :job}           :params}]
-  (let [job (utils/decode-from-str encoded-job)]
+                   {{:keys [redis-conn]} :broker} :console-opts
+                   params                         :params}]
+  (let [{:keys [queue encoded-job]} (validate-req-params params)
+        job (utils/decode-from-str encoded-job)]
     (enqueued-jobs/delete redis-conn job)
     (response/redirect (prefix-route "/enqueued/queue/" queue))))

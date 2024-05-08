@@ -33,7 +33,7 @@
                                                    [:delete enqueued/purge-queue]
                                                    ["/jobs" [[:delete enqueued/delete-jobs]
                                                              [:post enqueued/prioritise-jobs]]]
-                                                   [["/job/" :id] [[:get enqueued/job-page]
+                                                   [["/job/" :id] [[:get enqueued/get-job]
                                                                    [:post enqueued/prioritise-job]
                                                                    [:delete enqueued/delete-job]]]]}]
                  ["/css/style.css" load-css]
