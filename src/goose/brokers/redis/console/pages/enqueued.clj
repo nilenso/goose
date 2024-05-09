@@ -5,7 +5,6 @@
             [goose.brokers.redis.console.pages.components :as c]
             [goose.brokers.redis.console.specs :as specs]
             [goose.defaults :as d]
-            [goose.job :as job]
             [goose.utils :as utils]
             [hiccup.util :as hiccup-util]
             [ring.util.response :as response])
@@ -87,22 +86,12 @@
       [:a. {:href (prefix-route "/enqueued/queue/" queue) :class "cursor-default"} "Clear"]]
      [:button.btn {:type "submit"} "Apply"]]]])
 
-(defn- delete-confirmation-dialog [queue]
-  [:dialog {:class "delete-dialog"}
-   [:div "Are you sure, you want to " [:b "delete"] " jobs from " [:span.highlight queue] " queue?"]
-   [:div {:class "dialog-btns"}
-    [:input {:type "button" :value "cancel" :class "btn btn-md btn-cancel cancel"}]
-    [:input.btn.btn-danger.btn-md {:type "submit" :name "_method" :value "delete"}]]])
-
 (defn jobs-table [{:keys [prefix-route queue jobs]}]
   [:form {:action (prefix-route "/enqueued/queue/" queue "/jobs")
           :method "post"}
-   (delete-confirmation-dialog queue)
-   [:div.actions
-    [:input {:name "queue" :value queue :type "hidden"}]
-    [:input.btn {:type "submit" :value "Prioritise" :disabled true}]
-    [:input.btn.btn-danger
-     {:type "button" :value "Delete" :class "delete-dialog-show" :disabled true}]]
+   (c/delete-confirm-dialog
+     (str "Are you sure you want to delete selected jobs in " queue " queue?"))
+   (c/action-btns)
    [:table.jobs-table
     [:thead
      [:tr
@@ -118,77 +107,13 @@
                   :class "underline"}
               [:div.id id]]]
         [:td [:div.execute-fn-sym (str execute-fn-sym)]]
-        [:td [:div.args (string/join ", " args)]]
+        [:td [:div.args (string/join ", " (mapv c/format-arg args))]]
         [:td [:div.enqueued-at] (Date. ^Long enqueued-at)]
         [:td [:div.checkbox-div
               [:input {:name  "jobs"
                        :type  "checkbox"
                        :class "checkbox"
                        :value (utils/encode-to-str j)}]]]])]]])
-
-(defn- delete-job-confirm-dialog [id]
-  [:dialog {:class "delete-dialog"}
-   [:div "Are you sure, you want to delete job with id " [:b id] " ?"]
-   [:div.dialog-btns
-    [:input.btn.btn-md.btn-cancel {:type "button" :value "cancel" :class "cancel"}]
-    [:input.btn.btn-md.btn-danger {:type "submit" :name "_method" :value "delete"}]]])
-
-(defn- job-table [job]
-  [:table.job-table.table-stripped
-   [:tr
-    [:td "Id"]
-    [:td.blue (:id job)]]
-   [:tr
-    [:td "Execute fn symbol"]
-    [:td.execute-fn-sym
-     (str (:execute-fn-sym job))]]
-   [:tr
-    [:td "Args"]
-    [:td.args (string/join ", " (:args job))]]
-   [:tr
-    [:td "Queue"]
-    [:td (:queue job)]]
-   [:tr
-    [:td "Ready queue"]
-    [:td (:ready-queue job)]]
-   [:tr
-    [:td "Enqueued at"]
-    [:td (Date. ^Long (:enqueued-at job))]]
-   [:tr
-    [:td "Max retries"]
-    [:td (get-in job [:retry-opts :max-retries])]]
-   [:tr
-    [:td "Retry delay sec fn symbol"]
-    [:td (str (get-in job [:retry-opts :retry-delay-sec-fn-sym]))]]
-   [:tr
-    [:td "Retry queue"]
-    [:td (get-in job [:retry-opts :retry-delay-sec-fn-sym])]]
-   [:tr
-    [:td "Error handler fn symbol"]
-    [:td (str (get-in job [:retry-opts :error-handler-fn-sym]))]]
-   [:tr
-    [:td "Death handler fn symbol"]
-    [:td (str (get-in job [:retry-opts :death-handler-fn-sym]))]]
-   [:tr
-    [:td "Skip dead queue"]
-    [:td (get-in job [:retry-opts :skip-dead-queue])]]
-   (when (job/retried? job)
-     [:div
-      [:tr
-       [:td "Error"]
-       [:td (get-in job [:state :error])]]
-      [:tr
-       [:td "Last retried at"]
-       [:td (Date. ^Long (get-in job [:state :last-retried-at]))]]
-      [:tr
-       [:td "First failed at"]
-       [:td (Date. ^Long (get-in job [:state :first-failed-at]))]]
-      [:tr
-       [:td "Retry count"]
-       [:td (get-in job [:state :retry-count])]]
-      [:tr
-       [:td "Retry at"]
-       [:td (Date. ^Long (get-in job [:state :retry-at]))]]])])
 
 (defn- job-page-view [{:keys       [prefix-route queue]
                        {:keys [id]
@@ -198,15 +123,13 @@
    [:div
     [:form {:action (prefix-route "/enqueued/queue/" queue "/job/" id)
             :method "post"}
-     (delete-job-confirm-dialog id)
-     [:div.actions
-      [:input.btn {:type "submit" :value "Prioritise"}]
-      [:input.btn.btn-danger
-       {:type "button" :value "Delete" :class "delete-dialog-show"}]
-      [:input {:name  "job"
-               :type  "hidden"
-               :value (utils/encode-to-str job)}]]
-     (when job (job-table job))]]])
+     (c/delete-confirm-dialog
+       (str "Are you sure you want to the delete job?"))
+     (c/action-btns {:disabled false})
+     [:input {:name  "job"
+              :type  "hidden"
+              :value (utils/encode-to-str job)}]
+     (when job (c/job-table job))]]])
 
 (defn- jobs-page-view [{:keys [total-jobs] :as data}]
   [:div.redis-enqueued
