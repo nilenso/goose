@@ -25,8 +25,9 @@
            [:body
             (map (fn [c] (c data)) components)])))
 
-(defn header [{:keys [app-name prefix-route] :or {app-name ""}}]
-  (let [short-app-name (if (> (count app-name) 20)
+(defn header [{:keys [app-name prefix-route uri] :or {app-name ""}}]
+  (let [subroute? (fn [r] (str/includes? uri (prefix-route r)))
+        short-app-name (if (> (count app-name) 20)
                          (str (subs app-name 0 17) "..")
                          app-name)]
     [:header
@@ -36,8 +37,9 @@
         [:a {:href ""}
          [:img {:src (prefix-route "/img/goose-logo.png") :alt "goose-logo"}]]]
        [:div#menu
-        [:a {:href (prefix-route "") :class "app-name"} short-app-name]
-        [:a {:href (prefix-route "/enqueued")} "Enqueued"]]]]]))
+        [:a {:href (prefix-route "/") :class "app-name"} short-app-name]
+        [:a {:href (prefix-route "/enqueued")
+             :class (when (subroute? "/enqueued") "highlight")} "Enqueued"]]]]]))
 
 (defn delete-confirm-dialog [question]
   [:dialog {:class "delete-dialog"}

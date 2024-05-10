@@ -1,7 +1,7 @@
 (ns goose.brokers.redis.console.pages.home
-  (:require [ring.util.response :as response]
+  (:require [goose.brokers.redis.console.data :as data]
             [goose.brokers.redis.console.pages.components :as c]
-            [goose.brokers.redis.console.data :as data]))
+            [ring.util.response :as response]))
 
 (defn- stats-bar [{:keys [prefix-route] :as page-data}]
   [:main
@@ -15,9 +15,10 @@
        [:a {:href (prefix-route route)}
         [:span.label label]]])]])
 
-(defn page [{:keys                     [prefix-route]
-                  {:keys [app-name broker]} :console-opts}]
+(defn page [{:keys                     [prefix-route uri]
+             {:keys [app-name broker]} :console-opts}]
   (let [view (c/layout c/header stats-bar)
         data (data/jobs-size (:redis-conn broker))]
-    (response/response (view "Home" (assoc data :app-name app-name
+    (response/response (view "Home" (assoc data :uri uri
+                                                :app-name app-name
                                                 :prefix-route prefix-route)))))

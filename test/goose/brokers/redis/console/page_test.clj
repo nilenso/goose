@@ -209,10 +209,12 @@
 
 (deftest get-job-test
   (testing "Should return a html view of enqueued job"
-    (let [response (enqueued/get-job {:console-opts tu/redis-console-opts
-                                      :params       {:id    (str (random-uuid))
+    (let [id (str (random-uuid))
+          response (enqueued/get-job {:console-opts tu/redis-console-opts
+                                      :params       {:id    id
                                                      :queue tu/queue}
-                                      :prefix-route str})]
+                                      :prefix-route str
+                                      :uri          (str "/goose/enqueued/queue/test/job/" id)})]
       (is (= 200 (:status response)))
       (is (str/starts-with? (:body response) "<!DOCTYPE html>"))))
   (testing "Should redirect to queue given invalid type of job-id"

@@ -181,7 +181,7 @@
                                             (specs/->coll jobs)
                                             (specs/->coll jobs))})
 
-(defn get-job [{:keys                          [prefix-route]
+(defn get-job [{:keys                          [prefix-route uri]
                 {:keys                [app-name]
                  {:keys [redis-conn]} :broker} :console-opts
                 params                         :params}]
@@ -192,18 +192,20 @@
                                                       redis-conn
                                                       queue
                                                       id)}
-                                              (assoc :queue queue
+                                              (assoc :uri uri
+                                                     :queue queue
                                                      :app-name app-name
                                                      :prefix-route prefix-route))))
       (response/redirect (prefix-route "/enqueued/queue/" queue)))))
 
-(defn get-jobs [{:keys                     [prefix-route]
+(defn get-jobs [{:keys                     [prefix-route uri]
                  {:keys [app-name broker]} :console-opts
                  params                    :params}]
   (let [view (c/layout c/header jobs-page-view)
         validated-params (validate-get-jobs params)
         data (data/enqueued-page-data (:redis-conn broker) validated-params)]
-    (response/response (view "Enqueued" (assoc data :params params
+    (response/response (view "Enqueued" (assoc data :uri uri
+                                                    :params params
                                                     :app-name app-name
                                                     :prefix-route prefix-route)))))
 
