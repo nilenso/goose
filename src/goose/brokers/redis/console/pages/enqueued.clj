@@ -5,12 +5,12 @@
             [goose.brokers.redis.console.pages.components :as c]
             [goose.brokers.redis.console.specs :as specs]
             [goose.defaults :as d]
+            [goose.utils :as utils]
             [hiccup.util :as hiccup-util]
-            [ring.util.response :as response]
-            [goose.utils :as utils])
+            [ring.util.response :as response])
   (:import
-   (java.lang Math)
-   (java.util Date)))
+    (java.lang Math)
+    (java.util Date)))
 
 (defn- sidebar [{:keys [prefix-route queues queue]}]
   [:div#sidebar
@@ -86,22 +86,12 @@
       [:a. {:href (prefix-route "/enqueued/queue/" queue) :class "cursor-default"} "Clear"]]
      [:button.btn {:type "submit"} "Apply"]]]])
 
-(defn- delete-confirmation-dialog [queue]
-  [:dialog {:class "delete-dialog"}
-   [:div "Are you sure, you want to " [:b "delete"] " jobs from " [:span.highlight queue] " queue?"]
-   [:div {:class "dialog-btns"}
-    [:input {:type "button" :value "cancel" :class "btn btn-md btn-cancel cancel"}]
-    [:input {:type "submit" :name "_method" :value "delete" :class "btn btn-danger btn-md"}]]])
-
 (defn jobs-table [{:keys [prefix-route queue jobs]}]
   [:form {:action (prefix-route "/enqueued/queue/" queue "/jobs")
           :method "post"}
-   (delete-confirmation-dialog queue)
-   [:div.actions
-    [:input {:name "queue" :value queue :type "hidden"}]
-    [:input.btn {:type "submit" :value "Prioritise" :disabled true}]
-    [:input.btn.btn-danger
-     {:type "button" :value "Delete" :class "delete-dialog-show" :disabled true}]]
+   (c/delete-confirm-dialog
+     (str "Are you sure you want to delete selected jobs in " queue " queue?"))
+   (c/action-btns)
    [:table.jobs-table
     [:thead
      [:tr
@@ -113,9 +103,11 @@
     [:tbody
      (for [{:keys [id execute-fn-sym args enqueued-at] :as j} jobs]
        [:tr
-        [:td [:div.id id]]
+        [:td [:a {:href  (prefix-route "/enqueued/queue/" queue "/job/" id)
+                  :class "underline"}
+              [:div.id id]]]
         [:td [:div.execute-fn-sym (str execute-fn-sym)]]
-        [:td [:div.args (string/join ", " args)]]
+        [:td [:div.args (string/join ", " (mapv c/format-arg args))]]
         [:td [:div.enqueued-at] (Date. ^Long enqueued-at)]
         [:td [:div.checkbox-div
               [:input {:name  "jobs"
@@ -123,8 +115,24 @@
                        :class "checkbox"
                        :value (utils/encode-to-str j)}]]]])]]])
 
+(defn- job-page-view [{:keys       [prefix-route queue]
+                       {:keys [id]
+                        :as   job} :job}]
+  [:div.redis-enqueued
+   [:h1 "Enqueued Job"]
+   [:div
+    [:form {:action (prefix-route "/enqueued/queue/" queue "/job/" id)
+            :method "post"}
+     (c/delete-confirm-dialog
+       (str "Are you sure you want to the delete job?"))
+     (c/action-btns {:disabled false})
+     [:input {:name  "job"
+              :type  "hidden"
+              :value (utils/encode-to-str job)}]
+     (when job (c/job-table job))]]])
+
 (defn- jobs-page-view [{:keys [total-jobs] :as data}]
-  [:div.redis-enqueued-main-content
+  [:div.redis-enqueued
    [:h1 "Enqueued Jobs"]
    [:div.content
     (sidebar data)
@@ -147,7 +155,7 @@
         queue (specs/validate-or-default ::specs/queue queue)
         f-type (specs/validate-or-default ::specs/filter-type filter-type)
         f-val (case f-type
-                "id" (specs/validate-or-default ::specs/filter-value-id
+                "id" (specs/validate-or-default ::specs/job-id
                                                 (parse-uuid filter-value)
                                                 filter-value)
                 "execute-fn-sym" (specs/validate-or-default ::specs/filter-value-sym
@@ -165,41 +173,77 @@
      :filter-value f-val
      :limit        limit}))
 
-(defn validate-jobs [jobs]
-  (if (sequential? jobs)
-    jobs
-    (conj [] jobs)))
+(defn validate-req-params [{:keys [id queue job jobs]}]
+  {:id           (specs/validate-or-default ::specs/job-id (-> id str parse-uuid) id)
+   :queue        (specs/validate-or-default ::specs/queue queue)
+   :encoded-job  (specs/validate-or-default ::specs/encoded-job job job)
+   :encoded-jobs (specs/validate-or-default ::specs/encoded-jobs
+                                            (specs/->coll jobs)
+                                            (specs/->coll jobs))})
 
-(defn get-jobs [{:keys                     [prefix-route]
+(defn get-job [{:keys                          [prefix-route uri]
+                {:keys                [app-name]
+                 {:keys [redis-conn]} :broker} :console-opts
+                params                         :params}]
+  (let [view (c/layout c/header job-page-view)
+        {:keys [id queue]} (validate-req-params params)]
+    (if id
+      (response/response (view "Enqueued" (-> {:job (enqueued-jobs/find-by-id
+                                                      redis-conn
+                                                      queue
+                                                      id)}
+                                              (assoc :uri uri
+                                                     :queue queue
+                                                     :app-name app-name
+                                                     :prefix-route prefix-route))))
+      (response/redirect (prefix-route "/enqueued/queue/" queue)))))
+
+(defn get-jobs [{:keys                     [prefix-route uri]
                  {:keys [app-name broker]} :console-opts
                  params                    :params}]
   (let [view (c/layout c/header jobs-page-view)
         validated-params (validate-get-jobs params)
         data (data/enqueued-page-data (:redis-conn broker) validated-params)]
-    (response/response (view "Enqueued" (assoc data :params params
-                                               :app-name app-name
-                                               :prefix-route prefix-route)))))
+    (response/response (view "Enqueued" (assoc data :uri uri
+                                                    :params params
+                                                    :app-name app-name
+                                                    :prefix-route prefix-route)))))
 
 (defn purge-queue [{{:keys [broker]} :console-opts
-                    {:keys [queue]}  :params
+                    params           :params
                     :keys            [prefix-route]}]
-  (enqueued-jobs/purge (:redis-conn broker) queue)
-  (response/redirect (prefix-route "/enqueued")))
+  (let [{:keys [queue]} (validate-req-params params)]
+    (enqueued-jobs/purge (:redis-conn broker) queue)
+    (response/redirect (prefix-route "/enqueued"))))
 
-(defn prioritise-jobs [{{:keys [broker]}     :console-opts
-                        :keys                [prefix-route]
-                        {:keys [queue jobs]} :params}]
-  (let [jobs (->> jobs
-                  validate-jobs
-                  (mapv utils/decode-from-str))]
+(defn prioritise-jobs [{{:keys [broker]} :console-opts
+                        :keys            [prefix-route]
+                        params           :params}]
+  (let [{:keys [queue encoded-jobs]} (validate-req-params params)
+        jobs (mapv utils/decode-from-str encoded-jobs)]
     (enqueued-jobs/prioritise-execution (:redis-conn broker) queue jobs)
     (response/redirect (prefix-route "/enqueued/queue/" queue))))
 
-(defn delete-jobs [{{:keys [broker]}     :console-opts
-                    :keys                [prefix-route]
-                    {:keys [queue jobs]} :params}]
-  (let [jobs (->> jobs
-                  validate-jobs
-                  (mapv utils/decode-from-str))]
+(defn delete-jobs [{{:keys [broker]} :console-opts
+                    :keys            [prefix-route]
+                    params           :params}]
+  (let [{:keys [queue encoded-jobs]} (validate-req-params params)
+        jobs (mapv utils/decode-from-str encoded-jobs)]
     (enqueued-jobs/delete (:redis-conn broker) queue jobs)
+    (response/redirect (prefix-route "/enqueued/queue/" queue))))
+
+(defn prioritise-job [{:keys                          [prefix-route]
+                       {{:keys [redis-conn]} :broker} :console-opts
+                       params                         :params}]
+  (let [{:keys [queue encoded-job]} (validate-req-params params)
+        job (utils/decode-from-str encoded-job)]
+    (enqueued-jobs/prioritise-execution redis-conn job)
+    (response/redirect (prefix-route "/enqueued/queue/" queue))))
+
+(defn delete-job [{:keys                          [prefix-route]
+                   {{:keys [redis-conn]} :broker} :console-opts
+                   params                         :params}]
+  (let [{:keys [queue encoded-job]} (validate-req-params params)
+        job (utils/decode-from-str encoded-job)]
+    (enqueued-jobs/delete redis-conn job)
     (response/redirect (prefix-route "/enqueued/queue/" queue))))
