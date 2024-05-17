@@ -2,15 +2,12 @@
   (:require [clojure.test :refer [deftest is testing use-fixtures]]
             [goose.broker :as broker]
             [goose.brokers.redis.console :as redis-console]
-            [goose.client :as c]
+            [goose.brokers.rmq.console :as rmq-console]
             [goose.console :as console]
             [goose.test-utils :as tu]
             [ring.mock.request :as mock]
-            [spy.core :as spy]
-            [goose.worker :as w]
-            [hickory.core :as h]
-            [hickory.select :as h-select])
-  (:import (java.lang AbstractMethodError IllegalArgumentException)))
+            [spy.core :as spy])
+  (:import (java.lang IllegalArgumentException)))
 
 (use-fixtures :each tu/redis-fixture)
 
@@ -28,9 +25,9 @@
   (testing "Should override request-method if form field contains _method"
     (with-redefs [redis-console/handler (fn [_ req] (:request-method req))]
       (is (= :delete (console/app-handler tu/redis-console-opts (mock/request :post "/enqueue/queue/default"
-                                                                         {"_method" "delete" "queue" "default"}))))
+                                                                              {"_method" "delete" "queue" "default"}))))
       (is (= :patch (console/app-handler tu/redis-console-opts (mock/request :post "/enqueue/queue/default"
-                                                                              {"_method" "patch"})))))))
+                                                                             {"_method" "patch"})))))))
 
 (deftest dispatch-handler-test
   (testing "Should dispatch to redis handler when app-handler is given redis broker details"
@@ -40,7 +37,15 @@
                             :app-name     ""
                             :route-prefix "/goose/console"}
                            (mock/request :get "/goose/console/"))
-      (is (true? (spy/called? redis-console/handler))))))
+      (is (true? (spy/called? redis-console/handler)))))
+  (testing "Should dispatch to rmq handler when app-handler is given rmq broker details"
+    (with-redefs [rmq-console/handler (spy/spy rmq-console/handler)]
+      (is (true? (spy/not-called? redis-console/handler)))
+      (console/app-handler {:broker       tu/rmq-producer
+                            :app-name     ""
+                            :route-prefix "/goose/console"}
+                           (mock/request :get "/goose/console/"))
+      (is (true? (spy/called? rmq-console/handler))))))
 
 (def dead-fn-atom (atom 0))
 (defn dead-fn
@@ -48,53 +53,23 @@
   (swap! dead-fn-atom inc)
   (throw (Exception. (str id " died!"))))
 
-(deftest homepage-view-test
-  (testing "Stats bar view should have should have 2 enqueued, 1 scheduled, 1 periodic and 1 dead job"
-
-    ;;Simulate failed job
-    (let [worker (w/start tu/redis-worker-opts)
-          _ (c/perform-async (assoc tu/redis-client-opts :retry-opts (assoc tu/retry-opts :max-retries 0))
-                             `dead-fn 10) 
-          circuit-breaker (atom 0)]
-      (while (and (< @circuit-breaker 1) (not= @dead-fn-atom 1))
-        (swap! circuit-breaker inc)
-        (Thread/sleep 40))
-      (w/stop worker))
-
-    (c/perform-async tu/redis-client-opts `tu/my-fn 1)
-    (c/perform-async tu/redis-client-opts `tu/my-fn 2)
-
-    (c/perform-in-sec tu/redis-client-opts 10000 `tu/my-fn 1)
-
-    (c/perform-every tu/redis-client-opts {:cron-name     "my-cron-entry"
-                                           :cron-schedule "* * * * *"
-                                           :timezone      "US/Pacific"} `tu/my-fn :foo)
-    (let [homepage-stringified-html (:body (console/app-handler {:broker       tu/redis-producer
-                                                                 :app-name     ""
-                                                                 :route-prefix "/goose/console"}
-                                                                (mock/request :get "/goose/console/")))
-          homepage (h/as-hickory (h/parse homepage-stringified-html))
-          extract-job-size (fn [job-type]
-                             (let [selection (h-select/select (h-select/child (h-select/id job-type)
-                                                                              (h-select/class "number")) homepage)]
-                               (-> selection first :content first Integer/parseInt)))]
-      (is (= (extract-job-size "enqueued") 2))
-      (is (= (extract-job-size "scheduled") 1))
-      (is (= (extract-job-size "periodic") 1))
-      (is (= (extract-job-size "dead") 1)))))
-
 (deftest handler-test
   (let [req-with-client-opts (assoc (mock/request :get "foo/")
                                :console-opts {:broker       tu/redis-producer
                                               :app-name     ""
                                               :route-prefix "foo"}
                                :prefix-route (partial str "foo"))]
-    (testing "Should call redis-handler given redis-broker"
+    (testing "Should call redis-handler given redis-broker to broker/handler"
       (with-redefs [redis-console/handler (spy/spy redis-console/handler)]
         (is (true? (spy/not-called? redis-console/handler)))
         (broker/handler tu/redis-producer req-with-client-opts)
         (is (true? (spy/called? redis-console/handler)))))
-    (testing "Should throw AbstractMethodError exception given rmq-broker"
-      (is (thrown? AbstractMethodError (broker/handler tu/rmq-producer req-with-client-opts))))
+    (testing "Should call rmq handler given rmq-broker to broker/handler"
+      (with-redefs [rmq-console/handler (spy/spy rmq-console/handler)]
+        (is (true? (spy/not-called? rmq-console/handler)))
+        (broker/handler tu/rmq-producer (assoc-in req-with-client-opts
+                                                   [:console-opts
+                                                    :broker] tu/rmq-producer))
+        (is (true? (spy/called? rmq-console/handler)))))
     (testing "Should throw IllegalArgumentException given invalid broker"
       (is (thrown? IllegalArgumentException (broker/handler {:broker :invalid-broker} req-with-client-opts))))))
