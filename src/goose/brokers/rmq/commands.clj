@@ -72,13 +72,13 @@
     (async-enqueue ch exch queue job properties)))
 
 (defn enqueue-back
-  ([ch queue-opts publisher-confirms job]
-   (enqueue ch
-            d/rmq-exchange queue-opts
-            publisher-confirms
-            job
-            {:mandatory true
-             :priority  d/rmq-low-priority})))
+  [ch queue-opts publisher-confirms job]
+  (enqueue ch
+           d/rmq-exchange queue-opts
+           publisher-confirms
+           job
+           {:mandatory true
+            :priority  d/rmq-low-priority}))
 
 (defn enqueue-front
   [ch queue-opts publisher-confirms job]

@@ -77,6 +77,11 @@
 (def rmq-consumer (rmq/new-consumer rmq-opts))
 (def rmq-client-opts (assoc client-opts :broker rmq-producer))
 (def rmq-worker-opts (assoc worker-opts :broker rmq-consumer))
+
+(def rmq-console-opts {:broker rmq-producer
+                       :app-name     ""
+                       :route-prefix "" })
+
 (defn rmq-delete-test-queues
   []
   (let [ch (u/random-element (:channels rmq-producer))]
