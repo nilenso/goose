@@ -1,5 +1,6 @@
 (ns goose.brokers.redis.console.pages.home
   (:require [goose.brokers.redis.console.data :as data]
+            [goose.console :as console]
             [goose.brokers.redis.console.pages.components :as c]
             [ring.util.response :as response]))
 
@@ -17,7 +18,7 @@
 
 (defn page [{:keys                     [prefix-route uri]
              {:keys [app-name broker]} :console-opts}]
-  (let [view (c/layout c/header stats-bar)
+  (let [view (console/layout c/header stats-bar)
         data (data/jobs-size (:redis-conn broker))]
     (response/response (view "Home" (assoc data :uri uri
                                                 :app-name app-name

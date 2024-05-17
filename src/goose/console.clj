@@ -1,9 +1,101 @@
 (ns goose.console
   (:require [goose.broker :as b]
             [ring.middleware.keyword-params :as ring-keyword-params]
-            [ring.middleware.params :as ring-params]))
+            [ring.middleware.params :as ring-params]
+            [ring.util.response :as response]
+            [clojure.string :as str]
+            [hiccup.page :refer [html5 include-css include-js]]))
 
-(defn- wrap-prefix-route
+;; Page handlers
+(defn load-css
+  "Load static goose's css file"
+  [_]
+  (-> "css/style.css"
+      response/resource-response
+      (response/header "Content-Type" "text/css")))
+
+(defn load-img
+  "Load goose logo"
+  [_]
+  (-> "img/goose-logo.png"
+      response/resource-response
+      (response/header "Content-Type" "image/png")))
+
+(defn load-js
+  "Load a goose's javascript file"
+  [_]
+  (-> "js/index.js"
+      response/resource-response
+      (response/header "Content-Type" "text/javascript")))
+
+(defn redirect-to-home-page
+  "Redirects the user to the home page using given prefix-route function"
+  [{:keys [prefix-route]}]
+  (response/redirect (prefix-route "/")))
+
+(defn not-found
+  "A default not found response"
+  [_]
+  (response/not-found "<div> Not found </div>"))
+
+;; View components
+(defn layout
+  "Generates HTML layout for webpage using provided hiccup components
+
+  ### Args
+
+  components: A variadic list of functions. Each function is expected to accept
+              a map `data` and return hiccup data representing part of a webpage
+
+  ### Usage
+   ```Clojure
+   (def job [job]
+        [:p {:class \"job\"} (:id job)])
+
+       (let [view (layout job)]
+          (view \"Jobs page\" {:id \"jid\"})
+   ```"
+  [& components]
+  (fn [title {:keys [prefix-route] :as data}]
+    (html5 {:lang "en"}
+           [:head
+            [:meta {:charset "UTF-8"}]
+            [:meta {:name "viewport" :content "width=device-width, initial-scale=1.0"}]
+            [:title title]
+            (include-css (prefix-route "/css/style.css"))
+            (include-js (prefix-route "/js/index.js"))]
+           [:body
+            (map (fn [c] (c data)) components)])))
+
+(defn header
+  "Creates a navbar header in hiccup syntax with goose logo and app name
+
+  ### Args
+  `header-items` : A seq of maps each containing route and label keys to
+  specify navigation links
+
+  `data` : A map that should include:
+      - `uri`: The current page's URI to identify the active link
+      - `app-name`: Application's name
+      - `prefix-route`: Function to prepend paths for URL generation"
+  [header-items {:keys [app-name prefix-route uri] :or {app-name ""}}]
+  (let [subroute? (fn [r] (str/includes? uri (prefix-route r)))
+        short-app-name (if (> (count app-name) 20)
+                         (str (subs app-name 0 17) "..")
+                         app-name)]
+    [:header
+     [:nav
+      [:div.nav-start
+       [:div.goose-logo
+        [:a {:href (prefix-route "/")}
+         [:img {:src (prefix-route "/img/goose-logo.png") :alt "goose-logo"}]]]
+       [:div#menu
+        [:a {:href (prefix-route "/") :class "app-name"} short-app-name]
+        (for [{:keys [route label]}  header-items]
+          [:a {:href (prefix-route route)
+               :class (when (subroute? route) "highlight")} label])]]]]))
+
+(defn wrap-prefix-route
   "Middleware that injects a `prefix-route` function into the request,
   that facilitates URL construction in views by prepending given route-prefix to paths"
   [handler]

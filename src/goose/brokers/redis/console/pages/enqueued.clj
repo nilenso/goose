@@ -4,6 +4,7 @@
             [goose.brokers.redis.console.data :as data]
             [goose.brokers.redis.console.pages.components :as c]
             [goose.brokers.redis.console.specs :as specs]
+            [goose.console :as console]
             [goose.defaults :as d]
             [goose.utils :as utils]
             [hiccup.util :as hiccup-util]
@@ -185,7 +186,7 @@
                 {:keys                [app-name]
                  {:keys [redis-conn]} :broker} :console-opts
                 params                         :params}]
-  (let [view (c/layout c/header job-page-view)
+  (let [view (console/layout c/header job-page-view)
         {:keys [id queue]} (validate-req-params params)]
     (if id
       (response/response (view "Enqueued" (-> {:job (enqueued-jobs/find-by-id
@@ -201,7 +202,7 @@
 (defn get-jobs [{:keys                     [prefix-route uri]
                  {:keys [app-name broker]} :console-opts
                  params                    :params}]
-  (let [view (c/layout c/header jobs-page-view)
+  (let [view (console/layout c/header jobs-page-view)
         validated-params (validate-get-jobs params)
         data (data/enqueued-page-data (:redis-conn broker) validated-params)]
     (response/response (view "Enqueued" (assoc data :uri uri
