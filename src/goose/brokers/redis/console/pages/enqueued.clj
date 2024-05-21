@@ -81,6 +81,7 @@
      [:span.limit "Limit"]
      [:input {:type  "number" :name "limit" :id "limit" :placeholder "custom limit"
               :value (if (string/blank? limit) d/limit limit)
+              :min   "0"
               :max   "10000"}]]
     [:div.filter-opts-items
      [:button.btn.btn-cancel

@@ -1,10 +1,10 @@
 (ns goose.console
-  (:require [goose.broker :as b]
+  (:require [clojure.string :as str]
+            [goose.broker :as b]
+            [hiccup.page :refer [html5 include-css include-js]]
             [ring.middleware.keyword-params :as ring-keyword-params]
             [ring.middleware.params :as ring-params]
-            [ring.util.response :as response]
-            [clojure.string :as str]
-            [hiccup.page :refer [html5 include-css include-js]]))
+            [ring.util.response :as response]))
 
 ;; Page handlers
 (defn load-css
@@ -91,8 +91,8 @@
          [:img {:src (prefix-route "/img/goose-logo.png") :alt "goose-logo"}]]]
        [:div#menu
         [:a {:href (prefix-route "/") :class "app-name"} short-app-name]
-        (for [{:keys [route label]}  header-items]
-          [:a {:href (prefix-route route)
+        (for [{:keys [route label]} header-items]
+          [:a {:href  (prefix-route route)
                :class (when (subroute? route) "highlight")} label])]]]]))
 
 (defn wrap-prefix-route
@@ -100,7 +100,7 @@
   that facilitates URL construction in views by prepending given route-prefix to paths"
   [handler]
   (fn [{{:keys [route-prefix]} :console-opts
-        :as req}]
+        :as                    req}]
     (let [prefix-route-fn (partial str route-prefix)]
       (handler (assoc req :prefix-route prefix-route-fn)))))
 

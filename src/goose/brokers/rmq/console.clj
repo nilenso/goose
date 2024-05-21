@@ -18,7 +18,7 @@
        [:a {:href (prefix-route route)}
         [:span.label label]]])]])
 
-(defn declare-dead-queue
+(defn- declare-dead-queue
   [rmq-producer]
   (let [ch (u/random-element (:channels rmq-producer))]
     (rmq-queue/declare ch (merge (:queue-type rmq-producer)
@@ -33,7 +33,7 @@
                                                 :app-name app-name
                                                 :prefix-route prefix-route)))))
 
-(defn routes [route-prefix]
+(defn- routes [route-prefix]
   [route-prefix [["" console/redirect-to-home-page]
                  ["/" homepage]
                  ["/css/style.css" console/load-css]
