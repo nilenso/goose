@@ -8,7 +8,7 @@
 
 ;; Page handlers
 (defn load-css
-  "Load static goose's css file"
+  "Load static css file"
   [_]
   (-> "css/style.css"
       response/resource-response
@@ -22,7 +22,7 @@
       (response/header "Content-Type" "image/png")))
 
 (defn load-js
-  "Load a goose's javascript file"
+  "Load javascript file"
   [_]
   (-> "js/index.js"
       response/resource-response
@@ -113,7 +113,20 @@
       (handler (assoc request :request-method (keyword overridden-method)))
       (handler request))))
 
-(defn app-handler [{:keys [broker] :as console-opts} req]
+(defn app-handler
+  "A Ring handler that sets up the necessary middleware and serves Goose Console UI
+  It takes two arguments:
+
+  ### Keys
+  `:console-opts`    : A map containing the configuration options for the console \\
+     `:route-prefix` : The route path that exposes the Goose Console via app-handler (should not include a trailing \"/\") \\
+     `:broker`       : Message broker that transfers message from Producer to Consumer.
+                       Given value must implement [[goose.broker/Broker]] protocol.
+                       [Message Broker wiki](https://github.com/nilenso/goose/wiki/Message-Brokers)
+     `:app-name`     : Name of the application using Goose
+
+   `:req`               : The Ring request map representing the incoming HTTP request."
+  [{:keys [broker] :as console-opts} req]
   ((-> (partial b/handler broker)
        wrap-prefix-route
        wrap-method-override

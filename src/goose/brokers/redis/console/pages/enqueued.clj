@@ -1,4 +1,4 @@
-(ns goose.brokers.redis.console.pages.enqueued
+(ns ^:no-doc goose.brokers.redis.console.pages.enqueued
   (:require [clojure.string :as string]
             [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
             [goose.brokers.redis.console.data :as data]

@@ -1,4 +1,4 @@
-(ns goose.brokers.rmq.console
+(ns ^:no-doc goose.brokers.rmq.console
   (:require [bidi.bidi :as bidi]
             [goose.brokers.rmq.api.dead-jobs :as dead-jobs]
             [goose.brokers.rmq.queue :as rmq-queue]
