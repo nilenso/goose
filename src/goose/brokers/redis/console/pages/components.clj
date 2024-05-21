@@ -43,7 +43,7 @@
                   :as                       job}]
   [:table.job-table.table-stripped
    [:tr [:td "Id"]
-    [:td.blue id]]
+    [:td id]]
    [:tr [:td "Execute fn symbol"]
     [:td.execute-fn-sym
      (str execute-fn-sym)]]
