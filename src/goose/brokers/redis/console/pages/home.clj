@@ -1,4 +1,4 @@
-(ns goose.brokers.redis.console.pages.home
+(ns ^:no-doc goose.brokers.redis.console.pages.home
   (:require [goose.brokers.redis.console.data :as data]
             [goose.brokers.redis.console.pages.components :as c]
             [goose.console :as console]

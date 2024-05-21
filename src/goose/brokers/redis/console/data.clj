@@ -1,4 +1,4 @@
-(ns goose.brokers.redis.console.data
+(ns ^:no-doc goose.brokers.redis.console.data
   (:require [goose.brokers.redis.api.dead-jobs :as dead-jobs]
             [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
             [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]

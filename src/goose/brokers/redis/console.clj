@@ -1,4 +1,4 @@
-(ns goose.brokers.redis.console
+(ns ^:no-doc goose.brokers.redis.console
   (:require [bidi.bidi :as bidi]
             [goose.brokers.redis.console.pages.enqueued :as enqueued]
             [goose.brokers.redis.console.pages.home :as home]

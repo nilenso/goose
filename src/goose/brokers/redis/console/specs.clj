@@ -1,4 +1,4 @@
-(ns goose.brokers.redis.console.specs
+(ns ^:no-doc goose.brokers.redis.console.specs
   (:require [clojure.spec.alpha :as s])
   (:import
     (java.lang Long)))

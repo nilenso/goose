@@ -1,4 +1,4 @@
-(ns goose.brokers.redis.console.pages.components
+(ns ^:no-doc goose.brokers.redis.console.pages.components
   (:require [clojure.string :as str]
             [goose.console :as console]
             [goose.job :as job])
