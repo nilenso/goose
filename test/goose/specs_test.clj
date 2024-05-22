@@ -1,18 +1,19 @@
 (ns goose.specs-test
   (:require
+    [clojure.spec.alpha :as s]
+    [clojure.test :refer [are deftest is]]
     [goose.batch :as batch]
     [goose.brokers.redis.broker :as redis]
     [goose.brokers.rmq.broker :as rmq]
     [goose.client :as c]
+    [goose.console :as console]
     [goose.defaults :as d]
     [goose.metrics.statsd :as statsd]
     [goose.specs :as specs]
     [goose.test-utils :as tu]
     [goose.utils :as u]
-    [goose.worker :as w]
 
-    [clojure.spec.alpha :as s]
-    [clojure.test :refer [deftest is are]])
+    [goose.worker :as w])
   (:import
     (clojure.lang ExceptionInfo)
     (java.time Instant)
@@ -147,4 +148,12 @@
     #(statsd/new (assoc statsd/default-opts :port "8125"))
     #(statsd/new (assoc statsd/default-opts :prefix :symbol))
     #(statsd/new (assoc statsd/default-opts :sample-rate 1))
-    #(statsd/new (assoc statsd/default-opts :tags '("service:maverick")))))
+    #(statsd/new (assoc statsd/default-opts :tags '("service:maverick")))
+
+    ;; Console
+    #(console/app-handler (assoc tu/redis-console-opts :broker {}) {})
+    #(console/app-handler (dissoc tu/redis-console-opts :broker) {})
+    #(console/app-handler (dissoc tu/redis-console-opts :app-name) {})
+    #(console/app-handler (assoc tu/redis-console-opts :app-name :invalid-type) {})
+    #(console/app-handler (dissoc tu/redis-console-opts :route-prefix) {})
+    #(console/app-handler (assoc tu/redis-console-opts :route-prefix :invalid-type) {})))

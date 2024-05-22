@@ -61,4 +61,7 @@
 
   ;; batch API
   (batch-status [this id] "Finds a Batch by `:id`")
-  (batch-delete [this id] "Deletes given Batch and its jobs."))
+  (batch-delete [this id] "Deletes given Batch and its jobs.")
+
+  ;; console API
+  (handler [this req] "Handler for console"))

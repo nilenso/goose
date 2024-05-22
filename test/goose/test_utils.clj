@@ -8,9 +8,9 @@
     [goose.brokers.rmq.return-listener :as return-listener]
     [goose.brokers.rmq.shutdown-listener :as shutdown-listener]
     [goose.defaults :as d]
+    [goose.metrics.statsd :as statsd]
     [goose.retry :as retry]
     [goose.specs :as specs]
-    [goose.metrics.statsd :as statsd]
     [goose.utils :as u]
 
     [langohr.queue :as lq]
@@ -55,6 +55,12 @@
 
   (clear-redis))
 
+(def redis-console-opts {:broker       redis-producer
+                         :app-name     ""
+                         :route-prefix ""})
+
+
+;; RMQ ---------
 (def rmq-url
   (let [host (or (System/getenv "GOOSE_TEST_RABBITMQ_HOST") "localhost")
         port (or (System/getenv "GOOSE_TEST_RABBITMQ_PORT") "5672")
@@ -71,6 +77,11 @@
 (def rmq-consumer (rmq/new-consumer rmq-opts))
 (def rmq-client-opts (assoc client-opts :broker rmq-producer))
 (def rmq-worker-opts (assoc worker-opts :broker rmq-consumer))
+
+(def rmq-console-opts {:broker rmq-producer
+                       :app-name     ""
+                       :route-prefix "" })
+
 (defn rmq-delete-test-queues
   []
   (let [ch (u/random-element (:channels rmq-producer))]

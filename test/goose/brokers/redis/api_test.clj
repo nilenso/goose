@@ -4,8 +4,11 @@
     [goose.api.cron-jobs :as cron-jobs]
     [goose.api.dead-jobs :as dead-jobs]
     [goose.api.enqueued-jobs :as enqueued-jobs]
+    [goose.brokers.redis.api.enqueued-jobs :as redis-enqueued-jobs]
+    [goose.brokers.redis.commands :as redis-cmds]
     [goose.api.scheduled-jobs :as scheduled-jobs]
     [goose.batch]
+    [goose.defaults :as d]
     [goose.client :as c]
     [goose.test-utils :as tu]
     [goose.worker :as w]
@@ -30,7 +33,7 @@
         (is (= 1 (count (enqueued-jobs/find-by-pattern tu/redis-producer tu/queue match?)))))
 
       (let [job (enqueued-jobs/find-by-id tu/redis-producer tu/queue job-id)]
-        (is (some? (enqueued-jobs/prioritise-execution tu/redis-producer job)))
+        (is (= [["OK" "QUEUED" "QUEUED"] [1 2]] (enqueued-jobs/prioritise-execution tu/redis-producer job)))
         (is (enqueued-jobs/delete tu/redis-producer job)))
 
       (is (enqueued-jobs/purge tu/redis-producer tu/queue))))
@@ -45,6 +48,53 @@
     (let [job-id (str (random-uuid))]
       (is (nil? (tu/with-timeout default-timeout-ms
                                  (enqueued-jobs/find-by-id tu/redis-producer tu/queue job-id)))))))
+
+(deftest get-by-range-test
+  (let [[id1 id2 id3] (doall (for [arg [1 2 3]]
+                               (:id (c/perform-async tu/redis-client-opts `tu/my-fn arg))))
+        [job1 job2 job3] (for [id [id1 id2 id3]]
+                           (enqueued-jobs/find-by-id tu/redis-producer tu/queue id))]
+    (testing "[redis] get jobs by range"
+      (is (= [job1 job2] (redis-enqueued-jobs/get-by-range tu/redis-conn tu/queue 0 1)))
+      (is (= [job1] (redis-enqueued-jobs/get-by-range tu/redis-conn tu/queue 0 0)))
+      (is (= [job1 job2 job3] (redis-enqueued-jobs/get-by-range tu/redis-conn tu/queue 0 2)))
+      (is (= [job1 job2 job3] (redis-enqueued-jobs/get-by-range tu/redis-conn tu/queue 0 10))))))
+
+(deftest enqueued-jobs-delete-multiple-test
+  (let [[id1 id2 id3 id4] (doall (for [arg [1 2 3 4]]
+                                   (:id (c/perform-async tu/redis-client-opts `tu/my-fn arg))))
+        [job1 job2 job3 job4] (for [id [id1 id2 id3 id4]]
+                                (enqueued-jobs/find-by-id tu/redis-producer tu/queue id))]
+    (testing "[redis] delete multiple enqueued-job"
+      (is (true? (redis-enqueued-jobs/delete tu/redis-conn tu/queue [job1 job2])))
+      (is (= 2 (enqueued-jobs/size tu/redis-producer tu/queue))))
+
+    (testing "[redis] delete single enqueued job from delete multiple jobs api"
+      (is (true? (redis-enqueued-jobs/delete tu/redis-conn tu/queue [job3])))
+      (is (= 1 (enqueued-jobs/size tu/redis-producer tu/queue))))
+
+    (testing "[redis] delete only valid enqueued job"
+      (is (false? (redis-enqueued-jobs/delete tu/redis-conn tu/queue [job4 {:job5 "invalid-job"}])))
+      (is (= 0 (enqueued-jobs/size tu/redis-producer tu/queue))))))
+
+(deftest enqueued-jobs-prioritise-multiple-test
+  (let [[id1 id2 id3] (for [arg [1 2 3]]
+                        (:id (c/perform-async tu/redis-client-opts `tu/my-fn arg)))
+        [job1 job2 job3] (for [id [id1 id2 id3]]
+                           (enqueued-jobs/find-by-id tu/redis-producer tu/queue id))]
+    (testing "[redis] prioritise single job using prioritise-execution's multiple endpoint"
+      (is (= [job1 job2 job3] (redis-cmds/range-from-front tu/redis-conn (d/prefix-queue tu/queue) 0 2)))
+      (is (= [[["OK" "QUEUED" "QUEUED"] [1 3]]] (redis-enqueued-jobs/prioritise-execution tu/redis-conn tu/queue [job2])))
+      (is (= [job2 job1 job3] (redis-cmds/range-from-front tu/redis-conn (d/prefix-queue tu/queue) 0 2))))
+
+    (testing "[redis] prioritise multiple jobs"
+      (is (= [[["OK" "QUEUED" "QUEUED"] [1 3]] [["OK" "QUEUED" "QUEUED"] [1 3]]]
+             (redis-enqueued-jobs/prioritise-execution tu/redis-conn tu/queue [job1 job3])))
+      (is (= [job3 job1 job2] (redis-cmds/range-from-front tu/redis-conn (d/prefix-queue tu/queue) 0 2))))
+
+    (testing "[redis] prioritise only valid jobs"
+      (is (= [[["OK" "QUEUED" "QUEUED"] [1 3]]] (redis-enqueued-jobs/prioritise-execution tu/redis-conn tu/queue [{:job4 "invalid"} job2 {:job5 "invalid"}])))
+      (is (= [job2 job3 job1] (redis-cmds/range-from-front tu/redis-conn (d/prefix-queue tu/queue) 0 2))))))
 
 (deftest scheduled-jobs-test
   (testing "[redis] scheduled-jobs API"

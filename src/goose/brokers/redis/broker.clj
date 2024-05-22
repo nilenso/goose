@@ -11,6 +11,7 @@
     [goose.brokers.redis.cron :as cron]
     [goose.brokers.redis.scheduler :as redis-scheduler]
     [goose.brokers.redis.worker :as redis-worker]
+    [goose.brokers.redis.console :as redis-console]
     [goose.defaults :as d]
     [goose.specs :as specs]))
 
@@ -95,7 +96,11 @@
   (batch-status [this id]
     (batch-api/status (:redis-conn this) id))
   (batch-delete [this id]
-    (batch-api/delete (:redis-conn this) id)))
+    (batch-api/delete (:redis-conn this) id))
+  
+  ;; console API
+  (handler [this req]
+    (redis-console/handler this req)))
 
 (def default-opts
   "Map of sample config for Redis Message Broker.

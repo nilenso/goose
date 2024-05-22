@@ -1,0 +1,389 @@
+body {
+  font-family: sans-serif, Arial;
+  margin: 0;
+  padding: 0;
+  background-color: #F2F4FD;
+  color: #585454;
+}
+
+header nav {
+  background-color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+main {
+  height: 50vh;
+  display: flex;
+  align-items: center;
+}
+
+a:hover {
+  color: #5881D8 !important;
+}
+
+a {
+  text-decoration: none;
+  color: #5881D8;
+}
+
+dialog {
+  border: none;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+table th, td {
+  padding: 8px;
+  border: 1px solid #ddd;
+  line-height: 1.4;
+}
+
+/* Common classes */
+
+.underline:hover {
+  text-decoration: underline;
+}
+
+#menu a {
+  text-decoration: none;
+  color: #333;
+  margin-left: 1em;
+  font-size: 1em;
+}
+
+#menu .app-name {
+  font-size: 1.3rem;
+  color: #585454;
+  margin-left: 15px;
+}
+
+.goose-logo a img {
+  margin-left: 15px;
+  height: 35px;
+  float: left;
+  overflow: auto;
+}
+
+.nav-start {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.disabled {
+  pointer-events: none;
+  color: #b2a9a9 !important;
+}
+
+.highlight {
+  color: #c8702A !important;
+  font-weight: bold;
+}
+
+.cursor-default {
+  cursor: default;
+}
+
+.blue {
+  color: #5881D8;
+}
+
+.args, .execute-fn-sym {
+  overflow-y: auto;
+  max-height: 100px;
+  word-break: break-all;
+}
+
+.checkbox-div {
+  text-align: center;
+}
+
+.table-stripped tbody tr:nth-of-type(odd) {
+  background-color: #fff;
+}
+
+/* Pagination */
+
+.pagination div {
+  margin: auto;
+  padding-top: 1em;
+}
+
+/* Buttons */
+
+.btn {
+  padding: 7px 10px;
+  margin: 0 5px;
+  border-radius: 4px;
+  background-color: #5881D8;
+  color: #fff;
+  border: none;
+  font-weight: bold;
+  transition: box-shadow 0.3s ease;
+}
+
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  border-radius: 3px
+}
+
+.btn-lg {
+  padding: 10px 16px;
+  font-size: 16px;
+  line-height: 1.3333;
+  border-radius: 6px;
+}
+
+.btn-action {
+  background-color: #fff;
+  color: #5881D8;
+  border: #5881D8 solid 1px;
+}
+
+.btn-danger {
+  background-color: #fff;
+  color: #DB460F;
+  border: #DB460F solid 1px;
+}
+
+.btn-cancel {
+  color: #5881D8;
+  background-color: #d9d9d9;
+}
+
+button:active {
+  opacity: 0.8;
+}
+
+input:disabled, input[disabled], button[disabled], button:disabled {
+  opacity: 0.6;
+}
+
+.dialog-btns {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+/* Job Table */
+
+.job-table td:nth-of-type(1) {
+  font-weight: bold;
+  width: 25%;
+}
+
+/* Jobs table */
+
+.jobs-table th {
+  background-color: #fff;
+}
+
+/* Homepage */
+
+.statistics {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: white;
+  margin: 2rem;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  width: -webkit-fill-available;
+}
+
+.stat {
+  text-align: center;
+  display: grid;
+}
+
+.stat .number {
+  color: #C87021;
+  /* or any other color you prefer */
+  font-size: 36px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.stat .label {
+  color: #333;
+  font-size: 18px;
+}
+
+/* Redis Enqueued Page  */
+
+.redis-enqueued {
+  margin: 3em;
+}
+
+.redis-enqueued h1 {
+  color: #5881D8;
+}
+
+.redis-enqueued .content {
+  display: grid;
+  grid-template-columns: 13% 87%;
+
+}
+
+.redis-enqueued .selected {
+  color: #C87021;
+}
+
+.redis-enqueued .pagination a {
+  padding: 10px;
+}
+
+/* Sidebar */
+
+.redis-enqueued #sidebar {
+  padding-top: 30px;
+}
+
+.redis-enqueued .queue-list {
+  width: 100px;
+  box-sizing: border-box;
+  height: 60vh;
+  overflow-y: auto;
+  word-break: break-all;
+  padding-right: 3px;
+  scrollbar-width: thin;
+  scrollbar-color: #c4d0ec transparent;
+}
+
+.redis-enqueued .queue-list ul {
+  list-style: none;
+  padding: 0;
+}
+
+.redis-enqueued .queue-list ul a {
+  color: #5881D8;
+}
+
+.redis-enqueued .queue-list-item {
+  padding-bottom: 10px;
+  margin-bottom: 5px;
+}
+
+/* Right side sticky header and table content */
+
+.redis-enqueued .right-side {
+  padding-top: 30px;
+}
+
+.redis-enqueued .pagination {
+  justify-content: center;
+  display: flex;
+  margin: 10px;
+  height: 2em;
+}
+
+/* Sticky Header */
+
+.redis-enqueued .header {
+  background-color: #9FACC5;
+  height: 50px;
+  display: flex;
+  border-radius: 6px;
+}
+
+.redis-enqueued .header .filter-opts {
+  margin: auto;
+  display: flex;
+  width: 100%;
+}
+
+.redis-enqueued .header .filter-opts input,
+select {
+  padding: 6px 8px;
+  margin: 2px 0;
+  display: inline-block;
+  border: none;
+}
+
+.redis-enqueued .header .filter-opts-items {
+  margin: 0 10px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.redis-enqueued .header .filter-opts-items .filter-type {
+  background-color: #c4d0ec;
+  color: #585454;
+}
+
+.redis-enqueued .header .filter-opts-items .filter-values {
+  display: flex;
+}
+
+.redis-enqueued .header .filter-opts-items .limit {
+  background-color: #c4d0ec;
+  font-size: small;
+  margin: auto;
+  padding: 7px 20px;
+}
+
+.redis-enqueued .header .action-buttons {
+  width: 20%;
+  margin: auto;
+  text-align: center;
+}
+
+.redis-enqueued .actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 1em;
+}
+
+.redis-enqueued .action-btns {
+  margin: auto;
+}
+
+.redis-enqueued .action-btns .delete-dialog-show {
+  margin: auto;
+  right: 7em;
+  position: relative;
+}
+
+/* Enqueued Jobs Table */
+
+.redis-enqueued .jobs-table th .id-h {
+  width: 40%;
+}
+
+.redis-enqueued .jobs-table .execute-fn-symbol-h {
+  width: 10%;
+}
+
+.redis-enqueued .jobs-table .args-h {
+  width: 20%;
+}
+
+.redis-enqueued .jobs-table .enqueued-at-h {
+  width: 17%;
+}
+
+.redis-enqueued .jobs-table .checkbox-h {
+  width: 13%;
+  text-align: center;
+}
+
+/* Bottom Purge Button  */
+.redis-enqueued .bottom {
+  margin-top: 50px;
+  justify-content: end;
+  display: flex;
+}
+
+::backdrop {
+  opacity: 0.75;
+}

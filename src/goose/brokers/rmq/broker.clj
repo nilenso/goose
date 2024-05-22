@@ -11,6 +11,7 @@
     [goose.brokers.rmq.scheduler :as rmq-scheduler]
     [goose.brokers.rmq.shutdown-listener :as shutdown-listener]
     [goose.brokers.rmq.worker :as rmq-worker]
+    [goose.brokers.rmq.console :as console]
     [goose.defaults :as d]
     [goose.job :as job]
     [goose.specs :as specs]
@@ -60,6 +61,9 @@
                              n))
   (dead-jobs-purge [this]
     (dead-jobs/purge (u/random-element (:channels this))))
+
+  (handler [this req]
+    (console/handler this req))
 
   Close
   (close [this]
