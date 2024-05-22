@@ -31,10 +31,10 @@ Getting Started
 ### Add Goose as a dependency
 ```Clojure
 ;;; Clojure CLI/deps.edn
-com.nilenso/goose {:mvn/version "0.4.0"}
+com.nilenso/goose {:mvn/version "0.5.0"}
 
 ;;; Leiningen/Boot
-[com.nilenso/goose "0.4.0"]
+[com.nilenso/goose "0.5.0"]
 ```
 
 ### Client
