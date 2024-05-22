@@ -24,7 +24,7 @@ a:hover {
   color: #5881D8 !important;
 }
 
-a{
+a {
   text-decoration: none;
   color: #5881D8;
 }
@@ -106,7 +106,7 @@ table th, td {
 }
 
 .table-stripped tbody tr:nth-of-type(odd) {
-   background-color: #fff;
+  background-color: #fff;
 }
 
 /* Pagination */
@@ -164,9 +164,10 @@ button:active {
   opacity: 0.8;
 }
 
-input:disabled, input[disabled], button[disabled], button:disabled{
+input:disabled, input[disabled], button[disabled], button:disabled {
   opacity: 0.6;
 }
+
 .dialog-btns {
   display: flex;
   justify-content: flex-end;
@@ -320,7 +321,7 @@ select {
   color: #585454;
 }
 
-.redis-enqueued .header .filter-opts-items .filter-values{
+.redis-enqueued .header .filter-opts-items .filter-values {
   display: flex;
 }
 
@@ -337,20 +338,20 @@ select {
   text-align: center;
 }
 
-.redis-enqueued .actions{
+.redis-enqueued .actions {
   display: flex;
   justify-content: flex-end;
   padding-bottom: 1em;
 }
 
 .redis-enqueued .action-btns {
-    margin: auto;
+  margin: auto;
 }
 
 .redis-enqueued .action-btns .delete-dialog-show {
-    margin: auto;
-    right: 7em;
-    position: relative;
+  margin: auto;
+  right: 7em;
+  position: relative;
 }
 
 /* Enqueued Jobs Table */

@@ -11,7 +11,8 @@ window.onload = () => {
       cancelPurgeDialog.addEventListener("click", (event) => {
         purgeDialog.close()
       })
-    }}
+    }
+  }
 
   function attachDeleteDialogEventListener() {
     const deleteDialog = document.querySelector(".delete-dialog")
@@ -36,6 +37,7 @@ window.onload = () => {
     input.setAttribute('value', '');
     return input;
   }
+
   function createFilterValueSelectElement() {
     const select = document.createElement('select');
     select.setAttribute('id', 'job-type-select')
@@ -55,7 +57,7 @@ window.onload = () => {
     const SELECT_FILTER_TYPES = ["type"];
     const INPUT_FILTER_TYPES = ["id", "execute-fn-sym"];
     const filterTypeSelect = document.querySelector(".filter-type");
-    if(filterTypeSelect) {
+    if (filterTypeSelect) {
       filterTypeSelect.addEventListener("change", (event) => {
         const filterValuesDiv = document.querySelector(".filter-values");
         const selectedFilterType = filterTypeSelect.value;
@@ -76,8 +78,10 @@ window.onload = () => {
           currentFilterValueElement.remove();
           filterValuesDiv.appendChild(newFilterValueElement);
         }
-    });
-  }}
+      });
+    }
+  }
+
   function toggleActionButtonsVisibility() {
     const actionButtons = document.querySelectorAll('.actions input');
     const checkboxes = document.querySelectorAll('.checkbox');
@@ -91,23 +95,23 @@ window.onload = () => {
       }
     });
   }
+
   function attachCheckboxListeners() {
     const checkboxes = document.querySelectorAll('.checkbox');
 
-    if(checkboxes)
-    {
+    if (checkboxes) {
       checkboxes.forEach((checkbox) => {
         checkbox.addEventListener('change', toggleActionButtonsVisibility)
       })
     }
   }
 
-  function attachSelectAllCheckboxEventListener () {
+  function attachSelectAllCheckboxEventListener() {
     const headerCheckbox = document.getElementById('checkbox-h');
     const checkboxes = document.querySelectorAll('.checkbox');
     if (headerCheckbox) {
-      headerCheckbox.addEventListener('change', function() {
-        checkboxes.forEach(function(checkbox) {
+      headerCheckbox.addEventListener('change', function () {
+        checkboxes.forEach(function (checkbox) {
           checkbox.checked = headerCheckbox.checked;
           // To trigger visibility of action buttons
           const event = new Event('change');
