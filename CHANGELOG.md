@@ -10,6 +10,16 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Changed
 ### Fixed
 
+## [0.5.0] - 22-May-2024
+
+### Added
+
+- Console web view
+
+### Changed
+
+### Fixed
+
 ## [0.4.0] - 20-Oct-2023
 
 ### Added
