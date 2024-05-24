@@ -1,5 +1,6 @@
 (ns ^:no-doc goose.brokers.redis.console.pages.enqueued
   (:require [clojure.string :as string]
+    [clojure.math :as math]
             [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
             [goose.brokers.redis.console.data :as data]
             [goose.brokers.redis.console.pages.components :as c]
@@ -10,7 +11,6 @@
             [hiccup.util :as hiccup-util]
             [ring.util.response :as response])
   (:import
-    (java.lang Math)
     (java.util Date)))
 
 (defn- sidebar [{:keys [prefix-route queues queue]}]
@@ -33,7 +33,7 @@
 (defn- pagination [{:keys [prefix-route queue page total-jobs]}]
   (let [{:keys [first-page prev-page curr-page
                 next-page last-page]} (pagination-stats d/page page
-                                                        (Math/ceilDiv ^Integer total-jobs ^Integer d/page-size))
+                                                        (math/ceil (/ total-jobs d/page-size)))
         page-uri (fn [p] (prefix-route "/enqueued/queue/" queue "?page=" p))
         hyperlink (fn [page label visible? disabled? & class]
                     (when visible?
