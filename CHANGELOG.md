@@ -10,14 +10,18 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Changed
 ### Fixed
 
+## [0.5.1] - 28-May-2024
+
+### Added
+### Changed
+### Fixed
+- Fix console's error for jdk < 18
+
 ## [0.5.0] - 22-May-2024
 
 ### Added
-
 - Console web view
-
 ### Changed
-
 ### Fixed
 
 ## [0.4.0] - 20-Oct-2023
