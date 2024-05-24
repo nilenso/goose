@@ -1,6 +1,6 @@
 (ns ^:no-doc goose.brokers.redis.console.pages.enqueued
   (:require [clojure.string :as string]
-    [clojure.math :as math]
+            [clojure.math :as math]
             [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
             [goose.brokers.redis.console.data :as data]
             [goose.brokers.redis.console.pages.components :as c]

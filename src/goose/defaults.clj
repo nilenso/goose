@@ -78,6 +78,8 @@
 
 ;;; ======== Console ========
 
+(def route-prefix "/goose")
+(def app-name "Goose Console")
 (def page-size 10)
 (def page 1)
 (def limit 10)
