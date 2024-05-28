@@ -20,6 +20,7 @@ Features
 - [Batch Jobs](https://github.com/nilenso/goose/wiki/Batch-Jobs)
 - [Periodic Jobs](https://github.com/nilenso/goose/wiki/Periodic-Jobs)
 - [Error Handling & Retries](https://github.com/nilenso/goose/wiki/Error-Handling-&-Retries)
+- [Console](https://github.com/nilenso/goose/wiki/Console)
 - Extensible using [Middlewares](https://github.com/nilenso/goose/wiki/Middlewares)
 - Concurrency & Parallelism friendly
 - ... more details in [Goose Wiki](https://github.com/nilenso/goose/wiki)
@@ -31,10 +32,10 @@ Getting Started
 ### Add Goose as a dependency
 ```Clojure
 ;;; Clojure CLI/deps.edn
-com.nilenso/goose {:mvn/version "0.5.0"}
+com.nilenso/goose {:mvn/version "0.5.1"}
 
 ;;; Leiningen/Boot
-[com.nilenso/goose "0.5.0"]
+[com.nilenso/goose "0.5.1"]
 ```
 
 ### Client
