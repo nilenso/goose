@@ -236,8 +236,8 @@
       (apply car/rpush queue jobs))
     (apply car/zrem sorted-set jobs)))
 
-(defn sorted-set-score [conn sorted-set element]
-  (wcar* conn (car/zscore sorted-set element)))
+(defn sorted-set-scores [conn sorted-set & elements]
+  (wcar* conn (apply car/zmscore sorted-set elements)))
 
 (defn sorted-set-size [conn sorted-set]
   (wcar* conn (car/zcount sorted-set sorted-set-min sorted-set-max)))
@@ -268,8 +268,8 @@
        (take limit)
        (doall)))
 
-(defn del-from-sorted-set [conn sorted-set member]
-  (wcar* conn (car/zrem sorted-set member)))
+(defn del-from-sorted-set [conn sorted-set & members]
+  (wcar* conn (apply car/zrem sorted-set members)))
 
 (defn del-from-sorted-set-until [conn sorted-set score]
   (wcar* conn (car/zremrangebyscore sorted-set sorted-set-min score)))

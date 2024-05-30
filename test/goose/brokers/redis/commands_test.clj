@@ -121,6 +121,15 @@
                                       #(str/starts-with? % "bar")
                                       2000))))))
 
+(deftest sorted-set-scores
+  (doseq [num (range 10)]
+    (redis-cmds/enqueue-sorted-set tu/redis-conn "my-set" num (str "foo" num)))
+  (testing "Should get the scores of the elements"
+    (redis-cmds/sorted-set-scores tu/redis-conn "my-set" "foo3" "foo6" "foo2")
+    (is (= ["3" "6" "2"] (redis-cmds/sorted-set-scores tu/redis-conn "my-set" "foo3" "foo6" "foo2"))))
+  (testing "Should return the nil if element isn't present"
+    (is (= [nil "4" nil] (redis-cmds/sorted-set-scores tu/redis-conn "my-set" "foo100" "foo4" "foo22")))))
+
 (deftest find-in-sorted-set-test
   (testing "finding sorted set members that match the given predicate"
     (let [foo-members (set (map #(str "foo" %) (range 1000)))

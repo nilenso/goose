@@ -5,12 +5,14 @@
     [goose.api.dead-jobs :as dead-jobs]
     [goose.api.enqueued-jobs :as enqueued-jobs]
     [goose.brokers.redis.api.enqueued-jobs :as redis-enqueued-jobs]
+    [goose.brokers.redis.api.dead-jobs :as redis-dead-jobs]
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.api.scheduled-jobs :as scheduled-jobs]
     [goose.batch]
     [goose.defaults :as d]
     [goose.client :as c]
     [goose.test-utils :as tu]
+    [goose.factories :as f]
     [goose.worker :as w]
 
     [clojure.test :refer [deftest is testing use-fixtures]])
@@ -122,6 +124,51 @@
     (let [job-id (str (random-uuid))]
       (is (nil? (tu/with-timeout default-timeout-ms
                                  (scheduled-jobs/find-by-id tu/redis-producer job-id)))))))
+
+(deftest dead-jobs-delete-test
+  (testing "Should delete a single job and return true"
+    (let [_ (f/create-jobs {:dead 2})
+          [d1 _] (dead-jobs/find-by-pattern tu/redis-producer (fn [_] true))]
+      (is (= 2 (redis-dead-jobs/size tu/redis-conn)))
+      (is (true? (redis-dead-jobs/delete tu/redis-conn d1)))
+      (is (= 1 (redis-dead-jobs/size tu/redis-conn)))))
+  (tu/clear-redis)
+  (testing "Should delete all valid jobs and return true"
+    (let [_ (f/create-jobs {:dead 3})
+          [d1 d2 d3] (dead-jobs/find-by-pattern tu/redis-producer (fn [_] true))]
+      (is (= 3 (redis-dead-jobs/size tu/redis-conn)))
+      (is (true? (redis-dead-jobs/delete tu/redis-conn d2 d3 d1)))
+      (is (= 0 (redis-dead-jobs/size tu/redis-conn)))))
+  (tu/clear-redis)
+  (testing "Should ignore invalid jobs and return false"
+    (let [_ (f/create-jobs {:dead 3})
+          [d1 _ d3] (dead-jobs/find-by-pattern tu/redis-producer (fn [_] true))]
+      (is (= 3 (redis-dead-jobs/size tu/redis-conn)))
+      (is (false? (redis-dead-jobs/delete tu/redis-conn d3 {:id "invalid-job"} d1)))
+      (is (= 1 (redis-dead-jobs/size tu/redis-conn))))))
+
+(deftest dead-jobs-replay-test
+  (testing "Should return nil given invalid job"
+    (let [_ (f/create-jobs {:dead 2})]
+      (is (= 2 (redis-dead-jobs/size tu/redis-conn)))
+      (is (= [] (redis-dead-jobs/replay-jobs tu/redis-conn {:id "invalid-job"})))
+      (is (= 2 (redis-dead-jobs/size tu/redis-conn)))))
+  (tu/clear-redis)
+  (testing "Should replay a single job and return response"
+    (let [_ (f/create-jobs {:dead 4})
+          [d1 _] (dead-jobs/find-by-pattern tu/redis-producer (fn [_] true))]
+      (is (= 4 (redis-dead-jobs/size tu/redis-conn)))
+      (is (= [d1] (redis-dead-jobs/replay-jobs tu/redis-conn d1)))
+      (is (= 1 (redis-enqueued-jobs/size tu/redis-conn tu/queue)))
+      (is (= 3 (redis-dead-jobs/size tu/redis-conn)))))
+  (tu/clear-redis)
+  (testing "Should replay multiple jobs and return count of jobs that are replayed"
+    (let [_ (f/create-jobs {:dead 4})
+          [d1 d2 _ d4] (dead-jobs/find-by-pattern tu/redis-producer (fn [_] true))]
+      (is (= 4 (redis-dead-jobs/size tu/redis-conn)))
+      (is (= [d1 d4 d2] (redis-dead-jobs/replay-jobs tu/redis-conn d1 {:id "invalid-job1"} d4 {:id "invalid-job2"} d2)))
+      (is (= 3 (redis-enqueued-jobs/size tu/redis-conn tu/queue)))
+      (is (= 1 (redis-dead-jobs/size tu/redis-conn))))))
 
 (def dead-fn-atom (atom 0))
 (defn dead-fn
