@@ -51,7 +51,7 @@
       (is (nil? (tu/with-timeout default-timeout-ms
                                  (enqueued-jobs/find-by-id tu/redis-producer tu/queue job-id)))))))
 
-(deftest get-by-range-test
+(deftest enqueued-jobs-get-by-range-test
   (let [[id1 id2 id3] (doall (for [arg [1 2 3]]
                                (:id (c/perform-async tu/redis-client-opts `tu/my-fn arg))))
         [job1 job2 job3] (for [id [id1 id2 id3]]
@@ -169,6 +169,19 @@
       (is (= [d1 d4 d2] (redis-dead-jobs/replay-jobs tu/redis-conn d1 {:id "invalid-job1"} d4 {:id "invalid-job2"} d2)))
       (is (= 3 (redis-enqueued-jobs/size tu/redis-conn tu/queue)))
       (is (= 1 (redis-dead-jobs/size tu/redis-conn))))))
+
+(deftest dead-job-get-by-range-test
+  (testing "Should get jobs in decreasing order of died-at given a range"
+    (let [_ (f/create-jobs {:dead 3})
+          [j1 j2] (redis-dead-jobs/get-by-range tu/redis-conn 0 1)]
+      (is (true? (>= (get-in j1 [:state :died-at]) (get-in j2 [:state :died-at]))))))
+  (tu/clear-redis)
+  (testing "Should get max of (size dead-jobs) given high stop value in range"
+    (let [_ (f/create-jobs {:dead 2})
+          jobs-from-match (dead-jobs/find-by-pattern tu/redis-producer (fn [_] true))
+          jobs-from-range (redis-dead-jobs/get-by-range tu/redis-conn 0 100)]
+      (is (= (set jobs-from-match) (set jobs-from-range)))
+      (is (= 2 (count jobs-from-range))))))
 
 (def dead-fn-atom (atom 0))
 (defn dead-fn

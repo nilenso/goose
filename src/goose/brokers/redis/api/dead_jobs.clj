@@ -55,3 +55,7 @@
 
 (defn purge [redis-conn]
   (= 1 (redis-cmds/del-keys redis-conn d/prefixed-dead-queue)))
+
+(defn get-by-range
+  [redis-conn start stop]
+  (redis-cmds/rev-range-in-sorted-set redis-conn d/prefixed-dead-queue start stop))

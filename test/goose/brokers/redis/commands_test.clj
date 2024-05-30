@@ -130,6 +130,13 @@
   (testing "Should return the nil if element isn't present"
     (is (= [nil "4" nil] (redis-cmds/sorted-set-scores tu/redis-conn "my-set" "foo100" "foo4" "foo22")))))
 
+(deftest rev-range-in-sorted-set-test
+  (testing "Should get the members in decreasing order of priority"
+    (let [_ (doseq [member (set (map #(str "foo" %) (range 10)))]
+              (redis-cmds/wcar* tu/redis-conn (car/zadd "my-zset" (rand-int 100) member)))
+          rev-range-members (redis-cmds/rev-range-in-sorted-set tu/redis-conn "my-zset" 4 9)]
+      (is (true? (apply > (redis-cmds/sorted-set-scores tu/redis-conn "my-zset" rev-range-members)))))))
+
 (deftest find-in-sorted-set-test
   (testing "finding sorted set members that match the given predicate"
     (let [foo-members (set (map #(str "foo" %) (range 1000)))
