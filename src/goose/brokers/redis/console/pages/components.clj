@@ -1,6 +1,9 @@
 (ns ^:no-doc goose.brokers.redis.console.pages.components
   (:require [clojure.string :as str]
             [goose.console :as console]
+            [clojure.math :as math]
+            [hiccup.util :as hiccup-util]
+            [goose.defaults :as d]
             [goose.job :as job])
   (:import
     (java.lang Character String)
@@ -23,11 +26,45 @@
     [:input.btn.btn-md.btn-cancel {:type "button" :value "cancel" :class "cancel"}]
     [:input.btn.btn-md.btn-danger {:type "submit" :name "_method" :value "delete"}]]])
 
+(defn purge-confirmation-dialog [{:keys [total-jobs url-path]}]
+  [:dialog {:class "purge-dialog"}
+   [:div "Are you sure, you want to remove " [:span.highlight total-jobs] " jobs ?"]
+   [:form {:action url-path
+           :method "post"
+           :class  "dialog-btns"}
+    [:input {:name "_method" :type "hidden" :value "delete"}]
+    [:input {:type "button" :value "Cancel" :class "btn btn-md btn-cancel cancel"}]
+    [:input {:type "submit" :value "Confirm" :class "btn btn-danger btn-md"}]]])
+
 (defn action-btns [& {:keys [disabled] :or {disabled true}}]
   [:div.actions
    [:input.btn {:type "submit" :value "Prioritise" :disabled disabled}]
    [:input.btn.btn-danger
     {:type "button" :value "Delete" :class "delete-dialog-show" :disabled disabled}]])
+
+(defn pagination-stats [first-page curr-page last-page]
+  {:first-page first-page
+   :prev-page  (dec curr-page)
+   :curr-page  curr-page
+   :next-page  (inc curr-page)
+   :last-page  last-page})
+
+(defn pagination [{:keys [page total-jobs url-path]}]
+  (let [{:keys [first-page prev-page curr-page
+                next-page last-page]} (pagination-stats d/page page
+                                                        (int (math/ceil (/ total-jobs d/page-size))))
+        page-uri (fn [p] (str url-path "?page=" p))
+        hyperlink (fn [page label visible? disabled? & class]
+                    (when visible?
+                      [:a {:class (conj class (when disabled? "disabled"))
+                           :href  (page-uri page)} label]))
+        single-page? (<= total-jobs d/page-size)]
+    [:div
+     (hyperlink first-page (hiccup-util/escape-html "<<") (not single-page?) (= curr-page first-page))
+     (hyperlink prev-page prev-page (> curr-page first-page) false)
+     (hyperlink curr-page curr-page (not single-page?) true "highlight")
+     (hyperlink next-page next-page (< curr-page last-page) false)
+     (hyperlink last-page (hiccup-util/escape-html ">>") (not single-page?) (= curr-page last-page))]))
 
 (defn job-table [{:keys                     [id execute-fn-sym args queue ready-queue enqueued-at]
                   {:keys [max-retries

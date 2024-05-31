@@ -1,6 +1,5 @@
 (ns ^:no-doc goose.brokers.redis.console.pages.enqueued
   (:require [clojure.string :as string]
-            [clojure.math :as math]
             [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
             [goose.brokers.redis.console.data :as data]
             [goose.brokers.redis.console.pages.components :as c]
@@ -8,7 +7,6 @@
             [goose.console :as console]
             [goose.defaults :as d]
             [goose.utils :as utils]
-            [hiccup.util :as hiccup-util]
             [ring.util.response :as response])
   (:import
     (java.util Date)))
@@ -22,40 +20,6 @@
        [:a {:href  (prefix-route "/enqueued/queue/" q)
             :class (when (= q queue) "highlight")}
         [:li.queue-list-item q]])]]])
-
-(defn pagination-stats [first-page curr-page last-page]
-  {:first-page first-page
-   :prev-page  (dec curr-page)
-   :curr-page  curr-page
-   :next-page  (inc curr-page)
-   :last-page  last-page})
-
-(defn- pagination [{:keys [prefix-route queue page total-jobs]}]
-  (let [{:keys [first-page prev-page curr-page
-                next-page last-page]} (pagination-stats d/page page
-                                                        (math/ceil (/ total-jobs d/page-size)))
-        page-uri (fn [p] (prefix-route "/enqueued/queue/" queue "?page=" p))
-        hyperlink (fn [page label visible? disabled? & class]
-                    (when visible?
-                      [:a {:class (conj class (when disabled? "disabled"))
-                           :href  (page-uri page)} label]))
-        single-page? (<= total-jobs d/page-size)]
-    [:div
-     (hyperlink first-page (hiccup-util/escape-html "<<") (not single-page?) (= curr-page first-page))
-     (hyperlink prev-page prev-page (> curr-page first-page) false)
-     (hyperlink curr-page curr-page (not single-page?) true "highlight")
-     (hyperlink next-page next-page (< curr-page last-page) false)
-     (hyperlink last-page (hiccup-util/escape-html ">>") (not single-page?) (= curr-page last-page))]))
-
-(defn- purge-confirmation-dialog [{:keys [prefix-route queue]}]
-  [:dialog {:class "purge-dialog"}
-   [:div "Are you sure, you want to " [:b "purge "] "the " [:span.highlight queue] " queue?"]
-   [:form {:action (prefix-route "/enqueued/queue/" queue)
-           :method "post"
-           :class  "dialog-btns"}
-    [:input {:name "_method" :type "hidden" :value "delete"}]
-    [:input {:type "button" :value "Cancel" :class "btn btn-md btn-cancel cancel"}]
-    [:input {:type "submit" :value "Confirm" :class "btn btn-danger btn-md"}]]])
 
 (defn- sticky-header [{:keys                                    [prefix-route queue]
                        {:keys [filter-type filter-value limit]} :params}]
@@ -133,7 +97,7 @@
               :value (utils/encode-to-str job)}]
      (when job (c/job-table job))]]])
 
-(defn- jobs-page-view [{:keys [total-jobs] :as data}]
+(defn- jobs-page-view [{:keys [total-jobs prefix-route queue uri] :as data}]
   [:div.redis-enqueued
    [:h1 "Enqueued Jobs"]
    [:div.content
@@ -142,11 +106,11 @@
      (sticky-header data)
      [:div.pagination
       (when total-jobs
-        (pagination data))]
+        (c/pagination (assoc data :url-path (prefix-route "/enqueued/queue/" queue))))]
      (jobs-table data)
      (when (and total-jobs (> total-jobs 0))
        [:div.bottom
-        (purge-confirmation-dialog data)
+        (c/purge-confirmation-dialog (assoc data :url-path (prefix-route "/enqueued/queue/" queue)))
         [:button {:class "btn btn-danger btn-lg purge-dialog-show"} "Purge"]])]]])
 
 (defn validate-get-jobs [{:keys [page filter-type limit filter-value queue]}]
