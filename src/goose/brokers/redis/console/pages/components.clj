@@ -17,7 +17,8 @@
     arg))
 
 (def header
-  (partial console/header [{:route "/enqueued" :label "Enqueued"}]))
+  (partial console/header [{:route "/enqueued" :label "Enqueued"}
+                           {:route "/dead" :label "Dead"}]))
 
 (defn delete-confirm-dialog [question]
   [:dialog {:class "delete-dialog"}

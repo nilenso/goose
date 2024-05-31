@@ -84,7 +84,7 @@
 (defn- job-page-view [{:keys       [prefix-route queue]
                        {:keys [id]
                         :as   job} :job}]
-  [:div.redis-enqueued
+  [:div.redis.redis-enqueued
    [:h1 "Enqueued Job"]
    [:div
     [:form {:action (prefix-route "/enqueued/queue/" queue "/job/" id)
@@ -98,7 +98,7 @@
      (when job (c/job-table job))]]])
 
 (defn- jobs-page-view [{:keys [total-jobs prefix-route queue uri] :as data}]
-  [:div.redis-enqueued
+  [:div.redis.redis-enqueued
    [:h1 "Enqueued Jobs"]
    [:div.content
     (sidebar data)
