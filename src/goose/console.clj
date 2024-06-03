@@ -1,7 +1,6 @@
 (ns goose.console
   "Functions to serve the console web interface"
-  (:require [clojure.string :as str]
-            [goose.broker :as b]
+  (:require [goose.broker :as b]
             [goose.defaults :as d]
             [hiccup.page :refer [html5 include-css include-js]]
             [ring.middleware.keyword-params :as ring-keyword-params]
@@ -12,7 +11,7 @@
 (defn ^:no-doc load-css
   "Load goose console's static css file"
   [_]
-  (-> "css/style.css" 
+  (-> "css/style.css"
       response/resource-response
       (response/header "Content-Type" "text/css")))
 
@@ -85,10 +84,9 @@
    - `app-name`    : Application's name
    - `prefix-route`: Function to prepend paths to generate url"
 
-  [header-items {:keys [app-name prefix-route uri] :or {app-name ""}
+  [header-items {:keys [app-name prefix-route job-type] :or {app-name ""}
                  :as   _data}]
-  (let [subroute? (fn [r] (str/includes? uri (prefix-route r)))
-        short-app-name (if (> (count app-name) 20)
+  (let [short-app-name (if (> (count app-name) 20)
                          (str (subs app-name 0 17) "..")
                          app-name)]
     [:header
@@ -99,9 +97,10 @@
          [:img {:src (prefix-route "/img/goose-logo.png") :alt "goose-logo"}]]]
        [:div#menu
         [:a {:href (prefix-route "/") :class "app-name"} short-app-name]
-        (for [{:keys [route label]} header-items]
+        (for [{:keys [route label]
+               type  :job-type} header-items]
           [:a {:href  (prefix-route route)
-               :class (when (subroute? route) "highlight")} label])]]]]))
+               :class (when (= job-type type) "highlight")} label])]]]]))
 
 (defn ^:no-doc wrap-prefix-route
   "Middleware that injects a `prefix-route` function into the request,

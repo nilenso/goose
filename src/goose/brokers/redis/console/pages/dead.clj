@@ -22,7 +22,7 @@
       [:th.enqueued-at-h "Died at"]
       [:th.checkbox-h [:input {:type "checkbox" :id "checkbox-h"}]]]]
     [:tbody
-     (for [{:keys [id queue execute-fn-sym args] :as j
+     (for [{:keys             [id queue execute-fn-sym args] :as j
             {:keys [died-at]} :state} jobs]
        [:tr
         [:td [:a {:href  (prefix-route "/dead/job/" id)
@@ -38,7 +38,7 @@
                        :class "checkbox"
                        :value (utils/encode-to-str j)}]]]])]]])
 
-(defn- jobs-page-view [{:keys [total-jobs prefix-route] :as data}]
+(defn- jobs-page-view [{:keys [total-jobs] :as data}]
   [:div.redis
    [:h1 "Dead Jobs"]
    [:div.content.redis-jobs-page
@@ -46,18 +46,18 @@
      (jobs-table data)]
     (when (and total-jobs (> total-jobs 0)))
     [:div.bottom
-     (c/purge-confirmation-dialog (assoc data :url-path (prefix-route "/dead")))
+     (c/purge-confirmation-dialog data)
      [:button.btn.btn-danger.btn-lg.purge-dialog-show "Purge"]]]])
 
-(defn get-jobs [{:keys                     [prefix-route uri]
+(defn get-jobs [{:keys                     [prefix-route]
                  {:keys [app-name broker]} :console-opts
                  {:keys [page]}            :params}]
   (let [view (console/layout c/header jobs-page-view)
         current-page (or d/page page)
         jobs (dead-jobs/get-by-range (:redis-conn broker) (* d/page-size (dec current-page)) (* d/page-size current-page))
-        data {:page current-page
-              :jobs jobs
+        data {:page       current-page
+              :jobs       jobs
               :total-jobs (dead-jobs/size (:redis-conn broker))}]
-    (response/response (view "Dead" (assoc data :uri uri
+    (response/response (view "Dead" (assoc data :job-type :dead
                                                 :app-name app-name
                                                 :prefix-route prefix-route)))))

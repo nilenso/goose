@@ -21,10 +21,10 @@
             :class (when (= q queue) "highlight")}
         [:li.queue-list-item q]])]]])
 
-(defn- sticky-header [{:keys                                    [prefix-route queue]
+(defn- sticky-header [{:keys                                    [base-path]
                        {:keys [filter-type filter-value limit]} :params}]
   [:div.header
-   [:form.filter-opts {:action (prefix-route "/enqueued/queue/" queue)
+   [:form.filter-opts {:action base-path
                        :method "get"}
     [:div.filter-opts-items
      [:select {:name "filter-type" :class "filter-type"}
@@ -49,14 +49,14 @@
               :max   "10000"}]]
     [:div.filter-opts-items
      [:button.btn.btn-cancel
-      [:a. {:href (prefix-route "/enqueued/queue/" queue) :class "cursor-default"} "Clear"]]
+      [:a. {:href base-path :class "cursor-default"} "Clear"]]
      [:button.btn {:type "submit"} "Apply"]]]])
 
-(defn jobs-table [{:keys [prefix-route queue jobs]}]
-  [:form {:action (prefix-route "/enqueued/queue/" queue "/jobs")
+(defn jobs-table [{:keys [base-path queue jobs]}]
+  [:form {:action (str base-path "/jobs")
           :method "post"}
    (c/delete-confirm-dialog
-     (str "Are you sure you want to delete selected jobs in " queue " queue?"))
+     [:div "Are you sure you want to delete selected jobs in " [:span.highlight queue] " queue?"])
    (c/action-btns)
    [:table.jobs-table
     [:thead
@@ -69,7 +69,7 @@
     [:tbody
      (for [{:keys [id execute-fn-sym args enqueued-at] :as j} jobs]
        [:tr
-        [:td [:a {:href  (prefix-route "/enqueued/queue/" queue "/job/" id)
+        [:td [:a {:href  (str base-path "/job/" id)
                   :class "underline"}
               [:div.id id]]]
         [:td [:div.execute-fn-sym (str execute-fn-sym)]]
@@ -81,13 +81,13 @@
                        :class "checkbox"
                        :value (utils/encode-to-str j)}]]]])]]])
 
-(defn- job-page-view [{:keys       [prefix-route queue]
+(defn- job-page-view [{:keys       [base-path]
                        {:keys [id]
                         :as   job} :job}]
   [:div.redis.redis-enqueued
    [:h1 "Enqueued Job"]
    [:div
-    [:form {:action (prefix-route "/enqueued/queue/" queue "/job/" id)
+    [:form {:action (str base-path "/job/" id)
             :method "post"}
      (c/delete-confirm-dialog
        (str "Are you sure you want to the delete job?"))
@@ -97,7 +97,7 @@
               :value (utils/encode-to-str job)}]
      (when job (c/job-table job))]]])
 
-(defn- jobs-page-view [{:keys [total-jobs prefix-route queue uri] :as data}]
+(defn- jobs-page-view [{:keys [total-jobs] :as data}]
   [:div.redis.redis-enqueued
    [:h1 "Enqueued Jobs"]
    [:div.content
@@ -106,11 +106,11 @@
      (sticky-header data)
      [:div.pagination
       (when total-jobs
-        (c/pagination (assoc data :url-path (prefix-route "/enqueued/queue/" queue))))]
+        (c/pagination data))]
      (jobs-table data)
      (when (and total-jobs (> total-jobs 0))
        [:div.bottom
-        (c/purge-confirmation-dialog (assoc data :url-path (prefix-route "/enqueued/queue/" queue)))
+        (c/purge-confirmation-dialog data)
         [:button {:class "btn btn-danger btn-lg purge-dialog-show"} "Purge"]])]]])
 
 (defn validate-get-jobs [{:keys [page filter-type limit filter-value queue]}]
@@ -147,7 +147,7 @@
                                             (specs/->coll jobs)
                                             (specs/->coll jobs))})
 
-(defn get-job [{:keys                          [prefix-route uri]
+(defn get-job [{:keys                          [prefix-route]
                 {:keys                [app-name]
                  {:keys [redis-conn]} :broker} :console-opts
                 params                         :params}]
@@ -158,19 +158,20 @@
                                                       redis-conn
                                                       queue
                                                       id)}
-                                              (assoc :uri uri
-                                                     :queue queue
+                                              (assoc :job-type :enqueued
+                                                     :base-path (prefix-route "/enqueued/queue/" queue)
                                                      :app-name app-name
                                                      :prefix-route prefix-route))))
       (response/redirect (prefix-route "/enqueued/queue/" queue)))))
 
-(defn get-jobs [{:keys                     [prefix-route uri]
+(defn get-jobs [{:keys                     [prefix-route]
                  {:keys [app-name broker]} :console-opts
                  params                    :params}]
   (let [view (console/layout c/header jobs-page-view)
         validated-params (validate-get-jobs params)
-        data (data/enqueued-page-data (:redis-conn broker) validated-params)]
-    (response/response (view "Enqueued" (assoc data :uri uri
+        {:keys [queue] :as data} (data/enqueued-page-data (:redis-conn broker) validated-params)]
+    (response/response (view "Enqueued" (assoc data :job-type :enqueued
+                                                    :base-path (prefix-route "/enqueued/queue/" queue)
                                                     :params params
                                                     :app-name app-name
                                                     :prefix-route prefix-route)))))

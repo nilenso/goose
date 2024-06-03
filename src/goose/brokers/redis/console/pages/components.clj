@@ -17,8 +17,8 @@
     arg))
 
 (def header
-  (partial console/header [{:route "/enqueued" :label "Enqueued"}
-                           {:route "/dead" :label "Dead"}]))
+  (partial console/header [{:route "/enqueued" :label "Enqueued" :job-type :enqueued}
+                           {:route "/dead" :label "Dead" :job-type :dead}]))
 
 (defn delete-confirm-dialog [question]
   [:dialog {:class "delete-dialog"}
@@ -27,10 +27,10 @@
     [:input.btn.btn-md.btn-cancel {:type "button" :value "cancel" :class "cancel"}]
     [:input.btn.btn-md.btn-danger {:type "submit" :name "_method" :value "delete"}]]])
 
-(defn purge-confirmation-dialog [{:keys [total-jobs url-path]}]
+(defn purge-confirmation-dialog [{:keys [total-jobs base-path]}]
   [:dialog {:class "purge-dialog"}
    [:div "Are you sure, you want to remove " [:span.highlight total-jobs] " jobs ?"]
-   [:form {:action url-path
+   [:form {:action base-path
            :method "post"
            :class  "dialog-btns"}
     [:input {:name "_method" :type "hidden" :value "delete"}]
@@ -50,11 +50,11 @@
    :next-page  (inc curr-page)
    :last-page  last-page})
 
-(defn pagination [{:keys [page total-jobs url-path]}]
+(defn pagination [{:keys [page total-jobs base-path]}]
   (let [{:keys [first-page prev-page curr-page
                 next-page last-page]} (pagination-stats d/page page
                                                         (int (math/ceil (/ total-jobs d/page-size))))
-        page-uri (fn [p] (str url-path "?page=" p))
+        page-uri (fn [p] (str base-path "?page=" p))
         hyperlink (fn [page label visible? disabled? & class]
                     (when visible?
                       [:a {:class (conj class (when disabled? "disabled"))
