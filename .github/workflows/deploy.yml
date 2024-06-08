@@ -1,0 +1,83 @@
+name: deploy
+
+on:
+  push:
+    branches:
+      - console-staging
+env:
+  GOOSE_REDIS_HOST: localhost
+  GOOSE_REDIS_PORT: 6379
+  GOOSE_RABBITMQ_HOST: localhost
+  GOOSE_RABBITMQ_PORT: 5672
+  GOOSE_RABBITMQ_USERNAME: guest
+  GOOSE_RABBITMQ_PASSWORD: guest
+jobs:
+
+  build:
+    runs-on: ubuntu-20.04
+    services:
+      redis:
+        image: redis:7.0
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+      rabbitmq:
+        image: heidiks/rabbitmq-delayed-message-exchange:3.9.13-management
+        env:
+          RABBITMQ_DEFAULT_USER: guest
+          RABBITMQ_DEFAULT_PASS: guest
+        ports:
+          - 5672:5672
+          - 15672:15672
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup up java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'adopt'
+          java-version: '19'
+
+      - name: Install Clojure
+        uses: DeLaGuardo/setup-clojure@12.5
+        with:
+          cli: 1.11.1.1409
+
+      - name: Cache goose dependencies
+        uses: actions/cache@v2
+        env:
+          cache-name: goose-deps
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('deps.edn') }}
+          restore-keys: ${{ runner.os }}-${{ env.cache-name }}
+
+      - name: Execute clojure code
+        run: clojure -T:build uber
+
+      - name: Move goose jar to VM
+        uses: nogsantos/scp-deploy@master
+        with:
+          src: |
+            ./target/goose-standalone.jar
+            Dockerfile
+            docker-compose.yml
+          host: ${{ secrets.SSH_HOST }}
+          remote: .
+          port: 22
+          user: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Start Goose console
+        uses: fifsky/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          user: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command: |
+            docker-compose up --build -d
