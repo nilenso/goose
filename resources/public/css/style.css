@@ -260,6 +260,22 @@ input:disabled, input[disabled], button[disabled], button:disabled {
   text-align: center;
 }
 
+.redis .actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 1em;
+}
+
+.redis .action-btns {
+  margin: auto;
+}
+
+.redis .action-btns .delete-dialog-show {
+  margin: auto;
+  right: 7em;
+  position: relative;
+}
+
 /* Bottom Purge Button  */
 .redis .bottom {
   margin-top: 50px;
@@ -371,26 +387,4 @@ select {
   font-size: small;
   margin: auto;
   padding: 7px 20px;
-}
-
-.redis-enqueued .header .action-buttons {
-  width: 20%;
-  margin: auto;
-  text-align: center;
-}
-
-.redis-enqueued .actions {
-  display: flex;
-  justify-content: flex-end;
-  padding-bottom: 1em;
-}
-
-.redis-enqueued .action-btns {
-  margin: auto;
-}
-
-.redis-enqueued .action-btns .delete-dialog-show {
-  margin: auto;
-  right: 7em;
-  position: relative;
 }

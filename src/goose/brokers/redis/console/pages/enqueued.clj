@@ -24,9 +24,9 @@
 (defn jobs-table [{:keys [base-path queue jobs]}]
   [:form {:action (str base-path "/jobs")
           :method "post"}
-   (c/delete-confirm-dialog
-     [:div "Are you sure you want to delete selected jobs in " [:span.highlight queue] " queue?"])
-   (c/action-btns)
+   (c/action-btns [(c/prioritise-btn)
+                   (c/delete-btn
+                     [:div "Are you sure you want to delete selected jobs in " [:span.highlight queue] " queue?"])])
    [:table.jobs-table
     [:thead
      [:tr
@@ -58,9 +58,10 @@
    [:div
     [:form {:action (str base-path "/job/" id)
             :method "post"}
-     (c/delete-confirm-dialog
-       (str "Are you sure you want to the delete job?"))
-     (c/action-btns {:disabled false})
+     (c/action-btns [(c/prioritise-btn {:disabled false})
+                     (c/delete-btn
+                       "Are you sure you want to the delete job?"
+                       {:disabled false})])
      [:input {:name  "job"
               :type  "hidden"
               :value (utils/encode-to-str job)}]

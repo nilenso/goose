@@ -37,11 +37,22 @@
     [:input {:type "button" :value "Cancel" :class "btn btn-md btn-cancel cancel"}]
     [:input {:type "submit" :value "Confirm" :class "btn btn-danger btn-md"}]]])
 
-(defn action-btns [& {:keys [disabled] :or {disabled true}}]
-  [:div.actions
-   [:input.btn {:type "submit" :value "Prioritise" :disabled disabled}]
+
+(defn prioritise-btn [& {:keys [disabled] :or {disabled true}}]
+  [:input.btn {:type "submit" :value "Prioritise" :disabled disabled}])
+
+(defn delete-btn [question & {:keys [disabled] :or {disabled true}}]
+  [:div (delete-confirm-dialog question)
    [:input.btn.btn-danger
     {:type "button" :value "Delete" :class "delete-dialog-show" :disabled disabled}]])
+
+(defn replay-btn [& {:keys [disabled] :or {disabled true}}]
+  [:input.btn {:type "submit" :value "Replay" :disabled disabled}])
+
+(defn action-btns [btns]
+  [:div.actions
+   (for [btn btns]
+     btn)])
 
 (defn pagination-stats [first-page curr-page last-page]
   {:first-page first-page

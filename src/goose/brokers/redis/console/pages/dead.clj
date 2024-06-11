@@ -4,7 +4,6 @@
             [goose.brokers.redis.console.pages.components :as c]
             [goose.console :as console]
             [goose.defaults :as d]
-            [goose.utils :as utils]
             [ring.util.response :as response])
   (:import
     (java.util Date)))
@@ -19,39 +18,30 @@
       [:th.queue-h "Queue"]
       [:th.execute-fn-sym-h "Execute fn symbol"]
       [:th.args-h "Args"]
-      [:th.enqueued-at-h "Died at"]
-      [:th.checkbox-h [:input {:type "checkbox" :id "checkbox-h"}]]]]
+      [:th.enqueued-at-h "Died at"]]]
     [:tbody
-     (for [{:keys             [id queue execute-fn-sym args] :as j
+     (for [{:keys             [id queue execute-fn-sym args]
             {:keys [died-at]} :state} jobs]
        [:tr
-        [:td [:a {:href  (prefix-route "/dead/job/" id)
-                  :class "underline"}
-              [:div.id id]]]
+        [:td [:div.id id]]
         [:td [:div.queue] queue]
         [:td [:div.execute-fn-sym (str execute-fn-sym)]]
         [:td [:div.args (string/join ", " (mapv c/format-arg args))]]
-        [:td [:div.died-at] (Date. ^Long died-at)]
-        [:td [:div.checkbox-div
-              [:input {:name  "jobs"
-                       :type  "checkbox"
-                       :class "checkbox"
-                       :value (utils/encode-to-str j)}]]]])]]])
+        [:td [:div.died-at] (Date. ^Long died-at)]])]]])
 
 (defn- jobs-page-view [{:keys [total-jobs] :as data}]
   [:div.redis
    [:h1 "Dead Jobs"]
    [:div.content.redis-jobs-page
+    (c/filter-header ["id" "execute-fn-sym" "queue"] data)
     [:div.pagination
-     (jobs-table data)]
-    (when (and total-jobs (> total-jobs 0)))
-    [:div.bottom
-     (c/purge-confirmation-dialog data)
-     [:button.btn.btn-danger.btn-lg.purge-dialog-show "Purge"]]]])
+     (when total-jobs
+       (c/pagination data))]
+    (jobs-table data)]])
 
 (defn get-jobs [{:keys                     [prefix-route]
                  {:keys [app-name broker]} :console-opts
-                 {:keys [page]}            :params}]
+                 {:keys [page]}                    :params}]
   (let [view (console/layout c/header jobs-page-view)
         current-page (or d/page page)
         jobs (dead-jobs/get-by-range (:redis-conn broker) (* d/page-size (dec current-page)) (* d/page-size current-page))
