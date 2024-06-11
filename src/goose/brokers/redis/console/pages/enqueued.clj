@@ -21,37 +21,6 @@
             :class (when (= q queue) "highlight")}
         [:li.queue-list-item q]])]]])
 
-(defn- sticky-header [{:keys                                    [base-path]
-                       {:keys [filter-type filter-value limit]} :params}]
-  [:div.header
-   [:form.filter-opts {:action base-path
-                       :method "get"}
-    [:div.filter-opts-items
-     [:select {:name "filter-type" :class "filter-type"}
-      (for [type ["id" "execute-fn-sym" "type"]]
-        [:option {:value type :selected (= type filter-type)} type])]
-     [:div.filter-values
-
-      ;; filter-value element is dynamically changed in JavaScript based on filter-type
-      ;; Any attribute update in field-value should be reflected in JavaScript file too
-
-      (if (= filter-type "type")
-        [:select {:name "filter-value" :class "filter-value"}
-         (for [val ["unexecuted" "failed"]]
-           [:option {:value val :selected (= val filter-value)} val])]
-        [:input {:name  "filter-value" :type "text" :placeholder "filter value"
-                 :class "filter-value" :value filter-value}])]]
-    [:div.filter-opts-items
-     [:span.limit "Limit"]
-     [:input {:type  "number" :name "limit" :id "limit" :placeholder "custom limit"
-              :value (if (string/blank? limit) d/limit limit)
-              :min   "0"
-              :max   "10000"}]]
-    [:div.filter-opts-items
-     [:button.btn.btn-cancel
-      [:a. {:href base-path :class "cursor-default"} "Clear"]]
-     [:button.btn {:type "submit"} "Apply"]]]])
-
 (defn jobs-table [{:keys [base-path queue jobs]}]
   [:form {:action (str base-path "/jobs")
           :method "post"}
@@ -103,7 +72,7 @@
    [:div.content
     (sidebar data)
     [:div.right-side
-     (sticky-header data)
+     (c/filter-header ["id" "execute-fn-sym" "type"] data)
      [:div.pagination
       (when total-jobs
         (c/pagination data))]
