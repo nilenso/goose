@@ -287,6 +287,51 @@ input:disabled, input[disabled], button[disabled], button:disabled {
   position: relative;
 }
 
+/* Filter Header */
+
+.redis .header {
+  background-color: #9FACC5;
+  height: 50px;
+  display: flex;
+  border-radius: 6px;
+}
+
+.redis .header .filter-opts {
+  margin: auto;
+  display: flex;
+  width: 100%;
+}
+
+.redis .header .filter-opts input,
+select {
+  padding: 6px 8px;
+  margin: 2px 0;
+  display: inline-block;
+  border: none;
+}
+
+.redis .header .filter-opts-items {
+  margin: 0 10px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.redis .header .filter-opts-items .filter-type {
+  background-color: #c4d0ec;
+  color: #585454;
+}
+
+.redis .header .filter-opts-items .filter-values {
+  display: flex;
+}
+
+.redis .header .filter-opts-items .limit {
+  background-color: #c4d0ec;
+  font-size: small;
+  margin: auto;
+  padding: 7px 20px;
+}
+
 /* Bottom Purge Button  */
 .redis .bottom {
   margin-top: 50px;
@@ -342,50 +387,4 @@ input:disabled, input[disabled], button[disabled], button:disabled {
 
 .redis-enqueued .right-side {
   padding-top: 30px;
-}
-
-
-/* Sticky Header */
-
-.redis-enqueued .header {
-  background-color: #9FACC5;
-  height: 50px;
-  display: flex;
-  border-radius: 6px;
-}
-
-.redis-enqueued .header .filter-opts {
-  margin: auto;
-  display: flex;
-  width: 100%;
-}
-
-.redis-enqueued .header .filter-opts input,
-select {
-  padding: 6px 8px;
-  margin: 2px 0;
-  display: inline-block;
-  border: none;
-}
-
-.redis-enqueued .header .filter-opts-items {
-  margin: 0 10px;
-  display: flex;
-  justify-content: space-between;
-}
-
-.redis-enqueued .header .filter-opts-items .filter-type {
-  background-color: #c4d0ec;
-  color: #585454;
-}
-
-.redis-enqueued .header .filter-opts-items .filter-values {
-  display: flex;
-}
-
-.redis-enqueued .header .filter-opts-items .limit {
-  background-color: #c4d0ec;
-  font-size: small;
-  margin: auto;
-  padding: 7px 20px;
 }

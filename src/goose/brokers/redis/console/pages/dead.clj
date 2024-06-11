@@ -1,12 +1,35 @@
 (ns goose.brokers.redis.console.pages.dead
   (:require [clojure.string :as string]
-            [goose.brokers.redis.api.dead-jobs :as dead-jobs]
+            [goose.brokers.redis.console.data :as data]
             [goose.brokers.redis.console.pages.components :as c]
+            [goose.brokers.redis.console.specs :as specs]
             [goose.console :as console]
             [goose.defaults :as d]
             [ring.util.response :as response])
   (:import
     (java.util Date)))
+
+(defn validate-get-jobs [{:keys [page filter-type limit filter-value]}]
+  (let [page (specs/validate-or-default ::specs/page
+                                        (specs/str->long page)
+                                        (specs/str->long page)
+                                        d/page)
+        f-type (specs/validate-or-default ::specs/dead-filter-type filter-type)
+        f-val (case f-type
+                "id" (specs/validate-or-default ::specs/job-id
+                                                (parse-uuid filter-value)
+                                                filter-value)
+                "execute-fn-sym" (specs/validate-or-default ::specs/filter-value-sym
+                                                            filter-value)
+                "queue" (specs/validate-or-default ::specs/queue filter-value)
+                nil)
+        limit (specs/validate-or-default ::specs/limit (specs/str->long limit)
+                                         (specs/str->long limit)
+                                         d/limit)]
+    {:page         page
+     :filter-type  f-type
+     :filter-value f-val
+     :limit        limit}))
 
 (defn jobs-table [{:keys [prefix-route jobs]}]
   [:form {:action (prefix-route "/dead/jobs")
@@ -41,14 +64,12 @@
 
 (defn get-jobs [{:keys                     [prefix-route]
                  {:keys [app-name broker]} :console-opts
-                 {:keys [page]}                    :params}]
+                 params                    :params}]
   (let [view (console/layout c/header jobs-page-view)
-        current-page (or (when page (Integer/parseInt page)) d/page)
-        jobs (dead-jobs/get-by-range (:redis-conn broker) (* d/page-size (dec current-page)) (* d/page-size current-page))
-        data {:page       current-page
-              :jobs       jobs
-              :total-jobs (dead-jobs/size (:redis-conn broker))}]
-    (response/response (view "Dead" (assoc data :job-type :dead
+        validated-params (validate-get-jobs params)
+        data (data/dead-page-data (:redis-conn broker) validated-params)]
+    (response/response (view "Dead" (assoc data :params params
+                                                :job-type :dead
                                                 :base-path (prefix-route "/dead")
                                                 :app-name app-name
                                                 :prefix-route prefix-route)))))

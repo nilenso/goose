@@ -55,7 +55,7 @@ window.onload = () => {
 
   function attachFilterTypeEventListener() {
     const SELECT_FILTER_TYPES = ["type"];
-    const INPUT_FILTER_TYPES = ["id", "execute-fn-sym"];
+    const INPUT_FILTER_TYPES = ["id", "execute-fn-sym", "queue"];
     const filterTypeSelect = document.querySelector(".filter-type");
     if (filterTypeSelect) {
       filterTypeSelect.addEventListener("change", (event) => {

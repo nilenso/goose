@@ -89,7 +89,7 @@
                                         (specs/str->long page)
                                         d/page)
         queue (specs/validate-or-default ::specs/queue queue)
-        f-type (specs/validate-or-default ::specs/filter-type filter-type)
+        f-type (specs/validate-or-default ::specs/enqueued-filter-type filter-type)
         f-val (case f-type
                 "id" (specs/validate-or-default ::specs/job-id
                                                 (parse-uuid filter-value)
