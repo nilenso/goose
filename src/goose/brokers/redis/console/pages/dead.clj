@@ -43,11 +43,12 @@
                  {:keys [app-name broker]} :console-opts
                  {:keys [page]}                    :params}]
   (let [view (console/layout c/header jobs-page-view)
-        current-page (or d/page page)
+        current-page (or (when page (Integer/parseInt page)) d/page)
         jobs (dead-jobs/get-by-range (:redis-conn broker) (* d/page-size (dec current-page)) (* d/page-size current-page))
         data {:page       current-page
               :jobs       jobs
               :total-jobs (dead-jobs/size (:redis-conn broker))}]
     (response/response (view "Dead" (assoc data :job-type :dead
+                                                :base-path (prefix-route "/dead")
                                                 :app-name app-name
                                                 :prefix-route prefix-route)))))

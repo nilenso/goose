@@ -46,9 +46,6 @@
    [:input.btn.btn-danger
     {:type "button" :value "Delete" :class "delete-dialog-show" :disabled disabled}]])
 
-(defn replay-btn [& {:keys [disabled] :or {disabled true}}]
-  [:input.btn {:type "submit" :value "Replay" :disabled disabled}])
-
 (defn action-btns [btns]
   [:div.actions
    (for [btn btns]

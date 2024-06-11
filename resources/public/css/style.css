@@ -235,6 +235,17 @@ input:disabled, input[disabled], button[disabled], button:disabled {
     margin: 5em;
 }
 
+.redis .pagination {
+  justify-content: center;
+  display: flex;
+  margin: 10px;
+  height: 2em;
+}
+
+.redis .pagination a {
+  padding: 10px;
+}
+
 .redis .jobs-table th .id-h {
   width: 40%;
 }
@@ -296,10 +307,6 @@ input:disabled, input[disabled], button[disabled], button:disabled {
   color: #C87021;
 }
 
-.redis-enqueued .pagination a {
-  padding: 10px;
-}
-
 /* Sidebar */
 
 .redis-enqueued #sidebar {
@@ -337,12 +344,6 @@ input:disabled, input[disabled], button[disabled], button:disabled {
   padding-top: 30px;
 }
 
-.redis-enqueued .pagination {
-  justify-content: center;
-  display: flex;
-  margin: 10px;
-  height: 2em;
-}
 
 /* Sticky Header */
 
