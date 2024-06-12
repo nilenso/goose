@@ -3,6 +3,7 @@
             [clojure.test :refer [deftest is testing use-fixtures]]
             [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
             [goose.brokers.redis.console :as console]
+            [goose.brokers.redis.console.pages.dead :as dead]
             [goose.brokers.redis.console.pages.enqueued :as enqueued]
             [goose.brokers.redis.console.pages.home :as home]
             [goose.defaults :as d]
@@ -14,7 +15,7 @@
 
 (use-fixtures :each tu/redis-fixture)
 
-(deftest validate-get-jobs-test
+(deftest validate-get-enqueued-jobs-test
   (testing "Should set req params to default values if values do not conform specs"
     (let [random-id (str (random-uuid))]
       (is (= 1 (:page (enqueued/validate-get-jobs {}))))
@@ -55,6 +56,40 @@
       (is (= 3 (:limit (enqueued/validate-get-jobs {:limit "3"}))))
       (is (= d/limit (:limit (enqueued/validate-get-jobs {:limit (rand-nth ["21w" "one" :1])})))))))
 
+(deftest validate-get-dead-jobs-test
+  (testing "Should set req params to default values if values do not conform specs"
+    (let [random-id (str (random-uuid))]
+      (is (= 1 (:page (dead/validate-get-jobs {}))))
+      (is (= 1 (:page (dead/validate-get-jobs {:page nil}))))
+      (is (= 2 (:page (dead/validate-get-jobs {:page "2"}))))
+      (is (= 1 (:page (dead/validate-get-jobs {:page "two"}))))
+      (is (= 1 (:page (dead/validate-get-jobs {:page "2w"}))))
+
+      (let [valid-filter-type ["id" "execute-fn-sym" "queue"]
+            random-filter-type (rand-nth ["id" "execute-fn-sym" "queue"])]
+        (is (some #(= % (:filter-type (dead/validate-get-jobs {:filter-type  random-filter-type
+                                                               :filter-value ""})))
+                  valid-filter-type)))
+
+      (is (= random-id (:filter-value (dead/validate-get-jobs {:filter-type  "id"
+                                                               :filter-value random-id}))))
+      (is (nil? (:filter-value (dead/validate-get-jobs {:filter-type  "id"
+                                                        :filter-value (rand-nth ["abcd" ""])}))))
+
+      (is (= "some-namespace/fn-name" (:filter-value (dead/validate-get-jobs {:filter-type  "execute-fn-sym"
+                                                                              :filter-value "some-namespace/fn-name"}))))
+      (is (nil? (:filter-value (dead/validate-get-jobs {:filter-type  "execute-fn-sym"
+                                                        :filter-value (rand-nth [123 nil])}))))
+
+      (is (= nil (:filter-value (dead/validate-get-jobs {:filter-type  "queue"
+                                                         :filter-value :default}))))
+      (is (= nil (:filter-value (dead/validate-get-jobs {:filter-type  "queue"
+                                                         :filter-value nil}))))
+      (is (= "default" (:filter-value (dead/validate-get-jobs {:filter-type  "queue"
+                                                               :filter-value "default"}))))
+      (is (= nil (:filter-value (dead/validate-get-jobs {:filter-type  "queue"
+                                                         :filter-value 123})))))))
+
 (deftest validate-req-params-test
   (testing "Should set req params of job to default value if do not conform spec"
     (let [uuid (str (random-uuid))]
@@ -67,14 +102,14 @@
     (is (= "some-encoded-job" (:encoded-job (enqueued/validate-req-params
                                               {:job "some-encoded-job"}))))
     (is (nil? (:encoded-job (enqueued/validate-req-params
-                                              {:job {:id "123"}}))))
+                              {:job {:id "123"}}))))
 
     (is (= ["some-encoded-job"] (:encoded-jobs (enqueued/validate-req-params
-                                               {:jobs "some-encoded-job"}))))
+                                                 {:jobs "some-encoded-job"}))))
     (is (= ["some-encoded-job1"
             "some-encoded-job2"] (:encoded-jobs (enqueued/validate-req-params
-                                                 {:jobs ["some-encoded-job1"
-                                                         "some-encoded-job2"]}))))))
+                                                  {:jobs ["some-encoded-job1"
+                                                          "some-encoded-job2"]}))))))
 
 (deftest page-handler-test
   (testing "Main handler should invoke home-page handler"
