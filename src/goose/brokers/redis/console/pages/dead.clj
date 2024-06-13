@@ -31,8 +31,8 @@
      :filter-value f-val
      :limit        limit}))
 
-(defn jobs-table [{:keys [prefix-route jobs]}]
-  [:form {:action (prefix-route "/dead/jobs")
+(defn jobs-table [{:keys [base-path jobs]}]
+  [:form {:action (str base-path "/jobs")
           :method "post"}
    [:table.jobs-table
     [:thead

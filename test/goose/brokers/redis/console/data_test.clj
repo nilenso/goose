@@ -1,5 +1,6 @@
 (ns goose.brokers.redis.console.data-test
   (:require [clojure.test :refer [deftest is testing use-fixtures]]
+            [goose.brokers.redis.api.dead-jobs :as dead-jobs]
             [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
             [goose.brokers.redis.console.data :as console]
             [goose.defaults :as d]
@@ -33,7 +34,7 @@
       (is (= 2 (count jobs)))
       (is (= 2 total-jobs))))
   (tu/clear-redis)
-  (testing "Should get at-max page-size jobs given > page-size jobs in redis"
+  (testing "Should get at-max page-size jobs given larger page-size"
     (f/create-jobs {:enqueued 8})
     (with-redefs [d/page-size 3]
       (let [{:keys [page jobs total-jobs]} (console/enqueued-page-data tu/redis-conn {:queue tu/queue
@@ -105,3 +106,74 @@
               :total-jobs 2
               :jobs       jobs} (console/enqueued-page-data tu/redis-conn {:queue tu/queue
                                                                            :page  1}))))))
+
+(deftest dead-page-data-test
+  (testing "Should get dead-jobs page data i.e jobs, total-jobs and page"
+    (f/create-jobs {:dead 9})
+    (let [jobs (dead-jobs/get-by-range tu/redis-conn 0 9)]
+      (is (= {:jobs       jobs
+              :total-jobs 9
+              :page       1} (console/dead-page-data tu/redis-conn {:page 1})))))
+  (tu/clear-redis)
+  (testing "Should return no jobs given no jobs exist in redis"
+    (let [result (console/dead-page-data tu/redis-conn {:page 1})]
+      (is (= {:page 1
+              :jobs []
+              :total-jobs 0} result))))
+  (testing "Should return no jobs given valid filter-params but no jobs in redis"
+    (let [result1 (console/dead-page-data tu/redis-conn {:page         1
+                                                         :filter-type  "id"
+                                                         :filter-value (str (random-uuid))
+                                                         :limit        10})
+          result2 (console/dead-page-data tu/redis-conn {:page         1
+                                                         :filter-type  "execute-fn-sym"
+                                                         :filter-value "non-existent"
+                                                         :limit        10})]
+      (is (= {:page 1
+              :jobs [nil]} result1))
+      (is (= {:page 1
+              :jobs []} result2))))
+  (testing "Should filter based on filter-type"
+    (f/create-jobs {:dead 7})
+    (let [random-job (rand-nth (dead-jobs/get-by-range tu/redis-conn 0 7))
+          result (console/dead-page-data tu/redis-conn {:page         1
+                                                        :filter-type  "id"
+                                                        :filter-value (:id random-job)})]
+      (is (= {:page 1
+              :jobs [random-job]} result)))
+
+    (let [jobs (dead-jobs/get-by-range tu/redis-conn 0 9)
+          {filtered-jobs :jobs} (console/dead-page-data tu/redis-conn {:page         1
+                                                                       :filter-type  "execute-fn-sym"
+                                                                       :filter-value "goose.test-utils/my-fn"
+                                                                       :limit        9})]
+      (is (set filtered-jobs) (set jobs)))
+    (let [jobs (dead-jobs/get-by-range tu/redis-conn 0 9)
+          {filtered-jobs :jobs} (console/dead-page-data tu/redis-conn {:page         1
+                                                                       :filter-type  "queue"
+                                                                       :filter-value tu/queue
+                                                                       :limit        9})]
+      (is (set filtered-jobs) (set jobs))))
+  (tu/clear-redis)
+  (testing "Should return all the jobs in page 2"
+    (f/create-jobs {:dead 12})
+    (let [jobs (dead-jobs/get-by-range tu/redis-conn 10 19)
+          {page-2-jobs :jobs} (console/dead-page-data tu/redis-conn {:page 2})]
+      (is (= page-2-jobs jobs))
+      (is (= 2 (count page-2-jobs)))))
+  (tu/clear-redis)
+  (testing "Should return no jobs if the filter is not satisfied with any jobs"
+    (f/create-jobs {:dead 6})
+    (let [result (console/dead-page-data tu/redis-conn {:page         1
+                                                        :filter-type  "queue"
+                                                        :filter-value "some-random-queue"
+                                                        :limit        10})]
+      (is (= {:page 1
+              :jobs []} result))))
+  (tu/clear-redis)
+  (testing "Should return no jobs given invalid filter params"
+    (let [result (console/dead-page-data tu/redis-conn {:page         1
+                                                        :filter-type  "invalid-filter"
+                                                        :filter-value "some-invalid-filter"})]
+      (is (= {:page 1
+              :jobs nil} result)))))
