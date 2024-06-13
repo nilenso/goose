@@ -90,10 +90,10 @@
       ;; Any attribute update in field-value should be reflected in JavaScript file too
 
       (if (= filter-type "type")
-        [:select {:name "filter-value" :class "filter-value"}
+        [:select {:name "filter-value" :class "filter-value" :required true}
          (for [val ["unexecuted" "failed"]]
            [:option {:value val :selected (= val filter-value)} val])]
-        [:input {:name  "filter-value" :type "text" :placeholder "filter value"
+        [:input {:name  "filter-value" :type "text" :placeholder "filter value" :required true
                  :class "filter-value" :value filter-value}])]]
     [:div.filter-opts-items
      [:span.limit "Limit"]
