@@ -141,7 +141,9 @@
         validated-params (validate-get-jobs params)
         {:keys [queue] :as data} (data/enqueued-page-data (:redis-conn broker) validated-params)]
     (response/response (view "Enqueued" (assoc data :job-type :enqueued
-                                                    :base-path (prefix-route "/enqueued/queue/" queue)
+                                                    :base-path (if-let [q queue]
+                                                                 (prefix-route "/enqueued/queue/" q)
+                                                                 (prefix-route "/enqueued"))
                                                     :params params
                                                     :app-name app-name
                                                     :prefix-route prefix-route)))))

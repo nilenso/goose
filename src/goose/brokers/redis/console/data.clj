@@ -20,7 +20,7 @@
 
 (defn- filter-enqueued-jobs [redis-conn queue {:keys [filter-type filter-value limit]}]
   (case filter-type
-    "id" [(enqueued-jobs/find-by-id redis-conn queue filter-value)]
+    "id" (if-let [job (enqueued-jobs/find-by-id redis-conn queue filter-value)] [job] [])
     "execute-fn-sym" (enqueued-jobs/find-by-pattern redis-conn
                                                     queue
                                                     (fn [j]
@@ -46,6 +46,10 @@
                      :page   page
                      :queue  queue}]
     (cond
+
+      (empty? queues)
+      (assoc base-result :jobs [])
+
       (and filter-type filter-value)
       (assoc base-result :jobs (filter-enqueued-jobs redis-conn queue params))
 
@@ -58,9 +62,9 @@
 
       :else base-result)))
 
-(defn filter-dead-jobs [redis-conn {:keys [filter-type filter-value limit]}]
+(defn- filter-dead-jobs [redis-conn {:keys [filter-type filter-value limit]}]
   (case filter-type
-    "id" [(dead-jobs/find-by-id redis-conn filter-value)]
+    "id" (if-let [job (dead-jobs/find-by-id redis-conn filter-value)] [job] [])
     "execute-fn-sym" (dead-jobs/find-by-pattern redis-conn
                                                 (fn [j]
                                                   (= (:execute-fn-sym j)
