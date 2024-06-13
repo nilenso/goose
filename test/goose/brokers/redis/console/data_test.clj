@@ -132,18 +132,16 @@
               :jobs       []
               :total-jobs 0} result))))
   (testing "Should return no jobs given valid filter-params but no jobs in redis"
-    (let [result1 (console/dead-page-data tu/redis-conn {:page         1
-                                                         :filter-type  "id"
-                                                         :filter-value (str (random-uuid))
-                                                         :limit        10})
-          result2 (console/dead-page-data tu/redis-conn {:page         1
-                                                         :filter-type  "execute-fn-sym"
-                                                         :filter-value "non-existent"
-                                                         :limit        10})]
-      (is (= {:page 1
-              :jobs []} result1))
-      (is (= {:page 1
-              :jobs []} result2))))
+    (is (= {:page 1
+            :jobs []} (console/dead-page-data tu/redis-conn {:page         1
+                                                             :filter-type  "id"
+                                                             :filter-value (str (random-uuid))
+                                                             :limit        10})))
+    (is (= {:page 1
+            :jobs []} (console/dead-page-data tu/redis-conn {:page         1
+                                                             :filter-type  "execute-fn-sym"
+                                                             :filter-value "non-existent"
+                                                             :limit        10}))))
   (testing "Should filter based on filter-type"
     (f/create-jobs-in-redis {:dead 7})
     (let [random-job (rand-nth (dead-jobs/get-by-range tu/redis-conn 0 7))
