@@ -101,7 +101,8 @@
     (f/create-jobs {:enqueued 1})
     (is (= {:queue  tu/queue
             :page   1
-            :queues (list tu/queue)} (console/enqueued-page-data tu/redis-conn {:queue        tu/queue
+            :queues (list tu/queue)
+            :jobs []} (console/enqueued-page-data tu/redis-conn {:queue        tu/queue
                                                                                 :page         1
                                                                                 :filter-type  "id"
                                                                                 :filter-value nil
