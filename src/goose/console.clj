@@ -77,13 +77,13 @@
    ### Args
 
   `header-items` : A seq of maps each containing route and label keys to
-   specify navigation links \\
+   specify navigation links
 
-   `data` : A map that includes: \\
+   `data` : A map that includes:
 
-   - `uri`         : The current page's URI to check to highlight as active link \\
-   - `app-name`    : Application's name \\
-   - `prefix-route`: Function to prepend paths to generate url \\"
+   - `uri`         : The current page's URI to check to highlight as active link
+   - `app-name`    : Application's name
+   - `prefix-route`: Function to prepend paths to generate url"
 
   [header-items {:keys [app-name prefix-route uri] :or {app-name ""}
                  :as   _data}]
@@ -131,24 +131,24 @@
    [Message Broker wiki](https://github.com/nilenso/goose/wiki/Message-Brokers)
 
   `:route-prefix` : Route path that exposes console via app-handler (should not include a trailing \"/\") \\
-    *Example*     : [[goose.defaults/route-prefix]] \\
+    *Example*     : [[goose.defaults/route-prefix]] 
 
   `:app-name`     : Name to be displayed in console navbar \\
-    *Example*     : [[goose.defaults/app-name]] \\"
+    *Example*     : [[goose.defaults/app-name]] "
   {:route-prefix d/route-prefix
    :app-name     d/app-name})
 
 (defn app-handler
-  "A Ring handler that sets up the necessary middleware and serves Goose Console. \\
+  "A Ring handler that sets up the necessary middleware and serves Goose Console.
 
-   It takes two arguments: \\
+   It takes two arguments:
 
    ### Args
 
    `:console-opts`   : A map of `:broker`, `:route-prefix`, & `app-name` \\
-    *Example*        : [[default-console-opts]] \\
+    *Example*        : [[default-console-opts]] 
 
-   `:req`            : Incoming HTTP request \\
+   `:req`            : Incoming HTTP request
 
    - [Console wiki](https://github.com/nilenso/goose/wiki/Console)"
   [{:keys [broker] :as console-opts} req]

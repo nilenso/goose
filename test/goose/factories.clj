@@ -5,8 +5,8 @@
             [goose.defaults :as d]
             [goose.job :as j]
             [goose.retry :as retry]
-            [goose.utils :as u]
-            [goose.test-utils :as tu]))
+            [goose.test-utils :as tu]
+            [goose.utils :as u]))
 
 (defn job [overrides]
   (merge (j/new `tu/my-fn (list "foobar") tu/queue (d/prefix-queue tu/queue) retry/default-opts)
@@ -38,14 +38,16 @@
     cron-opts))
 
 (defn create-dead-job [& [overrides]]
-  (let [error-state {:state {:error           "Error"
-                             :last-retried-at (u/epoch-time-ms),
-                             :first-failed-at 1701344365468,
-                             :retry-count     27,
+  (let [now (u/epoch-time-ms)
+        error-state {:state {:error           "Error"
+                             :last-retried-at now
+                             :died-at         now
+                             :first-failed-at 1701344365468
+                             :retry-count     27
                              :retry-at        1701344433359}}
         j (job (merge error-state overrides))]
     (redis-cmds/enqueue-sorted-set tu/redis-conn d/prefixed-dead-queue
-                                   (get-in j [:state :last-retried-at]) j)
+                                   (get-in j [:state :died-at]) j)
     (:id j)))
 
 (defn create-jobs [{:keys [enqueued scheduled periodic dead]
