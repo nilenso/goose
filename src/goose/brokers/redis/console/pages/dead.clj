@@ -1,10 +1,12 @@
 (ns goose.brokers.redis.console.pages.dead
   (:require [clojure.string :as string]
+            [goose.brokers.redis.api.dead-jobs :as dead-jobs]
             [goose.brokers.redis.console.data :as data]
             [goose.brokers.redis.console.pages.components :as c]
             [goose.brokers.redis.console.specs :as specs]
             [goose.console :as console]
             [goose.defaults :as d]
+            [goose.utils :as utils]
             [ring.util.response :as response])
   (:import
     (java.util Date)))
@@ -34,6 +36,9 @@
 (defn jobs-table [{:keys [prefix-route jobs]}]
   [:form {:action (prefix-route "/dead/jobs")
           :method "post"}
+   (c/action-btns [(c/replay-btn)
+                   (c/delete-btn
+                     [:div "Are you sure you want to delete selected jobs?"])])
    [:table.jobs-table
     [:thead
      [:tr
@@ -41,16 +46,22 @@
       [:th.queue-h "Queue"]
       [:th.execute-fn-sym-h "Execute fn symbol"]
       [:th.args-h "Args"]
-      [:th.enqueued-at-h "Died at"]]]
+      [:th.enqueued-at-h "Died at"]
+      [:th.checkbox-h [:input {:type "checkbox" :id "checkbox-h"}]]]]
     [:tbody
-     (for [{:keys             [id queue execute-fn-sym args]
+     (for [{:keys             [id queue execute-fn-sym args] :as j
             {:keys [died-at]} :state} jobs]
        [:tr
         [:td [:div.id id]]
         [:td [:div.queue] queue]
         [:td [:div.execute-fn-sym (str execute-fn-sym)]]
         [:td [:div.args (string/join ", " (mapv c/format-arg args))]]
-        [:td [:div.died-at] (Date. ^Long died-at)]])]]])
+        [:td [:div.died-at] (Date. ^Long died-at)]
+        [:td [:div.checkbox-div
+              [:input {:name  "jobs"
+                       :type  "checkbox"
+                       :class "checkbox"
+                       :value (utils/encode-to-str j)}]]]])]]])
 
 (defn- jobs-page-view [{:keys [total-jobs] :as data}]
   [:div.redis
@@ -60,7 +71,11 @@
     [:div.pagination
      (when total-jobs
        (c/pagination data))]
-    (jobs-table data)]])
+    (jobs-table data)
+    (when (and total-jobs (> total-jobs 0))
+      [:div.bottom
+       (c/purge-confirmation-dialog data)
+       [:button {:class "btn btn-danger btn-lg purge-dialog-show"} "Purge"]])]])
 
 (defn get-jobs [{:keys                     [prefix-route]
                  {:keys [app-name broker]} :console-opts
@@ -73,3 +88,24 @@
                                                 :base-path (prefix-route "/dead")
                                                 :app-name app-name
                                                 :prefix-route prefix-route)))))
+
+(defn purge-queue [{{{:keys [redis-conn]} :broker} :console-opts
+                    :keys                          [prefix-route]}]
+  (dead-jobs/purge redis-conn)
+  (response/redirect (prefix-route "/dead")))
+
+(defn replay-jobs [{{{:keys [redis-conn]} :broker} :console-opts
+                    :keys                          [prefix-route]
+                    params                         :params}]
+  (let [{:keys [encoded-jobs]} (specs/validate-req-params params)
+        jobs (mapv utils/decode-from-str encoded-jobs)]
+    (apply dead-jobs/replay-jobs redis-conn jobs)
+    (response/redirect (prefix-route "/dead"))))
+
+(defn delete-jobs [{{{:keys [redis-conn]} :broker} :console-opts
+                    :keys                          [prefix-route]
+                    params                         :params}]
+  (let [{:keys [encoded-jobs]} (specs/validate-req-params params)
+        jobs (mapv utils/decode-from-str encoded-jobs)]
+    (apply dead-jobs/delete redis-conn jobs)
+    (response/redirect (prefix-route "/dead"))))

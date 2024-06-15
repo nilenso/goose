@@ -1,11 +1,13 @@
 (ns goose.brokers.redis.console.page-test
   (:require [clojure.string :as str]
             [clojure.test :refer [deftest is testing use-fixtures]]
+            [goose.brokers.redis.api.dead-jobs :as dead-jobs]
             [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
             [goose.brokers.redis.console :as console]
             [goose.brokers.redis.console.pages.dead :as dead]
             [goose.brokers.redis.console.pages.enqueued :as enqueued]
             [goose.brokers.redis.console.pages.home :as home]
+            [goose.brokers.redis.console.specs :as specs]
             [goose.defaults :as d]
             [goose.factories :as f]
             [goose.test-utils :as tu]
@@ -93,21 +95,21 @@
 (deftest validate-req-params-test
   (testing "Should set req params of job to default value if do not conform spec"
     (let [uuid (str (random-uuid))]
-      (is (= uuid (:id (enqueued/validate-req-params {:id uuid})))))
-    (is (nil? (:id (enqueued/validate-req-params {:id "not-uuid"}))))
+      (is (= uuid (:id (specs/validate-req-params {:id uuid})))))
+    (is (nil? (:id (specs/validate-req-params {:id "not-uuid"}))))
 
-    (is (= "valid-queue" (:queue (enqueued/validate-req-params {:queue "valid-queue"}))))
-    (is (nil? (:queue (enqueued/validate-req-params {:queue :not-string}))))
+    (is (= "valid-queue" (:queue (specs/validate-req-params {:queue "valid-queue"}))))
+    (is (nil? (:queue (specs/validate-req-params {:queue :not-string}))))
 
-    (is (= "some-encoded-job" (:encoded-job (enqueued/validate-req-params
+    (is (= "some-encoded-job" (:encoded-job (specs/validate-req-params
                                               {:job "some-encoded-job"}))))
-    (is (nil? (:encoded-job (enqueued/validate-req-params
+    (is (nil? (:encoded-job (specs/validate-req-params
                               {:job {:id "123"}}))))
 
-    (is (= ["some-encoded-job"] (:encoded-jobs (enqueued/validate-req-params
+    (is (= ["some-encoded-job"] (:encoded-jobs (specs/validate-req-params
                                                  {:jobs "some-encoded-job"}))))
     (is (= ["some-encoded-job1"
-            "some-encoded-job2"] (:encoded-jobs (enqueued/validate-req-params
+            "some-encoded-job2"] (:encoded-jobs (specs/validate-req-params
                                                   {:jobs ["some-encoded-job1"
                                                           "some-encoded-job2"]}))))))
 
@@ -115,19 +117,19 @@
   (testing "Main handler should invoke home-page handler"
     (with-redefs [home/page (spy/stub {:status 200 :body "Mocked resp"})]
       (console/handler tu/redis-producer (mock/request :get ""))
-      (true? (spy/called-once? home/page))
+      (is (true? (spy/called-once? home/page)))
       (is (= [{:status 200
                :body   "Mocked resp"}] (spy/responses home/page)))))
 
   (testing "Main Handler should invoke get-jobs handler for enqueued jobs page"
     (with-redefs [enqueued/get-jobs (spy/stub {:status 200 :body "Mocked resp"})]
       (console/handler tu/redis-producer (mock/request :get "/enqueued"))
-      (true? (spy/called-once? enqueued/get-jobs))
+      (is (true? (spy/called-once? enqueued/get-jobs)))
       (is (= [{:status 200
                :body   "Mocked resp"}] (spy/responses enqueued/get-jobs))))
     (with-redefs [enqueued/get-jobs (spy/stub {:status 200 :body "Mocked resp"})]
       (console/handler tu/redis-producer (mock/request :get "/enqueued/queue/default"))
-      (true? (spy/called-once? enqueued/get-jobs))
+      (is (true? (spy/called-once? enqueued/get-jobs)))
       (is (= [{:status 200
                :body   "Mocked resp"}] (spy/responses enqueued/get-jobs)))
       (is (= "default" (get-in (first (spy/first-call enqueued/get-jobs)) [:params :queue])))))
@@ -135,19 +137,19 @@
   (testing "Main handler should invoke purge-queue handler for enqueued jobs page"
     (with-redefs [enqueued/purge-queue (spy/stub {:status 302 :headers {"Location" "/enqueued"} :body ""})]
       (console/handler tu/redis-producer (mock/request :delete "/enqueued/queue/default"))
-      (true? (spy/called-once? enqueued/purge-queue))
+      (is (true? (spy/called-once? enqueued/purge-queue)))
       (is (= [{:status 302 :headers {"Location" "/enqueued"} :body ""}] (spy/responses enqueued/purge-queue)))))
 
   (testing "Main handler should invoke delete-jobs handler for enqueued jobs page"
     (with-redefs [enqueued/delete-jobs (spy/stub {:status 302 :headers {"Location" "/enqueued/queue/test"} :body ""})]
       (console/handler tu/redis-producer (mock/request :delete "/enqueued/queue/default/jobs"))
-      (true? (spy/called-once? enqueued/delete-jobs))
+      (is (true? (spy/called-once? enqueued/delete-jobs)))
       (is (= [{:status 302 :headers {"Location" "/enqueued/queue/test"} :body ""}] (spy/responses enqueued/delete-jobs)))))
 
   (testing "Main handler should invoke prioritise-jobs handler for enqueued jobs page"
     (with-redefs [enqueued/prioritise-jobs (spy/stub {:status 302 :headers {"Location" "/enqueued/queue/test"} :body ""})]
       (console/handler tu/redis-producer (mock/request :post "/enqueued/queue/default/jobs"))
-      (true? (spy/called-once? enqueued/prioritise-jobs))
+      (is (true? (spy/called-once? enqueued/prioritise-jobs)))
       (is (= [{:status 302 :headers {"Location" "/enqueued/queue/test"} :body ""}] (spy/responses enqueued/prioritise-jobs)))))
 
   (testing "Main handler should invoke get-job handler for enqueued jobs page"
@@ -155,8 +157,7 @@
                                               :body   "<html> Enqueue job UI </html>"})]
       (console/handler tu/redis-producer (mock/request
                                            :get (str "/enqueued/queue/default/job/" (random-uuid))))
-      (true? (spy/called-once? enqueued/validate-req-params))
-      (true? (spy/called-once? enqueued/get-job))))
+      (is (true? (spy/called-once? enqueued/get-job)))))
 
   (testing "Main handler should invoke prioritise job handler for enqueued jobs page"
     (with-redefs [enqueued/prioritise-job (spy/stub {:status  302
@@ -164,7 +165,7 @@
                                                      :headers {"Location" "/enqueued/queue/test"}})]
       (console/handler tu/redis-producer (mock/request
                                            :post (str "/enqueued/queue/default/job/" (random-uuid))))
-      (true? (spy/called-once? enqueued/prioritise-job))))
+      (is (true? (spy/called-once? enqueued/prioritise-job)))))
 
   (testing "Main handler should invoke delete job handler for enqueued jobs page"
     (with-redefs [enqueued/delete-job (spy/stub {:status  302
@@ -172,15 +173,34 @@
                                                  :headers {"Location" "/enqueued/queue/test"}})]
       (console/handler tu/redis-producer (mock/request
                                            :delete (str "/enqueued/queue/default/job/" (random-uuid))))
-      (true? (spy/called-once? enqueued/delete-job))))
+      (is (true? (spy/called-once? enqueued/delete-job)))))
 
   (testing "Main handler should invoke get-jobs handler for dead jobs page"
     (with-redefs [dead/get-jobs (spy/stub {:status 200
-                                           :body "<html> Dead jobs page</html>"})]
-      (console/handler tu/redis-producer (mock/request
-                                           :get "/dead"))
-      (true? (spy/called-once? dead/validate-get-jobs))
-      (true? (spy/called-once? dead/get-jobs)))))
+                                           :body   "<html> Dead jobs page</html>"})]
+      (console/handler tu/redis-producer (mock/request :get "/dead"))
+      (is (true? (spy/called-once? dead/get-jobs)))))
+
+  (testing "Main handler should invoke purge dead jobs queue"
+    (with-redefs [dead/purge-queue (spy/stub {:status  302
+                                              :body    ""
+                                              :headers {"Location" "/dead"}})]
+      (console/handler tu/redis-producer (mock/request :delete "/dead"))
+      (is (true? (spy/called-once? dead/purge-queue)))))
+
+  (testing "Main handler should invoke delete dead jobs"
+    (with-redefs [dead/delete-jobs (spy/stub {:status 302
+                                              :body   ""
+                                              :header {"Location" "/dead"}})]
+      (console/handler tu/redis-producer (mock/request :delete "/dead/jobs"))
+      (is (true? (spy/called-once? dead/delete-jobs)))))
+
+  (testing "Main handler should invoke replay dead jobs"
+    (with-redefs [dead/replay-jobs (spy/stub {:status 302
+                                              :body   ""
+                                              :header {"Location" "/dead"}})]
+      (console/handler tu/redis-producer (mock/request :post "/dead/jobs"))
+      (is (true? (spy/called-once? dead/replay-jobs))))))
 
 (deftest enqueued-purge-queue-test
   (testing "Should purge a queue"
@@ -295,3 +315,65 @@
                                                                  :job   encoded-job}
                                                   :prefix-route str})))
       (is (= 2 (enqueued-jobs/size tu/redis-conn tu/queue))))))
+
+(deftest dead-replay-jobs-test
+  (testing "Should replay 1 dead job"
+    (f/create-jobs {:dead 3})
+    (let [[j2] (dead-jobs/get-by-range tu/redis-conn 1 1)
+          encoded-job (u/encode-to-str j2)]
+      (is (= 0 (enqueued-jobs/size tu/redis-conn tu/queue)))
+      (is (= {:body    ""
+              :headers {"Location" "/dead"}
+              :status  302} (dead/replay-jobs {:console-opts tu/redis-console-opts
+                                               :params       {:jobs encoded-job}
+                                               :prefix-route str})))
+      (is (= 1 (enqueued-jobs/size tu/redis-conn tu/queue)))
+      (is (= (list j2) (enqueued-jobs/get-by-range tu/redis-conn tu/queue 0 0)))
+      (is (= 2 (dead-jobs/size tu/redis-conn)))))
+  (tu/clear-redis)
+  (testing "Should replay >1 dead jobs"
+    (f/create-jobs {:dead 5})
+    (let [jobs (dead-jobs/get-by-range tu/redis-conn 0 1)
+          encoded-jobs (mapv u/encode-to-str jobs)]
+      (is (= 0 (enqueued-jobs/size tu/redis-conn tu/queue)))
+      (is (= {:body    ""
+              :headers {"Location" "/dead"}
+              :status  302} (dead/replay-jobs {:console-opts tu/redis-console-opts
+                                               :params       {:jobs encoded-jobs}
+                                               :prefix-route str}))))))
+
+(deftest dead-delete-jobs-test
+  (testing "Should delete 1 dead job"
+    (f/create-jobs {:dead 2})
+    (let [[j1] (dead-jobs/get-by-range tu/redis-conn 1 1)
+          encoded-job (u/encode-to-str j1)]
+      (is (= 2 (dead-jobs/size tu/redis-conn)))
+      (is (= {:body    ""
+              :headers {"Location" "/dead"}
+              :status  302} (dead/delete-jobs {:console-opts tu/redis-console-opts
+                                               :params       {:jobs encoded-job}
+                                               :prefix-route str})))
+      (is (= 1 (dead-jobs/size tu/redis-conn)))))
+  (tu/clear-redis)
+  (testing "Should delete >1 dead jobs"
+    (f/create-jobs {:dead 5})
+    (let [[j1 j2 j3 j4 j5] (dead-jobs/get-by-range tu/redis-conn 0 4)
+          encoded-jobs (mapv u/encode-to-str [j2 j3 j1 j5])]
+      (is (= 5 (dead-jobs/size tu/redis-conn)))
+      (is (= {:body    ""
+              :headers {"Location" "/dead"}
+              :status  302} (dead/delete-jobs {:console-opts tu/redis-console-opts
+                                               :params       {:jobs encoded-jobs}
+                                               :prefix-route str})))
+      (is (= 1 (dead-jobs/size tu/redis-conn)))
+      (is (= [j4] (dead-jobs/get-by-range tu/redis-conn 0 4))))))
+
+(deftest dead-purge-test
+  (testing "Should purge dead queue"
+    (f/create-jobs {:dead 12})
+    (is (= 12 (dead-jobs/size tu/redis-conn)))
+    (is (= {:body    ""
+            :headers {"Location" "/dead"}
+            :status  302} (dead/purge-queue {:console-opts tu/redis-console-opts
+                                             :prefix-route str})))
+    (is (= 0 (dead-jobs/size tu/redis-conn)))))
