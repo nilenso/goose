@@ -109,20 +109,12 @@
      :filter-value f-val
      :limit        limit}))
 
-(defn validate-req-params [{:keys [id queue job jobs]}]
-  {:id           (specs/validate-or-default ::specs/job-id (-> id str parse-uuid) id)
-   :queue        (specs/validate-or-default ::specs/queue queue)
-   :encoded-job  (specs/validate-or-default ::specs/encoded-job job job)
-   :encoded-jobs (specs/validate-or-default ::specs/encoded-jobs
-                                            (specs/->coll jobs)
-                                            (specs/->coll jobs))})
-
 (defn get-job [{:keys                          [prefix-route]
                 {:keys                [app-name]
                  {:keys [redis-conn]} :broker} :console-opts
                 params                         :params}]
   (let [view (console/layout c/header job-page-view)
-        {:keys [id queue]} (validate-req-params params)]
+        {:keys [id queue]} (specs/validate-req-params params)]
     (if id
       (response/response (view "Enqueued" (-> {:job (enqueued-jobs/find-by-id
                                                       redis-conn
@@ -151,14 +143,14 @@
 (defn purge-queue [{{:keys [broker]} :console-opts
                     params           :params
                     :keys            [prefix-route]}]
-  (let [{:keys [queue]} (validate-req-params params)]
+  (let [{:keys [queue]} (specs/validate-req-params params)]
     (enqueued-jobs/purge (:redis-conn broker) queue)
     (response/redirect (prefix-route "/enqueued"))))
 
 (defn prioritise-jobs [{{:keys [broker]} :console-opts
                         :keys            [prefix-route]
                         params           :params}]
-  (let [{:keys [queue encoded-jobs]} (validate-req-params params)
+  (let [{:keys [queue encoded-jobs]} (specs/validate-req-params params)
         jobs (mapv utils/decode-from-str encoded-jobs)]
     (enqueued-jobs/prioritise-execution (:redis-conn broker) queue jobs)
     (response/redirect (prefix-route "/enqueued/queue/" queue))))
@@ -166,7 +158,7 @@
 (defn delete-jobs [{{:keys [broker]} :console-opts
                     :keys            [prefix-route]
                     params           :params}]
-  (let [{:keys [queue encoded-jobs]} (validate-req-params params)
+  (let [{:keys [queue encoded-jobs]} (specs/validate-req-params params)
         jobs (mapv utils/decode-from-str encoded-jobs)]
     (enqueued-jobs/delete (:redis-conn broker) queue jobs)
     (response/redirect (prefix-route "/enqueued/queue/" queue))))
@@ -174,7 +166,7 @@
 (defn prioritise-job [{:keys                          [prefix-route]
                        {{:keys [redis-conn]} :broker} :console-opts
                        params                         :params}]
-  (let [{:keys [queue encoded-job]} (validate-req-params params)
+  (let [{:keys [queue encoded-job]} (specs/validate-req-params params)
         job (utils/decode-from-str encoded-job)]
     (enqueued-jobs/prioritise-execution redis-conn job)
     (response/redirect (prefix-route "/enqueued/queue/" queue))))
@@ -182,7 +174,7 @@
 (defn delete-job [{:keys                          [prefix-route]
                    {{:keys [redis-conn]} :broker} :console-opts
                    params                         :params}]
-  (let [{:keys [queue encoded-job]} (validate-req-params params)
+  (let [{:keys [queue encoded-job]} (specs/validate-req-params params)
         job (utils/decode-from-str encoded-job)]
     (enqueued-jobs/delete redis-conn job)
     (response/redirect (prefix-route "/enqueued/queue/" queue))))
