@@ -150,3 +150,11 @@
         job (utils/decode-from-str encoded-job)]
     (dead-jobs/replay-job redis-conn job)
     (response/redirect (prefix-route "/dead"))))
+
+(defn delete-job [{:keys                          [prefix-route]
+                   {{:keys [redis-conn]} :broker} :console-opts
+                   params                         :params}]
+  (let [{:keys [encoded-job]} (specs/validate-req-params params)
+        job (utils/decode-from-str encoded-job)]
+    (dead-jobs/delete redis-conn job)
+    (response/redirect (prefix-route "/dead"))))
