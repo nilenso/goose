@@ -33,7 +33,7 @@
      :filter-value f-val
      :limit        limit}))
 
-(defn jobs-table [{:keys [prefix-route jobs]}]
+(defn jobs-table [{:keys [base-path prefix-route jobs]}]
   [:form {:action (prefix-route "/dead/jobs")
           :method "post"}
    (c/action-btns [(c/replay-btn)
@@ -52,7 +52,9 @@
      (for [{:keys             [id queue execute-fn-sym args] :as j
             {:keys [died-at]} :state} jobs]
        [:tr
-        [:td [:div.id id]]
+        [:td [:a {:href  (str base-path "/job/" id)
+                  :class "underline"}
+              [:div.id id]]]
         [:td [:div.queue] queue]
         [:td [:div.execute-fn-sym (str execute-fn-sym)]]
         [:td [:div.args (string/join ", " (mapv c/format-arg args))]]
@@ -76,6 +78,23 @@
       [:div.bottom
        (c/purge-confirmation-dialog data)
        [:button {:class "btn btn-danger btn-lg purge-dialog-show"} "Purge"]])]])
+
+(defn- job-page-view [{:keys       [base-path]
+                       {:keys [id]
+                        :as   job} :job}]
+  [:div.redis
+   [:h1 "Dead Job"]
+   [:div
+    [:form {:action (str base-path "/job/" id)
+            :method "post"}
+     (c/action-btns [(c/replay-btn {:disabled false})
+                     (c/delete-btn
+                       "Are you sure you want to the delete job?"
+                       {:disabled false})])
+     [:input {:name  "job"
+              :type  "hidden"
+              :value (utils/encode-to-str job)}]
+     (when job (c/job-table job))]]])
 
 (defn get-jobs [{:keys                     [prefix-route]
                  {:keys [app-name broker]} :console-opts
@@ -109,3 +128,17 @@
         jobs (mapv utils/decode-from-str encoded-jobs)]
     (apply dead-jobs/delete redis-conn jobs)
     (response/redirect (prefix-route "/dead"))))
+
+(defn get-job [{:keys                          [prefix-route]
+                {:keys                [app-name]
+                 {:keys [redis-conn]} :broker} :console-opts
+                params                         :params}]
+  (let [view (console/layout c/header job-page-view)
+        {:keys [id]} (specs/validate-req-params params)]
+    (if id
+      (response/response (view "Dead" (-> {:job (dead-jobs/find-by-id redis-conn id)}
+                                          (assoc :job-type :dead
+                                                 :base-path (prefix-route "/dead")
+                                                 :app-name app-name
+                                                 :prefix-route prefix-route))))
+      (response/redirect (prefix-route "/dead")))))

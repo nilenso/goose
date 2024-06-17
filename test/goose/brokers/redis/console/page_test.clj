@@ -200,7 +200,12 @@
                                               :body   ""
                                               :header {"Location" "/dead"}})]
       (console/handler tu/redis-producer (mock/request :post "/dead/jobs"))
-      (is (true? (spy/called-once? dead/replay-jobs))))))
+      (is (true? (spy/called-once? dead/replay-jobs)))))
+
+  (testing "Main handler should invoke get dead job"
+    (with-redefs [dead/get-job (spy/stub {:status 200 :body "<html> Dead job page </html>"})]
+      (console/handler tu/redis-producer (mock/request :get (str "/dead/job/" (str (random-uuid)))))
+      (is (true? (spy/called-once? dead/get-job))))))
 
 (deftest enqueued-purge-queue-test
   (testing "Should purge a queue"
@@ -377,3 +382,20 @@
             :status  302} (dead/purge-queue {:console-opts tu/redis-console-opts
                                              :prefix-route str})))
     (is (= 0 (dead-jobs/size tu/redis-conn)))))
+
+(deftest dead-get-job-test
+  (testing "Should return html view of dead-job page"
+    (f/create-jobs {:dead 1})
+    (let [id (str (random-uuid))
+          response (dead/get-job {:console-opts tu/redis-console-opts
+                                  :params       {:id id}
+                                  :prefix-route str})]
+      (is (= 200 (:status response)))
+      (is (str/starts-with? (:body response) "<!DOCTYPE html>"))))
+  (testing "Should redirect to dead jobs page given invalid type of job-id"
+    (let [response (dead/get-job {:console-opts tu/redis-console-opts
+                                  :params       {:id "not-uuid"}
+                                  :prefix-route str})]
+      (is (= {:body    ""
+              :headers {"Location" "/dead"}
+              :status  302} response)))))
