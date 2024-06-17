@@ -413,3 +413,16 @@
       (is (= 1 (enqueued-jobs/size tu/redis-conn tu/queue)))
       (is (= 1 (dead-jobs/size tu/redis-conn)))
       (is (= [j1] (dead-jobs/get-by-range tu/redis-conn 0 1))))))
+
+(deftest dead-delete-job-test
+  (testing "Should delete a dead job given a dead-job's encode form in delete req params"
+    (f/create-jobs {:dead 2})
+    (let [[j1 j2] (dead-jobs/get-by-range tu/redis-conn 0 1)
+          encoded-job (u/encode-to-str j2)]
+      (is (= {:body    ""
+              :headers {"Location" "/dead"}
+              :status  302} (dead/delete-job {:console-opts tu/redis-console-opts
+                                              :params       {:job encoded-job}
+                                              :prefix-route str})))
+      (is (= 1 (dead-jobs/size tu/redis-conn)))
+      (is (= [j1] (dead-jobs/get-by-range tu/redis-conn 0 1))))))
