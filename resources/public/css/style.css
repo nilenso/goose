@@ -432,12 +432,13 @@ select {
   margin: 0 4px;
 }
 
-.rmq .right input {
+.rmq .right .input{
   width: 6em;
+  height: 1.8em;
   padding: 6px;
 }
 
-.rmq .right .btn{
+.rmq .right .replay{
   margin: 0 5px 0 0;
   border-radius: 0 6px 6px 0;
 }
