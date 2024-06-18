@@ -33,28 +33,55 @@
     (response/response (view "Home" (assoc data :app-name app-name
                                                 :prefix-route prefix-route)))))
 
-(defn job-page [_]
+(defn purge-confirmation-dialog [{:keys [total-jobs base-path]}]
+  [:dialog {:class "purge-dialog"}
+   [:div "Are you sure, you want to remove " [:span.highlight total-jobs] " jobs ?"]
+   [:form {:action base-path
+           :method "post"
+           :class  "dialog-btns"}
+    [:input {:name "_method" :type "hidden" :value "delete"}]
+    [:input {:type "button" :value "Cancel" :class "btn btn-md btn-cancel cancel"}]
+    [:input {:type "submit" :value "Confirm" :class "btn btn-danger btn-md"}]]])
+
+(defn job-page [{:keys [base-path total-jobs] :as data}]
   [:div.rmq
    [:h1 "Dead Job"]
-   [:div.right
-    [:input {:type "number" :min "1" :max "10000" :placeholder "No. of jobs"}]
-    [:button.btn.btn-lg "Replay"]
-    [:button.btn-danger.btn-lg "Pop"]
-    [:button.btn-danger.btn-lg "Purge"]]])
+   (when (and total-jobs (> total-jobs 0))
+     [:div.right
+      [:form {:action (str base-path "/jobs")
+              :method "post"}
+       [:input.input {:type "number" :min "1" :max "10000" :placeholder "No. of jobs"}]
+       [:button.btn.btn-lg.replay "Replay"]]
+
+      [:form {:action (str base-path "/job")
+              :method "post"}
+       [:button.btn.btn-danger.btn-lg "Pop"]]
+
+      [:div.bottom
+       (purge-confirmation-dialog data)
+       [:button {:class "btn btn-danger btn-lg purge-dialog-show"} "Purge"]]])])
 
 (defn get-dead-job [{:keys                     [prefix-route]
                      {:keys [app-name broker]} :console-opts}]
   (let [view (console/layout header job-page)
-        _ (declare-dead-queue broker)]
-    (response/response (view "Dead" {:job-type     :dead
+        _ (declare-dead-queue broker)
+        total-jobs (dead-jobs/size (u/random-element (:channels broker)))]
+    (response/response (view "Dead" {:total-jobs   total-jobs
+                                     :job-type     :dead
+                                     :base-path    (prefix-route "/dead")
                                      :app-name     app-name
                                      :prefix-route prefix-route}))))
 
+(defn purge-queue [{{:keys [broker]} :console-opts
+                    :keys            [prefix-route]}]
+  (dead-jobs/purge (u/random-element (:channels broker)))
+  (response/redirect (prefix-route "/dead")))
 
 (defn- routes [route-prefix]
   [route-prefix [["" console/redirect-to-home-page]
                  ["/" homepage]
-                 ["/dead" {"" get-dead-job}]
+                 ["/dead" {"" [[:get get-dead-job]
+                               [:delete purge-queue]]}]
                  ["/css/style.css" console/load-css]
                  ["/img/goose-logo.png" console/load-img]
                  ["/js/index.js" console/load-js]
