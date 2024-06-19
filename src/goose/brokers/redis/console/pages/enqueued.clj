@@ -42,7 +42,7 @@
                   :class "underline"}
               [:div.id id]]]
         [:td [:div.execute-fn-sym (str execute-fn-sym)]]
-        [:td [:div.args (string/join ", " (mapv c/format-arg args))]]
+        [:td [:div.args (string/join ", " (mapv console/format-arg args))]]
         [:td [:div.enqueued-at] (Date. ^Long enqueued-at)]
         [:td [:div.checkbox-div
               [:input {:name  "jobs"
@@ -65,7 +65,7 @@
      [:input {:name  "job"
               :type  "hidden"
               :value (utils/encode-to-str job)}]
-     (when job (c/job-table job))]]])
+     (when job (console/job-table job))]]])
 
 (defn- jobs-page-view [{:keys [total-jobs] :as data}]
   [:div.redis.redis-enqueued
@@ -80,7 +80,7 @@
      (jobs-table data)
      (when (and total-jobs (> total-jobs 0))
        [:div.bottom
-        (c/purge-confirmation-dialog data)
+        (console/purge-confirmation-dialog data)
         [:button {:class "btn btn-danger btn-lg purge-dialog-show"} "Purge"]])]]])
 
 (defn validate-get-jobs [{:keys [page filter-type limit filter-value queue]}]
