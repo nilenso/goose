@@ -413,6 +413,9 @@ select {
 /* Rmq */
 .rmq {
   margin: 3em;
+}
+
+.rmq .top{
   display: flex;
   justify-content: space-between;
 }
@@ -441,4 +444,10 @@ select {
 .rmq .right .replay{
   margin: 0 5px 0 0;
   border-radius: 0 6px 6px 0;
+}
+
+.rmq .replay-jobs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
