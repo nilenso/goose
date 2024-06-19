@@ -1,5 +1,6 @@
 (ns goose.factories
   (:require [goose.brokers.redis.commands :as redis-cmds]
+            [goose.brokers.rmq.commands :as rmq-cmds]
             [goose.brokers.redis.cron :as cron]
             [goose.brokers.redis.scheduler :as scheduler]
             [goose.defaults :as d]
@@ -21,23 +22,23 @@
           :cron-schedule "*/3 * * * *"
           :timezone      "US/Pacific"} overrides))
 
-(defn create-async-job [& [overrides]]
+(defn create-async-job-in-redis [& [overrides]]
   (let [j (job overrides)]
     (redis-cmds/enqueue-back tu/redis-conn (:ready-queue j) j)
     (:id j)))
 
-(defn create-schedule-job [& [overrides]]
+(defn create-schedule-job-in-redis [& [overrides]]
   (let [{:keys [scheduled-at] :as j} (job (merge {:scheduled-at (+ (u/epoch-time-ms) 1000000)} overrides))]
     (scheduler/run-at tu/redis-conn scheduled-at j)
     (:id j)))
 
-(defn create-periodic-job [& [overrides]]
+(defn create-periodic-job-in-redis [& [overrides]]
   (let [job-desc (job-description (:job-description overrides))
         cron-opts (cron-opts (:cron-opts overrides))]
     (cron/register tu/redis-conn cron-opts job-desc)
     cron-opts))
 
-(defn create-dead-job [& [overrides]]
+(defn create-dead-job-in-redis [& [overrides]]
   (let [now (u/epoch-time-ms)
         error-state {:state {:error           "Error"
                              :last-retried-at now
@@ -50,11 +51,12 @@
                                    (get-in j [:state :died-at]) j)
     (:id j)))
 
-(defn create-jobs [{:keys [enqueued scheduled periodic dead]
+(defn create-jobs-in-redis [{:keys [enqueued scheduled periodic dead]
                     :or   {enqueued 0 scheduled 0 periodic 0 dead 0}} & [overrides]]
   (let [apply-fn-n-times (fn [n f & args]
                            (dotimes [_ n] (apply f args)))]
-    (apply-fn-n-times enqueued create-async-job (:enqueued overrides))
-    (apply-fn-n-times scheduled create-schedule-job (:scheduled overrides))
-    (apply-fn-n-times periodic create-periodic-job (:periodic overrides))
-    (apply-fn-n-times dead create-dead-job (:dead overrides))))
+    (apply-fn-n-times enqueued create-async-job-in-redis (:enqueued overrides))
+    (apply-fn-n-times scheduled create-schedule-job-in-redis (:scheduled overrides))
+    (apply-fn-n-times periodic create-periodic-job-in-redis (:periodic overrides))
+    (apply-fn-n-times dead create-dead-job-in-redis (:dead overrides))))
+
