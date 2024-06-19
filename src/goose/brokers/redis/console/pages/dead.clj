@@ -98,7 +98,7 @@
                  :value (utils/encode-to-str job)}]
         (console/job-table job)]]]
      (console/flash-msg {:type    :error
-                   :message "No job found"}))])
+                         :message "No job found"}))])
 
 (defn get-jobs [{:keys                     [prefix-route]
                  {:keys [app-name broker]} :console-opts
