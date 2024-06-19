@@ -60,3 +60,23 @@
     (apply-fn-n-times periodic create-periodic-job-in-redis (:periodic overrides))
     (apply-fn-n-times dead create-dead-job-in-redis (:dead overrides))))
 
+;; Rmq
+(defn create-dead-job-in-rmq [& [overrides]]
+  (let [now (u/epoch-time-ms)
+        error-state {:state {:error           "Error"
+                             :last-retried-at now
+                             :died-at         now
+                             :first-failed-at 1701344365468
+                             :retry-count     27
+                             :retry-at        1701344433359}}
+        ch (u/random-element (:channels tu/rmq-producer))
+        queue-opts (assoc (:queue-type tu/rmq-producer) :queue d/prefixed-dead-queue)
+        publisher-confirms (:publisher-confirms tu/rmq-producer)
+        job (job (merge error-state overrides))]
+    (rmq-cmds/enqueue-back ch queue-opts publisher-confirms job)))
+
+(defn create-jobs-in-rmq [{:keys [dead]
+                           :or   {dead 0}} & [overrides]]
+  (let [apply-fn-n-times (fn [n f & args]
+                           (dotimes [_ n] (apply f args)))]
+    (apply-fn-n-times dead create-dead-job-in-rmq (:dead overrides))))
