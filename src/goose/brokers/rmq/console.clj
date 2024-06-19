@@ -33,17 +33,7 @@
     (response/response (view "Home" (assoc data :app-name app-name
                                                 :prefix-route prefix-route)))))
 
-(defn purge-confirmation-dialog [{:keys [total-jobs base-path]}]
-  [:dialog {:class "purge-dialog"}
-   [:div "Are you sure, you want to remove " [:span.highlight total-jobs] " jobs ?"]
-   [:form {:action base-path
-           :method "post"
-           :class  "dialog-btns"}
-    [:input {:name "_method" :type "hidden" :value "delete"}]
-    [:input {:type "button" :value "Cancel" :class "btn btn-md btn-cancel cancel"}]
-    [:input {:type "submit" :value "Confirm" :class "btn btn-danger btn-md"}]]])
-
-(defn job-page [{:keys [base-path total-jobs] :as data}]
+(defn job-page [{:keys [base-path total-jobs job replay-job-count] :as data}]
   [:div.rmq
    [:h1 "Dead Job"]
    (when (and total-jobs (> total-jobs 0))
@@ -58,7 +48,7 @@
        [:button.btn.btn-danger.btn-lg "Pop"]]
 
       [:div.bottom
-       (purge-confirmation-dialog data)
+       (console/purge-confirmation-dialog data)
        [:button {:class "btn btn-danger btn-lg purge-dialog-show"} "Purge"]]])])
 
 (defn get-dead-job [{:keys                     [prefix-route]
