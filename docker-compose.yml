@@ -2,8 +2,6 @@ services:
   redis:
     image: redis:7.0
     container_name:  goose_redis
-    ports:
-      - 6379:6379
     volumes:
       - redis-data:/data
   rabbitmq:
@@ -12,9 +10,6 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
-    ports:
-      - 5672:5672
-      - 15672:15672
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
   goose:
@@ -29,6 +24,10 @@ services:
       GOOSE_RABBITMQ_PORT: 5672
       GOOSE_RABBITMQ_USERNAME: guest
       GOOSE_RABBITMQ_PASSWORD: guest
+      GOOSE_TEST_REDIS_HOST: redis
+      GOOSE_TEST_RABBITMQ_HOST: rabbitmq
+      GOOSE_TEST_RABBITMQ_USERNAME: guest
+      GOOSE_TEST_RABBITMQ_PASSWORD: guest
     depends_on:
       - redis
       - rabbitmq
