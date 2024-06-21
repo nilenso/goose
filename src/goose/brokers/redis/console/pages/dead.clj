@@ -79,7 +79,7 @@
        (c/purge-confirmation-dialog data)
        [:button {:class "btn btn-danger btn-lg purge-dialog-show"} "Purge"]])]])
 
-(defn- job-page-view [{:keys       [base-path]
+(defn- job-page-view [{:keys       [base-path flash]
                        {:keys [id]
                         :as   job} :job}]
   [:div.redis
