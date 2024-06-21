@@ -11,6 +11,8 @@
     [ring.adapter.jetty :as jetty])
   (:gen-class))
 
+(defonce server (atom nil))
+
 (defn redis-url []
   (let [host (or (System/getenv "GOOSE_REDIS_HOST") "localhost")
         port (or (System/getenv "GOOSE_REDIS_PORT") "6379")]
@@ -23,37 +25,30 @@
         password (or (System/getenv "GOOSE_RABBITMQ_PASSWORD") "guest")]
     (str "amqp://" username ":" password "@" host ":" port)))
 
-(defn brokers [broker]
-  (get {:redis    (redis/new-producer
-                    (merge redis/default-opts {:url (redis-url)}))
-        :rabbitmq (rmq/new-producer (merge rmq/default-opts
-                                           {:settings {:uri (rmq-url)}}))}
-       (keyword broker)))
+(def redis-producer (redis/new-producer (merge redis/default-opts {:url (redis-url)})))
+(def rmq-producer (rmq/new-producer (merge rmq/default-opts {:settings {:uri (rmq-url)}})))
 
-(defn console-opts [broker app-name]
-  {:broker       (brokers broker)
-   :app-name     app-name
-   :route-prefix ""})
-
-(defonce server (atom nil))
-
-(defn routes [console-opts]
-
-  (defroutes goose-routes
-             (context (:route-prefix console-opts) []
-                      (partial console/app-handler console-opts))
-             (route/not-found "<h1>Page not found </h1>")))
+(defroutes routes
+           (context "/redis" []
+                    (partial console/app-handler {:broker       redis-producer
+                                                  :app-name     "Goose console"
+                                                  :route-prefix "/redis"}))
+           (context "/rabbitmq" []
+                    (partial console/app-handler {:broker       rmq-producer
+                                                  :app-name     "Goose console"
+                                                  :route-prefix "/rabbitmq"}))
+           (context "/" []
+                    (fn [req] {:status 200
+                               :headers {}
+                               :body "<html> <a href= \"/redis/\">Redis</a>
+                                    <a href=\"/rabbitmq/\"> Rabbitmq </a>
+                                </html>"}))
+           (route/not-found "<h1>Page not found </h1>"))
 
 (defn start-server [& _]
-  (let [broker (or (System/getenv "GOOSE_BROKER") "redis")
-        app-name (or (System/getenv "GOOSE_APPNAME") "Goose client")
-        console-opts (console-opts broker app-name)
-        port (or (System/getenv "GOOSE_PORT") 3000)]
-    (println "Starting server!!")
-    (reset! server (jetty/run-jetty (routes console-opts)
-                                    {:port  port
-                                     :join? false}))))
-
+  (println "Starting server!!")
+  (reset! server (jetty/run-jetty routes {:port  (or (System/getenv "GOOSE_PORT") 3000)
+                                          :join? false})))
 
 (defn redis-enqueued-jobs []
   (let [redis-producer (redis/new-producer
@@ -74,12 +69,8 @@
                        :queue "long-queue-name-exceeding-10-chars"
                        :broker redis-producer) `prn "foo" :bar)))
 
-(defn -main [& args]
-  (let [func (first args)]
-    (case func
-      "redis-enqueued-jobs" (doall (redis-enqueued-jobs)
-                                   (System/exit 1))
-      (start-server))))
+(defn -main [& _]
+  (start-server))
 
 (defn stop-server []
   (when-let [s @server]
@@ -88,4 +79,4 @@
 
 (defn restart []
   (stop-server)
-  (refresh :after 'goose.goose-client/start-server))
+  (refresh :after 'goose.console-client/start-server))
