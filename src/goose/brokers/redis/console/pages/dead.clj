@@ -84,17 +84,21 @@
                         :as   job} :job}]
   [:div.redis
    [:h1 "Dead Job"]
-   [:div
-    [:form {:action (str base-path "/job/" id)
-            :method "post"}
-     (c/action-btns [(c/replay-btn {:disabled false})
-                     (c/delete-btn
-                       "Are you sure you want to the delete job?"
-                       {:disabled false})])
-     [:input {:name  "job"
-              :type  "hidden"
-              :value (utils/encode-to-str job)}]
-     (when job (c/job-table job))]]])
+   (if job
+     [:div
+      [:form {:action (str base-path "/job/" id)
+              :method "post"}
+       [:div
+        (c/action-btns [(c/replay-btn {:disabled false})
+                        (c/delete-btn
+                          "Are you sure you want to the delete job?"
+                          {:disabled false})])
+        [:input {:name  "job"
+                 :type  "hidden"
+                 :value (utils/encode-to-str job)}]
+        (c/job-table job)]]]
+     (c/flash-msg {:type    :error
+                   :message "No job found"}))])
 
 (defn get-jobs [{:keys                     [prefix-route]
                  {:keys [app-name broker]} :console-opts
@@ -134,13 +138,15 @@
                  {:keys [redis-conn]} :broker} :console-opts
                 params                         :params}]
   (let [view (console/layout c/header job-page-view)
-        {:keys [id]} (specs/validate-req-params params)]
+        {:keys [id]} (specs/validate-req-params params)
+        base-response {:job-type     :dead
+                       :base-path    (prefix-route "/dead")
+                       :app-name     app-name
+                       :prefix-route prefix-route}]
     (if id
-      (response/response (view "Dead" (-> {:job (dead-jobs/find-by-id redis-conn id)}
-                                          (assoc :job-type :dead
-                                                 :base-path (prefix-route "/dead")
-                                                 :app-name app-name
-                                                 :prefix-route prefix-route))))
+      (if-let [job (dead-jobs/find-by-id redis-conn id)]
+        (response/response (view "Dead" (assoc base-response :job job)))
+        (response/not-found (view "Dead" base-response)))
       (response/redirect (prefix-route "/dead")))))
 
 (defn replay-job [{:keys                          [prefix-route]

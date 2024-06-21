@@ -384,13 +384,21 @@
     (is (= 0 (dead-jobs/size tu/redis-conn)))))
 
 (deftest dead-get-job-test
-  (testing "Should return html view of dead-job page"
+  (testing "Should return html view of dead-job page if job-exist"
+    (f/create-jobs {:dead 1})
+    (let [id (:id (first (dead-jobs/get-by-range tu/redis-conn 0 0)))
+          response (dead/get-job {:console-opts tu/redis-console-opts
+                                  :params       {:id id}
+                                  :prefix-route str})]
+      (is (= 200 (:status response)))
+      (is (str/starts-with? (:body response) "<!DOCTYPE html>"))))
+  (testing "Should return html view of dead-job page with 400 response if job doesn't exist"
     (f/create-jobs {:dead 1})
     (let [id (str (random-uuid))
           response (dead/get-job {:console-opts tu/redis-console-opts
                                   :params       {:id id}
                                   :prefix-route str})]
-      (is (= 200 (:status response)))
+      (is (= 404 (:status response)))
       (is (str/starts-with? (:body response) "<!DOCTYPE html>"))))
   (testing "Should redirect to dead jobs page given invalid type of job-id"
     (let [response (dead/get-job {:console-opts tu/redis-console-opts
