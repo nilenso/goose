@@ -54,10 +54,20 @@
                                          (get :queues)))))
   (tu/clear-redis)
   (testing "Should get no jobs data given no jobs exist in redis"
-    (let [{:keys [jobs total-jobs]} (console/enqueued-page-data tu/redis-conn {:queue tu/queue
-                                                                               :page  1})]
-      (is (= [] jobs))
-      (is (= 0 total-jobs))))
+    (is (= {:queues '()
+            :page   1
+            :queue  tu/queue
+            :jobs   []} (console/enqueued-page-data tu/redis-conn {:queue tu/queue
+                                                                   :page  1}))))
+  (testing "Should return no jobs given valid filter params but jobs exist in redis"
+    (is (= {:queues '()
+            :page   1
+            :queue  tu/queue
+            :jobs   []} (console/enqueued-page-data tu/redis-conn {:queue         tu/queue
+                                                                   :page          1
+                                                                   :filter-type   "id"
+                                                                   :filter-params (str (random-uuid))
+                                                                   :limit         10}))))
   (tu/clear-redis)
   (testing "Should filter the jobs by id, execute-fn-symbol and type, given valid filter-params"
     (f/create-jobs {:enqueued 3})
@@ -91,7 +101,8 @@
     (f/create-jobs {:enqueued 1})
     (is (= {:queue  tu/queue
             :page   1
-            :queues (list tu/queue)} (console/enqueued-page-data tu/redis-conn {:queue        tu/queue
+            :queues (list tu/queue)
+            :jobs []} (console/enqueued-page-data tu/redis-conn {:queue        tu/queue
                                                                                 :page         1
                                                                                 :filter-type  "id"
                                                                                 :filter-value nil
@@ -117,22 +128,25 @@
   (tu/clear-redis)
   (testing "Should return no jobs given no jobs exist in redis"
     (let [result (console/dead-page-data tu/redis-conn {:page 1})]
-      (is (= {:page 1
-              :jobs []
+      (is (= {:page       1
+              :jobs       []
               :total-jobs 0} result))))
   (testing "Should return no jobs given valid filter-params but no jobs in redis"
-    (let [result1 (console/dead-page-data tu/redis-conn {:page         1
-                                                         :filter-type  "id"
-                                                         :filter-value (str (random-uuid))
-                                                         :limit        10})
-          result2 (console/dead-page-data tu/redis-conn {:page         1
-                                                         :filter-type  "execute-fn-sym"
-                                                         :filter-value "non-existent"
-                                                         :limit        10})]
-      (is (= {:page 1
-              :jobs [nil]} result1))
-      (is (= {:page 1
-              :jobs []} result2))))
+    (is (= {:page 1
+            :jobs []} (console/dead-page-data tu/redis-conn {:page         1
+                                                             :filter-type  "id"
+                                                             :filter-value (str (random-uuid))
+                                                             :limit        10})))
+    (is (= {:page 1
+            :jobs []} (console/dead-page-data tu/redis-conn {:page         1
+                                                             :filter-type  "execute-fn-sym"
+                                                             :filter-value "non-existent"
+                                                             :limit        10})))
+    (is (= {:page 1
+            :jobs []} (console/dead-page-data tu/redis-conn {:page         1
+                                                             :filter-type  "queue"
+                                                             :filter-value "random-queue"
+                                                             :limit        10}))))
   (testing "Should filter based on filter-type"
     (f/create-jobs {:dead 7})
     (let [random-job (rand-nth (dead-jobs/get-by-range tu/redis-conn 0 7))

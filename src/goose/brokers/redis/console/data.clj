@@ -6,6 +6,15 @@
             [goose.defaults :as d]
             [goose.job :as job]))
 
+(defn- invalid-filter-value? [filter-value]
+  (nil? filter-value))
+
+(defn- filter-jobs-request? [filter-type filter-value]
+  (every? (comp not nil?) [filter-type filter-value]))
+
+(defn- get-all-jobs-request? [filter-type filter-value]
+  (every? nil? [filter-type filter-value]))
+
 (defn jobs-size [redis-conn]
   (let [queues (enqueued-jobs/list-all-queues redis-conn)
         enqueued (reduce (fn [total queue]
@@ -20,7 +29,7 @@
 
 (defn- filter-enqueued-jobs [redis-conn queue {:keys [filter-type filter-value limit]}]
   (case filter-type
-    "id" [(enqueued-jobs/find-by-id redis-conn queue filter-value)]
+    "id" (if-let [job (enqueued-jobs/find-by-id redis-conn queue filter-value)] [job] [])
     "execute-fn-sym" (enqueued-jobs/find-by-pattern redis-conn
                                                     queue
                                                     (fn [j]
@@ -39,28 +48,34 @@
     nil))
 
 (defn enqueued-page-data
-  [redis-conn {:keys [page queue filter-type filter-value] :as params}]
+  [redis-conn {:keys                  [page queue]
+               validated-filter-type  :filter-type
+               validated-filter-value :filter-value
+               :as                    params}]
   (let [queues (enqueued-jobs/list-all-queues redis-conn)
         queue (or queue (first queues))
         base-result {:queues queues
                      :page   page
-                     :queue  queue}]
+                     :queue  queue}
+        no-jobs-response (assoc base-result :jobs [])]
     (cond
-      (and filter-type filter-value)
+      (empty? queues) no-jobs-response
+
+      (filter-jobs-request? validated-filter-type validated-filter-value)
       (assoc base-result :jobs (filter-enqueued-jobs redis-conn queue params))
 
-      (nil? (or filter-type filter-value))
+      (get-all-jobs-request? validated-filter-type validated-filter-value)
       (assoc base-result :jobs (enqueued-jobs/get-by-range redis-conn
                                                            queue
                                                            (* (dec page) d/page-size)
                                                            (dec (* page d/page-size)))
                          :total-jobs (enqueued-jobs/size redis-conn queue))
 
-      :else base-result)))
+      (invalid-filter-value? validated-filter-value) no-jobs-response)))
 
-(defn filter-dead-jobs [redis-conn {:keys [filter-type filter-value limit]}]
+(defn- filter-dead-jobs [redis-conn {:keys [filter-type filter-value limit]}]
   (case filter-type
-    "id" [(dead-jobs/find-by-id redis-conn filter-value)]
+    "id" (if-let [job (dead-jobs/find-by-id redis-conn filter-value)] [job] [])
     "execute-fn-sym" (dead-jobs/find-by-pattern redis-conn
                                                 (fn [j]
                                                   (= (:execute-fn-sym j)
@@ -73,15 +88,20 @@
     nil))
 
 (defn dead-page-data
-  [redis-conn {:keys [page filter-type filter-value] :as params}]
+  [redis-conn {:keys                  [page]
+               validated-filter-type  :filter-type
+               validated-filter-value :filter-value
+               :as                    params}]
   (let [base-result {:page page}]
     (cond
-      (and filter-type filter-value)
+      (filter-jobs-request? validated-filter-type validated-filter-value)
       (assoc base-result :jobs (filter-dead-jobs redis-conn params))
 
-      (nil? (or filter-type filter-value))
+      (get-all-jobs-request? validated-filter-type validated-filter-value)
       (assoc base-result :jobs (dead-jobs/get-by-range redis-conn
                                                        (* d/page-size (dec page))
                                                        (dec (* d/page-size page)))
                          :total-jobs (dead-jobs/size redis-conn))
-      :else base-result)))
+
+      (invalid-filter-value? validated-filter-value)
+      (assoc base-result :jobs []))))

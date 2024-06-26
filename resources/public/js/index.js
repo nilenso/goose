@@ -31,6 +31,7 @@ window.onload = () => {
   function createFilterValueInputElement() {
     const input = document.createElement("input");
     input.setAttribute('type', 'text');
+    input.setAttribute('required', 'true');
     input.setAttribute('name', 'filter-value');
     input.setAttribute('class', 'filter-value');
     input.setAttribute('placeholder', 'filter value')
@@ -41,6 +42,7 @@ window.onload = () => {
   function createFilterValueSelectElement() {
     const select = document.createElement('select');
     select.setAttribute('id', 'job-type-select')
+    select.setAttribute('required', 'true');
     select.setAttribute('name', 'filter-value')
     select.setAttribute('class', 'filter-value')
     const options = ["unexecuted", "failed"];
