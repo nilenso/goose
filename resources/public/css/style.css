@@ -438,7 +438,8 @@ select {
 .rmq .right .input{
   width: 6em;
   height: 1.8em;
-  padding: 6px;
+  padding: 9px;
+  border-style: none;
 }
 
 .rmq .right .replay{
