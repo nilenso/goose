@@ -200,7 +200,12 @@
                                               :body   ""
                                               :header {"Location" "/dead"}})]
       (console/handler tu/redis-producer (mock/request :post "/dead/jobs"))
-      (is (true? (spy/called-once? dead/replay-jobs))))))
+      (is (true? (spy/called-once? dead/replay-jobs)))))
+
+  (testing "Main handler should invoke get dead job"
+    (with-redefs [dead/get-job (spy/stub {:status 200 :body "<html> Dead job page </html>"})]
+      (console/handler tu/redis-producer (mock/request :get (str "/dead/job/" (str (random-uuid)))))
+      (is (true? (spy/called-once? dead/get-job))))))
 
 (deftest enqueued-purge-queue-test
   (testing "Should purge a queue"
@@ -377,3 +382,55 @@
             :status  302} (dead/purge-queue {:console-opts tu/redis-console-opts
                                              :prefix-route str})))
     (is (= 0 (dead-jobs/size tu/redis-conn)))))
+
+(deftest dead-get-job-test
+  (testing "Should return html view of dead-job page if job-exist"
+    (f/create-jobs {:dead 1})
+    (let [id (:id (first (dead-jobs/get-by-range tu/redis-conn 0 0)))
+          response (dead/get-job {:console-opts tu/redis-console-opts
+                                  :params       {:id id}
+                                  :prefix-route str})]
+      (is (= 200 (:status response)))
+      (is (str/starts-with? (:body response) "<!DOCTYPE html>"))))
+  (testing "Should return html view of dead-job page with 400 response if job doesn't exist"
+    (f/create-jobs {:dead 1})
+    (let [id (str (random-uuid))
+          response (dead/get-job {:console-opts tu/redis-console-opts
+                                  :params       {:id id}
+                                  :prefix-route str})]
+      (is (= 404 (:status response)))
+      (is (str/starts-with? (:body response) "<!DOCTYPE html>"))))
+  (testing "Should redirect to dead jobs page given invalid type of job-id"
+    (let [response (dead/get-job {:console-opts tu/redis-console-opts
+                                  :params       {:id "not-uuid"}
+                                  :prefix-route str})]
+      (is (= {:body    ""
+              :headers {"Location" "/dead"}
+              :status  302} response)))))
+
+(deftest dead-replay-job-test
+  (testing "Should replay a dead job given a dead-job's encoded form is passed in replay req params"
+    (f/create-jobs {:dead 2})
+    (let [[j1 j2] (dead-jobs/get-by-range tu/redis-conn 0 1)
+          encoded-job (u/encode-to-str j2)]
+      (is (= {:body    ""
+              :headers {"Location" "/dead"}
+              :status  302} (dead/replay-job {:console-opts tu/redis-console-opts
+                                              :params       {:job encoded-job}
+                                              :prefix-route str})))
+      (is (= 1 (enqueued-jobs/size tu/redis-conn tu/queue)))
+      (is (= 1 (dead-jobs/size tu/redis-conn)))
+      (is (= [j1] (dead-jobs/get-by-range tu/redis-conn 0 1))))))
+
+(deftest dead-delete-job-test
+  (testing "Should delete a dead job given a dead-job's encode form in delete req params"
+    (f/create-jobs {:dead 2})
+    (let [[j1 j2] (dead-jobs/get-by-range tu/redis-conn 0 1)
+          encoded-job (u/encode-to-str j2)]
+      (is (= {:body    ""
+              :headers {"Location" "/dead"}
+              :status  302} (dead/delete-job {:console-opts tu/redis-console-opts
+                                              :params       {:job encoded-job}
+                                              :prefix-route str})))
+      (is (= 1 (dead-jobs/size tu/redis-conn)))
+      (is (= [j1] (dead-jobs/get-by-range tu/redis-conn 0 1))))))

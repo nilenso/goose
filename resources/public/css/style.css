@@ -113,6 +113,27 @@ table th, td {
   background-color: #fff;
 }
 
+.flash-info {
+  background-color: #5881d824;
+  color: #5881D8;
+  padding: 1em;
+  font-weight: bold;
+}
+
+.flash-error {
+  background-color: #db460f29;
+  color: #DB460F;
+  padding: 1em;
+  font-weight: bold;
+}
+
+.flash-success {
+  background-color: #d7e7d7;
+  color: #68b43a;
+  padding: 1em;
+  font-weight: bold;
+}
+
 /* Pagination */
 
 .pagination div {

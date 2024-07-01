@@ -52,7 +52,9 @@
      (for [{:keys             [id queue execute-fn-sym args] :as j
             {:keys [died-at]} :state} jobs]
        [:tr
-        [:td [:div.id id]]
+        [:td [:a {:href  (str base-path "/job/" id)
+                  :class "underline"}
+              [:div.id id]]]
         [:td [:div.queue] queue]
         [:td [:div.execute-fn-sym (str execute-fn-sym)]]
         [:td [:div.args (string/join ", " (mapv c/format-arg args))]]
@@ -76,6 +78,27 @@
       [:div.bottom
        (c/purge-confirmation-dialog data)
        [:button {:class "btn btn-danger btn-lg purge-dialog-show"} "Purge"]])]])
+
+(defn- job-page-view [{:keys       [base-path]
+                       {:keys [id]
+                        :as   job} :job}]
+  [:div.redis
+   [:h1 "Dead Job"]
+   (if job
+     [:div
+      [:form {:action (str base-path "/job/" id)
+              :method "post"}
+       [:div
+        (c/action-btns [(c/replay-btn {:disabled false})
+                        (c/delete-btn
+                          "Are you sure you want to delete the job?"
+                          {:disabled false})])
+        [:input {:name  "job"
+                 :type  "hidden"
+                 :value (utils/encode-to-str job)}]
+        (c/job-table job)]]]
+     (c/flash-msg {:type    :error
+                   :message "No job found"}))])
 
 (defn get-jobs [{:keys                     [prefix-route]
                  {:keys [app-name broker]} :console-opts
@@ -108,4 +131,36 @@
   (let [{:keys [encoded-jobs]} (specs/validate-req-params params)
         jobs (mapv utils/decode-from-str encoded-jobs)]
     (apply dead-jobs/delete redis-conn jobs)
+    (response/redirect (prefix-route "/dead"))))
+
+(defn get-job [{:keys                          [prefix-route]
+                {:keys                [app-name]
+                 {:keys [redis-conn]} :broker} :console-opts
+                params                         :params}]
+  (let [view (console/layout c/header job-page-view)
+        {:keys [id]} (specs/validate-req-params params)
+        base-response {:job-type     :dead
+                       :base-path    (prefix-route "/dead")
+                       :app-name     app-name
+                       :prefix-route prefix-route}]
+    (if id
+      (if-let [job (dead-jobs/find-by-id redis-conn id)]
+        (response/response (view "Dead" (assoc base-response :job job)))
+        (response/not-found (view "Dead" base-response)))
+      (response/redirect (prefix-route "/dead")))))
+
+(defn replay-job [{:keys                          [prefix-route]
+                   {{:keys [redis-conn]} :broker} :console-opts
+                   params                         :params}]
+  (let [{:keys [encoded-job]} (specs/validate-req-params params)
+        job (utils/decode-from-str encoded-job)]
+    (dead-jobs/replay-job redis-conn job)
+    (response/redirect (prefix-route "/dead"))))
+
+(defn delete-job [{:keys                          [prefix-route]
+                   {{:keys [redis-conn]} :broker} :console-opts
+                   params                         :params}]
+  (let [{:keys [encoded-job]} (specs/validate-req-params params)
+        job (utils/decode-from-str encoded-job)]
+    (dead-jobs/delete redis-conn job)
     (response/redirect (prefix-route "/dead"))))

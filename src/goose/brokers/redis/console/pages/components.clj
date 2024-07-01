@@ -158,3 +158,11 @@
        [:td retry-count]]
       [:tr [:td "Retry at"]
        [:td (Date. ^Long retry-at)]]])])
+
+(defn flash-msg [{:keys [type message class]}]
+  (let [append-class #(str/join " " %)]
+    (case type
+      :success [:div.flash-success {:class (append-class class)} message]
+      :error [:div.flash-error {:class (append-class class)} message]
+      :info [:div.flash-info {:class (append-class class)} message]
+      [:div {:class (append-class class)} message])))
