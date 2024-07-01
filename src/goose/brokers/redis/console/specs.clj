@@ -33,3 +33,9 @@
    (if (s/valid? spec ip)
      op
      default)))
+
+(defn validate-req-params [{:keys [id queue job jobs]}]
+  {:id           (validate-or-default ::job-id (-> id str parse-uuid) id)
+   :queue        (validate-or-default ::queue queue)
+   :encoded-job  (validate-or-default ::encoded-job job job)
+   :encoded-jobs (validate-or-default ::encoded-jobs (->coll jobs) (->coll jobs))})

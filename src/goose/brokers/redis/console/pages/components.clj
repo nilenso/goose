@@ -37,6 +37,8 @@
     [:input {:type "button" :value "Cancel" :class "btn btn-md btn-cancel cancel"}]
     [:input {:type "submit" :value "Confirm" :class "btn btn-danger btn-md"}]]])
 
+(defn replay-btn [& {:keys [disabled] :or {disabled true}}]
+  [:input.btn {:type "submit" :value "Replay" :disabled disabled}])
 
 (defn prioritise-btn [& {:keys [disabled] :or {disabled true}}]
   [:input.btn {:type "submit" :value "Prioritise" :disabled disabled}])
