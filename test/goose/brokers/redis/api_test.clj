@@ -127,21 +127,21 @@
 
 (deftest dead-jobs-delete-test
   (testing "Should delete a single job and return true"
-    (let [_ (f/create-jobs {:dead 2})
+    (let [_ (f/create-jobs-in-redis {:dead 2})
           [d1 _] (dead-jobs/find-by-pattern tu/redis-producer (fn [_] true))]
       (is (= 2 (redis-dead-jobs/size tu/redis-conn)))
       (is (true? (redis-dead-jobs/delete tu/redis-conn d1)))
       (is (= 1 (redis-dead-jobs/size tu/redis-conn)))))
   (tu/clear-redis)
   (testing "Should delete all valid jobs and return true"
-    (let [_ (f/create-jobs {:dead 3})
+    (let [_ (f/create-jobs-in-redis {:dead 3})
           [d1 d2 d3] (dead-jobs/find-by-pattern tu/redis-producer (fn [_] true))]
       (is (= 3 (redis-dead-jobs/size tu/redis-conn)))
       (is (true? (redis-dead-jobs/delete tu/redis-conn d2 d3 d1)))
       (is (= 0 (redis-dead-jobs/size tu/redis-conn)))))
   (tu/clear-redis)
   (testing "Should ignore invalid jobs and return false"
-    (let [_ (f/create-jobs {:dead 3})
+    (let [_ (f/create-jobs-in-redis {:dead 3})
           [d1 _ d3] (dead-jobs/find-by-pattern tu/redis-producer (fn [_] true))]
       (is (= 3 (redis-dead-jobs/size tu/redis-conn)))
       (is (false? (redis-dead-jobs/delete tu/redis-conn d3 {:id "invalid-job"} d1)))
@@ -149,13 +149,13 @@
 
 (deftest dead-jobs-replay-test
   (testing "Should return nil given invalid job"
-    (let [_ (f/create-jobs {:dead 2})]
+    (let [_ (f/create-jobs-in-redis {:dead 2})]
       (is (= 2 (redis-dead-jobs/size tu/redis-conn)))
       (is (= [] (redis-dead-jobs/replay-jobs tu/redis-conn {:id "invalid-job"})))
       (is (= 2 (redis-dead-jobs/size tu/redis-conn)))))
   (tu/clear-redis)
   (testing "Should replay a single job and return response"
-    (let [_ (f/create-jobs {:dead 4})
+    (let [_ (f/create-jobs-in-redis {:dead 4})
           [d1 _] (dead-jobs/find-by-pattern tu/redis-producer (fn [_] true))]
       (is (= 4 (redis-dead-jobs/size tu/redis-conn)))
       (is (= [d1] (redis-dead-jobs/replay-jobs tu/redis-conn d1)))
@@ -163,7 +163,7 @@
       (is (= 3 (redis-dead-jobs/size tu/redis-conn)))))
   (tu/clear-redis)
   (testing "Should replay multiple jobs and return count of jobs that are replayed"
-    (let [_ (f/create-jobs {:dead 4})
+    (let [_ (f/create-jobs-in-redis {:dead 4})
           [d1 d2 _ d4] (dead-jobs/find-by-pattern tu/redis-producer (fn [_] true))]
       (is (= 4 (redis-dead-jobs/size tu/redis-conn)))
       (is (= [d1 d4 d2] (redis-dead-jobs/replay-jobs tu/redis-conn d1 {:id "invalid-job1"} d4 {:id "invalid-job2"} d2)))
@@ -172,12 +172,12 @@
 
 (deftest dead-job-get-by-range-test
   (testing "Should get jobs in decreasing order of died-at given a range"
-    (let [_ (f/create-jobs {:dead 3})
+    (let [_ (f/create-jobs-in-redis {:dead 3})
           [j1 j2] (redis-dead-jobs/get-by-range tu/redis-conn 0 1)]
       (is (true? (>= (get-in j1 [:state :died-at]) (get-in j2 [:state :died-at]))))))
   (tu/clear-redis)
   (testing "Should get max of (size dead-jobs) given high stop value in range"
-    (let [_ (f/create-jobs {:dead 2})
+    (let [_ (f/create-jobs-in-redis {:dead 2})
           jobs-from-match (dead-jobs/find-by-pattern tu/redis-producer (fn [_] true))
           jobs-from-range (redis-dead-jobs/get-by-range tu/redis-conn 0 100)]
       (is (= (set jobs-from-match) (set jobs-from-range)))

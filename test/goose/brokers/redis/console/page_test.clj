@@ -209,9 +209,9 @@
 
 (deftest enqueued-purge-queue-test
   (testing "Should purge a queue"
-    (f/create-async-job)
-    (f/create-async-job {:queue       "queue1"
-                         :ready-queue "goose/queue:queue1"})
+    (f/create-async-job-in-redis)
+    (f/create-async-job-in-redis {:queue       "queue1"
+                                  :ready-queue "goose/queue:queue1"})
     (is (true? (every? #{tu/queue "queue1"} (enqueued-jobs/list-all-queues tu/redis-conn))))
     (is (= 2 (count (enqueued-jobs/list-all-queues tu/redis-conn))))
     (is (= {:body    ""
@@ -223,7 +223,7 @@
 
 (deftest enqueued-delete-jobs-test
   (testing "Should delete 1 job given its encoded form in req params"
-    (f/create-jobs {:enqueued 3})
+    (f/create-jobs-in-redis {:enqueued 3})
     (let [[first-job] (enqueued-jobs/get-by-range tu/redis-conn tu/queue 0 0)
           encoded-job (u/encode-to-str first-job)]
       (is (= 3 (enqueued-jobs/size tu/redis-conn tu/queue)))
@@ -236,7 +236,7 @@
       (is (= 2 (enqueued-jobs/size tu/redis-conn tu/queue)))))
   (tu/clear-redis)
   (testing "Should delete more than 1 job given encoded job/s"
-    (f/create-jobs {:enqueued 4})
+    (f/create-jobs-in-redis {:enqueued 4})
     (let [first-2-jobs (enqueued-jobs/get-by-range tu/redis-conn tu/queue 0 1)
           encoded-2-jobs (mapv u/encode-to-str first-2-jobs)
           response (enqueued/delete-jobs {:console-opts tu/redis-console-opts
@@ -250,7 +250,7 @@
 
 (deftest enqueued-prioritise-jobs-test
   (testing "Should prioritise 1 job given its encoded form in req params"
-    (f/create-jobs {:enqueued 3})
+    (f/create-jobs-in-redis {:enqueued 3})
     (let [[j1 j2 _] (enqueued-jobs/get-by-range tu/redis-conn tu/queue 0 2)
           encoded-job (u/encode-to-str j2)]
       (is (= (list j1) (enqueued-jobs/get-by-range tu/redis-conn tu/queue 0 0)))
@@ -263,7 +263,7 @@
       (is (= (list j2) (enqueued-jobs/get-by-range tu/redis-conn tu/queue 0 0)))))
   (tu/clear-redis)
   (testing "Should prioritise more than 1 job given encoded job/s"
-    (f/create-jobs {:enqueued 4})
+    (f/create-jobs-in-redis {:enqueued 4})
     (let [[j1 j2 j3 j4] (enqueued-jobs/get-by-range tu/redis-conn tu/queue 0 3)
           encoded-2-jobs (mapv u/encode-to-str [j4 j3])]
       (is (= [j1 j2] (enqueued-jobs/get-by-range tu/redis-conn tu/queue 0 1)))
@@ -296,7 +296,7 @@
 
 (deftest enqueued-prioritise-job-test
   (testing "Should prioritise a job given its encode form in req params"
-    (f/create-jobs {:enqueued 2})
+    (f/create-jobs-in-redis {:enqueued 2})
     (let [[_ j2] (enqueued-jobs/get-by-range tu/redis-conn tu/queue 0 1)
           encoded-job (u/encode-to-str j2)]
       (is (= {:body    ""
@@ -309,7 +309,7 @@
 
 (deftest enqueued-delete-job-test
   (testing "Should delete a job given its encoded form in req params"
-    (f/create-jobs {:enqueued 3})
+    (f/create-jobs-in-redis {:enqueued 3})
     (let [[first-job] (enqueued-jobs/get-by-range tu/redis-conn tu/queue 0 0)
           encoded-job (u/encode-to-str first-job)]
       (is (= 3 (enqueued-jobs/size tu/redis-conn tu/queue)))
@@ -323,7 +323,7 @@
 
 (deftest dead-replay-jobs-test
   (testing "Should replay 1 dead job"
-    (f/create-jobs {:dead 3})
+    (f/create-jobs-in-redis {:dead 3})
     (let [[j2] (dead-jobs/get-by-range tu/redis-conn 1 1)
           encoded-job (u/encode-to-str j2)]
       (is (= 0 (enqueued-jobs/size tu/redis-conn tu/queue)))
@@ -337,7 +337,7 @@
       (is (= 2 (dead-jobs/size tu/redis-conn)))))
   (tu/clear-redis)
   (testing "Should replay >1 dead jobs"
-    (f/create-jobs {:dead 5})
+    (f/create-jobs-in-redis {:dead 5})
     (let [jobs (dead-jobs/get-by-range tu/redis-conn 0 1)
           encoded-jobs (mapv u/encode-to-str jobs)]
       (is (= 0 (enqueued-jobs/size tu/redis-conn tu/queue)))
@@ -349,7 +349,7 @@
 
 (deftest dead-delete-jobs-test
   (testing "Should delete 1 dead job"
-    (f/create-jobs {:dead 2})
+    (f/create-jobs-in-redis {:dead 2})
     (let [[j1] (dead-jobs/get-by-range tu/redis-conn 1 1)
           encoded-job (u/encode-to-str j1)]
       (is (= 2 (dead-jobs/size tu/redis-conn)))
@@ -361,7 +361,7 @@
       (is (= 1 (dead-jobs/size tu/redis-conn)))))
   (tu/clear-redis)
   (testing "Should delete >1 dead jobs"
-    (f/create-jobs {:dead 5})
+    (f/create-jobs-in-redis {:dead 5})
     (let [[j1 j2 j3 j4 j5] (dead-jobs/get-by-range tu/redis-conn 0 4)
           encoded-jobs (mapv u/encode-to-str [j2 j3 j1 j5])]
       (is (= 5 (dead-jobs/size tu/redis-conn)))
@@ -375,7 +375,7 @@
 
 (deftest dead-purge-test
   (testing "Should purge dead queue"
-    (f/create-jobs {:dead 12})
+    (f/create-jobs-in-redis {:dead 12})
     (is (= 12 (dead-jobs/size tu/redis-conn)))
     (is (= {:body    ""
             :headers {"Location" "/dead"}
@@ -385,7 +385,7 @@
 
 (deftest dead-get-job-test
   (testing "Should return html view of dead-job page if job-exist"
-    (f/create-jobs {:dead 1})
+    (f/create-jobs-in-redis {:dead 1})
     (let [id (:id (first (dead-jobs/get-by-range tu/redis-conn 0 0)))
           response (dead/get-job {:console-opts tu/redis-console-opts
                                   :params       {:id id}
@@ -393,7 +393,7 @@
       (is (= 200 (:status response)))
       (is (str/starts-with? (:body response) "<!DOCTYPE html>"))))
   (testing "Should return html view of dead-job page with 400 response if job doesn't exist"
-    (f/create-jobs {:dead 1})
+    (f/create-jobs-in-redis {:dead 1})
     (let [id (str (random-uuid))
           response (dead/get-job {:console-opts tu/redis-console-opts
                                   :params       {:id id}
@@ -410,7 +410,7 @@
 
 (deftest dead-replay-job-test
   (testing "Should replay a dead job given a dead-job's encoded form is passed in replay req params"
-    (f/create-jobs {:dead 2})
+    (f/create-jobs-in-redis {:dead 2})
     (let [[j1 j2] (dead-jobs/get-by-range tu/redis-conn 0 1)
           encoded-job (u/encode-to-str j2)]
       (is (= {:body    ""
@@ -424,7 +424,7 @@
 
 (deftest dead-delete-job-test
   (testing "Should delete a dead job given a dead-job's encode form in delete req params"
-    (f/create-jobs {:dead 2})
+    (f/create-jobs-in-redis {:dead 2})
     (let [[j1 j2] (dead-jobs/get-by-range tu/redis-conn 0 1)
           encoded-job (u/encode-to-str j2)]
       (is (= {:body    ""
