@@ -33,8 +33,8 @@
      :filter-value f-val
      :limit        limit}))
 
-(defn jobs-table [{:keys [base-path prefix-route jobs]}]
-  [:form {:action (prefix-route "/dead/jobs")
+(defn jobs-table [{:keys [base-path jobs]}]
+  [:form {:action (str base-path "/jobs")
           :method "post"}
    (c/action-btns [(c/replay-btn)
                    (c/delete-btn
@@ -79,7 +79,7 @@
        (console/purge-confirmation-dialog data)
        [:button {:class "btn btn-danger btn-lg purge-dialog-show"} "Purge"]])]])
 
-(defn- job-page-view [{:keys       [base-path flash]
+(defn- job-page-view [{:keys       [base-path]
                        {:keys [id]
                         :as   job} :job}]
   [:div.redis
@@ -91,14 +91,14 @@
        [:div
         (c/action-btns [(c/replay-btn {:disabled false})
                         (c/delete-btn
-                          "Are you sure you want to the delete job?"
+                          "Are you sure you want to delete the job?"
                           {:disabled false})])
         [:input {:name  "job"
                  :type  "hidden"
                  :value (utils/encode-to-str job)}]
         (console/job-table job)]]]
      (console/flash-msg {:type    :error
-                   :message "No job found"}))])
+                         :message "No job found"}))])
 
 (defn get-jobs [{:keys                     [prefix-route]
                  {:keys [app-name broker]} :console-opts

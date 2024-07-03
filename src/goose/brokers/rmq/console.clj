@@ -1,5 +1,6 @@
 (ns ^:no-doc goose.brokers.rmq.console
-  (:require [bidi.bidi :as bidi] 
+  (:require [bidi.bidi :as bidi]
+            [clojure.string :as str]
             [goose.brokers.rmq.api.dead-jobs :as dead-jobs]
             [goose.brokers.rmq.queue :as rmq-queue]
             [goose.console :as console]
@@ -42,7 +43,7 @@
        [:div.top
         [:form.replay-jobs {:action (str base-path "/jobs")
                             :method "post"}
-         [:input.input {:type "number" :min "1" :max "10000" :placeholder "No. of jobs" :name "replay"}]
+         [:input.input {:type "number" :min "1" :max "10000" :placeholder "No. of jobs" :name "replay" :required "true"}]
          [:input.btn.btn-lg.replay
           {:type "submit" :value "Replay"}]]
 
@@ -85,7 +86,7 @@
                     :keys                     [prefix-route]
                     {:keys [replay]}          :params}]
   (let [view (console/layout header job-page)
-        replay-job-count-in-req (Integer/parseInt replay)
+        replay-job-count-in-req (if (str/blank? replay) 0 (Integer/parseInt replay))
         replay-job-count (when (> replay-job-count-in-req 0) (dead-jobs/replay-n-jobs (u/random-element (:channels broker))
                                                                                       (:queue-type broker)
                                                                                       (:publisher-confirms broker)

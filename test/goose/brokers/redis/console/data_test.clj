@@ -141,6 +141,11 @@
             :jobs []} (console/dead-page-data tu/redis-conn {:page         1
                                                              :filter-type  "execute-fn-sym"
                                                              :filter-value "non-existent"
+                                                             :limit        10})))
+    (is (= {:page 1
+            :jobs []} (console/dead-page-data tu/redis-conn {:page         1
+                                                             :filter-type  "queue"
+                                                             :filter-value "random-queue"
                                                              :limit        10}))))
   (testing "Should filter based on filter-type"
     (f/create-jobs-in-redis {:dead 7})
