@@ -409,3 +409,46 @@ select {
 .redis-enqueued .right-side {
   padding-top: 30px;
 }
+
+/* Rmq */
+.rmq {
+  margin: 3em;
+}
+
+.rmq .top{
+  display: flex;
+  justify-content: space-between;
+}
+
+.rmq h1 {
+  color: #5881D8;
+}
+
+.rmq .right {
+  margin: 1.2rem;
+  justify-content: right;
+  display: flex;
+  flex-direction: row;
+}
+
+.rmq .right .btn-danger {
+  margin: 0 4px;
+}
+
+.rmq .right .input{
+  width: 6em;
+  height: 1.8em;
+  padding: 9px;
+  border-style: none;
+}
+
+.rmq .right .replay{
+  margin: 0 5px 0 0;
+  border-radius: 0 6px 6px 0;
+}
+
+.rmq .replay-jobs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

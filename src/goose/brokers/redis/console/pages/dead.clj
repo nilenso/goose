@@ -57,7 +57,7 @@
               [:div.id id]]]
         [:td [:div.queue] queue]
         [:td [:div.execute-fn-sym (str execute-fn-sym)]]
-        [:td [:div.args (string/join ", " (mapv c/format-arg args))]]
+        [:td [:div.args (string/join ", " (mapv console/format-arg args))]]
         [:td [:div.died-at] (Date. ^Long died-at)]
         [:td [:div.checkbox-div
               [:input {:name  "jobs"
@@ -76,7 +76,7 @@
     (jobs-table data)
     (when (and total-jobs (> total-jobs 0))
       [:div.bottom
-       (c/purge-confirmation-dialog data)
+       (console/purge-confirmation-dialog data)
        [:button {:class "btn btn-danger btn-lg purge-dialog-show"} "Purge"]])]])
 
 (defn- job-page-view [{:keys       [base-path]
@@ -96,9 +96,9 @@
         [:input {:name  "job"
                  :type  "hidden"
                  :value (utils/encode-to-str job)}]
-        (c/job-table job)]]]
-     (c/flash-msg {:type    :error
-                   :message "No job found"}))])
+        (console/job-table job)]]]
+     (console/flash-msg {:type    :error
+                         :message "No job found"}))])
 
 (defn get-jobs [{:keys                     [prefix-route]
                  {:keys [app-name broker]} :console-opts
