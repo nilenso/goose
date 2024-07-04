@@ -45,6 +45,10 @@ table th, td {
   line-height: 1.4;
 }
 
+::backdrop {
+  opacity: 0.75;
+}
+
 /* Common classes */
 
 .underline:hover {
@@ -107,6 +111,27 @@ table th, td {
 
 .table-stripped tbody tr:nth-of-type(odd) {
   background-color: #fff;
+}
+
+.flash-info {
+  background-color: #5881d824;
+  color: #5881D8;
+  padding: 1em;
+  font-weight: bold;
+}
+
+.flash-error {
+  background-color: #db460f29;
+  color: #DB460F;
+  padding: 1em;
+  font-weight: bold;
+}
+
+.flash-success {
+  background-color: #d7e7d7;
+  color: #68b43a;
+  padding: 1em;
+  font-weight: bold;
 }
 
 /* Pagination */
@@ -218,16 +243,125 @@ input:disabled, input[disabled], button[disabled], button:disabled {
   color: #333;
   font-size: 18px;
 }
-
-/* Redis Enqueued Page  */
-
-.redis-enqueued {
+/* Redis */
+.redis {
   margin: 3em;
 }
 
-.redis-enqueued h1 {
+.redis h1 {
   color: #5881D8;
 }
+
+.redis-jobs-page {
+    margin: 5em;
+}
+
+.redis .pagination {
+  justify-content: center;
+  display: flex;
+  margin: 10px;
+  height: 2em;
+}
+
+.redis .pagination a {
+  padding: 10px;
+}
+
+.redis .jobs-table th .id-h {
+  width: 40%;
+}
+
+.redis .jobs-table .execute-fn-symbol-h {
+  width: 10%;
+}
+
+.redis .jobs-table .args-h {
+  width: 20%;
+}
+
+.redis .jobs-table .died-at-h {
+  width: 17%;
+}
+
+.redis .jobs-table .enqueued-at-h {
+  width: 17%;
+}
+
+.redis .jobs-table .checkbox-h {
+  width: 13%;
+  text-align: center;
+}
+
+.redis .actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 1em;
+}
+
+.redis .action-btns {
+  margin: auto;
+}
+
+.redis .action-btns .delete-dialog-show {
+  margin: auto;
+  right: 7em;
+  position: relative;
+}
+
+/* Filter Header */
+
+.redis .header {
+  background-color: #9FACC5;
+  height: 50px;
+  display: flex;
+  border-radius: 6px;
+}
+
+.redis .header .filter-opts {
+  margin: auto;
+  display: flex;
+  width: 100%;
+}
+
+.redis .header .filter-opts input,
+select {
+  padding: 6px 8px;
+  margin: 2px 0;
+  display: inline-block;
+  border: none;
+}
+
+.redis .header .filter-opts-items {
+  margin: 0 10px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.redis .header .filter-opts-items .filter-type {
+  background-color: #c4d0ec;
+  color: #585454;
+}
+
+.redis .header .filter-opts-items .filter-values {
+  display: flex;
+}
+
+.redis .header .filter-opts-items .limit {
+  background-color: #c4d0ec;
+  font-size: small;
+  margin: auto;
+  padding: 7px 20px;
+}
+
+/* Bottom Purge Button  */
+.redis .bottom {
+  margin-top: 50px;
+  justify-content: end;
+  display: flex;
+}
+
+
+/* Redis Enqueued Page  */
 
 .redis-enqueued .content {
   display: grid;
@@ -237,10 +371,6 @@ input:disabled, input[disabled], button[disabled], button:disabled {
 
 .redis-enqueued .selected {
   color: #C87021;
-}
-
-.redis-enqueued .pagination a {
-  padding: 10px;
 }
 
 /* Sidebar */
@@ -280,110 +410,45 @@ input:disabled, input[disabled], button[disabled], button:disabled {
   padding-top: 30px;
 }
 
-.redis-enqueued .pagination {
-  justify-content: center;
-  display: flex;
-  margin: 10px;
-  height: 2em;
+/* Rmq */
+.rmq {
+  margin: 3em;
 }
 
-/* Sticky Header */
-
-.redis-enqueued .header {
-  background-color: #9FACC5;
-  height: 50px;
-  display: flex;
-  border-radius: 6px;
-}
-
-.redis-enqueued .header .filter-opts {
-  margin: auto;
-  display: flex;
-  width: 100%;
-}
-
-.redis-enqueued .header .filter-opts input,
-select {
-  padding: 6px 8px;
-  margin: 2px 0;
-  display: inline-block;
-  border: none;
-}
-
-.redis-enqueued .header .filter-opts-items {
-  margin: 0 10px;
+.rmq .top{
   display: flex;
   justify-content: space-between;
 }
 
-.redis-enqueued .header .filter-opts-items .filter-type {
-  background-color: #c4d0ec;
-  color: #585454;
+.rmq h1 {
+  color: #5881D8;
 }
 
-.redis-enqueued .header .filter-opts-items .filter-values {
+.rmq .right {
+  margin: 1.2rem;
+  justify-content: right;
   display: flex;
+  flex-direction: row;
 }
 
-.redis-enqueued .header .filter-opts-items .limit {
-  background-color: #c4d0ec;
-  font-size: small;
-  margin: auto;
-  padding: 7px 20px;
+.rmq .right .btn-danger {
+  margin: 0 4px;
 }
 
-.redis-enqueued .header .action-buttons {
-  width: 20%;
-  margin: auto;
-  text-align: center;
+.rmq .right .input{
+  width: 6em;
+  height: 1.8em;
+  padding: 9px;
+  border-style: none;
 }
 
-.redis-enqueued .actions {
+.rmq .right .replay{
+  margin: 0 5px 0 0;
+  border-radius: 0 6px 6px 0;
+}
+
+.rmq .replay-jobs {
   display: flex;
-  justify-content: flex-end;
-  padding-bottom: 1em;
-}
-
-.redis-enqueued .action-btns {
-  margin: auto;
-}
-
-.redis-enqueued .action-btns .delete-dialog-show {
-  margin: auto;
-  right: 7em;
-  position: relative;
-}
-
-/* Enqueued Jobs Table */
-
-.redis-enqueued .jobs-table th .id-h {
-  width: 40%;
-}
-
-.redis-enqueued .jobs-table .execute-fn-symbol-h {
-  width: 10%;
-}
-
-.redis-enqueued .jobs-table .args-h {
-  width: 20%;
-}
-
-.redis-enqueued .jobs-table .enqueued-at-h {
-  width: 17%;
-}
-
-.redis-enqueued .jobs-table .checkbox-h {
-  width: 13%;
-  text-align: center;
-}
-
-/* Bottom Purge Button  */
-.redis-enqueued .bottom {
-  margin-top: 50px;
-  justify-content: end;
-  display: flex;
-}
-
-::backdrop {
-  opacity: 0.75;
+  align-items: center;
+  justify-content: center;
 }

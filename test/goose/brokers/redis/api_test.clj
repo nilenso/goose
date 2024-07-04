@@ -5,12 +5,14 @@
     [goose.api.dead-jobs :as dead-jobs]
     [goose.api.enqueued-jobs :as enqueued-jobs]
     [goose.brokers.redis.api.enqueued-jobs :as redis-enqueued-jobs]
+    [goose.brokers.redis.api.dead-jobs :as redis-dead-jobs]
     [goose.brokers.redis.commands :as redis-cmds]
     [goose.api.scheduled-jobs :as scheduled-jobs]
     [goose.batch]
     [goose.defaults :as d]
     [goose.client :as c]
     [goose.test-utils :as tu]
+    [goose.factories :as f]
     [goose.worker :as w]
 
     [clojure.test :refer [deftest is testing use-fixtures]])
@@ -49,7 +51,7 @@
       (is (nil? (tu/with-timeout default-timeout-ms
                                  (enqueued-jobs/find-by-id tu/redis-producer tu/queue job-id)))))))
 
-(deftest get-by-range-test
+(deftest enqueued-jobs-get-by-range-test
   (let [[id1 id2 id3] (doall (for [arg [1 2 3]]
                                (:id (c/perform-async tu/redis-client-opts `tu/my-fn arg))))
         [job1 job2 job3] (for [id [id1 id2 id3]]
@@ -122,6 +124,64 @@
     (let [job-id (str (random-uuid))]
       (is (nil? (tu/with-timeout default-timeout-ms
                                  (scheduled-jobs/find-by-id tu/redis-producer job-id)))))))
+
+(deftest dead-jobs-delete-test
+  (testing "Should delete a single job and return true"
+    (let [_ (f/create-jobs-in-redis {:dead 2})
+          [d1 _] (dead-jobs/find-by-pattern tu/redis-producer (fn [_] true))]
+      (is (= 2 (redis-dead-jobs/size tu/redis-conn)))
+      (is (true? (redis-dead-jobs/delete tu/redis-conn d1)))
+      (is (= 1 (redis-dead-jobs/size tu/redis-conn)))))
+  (tu/clear-redis)
+  (testing "Should delete all valid jobs and return true"
+    (let [_ (f/create-jobs-in-redis {:dead 3})
+          [d1 d2 d3] (dead-jobs/find-by-pattern tu/redis-producer (fn [_] true))]
+      (is (= 3 (redis-dead-jobs/size tu/redis-conn)))
+      (is (true? (redis-dead-jobs/delete tu/redis-conn d2 d3 d1)))
+      (is (= 0 (redis-dead-jobs/size tu/redis-conn)))))
+  (tu/clear-redis)
+  (testing "Should ignore invalid jobs and return false"
+    (let [_ (f/create-jobs-in-redis {:dead 3})
+          [d1 _ d3] (dead-jobs/find-by-pattern tu/redis-producer (fn [_] true))]
+      (is (= 3 (redis-dead-jobs/size tu/redis-conn)))
+      (is (false? (redis-dead-jobs/delete tu/redis-conn d3 {:id "invalid-job"} d1)))
+      (is (= 1 (redis-dead-jobs/size tu/redis-conn))))))
+
+(deftest dead-jobs-replay-test
+  (testing "Should return nil given invalid job"
+    (let [_ (f/create-jobs-in-redis {:dead 2})]
+      (is (= 2 (redis-dead-jobs/size tu/redis-conn)))
+      (is (= [] (redis-dead-jobs/replay-jobs tu/redis-conn {:id "invalid-job"})))
+      (is (= 2 (redis-dead-jobs/size tu/redis-conn)))))
+  (tu/clear-redis)
+  (testing "Should replay a single job and return response"
+    (let [_ (f/create-jobs-in-redis {:dead 4})
+          [d1 _] (dead-jobs/find-by-pattern tu/redis-producer (fn [_] true))]
+      (is (= 4 (redis-dead-jobs/size tu/redis-conn)))
+      (is (= [d1] (redis-dead-jobs/replay-jobs tu/redis-conn d1)))
+      (is (= 1 (redis-enqueued-jobs/size tu/redis-conn tu/queue)))
+      (is (= 3 (redis-dead-jobs/size tu/redis-conn)))))
+  (tu/clear-redis)
+  (testing "Should replay multiple jobs and return count of jobs that are replayed"
+    (let [_ (f/create-jobs-in-redis {:dead 4})
+          [d1 d2 _ d4] (dead-jobs/find-by-pattern tu/redis-producer (fn [_] true))]
+      (is (= 4 (redis-dead-jobs/size tu/redis-conn)))
+      (is (= [d1 d4 d2] (redis-dead-jobs/replay-jobs tu/redis-conn d1 {:id "invalid-job1"} d4 {:id "invalid-job2"} d2)))
+      (is (= 3 (redis-enqueued-jobs/size tu/redis-conn tu/queue)))
+      (is (= 1 (redis-dead-jobs/size tu/redis-conn))))))
+
+(deftest dead-job-get-by-range-test
+  (testing "Should get jobs in decreasing order of died-at given a range"
+    (let [_ (f/create-jobs-in-redis {:dead 3})
+          [j1 j2] (redis-dead-jobs/get-by-range tu/redis-conn 0 1)]
+      (is (true? (>= (get-in j1 [:state :died-at]) (get-in j2 [:state :died-at]))))))
+  (tu/clear-redis)
+  (testing "Should get max of (size dead-jobs) given high stop value in range"
+    (let [_ (f/create-jobs-in-redis {:dead 2})
+          jobs-from-match (dead-jobs/find-by-pattern tu/redis-producer (fn [_] true))
+          jobs-from-range (redis-dead-jobs/get-by-range tu/redis-conn 0 100)]
+      (is (= (set jobs-from-match) (set jobs-from-range)))
+      (is (= 2 (count jobs-from-range))))))
 
 (def dead-fn-atom (atom 0))
 (defn dead-fn
