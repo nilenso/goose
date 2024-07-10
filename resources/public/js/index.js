@@ -122,10 +122,40 @@ window.onload = () => {
       });
     }
   }
+  function attachWhenCheckboxEventListener() {
+    const whenOptionCheckbox = document.getElementById('when-option');
+    if (whenOptionCheckbox) {
+      whenOptionCheckbox.addEventListener('change', function () {
+        const isTimeFormatAbsolute = whenOptionCheckbox.checked
+        const scheduleRunAtRelTimeDivs = document.getElementsByClassName('schedule-run-at-rel-time')
+        const scheduleRunAtAbsTimeDivs = document.getElementsByClassName('schedule-run-at-abs-time')
+
+        console.log(whenOptionCheckbox.checked)
+        console.log("scheduleRunAtRelTimeDiv", scheduleRunAtRelTimeDivs)
+        console.log("scheduleRunAtRelTimeDiv", scheduleRunAtAbsTimeDivs)
+        if (isTimeFormatAbsolute) {
+          for (let div of scheduleRunAtRelTimeDivs) {
+            div.classList.add('invisible');
+          }
+          for (let div of scheduleRunAtAbsTimeDivs) {
+            div.classList.remove('invisible');
+          }
+        } else {
+          for (let div of scheduleRunAtAbsTimeDivs) {
+            div.classList.add('invisible');
+          }
+          for (let div of scheduleRunAtRelTimeDivs) {
+            div.classList.remove('invisible');
+          }
+        }
+      });
+    }
+  }
 
   attachSelectAllCheckboxEventListener();
   attachPurgeDialogEventListener();
   attachFilterTypeEventListener();
   attachDeleteDialogEventListener();
   attachCheckboxListeners();
+  attachWhenCheckboxEventListener();
 }

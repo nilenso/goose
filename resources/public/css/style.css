@@ -243,6 +243,7 @@ input:disabled, input[disabled], button[disabled], button:disabled {
   color: #333;
   font-size: 18px;
 }
+
 /* Redis */
 .redis {
   margin: 3em;
@@ -253,7 +254,7 @@ input:disabled, input[disabled], button[disabled], button:disabled {
 }
 
 .redis-jobs-page {
-    margin: 5em;
+  margin: 5em;
 }
 
 .redis .pagination {
@@ -266,6 +267,12 @@ input:disabled, input[disabled], button[disabled], button:disabled {
 .redis .pagination a {
   padding: 10px;
 }
+
+.redis .jobs-table .when-h {
+  display: flex;
+  justify-content: space-between;
+}
+
 
 .redis .jobs-table th .id-h {
   width: 40%;
@@ -415,7 +422,7 @@ select {
   margin: 3em;
 }
 
-.rmq .top{
+.rmq .top {
   display: flex;
   justify-content: space-between;
 }
@@ -435,14 +442,14 @@ select {
   margin: 0 4px;
 }
 
-.rmq .right .input{
+.rmq .right .input {
   width: 6em;
   height: 1.8em;
   padding: 9px;
   border-style: none;
 }
 
-.rmq .right .replay{
+.rmq .right .replay {
   margin: 0 5px 0 0;
   border-radius: 0 6px 6px 0;
 }
@@ -451,4 +458,73 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.invisible {
+  display: none
+}
+
+.when-h .when-label {
+  margin-top: 10px;
+}
+
+
+/* Scheduled job when toggle btn */
+
+.toggle-switch {
+  display: inline-block;
+  position: relative;
+  width: 100px;
+  height: 34px;
+  background-color: #f0f0f0;
+  border-radius: 17px;
+  border: 1px solid #ccc;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.toggle-switch input {
+  display: none;
+}
+
+.toggle-switch-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+  font-size: 14px;
+}
+
+.toggle-switch-label span {
+  flex: 1;
+  text-align: center;
+  transition: color 0.2s;
+  z-index: 1;
+}
+
+.toggle-switch-background {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(50% - 2px);
+  height: calc(100% - 4px);
+  background-color: #4285f4;
+  border-radius: 15px;
+  transition: transform 0.2s;
+}
+
+.toggle-switch input:checked+.toggle-switch-label .toggle-switch-background {
+  transform: translateX(100%);
+}
+
+.toggle-switch input:checked+.toggle-switch-label .at {
+  color: #fff;
+}
+
+.toggle-switch input:not(:checked)+.toggle-switch-label .in {
+  color: #fff;
+}
+
+.when {
+  width: 20%
 }
