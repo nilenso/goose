@@ -93,6 +93,14 @@
       (is (= nil (:filter-value (dead/validate-get-jobs {:filter-type  "queue"
                                                          :filter-value 123})))))))
 
+(deftest validate-get-scheduled-jobs-test
+  (testing "Should set req params to default values if values do not conform specs"
+    (is (= 1 (:page (scheduled/validate-get-jobs {}))))
+    (is (= 1 (:page (scheduled/validate-get-jobs {:page nil}))))
+    (is (= 2 (:page (scheduled/validate-get-jobs {:page "2"}))))
+    (is (= 1 (:page (scheduled/validate-get-jobs {:page "two"}))))
+    (is (= 1 (:page (scheduled/validate-get-jobs {:page "2w"}))))))
+
 (deftest validate-req-params-test
   (testing "Should set req params of job to default value if do not conform spec"
     (let [uuid (str (random-uuid))]

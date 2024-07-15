@@ -1,12 +1,11 @@
 (ns goose.brokers.redis.console.pages.scheduled
-  (:require [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
+  (:require [goose.brokers.redis.console.data :as data]
             [goose.brokers.redis.console.pages.components :as c]
             [goose.brokers.redis.console.specs :as specs]
             [goose.console :as console]
             [goose.defaults :as d]
             [goose.job :as job]
             [goose.utils :as u]
-            [goose.utils]
             [ring.util.response :as response])
   (:import
     (java.util Date)))
@@ -40,7 +39,7 @@
           [:td [:div.execute-fn-sym (str execute-fn-sym)]]
           [:td.type (if (job/retried? j) "Retrying" "Scheduled")]]))]]])
 
-(defn jobs-page-view [{:keys [total-jobs] :as data}]
+(defn- jobs-page-view [{:keys [total-jobs] :as data}]
   [:div.redis
    [:h1 "Scheduled Jobs"]
    [:div.content.redis-jobs-page
@@ -60,12 +59,8 @@
                   {:keys [redis-conn]} :broker} :console-opts
                  params                         :params}]
   (let [view (console/layout c/header jobs-page-view)
-        {:keys [page]} (validate-get-jobs params)
-        data {:page page
-              :total-jobs (scheduled-jobs/size redis-conn)
-              :jobs (scheduled-jobs/get-by-range redis-conn
-                                                 (* (dec page) d/page-size)
-                                                 (dec (* page d/page-size)))}]
+        validated-params (validate-get-jobs params)
+        data (data/scheduled-page-data redis-conn validated-params)]
     (response/response (view "Scheduled" (assoc data :app-name app-name
                                                      :job-type :scheduled
                                                      :base-path (prefix-route "/scheduled")

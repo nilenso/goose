@@ -122,6 +122,7 @@ window.onload = () => {
       });
     }
   }
+
   function attachWhenCheckboxEventListener() {
     const whenOptionCheckbox = document.getElementById('when-option');
     if (whenOptionCheckbox) {

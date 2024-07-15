@@ -105,3 +105,11 @@
 
       (invalid-filter-value? validated-filter-value)
       (assoc base-result :jobs []))))
+
+(defn scheduled-page-data
+  [redis-conn {:keys [page]}]
+  {:page page
+   :total-jobs (scheduled-jobs/size redis-conn)
+   :jobs (scheduled-jobs/get-by-range redis-conn
+                                      (* (dec page) d/page-size)
+                                      (dec (* page d/page-size)))})
