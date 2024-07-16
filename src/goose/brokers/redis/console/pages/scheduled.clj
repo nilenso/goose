@@ -43,16 +43,32 @@
   [:div.redis
    [:h1 "Scheduled Jobs"]
    [:div.content.redis-jobs-page
+    (c/filter-header ["id" "execute-fn-sym" "queue" "type"] data)
     [:div.pagination
      (when total-jobs
        (c/pagination data))]
     (jobs-table data)]])
 
-(defn validate-get-jobs [{:keys [page]}]
-  {:page (specs/validate-or-default ::specs/page
-                                    (specs/str->long page)
-                                    (specs/str->long page)
-                                    d/page)})
+(defn validate-get-jobs [{:keys [page filter-type filter-value limit]}]
+  (let [f-type (specs/validate-or-default ::specs/scheduled-filter-type filter-type)]
+    {:page         (specs/validate-or-default ::specs/page
+                                              (specs/str->long page)
+                                              (specs/str->long page)
+                                              d/page)
+     :filter-type f-type
+     :filter-value (case f-type
+                     "id" (specs/validate-or-default ::specs/job-id
+                                                     (parse-uuid filter-value)
+                                                     filter-value)
+                     "execute-fn-sym" (specs/validate-or-default ::specs/filter-value-sym
+                                                                 filter-value)
+                     "queue" (specs/validate-or-default ::specs/queue filter-value)
+                     "type" (specs/validate-or-default ::specs/filter-value-type filter-value)
+                     nil)
+     :limit        (specs/validate-or-default ::specs/limit
+                                              (specs/str->long limit)
+                                              (specs/str->long limit)
+                                              d/limit)}))
 
 (defn get-jobs [{:keys                          [prefix-route]
                  {:keys                [app-name]
@@ -64,4 +80,5 @@
     (response/response (view "Scheduled" (assoc data :app-name app-name
                                                      :job-type :scheduled
                                                      :base-path (prefix-route "/scheduled")
-                                                     :prefix-route prefix-route)))))
+                                                     :prefix-route prefix-route
+                                                     :params params)))))

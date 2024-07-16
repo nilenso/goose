@@ -8,9 +8,10 @@
 
 (s/def ::enqueued-filter-type #{"id" "execute-fn-sym" "type"})
 (s/def ::dead-filter-type #{"id" "execute-fn-sym" "queue"})
+(s/def ::scheduled-filter-type #{"id" "execute-fn-sym" "type" "queue"})
 (s/def ::job-id uuid?)
 (s/def ::filter-value-sym string?)
-(s/def ::filter-value-type #{"unexecuted" "failed"})
+(s/def ::filter-value-type #{"unexecuted" "failed" "scheduled"})
 (s/def ::limit nat-int?)
 (s/def ::encoded-job string?)
 (s/def ::encoded-jobs (s/coll-of ::encoded-job))
