@@ -1,6 +1,7 @@
 (ns ^:no-doc goose.brokers.redis.console
   (:require [bidi.bidi :as bidi]
             [goose.brokers.redis.console.pages.enqueued :as enqueued]
+            [goose.brokers.redis.console.pages.scheduled :as scheduled]
             [goose.brokers.redis.console.pages.dead :as dead]
             [goose.brokers.redis.console.pages.home :as home]
             [goose.console :as console]))
@@ -23,6 +24,7 @@
                            ["/job/" :id] [[:get dead/get-job]
                                           [:post dead/replay-job]
                                           [:delete dead/delete-job]]}]
+                 ["/scheduled" {"" scheduled/get-jobs}]
                  ["/css/style.css" console/load-css]
                  ["/img/goose-logo.png" console/load-img]
                  ["/js/index.js" console/load-js]

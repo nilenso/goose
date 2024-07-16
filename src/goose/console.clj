@@ -81,14 +81,14 @@
            [:body
             (map (fn [c] (c data)) components)])))
 
-(defn delete-confirm-dialog [question]
+(defn ^:no-doc delete-confirm-dialog [question]
   [:dialog {:class "delete-dialog"}
    [:div question]
    [:div.dialog-btns
     [:input.btn.btn-md.btn-cancel {:type "button" :value "cancel" :class "cancel"}]
     [:input.btn.btn-md.btn-danger {:type "submit" :name "_method" :value "delete"}]]])
 
-(defn purge-confirmation-dialog [{:keys [total-jobs base-path]}]
+(defn ^:no-doc purge-confirmation-dialog [{:keys [total-jobs base-path]}]
   [:dialog {:class "purge-dialog"}
    [:div "Are you sure, you want to remove " [:span.highlight total-jobs] " jobs ?"]
    [:form {:action base-path
@@ -98,7 +98,7 @@
     [:input {:type "button" :value "Cancel" :class "btn btn-md btn-cancel cancel"}]
     [:input {:type "submit" :value "Confirm" :class "btn btn-danger btn-md"}]]])
 
-(defn flash-msg [{:keys [type message class]}]
+(defn ^:no-doc flash-msg [{:keys [type message class]}]
   (let [append-class #(str/join " " %)]
     (case type
       :success [:div.flash-success {:class (append-class class)} message]
@@ -106,18 +106,18 @@
       :info [:div.flash-info {:class (append-class class)} message]
       [:div {:class (append-class class)} message])))
 
-(defn job-table [{:keys                     [id execute-fn-sym args queue ready-queue enqueued-at]
-                  {:keys [max-retries
-                          retry-delay-sec-fn-sym
-                          retry-queue error-handler-fn-sym
-                          death-handler-fn-sym
-                          skip-dead-queue]} :retry-opts
-                  {:keys [error
-                          last-retried-at
-                          first-failed-at
-                          retry-count
-                          retry-at]}        :state
-                  :as                       job}]
+(defn ^:no-doc job-table [{:keys                     [id execute-fn-sym args queue ready-queue enqueued-at]
+                           {:keys [max-retries
+                                   retry-delay-sec-fn-sym
+                                   retry-queue error-handler-fn-sym
+                                   death-handler-fn-sym
+                                   skip-dead-queue]} :retry-opts
+                           {:keys [error
+                                   last-retried-at
+                                   first-failed-at
+                                   retry-count
+                                   retry-at]}        :state
+                           :as                       job}]
   [:table.job-table.table-stripped
    [:tr [:td "Id"]
     [:td id]]

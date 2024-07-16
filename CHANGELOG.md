@@ -10,6 +10,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Changed
 ### Fixed
 
+## [0.5.2] - 4th-July-2024
+
+### Added
+- View dead jobs in console web view
+### Changed
+### Fixed
+
 ## [0.5.1] - 28-May-2024
 
 ### Added
