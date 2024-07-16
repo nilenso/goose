@@ -1,5 +1,8 @@
 window.onload = () => {
 
+  const possibleTypesBasedOnJobType = {"scheduled": ["scheduled", "failed"],
+   "enqueued": ["unexecuted", "failed"]}
+
   function attachPurgeDialogEventListener() {
     const purgeDialog = document.querySelector(".purge-dialog");
     const showPurgeDialog = document.querySelector(".purge-dialog-show")
@@ -39,13 +42,15 @@ window.onload = () => {
     return input;
   }
 
-  function createFilterValueSelectElement() {
+  function createFilterValueSelectElement(jobType) {
     const select = document.createElement('select');
     select.setAttribute('id', 'job-type-select')
     select.setAttribute('required', 'true');
     select.setAttribute('name', 'filter-value')
     select.setAttribute('class', 'filter-value')
-    const options = ["unexecuted", "failed"];
+
+    const options = possibleTypesBasedOnJobType[jobType]
+
     options.forEach(function (t) {
       var option = document.createElement('option');
       option.value = t;
@@ -64,12 +69,13 @@ window.onload = () => {
         const filterValuesDiv = document.querySelector(".filter-values");
         const selectedFilterType = filterTypeSelect.value;
         const currentFilterValueElement = document.querySelector(".filter-opts-items .filter-value");
+        const jobType = document.getElementById("job-type").value
 
         let newFilterValueElement;
 
         switch (true) {
           case SELECT_FILTER_TYPES.includes(selectedFilterType):
-            newFilterValueElement = createFilterValueSelectElement();
+            newFilterValueElement = createFilterValueSelectElement(jobType);
             break;
           case INPUT_FILTER_TYPES.includes(selectedFilterType):
             newFilterValueElement = createFilterValueInputElement();

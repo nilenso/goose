@@ -50,33 +50,36 @@
      (hyperlink next-page next-page (< curr-page last-page) false)
      (hyperlink last-page (hiccup-util/escape-html ">>") (not single-page?) (= curr-page last-page))]))
 
-(defn filter-header [filter-types {:keys                                    [base-path]
+(defn filter-header [filter-types {:keys                                    [job-type base-path]
                                    {:keys [filter-type filter-value limit]} :params}]
-  [:div.header
-   [:form.filter-opts {:action base-path
-                       :method "get"}
-    [:div.filter-opts-items
-     [:select {:name "filter-type" :class "filter-type"}
-      (for [type filter-types]
-        [:option {:value type :selected (= type filter-type)} type])]
-     [:div.filter-values
+  (let [filter-values-for-type {:enqueued ["unexecuted" "failed"]
+                                :scheduled ["scheduled" "failed"]} ]
+    [:div.header
+     [:form.filter-opts {:action base-path
+                         :method "get"}
+      [:input {:id "job-type" :type "hidden" :name "job-type" :value job-type}]
+      [:div.filter-opts-items
+       [:select {:name "filter-type" :class "filter-type"}
+        (for [type filter-types]
+          [:option {:value type :selected (= type filter-type)} type])]
+       [:div.filter-values
 
-      ;; filter-value element is dynamically changed in JavaScript based on filter-type
-      ;; Any attribute update in field-value should be reflected in JavaScript file too
+        ;; filter-value element is dynamically changed in JavaScript based on filter-type
+        ;; Any attribute update in field-value should be reflected in JavaScript file too
 
-      (if (= filter-type "type")
-        [:select {:name "filter-value" :class "filter-value" :required true}
-         (for [val ["unexecuted" "failed"]]
-           [:option {:value val :selected (= val filter-value)} val])]
-        [:input {:name  "filter-value" :type "text" :placeholder "filter value" :required true
-                 :class "filter-value" :value filter-value}])]]
-    [:div.filter-opts-items
-     [:span.limit "Limit"]
-     [:input {:type  "number" :name "limit" :id "limit" :placeholder "custom limit"
-              :value (if (str/blank? limit) d/limit limit)
-              :min   "0"
-              :max   "10000"}]]
-    [:div.filter-opts-items
-     [:button.btn.btn-cancel
-      [:a. {:href base-path :class "cursor-default"} "Clear"]]
-     [:button.btn {:type "submit"} "Apply"]]]])
+        (if (= filter-type "type")
+          [:select {:name "filter-value" :class "filter-value" :required true}
+           (for [val (get filter-values-for-type job-type)]
+             [:option {:value val :selected (= val filter-value)} val])]
+          [:input {:name  "filter-value" :type "text" :placeholder "filter value" :required true
+                   :class "filter-value" :value filter-value}])]]
+      [:div.filter-opts-items
+       [:span.limit "Limit"]
+       [:input {:type  "number" :name "limit" :id "limit" :placeholder "custom limit"
+                :value (if (str/blank? limit) d/limit limit)
+                :min   "0"
+                :max   "10000"}]]
+      [:div.filter-opts-items
+       [:button.btn.btn-cancel
+        [:a. {:href base-path :class "cursor-default"} "Clear"]]
+       [:button.btn {:type "submit"} "Apply"]]]]))
