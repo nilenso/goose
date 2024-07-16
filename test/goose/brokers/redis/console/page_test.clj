@@ -33,7 +33,7 @@
       (is (= nil (:queue (enqueued/validate-get-jobs {:queue :queue}))))
 
       (let [valid-filter-type ["id" "execute-fn-sym" "type"]
-            random-filter-type (rand-nth ["id" "execute-fn-sym" "type"])]
+            random-filter-type (rand-nth valid-filter-type)]
         (is (some #(= % (:filter-type (enqueued/validate-get-jobs {:filter-type  random-filter-type
                                                                    :filter-value ""})))
                   valid-filter-type)))
@@ -69,7 +69,7 @@
       (is (= 1 (:page (dead/validate-get-jobs {:page "2w"}))))
 
       (let [valid-filter-type ["id" "execute-fn-sym" "queue"]
-            random-filter-type (rand-nth ["id" "execute-fn-sym" "queue"])]
+            random-filter-type (rand-nth valid-filter-type)]
         (is (some #(= % (:filter-type (dead/validate-get-jobs {:filter-type  random-filter-type
                                                                :filter-value ""})))
                   valid-filter-type)))
@@ -95,11 +95,38 @@
 
 (deftest validate-get-scheduled-jobs-test
   (testing "Should set req params to default values if values do not conform specs"
-    (is (= 1 (:page (scheduled/validate-get-jobs {}))))
-    (is (= 1 (:page (scheduled/validate-get-jobs {:page nil}))))
-    (is (= 2 (:page (scheduled/validate-get-jobs {:page "2"}))))
-    (is (= 1 (:page (scheduled/validate-get-jobs {:page "two"}))))
-    (is (= 1 (:page (scheduled/validate-get-jobs {:page "2w"}))))))
+    (let [random-id (str (random-uuid))]
+      (is (= 1 (:page (scheduled/validate-get-jobs {}))))
+      (is (= 1 (:page (scheduled/validate-get-jobs {:page nil}))))
+      (is (= 2 (:page (scheduled/validate-get-jobs {:page "2"}))))
+      (is (= 1 (:page (scheduled/validate-get-jobs {:page "two"}))))
+      (is (= 1 (:page (scheduled/validate-get-jobs {:page "2w"}))))
+
+      (let [valid-filter-type ["id" "execute-fn-sym" "queue" "type"]
+            random-filter-type (rand-nth valid-filter-type)]
+        (is (some #(= % (:filter-type (scheduled/validate-get-jobs {:filter-type  random-filter-type
+                                                                    :filter-value ""})))
+                  valid-filter-type)))
+
+      (is (= random-id (:filter-value (scheduled/validate-get-jobs {:filter-type  "id"
+                                                                    :filter-value random-id}))))
+
+      (is (nil? (:filter-value (scheduled/validate-get-jobs {:filter-type  "id"
+                                                             :filter-value (rand-nth ["abcd" ""])}))))
+      (is (= "some-namespace/fn-name" (:filter-value (scheduled/validate-get-jobs {:filter-type  "execute-fn-sym"
+                                                                                   :filter-value "some-namespace/fn-name"}))))
+      (is (nil? (:filter-value (scheduled/validate-get-jobs {:filter-type  "execute-fn-sym"
+                                                             :filter-value (rand-nth [123 nil])}))))
+      (is (= "any-string-value" (:filter-value (scheduled/validate-get-jobs {:filter-type  "queue"
+                                                                    :filter-value "any-string-value"}))))
+      (is (= nil (:filter-value (scheduled/validate-get-jobs {:filter-type  "queue"
+                                                              :filter-value (rand-nth [:default nil 123])}))))
+      (is (= "scheduled" (:filter-value (scheduled/validate-get-jobs {:filter-type  "type"
+                                                                      :filter-value "scheduled"}))))
+      (is (= "failed" (:filter-value (scheduled/validate-get-jobs {:filter-type  "type"
+                                                                   :filter-value "failed"}))))
+      (is (nil? (:filter-value (scheduled/validate-get-jobs {:filter-type  "type"
+                                                             :filter-value ["any-string" :failed]})))))))
 
 (deftest validate-req-params-test
   (testing "Should set req params of job to default value if do not conform spec"
