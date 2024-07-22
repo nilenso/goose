@@ -239,6 +239,10 @@ input:disabled, input[disabled], button[disabled], button:disabled {
   margin-bottom: 5px;
 }
 
+.stat a:hover .label {
+  color: #5881D8 !important;
+}
+
 .stat .label {
   color: #333;
   font-size: 18px;
