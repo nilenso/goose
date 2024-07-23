@@ -1,21 +1,23 @@
 (ns goose.brokers.redis.api-test
   (:require
+    [clojure.test :refer [deftest is testing use-fixtures]]
     [goose.api.batch :as batch]
     [goose.api.cron-jobs :as cron-jobs]
     [goose.api.dead-jobs :as dead-jobs]
     [goose.api.enqueued-jobs :as enqueued-jobs]
-    [goose.brokers.redis.api.enqueued-jobs :as redis-enqueued-jobs]
-    [goose.brokers.redis.api.dead-jobs :as redis-dead-jobs]
-    [goose.brokers.redis.commands :as redis-cmds]
     [goose.api.scheduled-jobs :as scheduled-jobs]
     [goose.batch]
-    [goose.defaults :as d]
+    [goose.brokers.redis.api.dead-jobs :as redis-dead-jobs]
+    [goose.brokers.redis.api.enqueued-jobs :as redis-enqueued-jobs]
+    [goose.brokers.redis.api.scheduled-jobs :as redis-scheduled-jobs]
+    [goose.brokers.redis.commands :as redis-cmds]
     [goose.client :as c]
-    [goose.test-utils :as tu]
+    [goose.defaults :as d]
     [goose.factories :as f]
-    [goose.worker :as w]
+    [goose.test-utils :as tu]
+    [goose.utils :as u]
 
-    [clojure.test :refer [deftest is testing use-fixtures]])
+    [goose.worker :as w])
   (:import
     (java.time ZoneId)))
 
@@ -125,6 +127,71 @@
       (is (nil? (tu/with-timeout default-timeout-ms
                                  (scheduled-jobs/find-by-id tu/redis-producer job-id)))))))
 
+(deftest scheduled-jobs-prioritise-test
+  (testing "Should prioritise only one job"
+    (f/create-jobs-in-redis {:scheduled 3})
+    (let [[j1 _] (scheduled-jobs/find-by-pattern tu/redis-producer (fn [_] true))]
+      (is (= 3 (redis-scheduled-jobs/size tu/redis-conn)))
+      (is (= [j1] (redis-scheduled-jobs/prioritises-execution tu/redis-conn j1)))
+      (is (= [j1] (enqueued-jobs/find-by-pattern tu/redis-producer tu/queue (fn [_] true))))
+      (is (= 2 (redis-scheduled-jobs/size tu/redis-conn)))))
+  (tu/clear-redis)
+  (testing "Should prioritise multiple jobs"
+    (f/create-jobs-in-redis {:scheduled 4})
+    (let [[_ j2 _ j4] (scheduled-jobs/find-by-pattern tu/redis-producer (fn [_] true))]
+      (is (= 4 (redis-scheduled-jobs/size tu/redis-conn)))
+      (is (= [j2 j4] (redis-scheduled-jobs/prioritises-execution tu/redis-conn j2 j4)))
+      (is (= 2 (redis-enqueued-jobs/size tu/redis-conn tu/queue)))
+      (is (= 2 (redis-scheduled-jobs/size tu/redis-conn)))))
+  (tu/clear-redis)
+  (testing "Should prioritise only valid(that exists in redis) jobs"
+    (f/create-jobs-in-redis {:scheduled 3})
+    (let [[j1 _ j3] (scheduled-jobs/find-by-pattern tu/redis-producer (fn [_] true))]
+      (is (= 3 (redis-scheduled-jobs/size tu/redis-conn)))
+      (is (= [j3 j1] (redis-scheduled-jobs/prioritises-execution tu/redis-conn j3 j1 {:id "invalid-id"})))
+      (is (= 2 (redis-enqueued-jobs/size tu/redis-conn tu/queue)))
+      (is (= 1 (redis-scheduled-jobs/size tu/redis-conn))))))
+
+(deftest scheduled-jobs-delete-test
+  (testing "Should delete a single job and return true"
+    (let [_ (f/create-jobs-in-redis {:scheduled 2})
+          [d1 _] (scheduled-jobs/find-by-pattern tu/redis-producer (fn [_] true))]
+      (is (= 2 (redis-scheduled-jobs/size tu/redis-conn)))
+      (is (true? (redis-scheduled-jobs/delete tu/redis-conn d1)))
+      (is (= 1 (redis-scheduled-jobs/size tu/redis-conn)))))
+  (tu/clear-redis)
+  (testing "Should delete multiple valid jobs(that exist in redis) and return true"
+    (let [_ (f/create-jobs-in-redis {:scheduled 3})
+          [d1 d2 d3] (scheduled-jobs/find-by-pattern tu/redis-producer (fn [_] true))]
+      (is (= 3 (redis-scheduled-jobs/size tu/redis-conn)))
+      (is (true? (redis-scheduled-jobs/delete tu/redis-conn d2 d3 d1)))
+      (is (= 0 (redis-scheduled-jobs/size tu/redis-conn)))))
+  (tu/clear-redis)
+  (testing "Should ignore invalid jobs and return false"
+    (let [_ (f/create-jobs-in-redis {:scheduled 3})
+          [d1 _ d3] (scheduled-jobs/find-by-pattern tu/redis-producer (fn [_] true))]
+      (is (= 3 (redis-scheduled-jobs/size tu/redis-conn)))
+      (is (false? (redis-scheduled-jobs/delete tu/redis-conn d3 {:id "invalid-job"} d1)))
+      (is (= 1 (redis-scheduled-jobs/size tu/redis-conn))))))
+
+(deftest scheduled-jobs-get-by-range
+  (testing "Should get jobs in increasing order of schedule-run-at given a range"
+    (let [future-scheduled-job-id (f/create-schedule-job-in-redis {:schedule-run-at (+ (u/epoch-time-ms)
+                                                                                       1000)})
+          now-scheduled-job-id (f/create-schedule-job-in-redis {:schedule-run-at (+ (u/epoch-time-ms))})
+
+          future-scheduled-job (redis-scheduled-jobs/find-by-id tu/redis-conn future-scheduled-job-id)
+          now-scheduled-job (redis-scheduled-jobs/find-by-id tu/redis-conn now-scheduled-job-id)]
+      (is (true? (>= (get-in future-scheduled-job [:schedule-run-at]) (get-in now-scheduled-job [:schedule-run-at]))))
+      (is (= [now-scheduled-job future-scheduled-job] (redis-scheduled-jobs/get-by-range tu/redis-conn 0 1)))))
+  (tu/clear-redis)
+  (testing "Should get max of (size scheduled-jobs) given higher stop value in range"
+    (let [_ (f/create-jobs-in-redis {:scheduled 3})
+          jobs-from-match (scheduled-jobs/find-by-pattern tu/redis-producer (fn [_] true))
+          jobs-from-range (redis-scheduled-jobs/get-by-range tu/redis-conn 0 100)]
+      (is (= (set jobs-from-match) (set jobs-from-range)))
+      (is (= 3 (count jobs-from-range))))))
+
 (deftest dead-jobs-delete-test
   (testing "Should delete a single job and return true"
     (let [_ (f/create-jobs-in-redis {:dead 2})
@@ -199,7 +266,7 @@
           dead-job-id-2 (:id (c/perform-async job-opts `dead-fn 12))
           _ (doseq [id (range 5)]
               (c/perform-async job-opts `dead-fn id)
-              (Thread/sleep ^long (rand-int 15))) ; Prevent jobs from dying at the same time
+              (Thread/sleep ^long (rand-int 15)))           ; Prevent jobs from dying at the same time
           circuit-breaker (atom 0)]
       ; Wait until 4 jobs have died after execution.
       (while (and (> 7 @circuit-breaker) (not= 7 @dead-fn-atom))
