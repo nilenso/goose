@@ -14,6 +14,9 @@
 (defn jobs-table [{:keys [base-path jobs]}]
   [:form {:action (str base-path "/jobs")
           :method "post"}
+   (c/action-btns [(c/prioritise-btn)
+                   (c/delete-btn
+                     [:div "Are you sure you want to delete selected jobs?"])])
    [:table.jobs-table
     [:thead
      [:th.when-h [:div.when-label "When"]
@@ -26,7 +29,8 @@
       [:th.id-h "Id"]
       [:th.queue-h "Queue"]
       [:th.execute-fn-sym-h "Execute fn symbol"]
-      [:th.type-h "Type"]]]
+      [:th.type-h "Type"]
+      [:th.checkbox-h [:input {:type "checkbox" :id "checkbox-h"}]]]]
     [:tbody
      (for [{:keys [id queue execute-fn-sym schedule-run-at] :as j} jobs]
        (let [relative-time (when schedule-run-at (utils/relative-time schedule-run-at))
@@ -38,7 +42,12 @@
           [:td [:div.id id]]
           [:td [:div.queue] queue]
           [:td [:div.execute-fn-sym (str execute-fn-sym)]]
-          [:td.type (if (job/retried? j) "Retrying" "Scheduled")]]))]]])
+          [:td.type (if (job/retried? j) "Retrying" "Scheduled")]
+          [:td [:div.checkbox-div
+                [:input {:name  "jobs"
+                         :type  "checkbox"
+                         :class "checkbox"
+                         :value (utils/encode-to-str j)}]]]]))]]])
 
 (defn- jobs-page-view [{:keys [total-jobs] :as data}]
   [:div.redis
@@ -92,3 +101,19 @@
                     :keys                          [prefix-route]}]
   (scheduled-jobs/purge redis-conn)
   (response/redirect (prefix-route "/scheduled")))
+
+(defn prioritise-jobs [{{:keys [broker]} :console-opts
+                        :keys            [prefix-route]
+                        params           :params}]
+  (let [{:keys [encoded-jobs]} (specs/validate-req-params params)
+        jobs (mapv utils/decode-from-str encoded-jobs)]
+    (apply scheduled-jobs/prioritises-execution (:redis-conn broker) jobs)
+    (response/redirect (prefix-route "/scheduled"))))
+
+(defn delete-jobs [{{:keys [broker]} :console-opts
+                    :keys            [prefix-route]
+                    params           :params}]
+  (let [{:keys [encoded-jobs]} (specs/validate-req-params params)
+        jobs (mapv utils/decode-from-str encoded-jobs)]
+    (apply scheduled-jobs/delete (:redis-conn broker) jobs)
+    (response/redirect (prefix-route "/scheduled"))))
