@@ -242,7 +242,19 @@
                                                    :body   ""
                                                    :header {"Location" "/scheduled"}})]
       (console/handler tu/redis-producer (mock/request :delete "/scheduled"))
-      (is (true? (spy/called-once? scheduled/purge-queue))))))
+      (is (true? (spy/called-once? scheduled/purge-queue)))))
+  (testing "Main handler should invoke delete scheduled jobs"
+    (with-redefs [scheduled/delete-jobs (spy/stub {:status  302
+                                                   :body    ""
+                                                   :headers {"Location" "/scheduled"}})]
+      (console/handler tu/redis-producer (mock/request :delete "/scheduled/jobs"))
+      (is (true? (spy/called-once? scheduled/delete-jobs)))))
+  (testing "Main handler should invoke prioritise scheduled jobs"
+    (with-redefs [scheduled/prioritise-jobs (spy/stub {:status  302
+                                                       :body    ""
+                                                       :headers {"Location" "/scheduled"}})]
+      (console/handler tu/redis-producer (mock/request :post "/scheduled/jobs"))
+      (is (true? (spy/called-once? scheduled/prioritise-jobs))))))
 
 (deftest enqueued-purge-queue-test
   (testing "Should purge a queue"
@@ -481,3 +493,30 @@
             :status  302} (scheduled/purge-queue {:console-opts tu/redis-console-opts
                                                   :prefix-route str})))
     (is (= 0 (scheduled-jobs/size tu/redis-conn)))))
+
+(deftest scheduled-prioritise-jobs-test
+  (testing "Should delete scheduled jobs"
+    (f/create-jobs-in-redis {:scheduled 12})
+    (let [jobs (scheduled-jobs/get-by-range tu/redis-conn 0 6)
+          seven-encoded-jobs (mapv u/encode-to-str jobs)]
+      (is (= 12 (scheduled-jobs/size tu/redis-conn)))
+      (is (= {:body    ""
+              :headers {"Location" "/scheduled"}
+              :status  302} (scheduled/prioritise-jobs {:console-opts tu/redis-console-opts
+                                                        :params       {:jobs seven-encoded-jobs}
+                                                        :prefix-route str})))
+      (is (= 7 (enqueued-jobs/size tu/redis-conn tu/queue)))
+      (is (= 5 (scheduled-jobs/size tu/redis-conn))))))
+
+(deftest scheduled-delete-jobs-test
+  (testing "Should delete scheduled jobs"
+    (f/create-jobs-in-redis {:scheduled 12})
+    (let [jobs (scheduled-jobs/get-by-range tu/redis-conn 0 9)
+          ten-encoded-jobs (mapv u/encode-to-str jobs)]
+      (is (= 12 (scheduled-jobs/size tu/redis-conn)))
+      (is (= {:body    ""
+              :headers {"Location" "/scheduled"}
+              :status  302} (scheduled/delete-jobs {:console-opts tu/redis-console-opts
+                                                    :params       {:jobs ten-encoded-jobs}
+                                                    :prefix-route str})))
+      (is (= 2 (scheduled-jobs/size tu/redis-conn))))))
