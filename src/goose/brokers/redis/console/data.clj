@@ -105,3 +105,43 @@
 
       (invalid-filter-value? validated-filter-value)
       (assoc base-result :jobs []))))
+
+(defn- filter-scheduled-jobs [redis-conn {:keys [filter-type filter-value limit]}]
+  (case filter-type
+    "id" (if-let [job (scheduled-jobs/find-by-id redis-conn filter-value)] [job] [])
+    "execute-fn-sym" (scheduled-jobs/find-by-pattern redis-conn
+                                                     (fn [j]
+                                                       (= (:execute-fn-sym j)
+                                                          (symbol filter-value)))
+                                                     limit)
+    "queue" (scheduled-jobs/find-by-pattern redis-conn (fn [j]
+                                                    (= (:queue j) filter-value))
+                                       limit)
+    "type" (case filter-value
+             "failed"
+             (scheduled-jobs/find-by-pattern redis-conn job/retried? limit)
+
+             "scheduled"
+             (scheduled-jobs/find-by-pattern redis-conn (comp not job/retried?) limit)
+
+             nil)
+    nil))
+
+(defn scheduled-page-data
+  [redis-conn {:keys                  [page]
+               validated-filter-type  :filter-type
+               validated-filter-value :filter-value
+               :as                    params}]
+  (let [base-result {:page page}]
+    (cond
+      (filter-jobs-request? validated-filter-type validated-filter-value)
+      (assoc base-result :jobs (filter-scheduled-jobs redis-conn params))
+
+      (get-all-jobs-request? validated-filter-type validated-filter-value)
+      (assoc base-result :total-jobs (scheduled-jobs/size redis-conn)
+                         :jobs (scheduled-jobs/get-by-range redis-conn
+                                                            (* (dec page) d/page-size)
+                                                            (dec (* page d/page-size))))
+
+      (invalid-filter-value? validated-filter-value)
+      (assoc base-result :jobs []))))

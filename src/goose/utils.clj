@@ -7,7 +7,8 @@
     [taoensso.nippy :as nippy])
   (:import
     (java.net InetAddress)
-    (java.time Instant)))
+    (java.time Instant)
+    (java.lang Math)))
 
 (defn encode
   "Serializes input to a byte array using `taoensso.nippy/freeze`.\\
@@ -112,3 +113,25 @@
 
 (defmacro ^:no-doc with-retry [{:keys [count retry-delay-ms]} & body]
   `(with-retry* ~count ~retry-delay-ms (fn [] ~@body)))
+
+(defn ^:no-doc relative-time
+  "Calculates the relative time from the given epoch milliseconds to the current time, returning a human-readable string."
+  [epoch-ms]
+  (let [now (epoch-time-ms)
+        diff (- epoch-ms now)
+        abs-diff (Math/abs diff)
+        seconds (quot abs-diff 1000)
+        minutes (quot seconds 60)
+        hours (quot minutes 60)
+        days (quot hours 24)
+        pre-text (if (pos? diff) "in " "overdue by ")]
+    (cond
+      (> days 1) (str pre-text days " days")
+      (= days 1) (str pre-text days " day")
+      (> hours 1) (str pre-text hours " hours")
+      (= hours 1) (str pre-text hours " hour")
+      (> minutes 1) (str pre-text minutes " minutes")
+      (= minutes 1) (str pre-text minutes " minute")
+      (> seconds 1) (str pre-text seconds " seconds")
+      (= seconds 1) (str pre-text seconds " second")
+      :else "just now")))

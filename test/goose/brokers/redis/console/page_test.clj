@@ -7,6 +7,7 @@
             [goose.brokers.redis.console.pages.dead :as dead]
             [goose.brokers.redis.console.pages.enqueued :as enqueued]
             [goose.brokers.redis.console.pages.home :as home]
+            [goose.brokers.redis.console.pages.scheduled :as scheduled]
             [goose.brokers.redis.console.specs :as specs]
             [goose.defaults :as d]
             [goose.factories :as f]
@@ -32,7 +33,7 @@
       (is (= nil (:queue (enqueued/validate-get-jobs {:queue :queue}))))
 
       (let [valid-filter-type ["id" "execute-fn-sym" "type"]
-            random-filter-type (rand-nth ["id" "execute-fn-sym" "type"])]
+            random-filter-type (rand-nth valid-filter-type)]
         (is (some #(= % (:filter-type (enqueued/validate-get-jobs {:filter-type  random-filter-type
                                                                    :filter-value ""})))
                   valid-filter-type)))
@@ -68,7 +69,7 @@
       (is (= 1 (:page (dead/validate-get-jobs {:page "2w"}))))
 
       (let [valid-filter-type ["id" "execute-fn-sym" "queue"]
-            random-filter-type (rand-nth ["id" "execute-fn-sym" "queue"])]
+            random-filter-type (rand-nth valid-filter-type)]
         (is (some #(= % (:filter-type (dead/validate-get-jobs {:filter-type  random-filter-type
                                                                :filter-value ""})))
                   valid-filter-type)))
@@ -91,6 +92,41 @@
                                                                :filter-value "default"}))))
       (is (= nil (:filter-value (dead/validate-get-jobs {:filter-type  "queue"
                                                          :filter-value 123})))))))
+
+(deftest validate-get-scheduled-jobs-test
+  (testing "Should set req params to default values if values do not conform specs"
+    (let [random-id (str (random-uuid))]
+      (is (= 1 (:page (scheduled/validate-get-jobs {}))))
+      (is (= 1 (:page (scheduled/validate-get-jobs {:page nil}))))
+      (is (= 2 (:page (scheduled/validate-get-jobs {:page "2"}))))
+      (is (= 1 (:page (scheduled/validate-get-jobs {:page "two"}))))
+      (is (= 1 (:page (scheduled/validate-get-jobs {:page "2w"}))))
+
+      (let [valid-filter-type ["id" "execute-fn-sym" "queue" "type"]
+            random-filter-type (rand-nth valid-filter-type)]
+        (is (some #(= % (:filter-type (scheduled/validate-get-jobs {:filter-type  random-filter-type
+                                                                    :filter-value ""})))
+                  valid-filter-type)))
+
+      (is (= random-id (:filter-value (scheduled/validate-get-jobs {:filter-type  "id"
+                                                                    :filter-value random-id}))))
+
+      (is (nil? (:filter-value (scheduled/validate-get-jobs {:filter-type  "id"
+                                                             :filter-value (rand-nth ["abcd" ""])}))))
+      (is (= "some-namespace/fn-name" (:filter-value (scheduled/validate-get-jobs {:filter-type  "execute-fn-sym"
+                                                                                   :filter-value "some-namespace/fn-name"}))))
+      (is (nil? (:filter-value (scheduled/validate-get-jobs {:filter-type  "execute-fn-sym"
+                                                             :filter-value (rand-nth [123 nil])}))))
+      (is (= "any-string-value" (:filter-value (scheduled/validate-get-jobs {:filter-type  "queue"
+                                                                    :filter-value "any-string-value"}))))
+      (is (= nil (:filter-value (scheduled/validate-get-jobs {:filter-type  "queue"
+                                                              :filter-value (rand-nth [:default nil 123])}))))
+      (is (= "scheduled" (:filter-value (scheduled/validate-get-jobs {:filter-type  "type"
+                                                                      :filter-value "scheduled"}))))
+      (is (= "failed" (:filter-value (scheduled/validate-get-jobs {:filter-type  "type"
+                                                                   :filter-value "failed"}))))
+      (is (nil? (:filter-value (scheduled/validate-get-jobs {:filter-type  "type"
+                                                             :filter-value ["any-string" :failed]})))))))
 
 (deftest validate-req-params-test
   (testing "Should set req params of job to default value if do not conform spec"
@@ -120,7 +156,6 @@
       (is (true? (spy/called-once? home/page)))
       (is (= [{:status 200
                :body   "Mocked resp"}] (spy/responses home/page)))))
-
   (testing "Main Handler should invoke get-jobs handler for enqueued jobs page"
     (with-redefs [enqueued/get-jobs (spy/stub {:status 200 :body "Mocked resp"})]
       (console/handler tu/redis-producer (mock/request :get "/enqueued"))
@@ -133,32 +168,27 @@
       (is (= [{:status 200
                :body   "Mocked resp"}] (spy/responses enqueued/get-jobs)))
       (is (= "default" (get-in (first (spy/first-call enqueued/get-jobs)) [:params :queue])))))
-
   (testing "Main handler should invoke purge-queue handler for enqueued jobs page"
     (with-redefs [enqueued/purge-queue (spy/stub {:status 302 :headers {"Location" "/enqueued"} :body ""})]
       (console/handler tu/redis-producer (mock/request :delete "/enqueued/queue/default"))
       (is (true? (spy/called-once? enqueued/purge-queue)))
       (is (= [{:status 302 :headers {"Location" "/enqueued"} :body ""}] (spy/responses enqueued/purge-queue)))))
-
   (testing "Main handler should invoke delete-jobs handler for enqueued jobs page"
     (with-redefs [enqueued/delete-jobs (spy/stub {:status 302 :headers {"Location" "/enqueued/queue/test"} :body ""})]
       (console/handler tu/redis-producer (mock/request :delete "/enqueued/queue/default/jobs"))
       (is (true? (spy/called-once? enqueued/delete-jobs)))
       (is (= [{:status 302 :headers {"Location" "/enqueued/queue/test"} :body ""}] (spy/responses enqueued/delete-jobs)))))
-
   (testing "Main handler should invoke prioritise-jobs handler for enqueued jobs page"
     (with-redefs [enqueued/prioritise-jobs (spy/stub {:status 302 :headers {"Location" "/enqueued/queue/test"} :body ""})]
       (console/handler tu/redis-producer (mock/request :post "/enqueued/queue/default/jobs"))
       (is (true? (spy/called-once? enqueued/prioritise-jobs)))
       (is (= [{:status 302 :headers {"Location" "/enqueued/queue/test"} :body ""}] (spy/responses enqueued/prioritise-jobs)))))
-
   (testing "Main handler should invoke get-job handler for enqueued jobs page"
     (with-redefs [enqueued/get-job (spy/stub {:status 200
                                               :body   "<html> Enqueue job UI </html>"})]
       (console/handler tu/redis-producer (mock/request
                                            :get (str "/enqueued/queue/default/job/" (random-uuid))))
       (is (true? (spy/called-once? enqueued/get-job)))))
-
   (testing "Main handler should invoke prioritise job handler for enqueued jobs page"
     (with-redefs [enqueued/prioritise-job (spy/stub {:status  302
                                                      :body    ""
@@ -166,7 +196,6 @@
       (console/handler tu/redis-producer (mock/request
                                            :post (str "/enqueued/queue/default/job/" (random-uuid))))
       (is (true? (spy/called-once? enqueued/prioritise-job)))))
-
   (testing "Main handler should invoke delete job handler for enqueued jobs page"
     (with-redefs [enqueued/delete-job (spy/stub {:status  302
                                                  :body    ""
@@ -180,32 +209,32 @@
                                            :body   "<html> Dead jobs page</html>"})]
       (console/handler tu/redis-producer (mock/request :get "/dead"))
       (is (true? (spy/called-once? dead/get-jobs)))))
-
   (testing "Main handler should invoke purge dead jobs queue"
     (with-redefs [dead/purge-queue (spy/stub {:status  302
                                               :body    ""
                                               :headers {"Location" "/dead"}})]
       (console/handler tu/redis-producer (mock/request :delete "/dead"))
       (is (true? (spy/called-once? dead/purge-queue)))))
-
   (testing "Main handler should invoke delete dead jobs"
     (with-redefs [dead/delete-jobs (spy/stub {:status 302
                                               :body   ""
                                               :header {"Location" "/dead"}})]
       (console/handler tu/redis-producer (mock/request :delete "/dead/jobs"))
       (is (true? (spy/called-once? dead/delete-jobs)))))
-
   (testing "Main handler should invoke replay dead jobs"
     (with-redefs [dead/replay-jobs (spy/stub {:status 302
                                               :body   ""
                                               :header {"Location" "/dead"}})]
       (console/handler tu/redis-producer (mock/request :post "/dead/jobs"))
       (is (true? (spy/called-once? dead/replay-jobs)))))
-
   (testing "Main handler should invoke get dead job"
     (with-redefs [dead/get-job (spy/stub {:status 200 :body "<html> Dead job page </html>"})]
       (console/handler tu/redis-producer (mock/request :get (str "/dead/job/" (str (random-uuid)))))
-      (is (true? (spy/called-once? dead/get-job))))))
+      (is (true? (spy/called-once? dead/get-job)))))
+  (testing "Main handler should invoke get scheduled jobs"
+    (with-redefs [scheduled/get-jobs (spy/stub {:status 200 :body "<html> Scheduled Jobs page </html>"})]
+      (console/handler tu/redis-producer (mock/request :get (str "/scheduled")))
+      (is (true? (spy/called-once? scheduled/get-jobs))))))
 
 (deftest enqueued-purge-queue-test
   (testing "Should purge a queue"
