@@ -12,7 +12,7 @@
     (java.lang Character String)
     (java.util Date)))
 
-(defn format-arg [arg]
+(defn ^:no-doc format-arg [arg]
   (condp = (type arg)
     String (str "\"" arg "\"")
     nil "nil"
@@ -106,7 +106,13 @@
       :info [:div.flash-info {:class (append-class class)} message]
       [:div {:class (append-class class)} message])))
 
-(defn ^:no-doc job-table [{:keys                     [id execute-fn-sym args queue ready-queue enqueued-at]
+(defn ^:no-doc job-table [{:keys                     [id
+                                                      execute-fn-sym
+                                                      args
+                                                      queue
+                                                      ready-queue
+                                                      enqueued-at
+                                                      schedule-run-at]
                            {:keys [max-retries
                                    retry-delay-sec-fn-sym
                                    retry-queue error-handler-fn-sym
@@ -130,6 +136,9 @@
     [:td queue]]
    [:tr [:td "Ready queue"]
     [:td ready-queue]]
+   (when schedule-run-at
+     [:tr [:td "Schedule run at"]
+      [:td (Date. ^Long schedule-run-at)]])
    [:tr [:td "Enqueued at"]
     [:td (Date. ^Long enqueued-at)]]
    [:tr [:td "Max retries"]
