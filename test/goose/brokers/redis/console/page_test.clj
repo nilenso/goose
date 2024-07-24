@@ -3,6 +3,7 @@
             [clojure.test :refer [deftest is testing use-fixtures]]
             [goose.brokers.redis.api.dead-jobs :as dead-jobs]
             [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
+            [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
             [goose.brokers.redis.console :as console]
             [goose.brokers.redis.console.pages.dead :as dead]
             [goose.brokers.redis.console.pages.enqueued :as enqueued]
@@ -118,7 +119,7 @@
       (is (nil? (:filter-value (scheduled/validate-get-jobs {:filter-type  "execute-fn-sym"
                                                              :filter-value (rand-nth [123 nil])}))))
       (is (= "any-string-value" (:filter-value (scheduled/validate-get-jobs {:filter-type  "queue"
-                                                                    :filter-value "any-string-value"}))))
+                                                                             :filter-value "any-string-value"}))))
       (is (= nil (:filter-value (scheduled/validate-get-jobs {:filter-type  "queue"
                                                               :filter-value (rand-nth [:default nil 123])}))))
       (is (= "scheduled" (:filter-value (scheduled/validate-get-jobs {:filter-type  "type"
@@ -231,10 +232,17 @@
     (with-redefs [dead/get-job (spy/stub {:status 200 :body "<html> Dead job page </html>"})]
       (console/handler tu/redis-producer (mock/request :get (str "/dead/job/" (str (random-uuid)))))
       (is (true? (spy/called-once? dead/get-job)))))
+
   (testing "Main handler should invoke get scheduled jobs"
     (with-redefs [scheduled/get-jobs (spy/stub {:status 200 :body "<html> Scheduled Jobs page </html>"})]
-      (console/handler tu/redis-producer (mock/request :get (str "/scheduled")))
-      (is (true? (spy/called-once? scheduled/get-jobs))))))
+      (console/handler tu/redis-producer (mock/request :get "/scheduled"))
+      (is (true? (spy/called-once? scheduled/get-jobs)))))
+  (testing "Main handler should invoke purge scheduled jobs"
+    (with-redefs [scheduled/purge-queue (spy/stub {:status 302
+                                                   :body   ""
+                                                   :header {"Location" "/scheduled"}})]
+      (console/handler tu/redis-producer (mock/request :delete "/scheduled"))
+      (is (true? (spy/called-once? scheduled/purge-queue))))))
 
 (deftest enqueued-purge-queue-test
   (testing "Should purge a queue"
@@ -463,3 +471,13 @@
                                               :prefix-route str})))
       (is (= 1 (dead-jobs/size tu/redis-conn)))
       (is (= [j1] (dead-jobs/get-by-range tu/redis-conn 0 1))))))
+
+(deftest scheduled-purge-queue-test
+  (testing "Should purge scheduled queue"
+    (f/create-jobs-in-redis {:scheduled 12})
+    (is (= 12 (scheduled-jobs/size tu/redis-conn)))
+    (is (= {:body    ""
+            :headers {"Location" "/scheduled"}
+            :status  302} (scheduled/purge-queue {:console-opts tu/redis-console-opts
+                                                  :prefix-route str})))
+    (is (= 0 (scheduled-jobs/size tu/redis-conn)))))
