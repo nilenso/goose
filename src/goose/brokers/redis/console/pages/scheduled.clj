@@ -39,7 +39,9 @@
           [:td.when
            [:div.schedule-run-at-rel-time relative-time]
            [:div.schedule-run-at-abs-time {:class "invisible"} absolute-time]]
-          [:td [:div.id id]]
+          [:td [:a {:href  (str base-path "/job/" id)
+                    :class "underline"}
+                [:div.id id]]]
           [:td [:div.queue] queue]
           [:td [:div.execute-fn-sym (str execute-fn-sym)]]
           [:td.type (if (job/retried? j) "Retrying" "Scheduled")]
@@ -62,6 +64,27 @@
       [:div.bottom
        (console/purge-confirmation-dialog data)
        [:button {:class "btn btn-danger btn-lg purge-dialog-show"} "Purge"]])]])
+
+(defn- job-page-view [{:keys       [base-path]
+                       {:keys [id]
+                        :as   job} :job}]
+  [:div.redis.redis-enqueued
+   [:h1 "Scheduled Job"]
+   (if job
+     [:div
+      [:form {:action (str base-path "/job/" id)
+              :method "post"}
+       [:div
+        (c/action-btns [(c/prioritise-btn {:disabled false})
+                        (c/delete-btn
+                          "Are you sure you want to delete the job?"
+                          {:disabled false})])
+        [:input {:name  "job"
+                 :type  "hidden"
+                 :value (utils/encode-to-str job)}]
+        (console/job-table job)]]]
+     (console/flash-msg {:type    :error
+                         :message "No job found"}))])
 
 (defn validate-get-jobs [{:keys [page filter-type filter-value limit]}]
   (let [f-type (specs/validate-or-default ::specs/scheduled-filter-type filter-type)]
@@ -116,4 +139,36 @@
   (let [{:keys [encoded-jobs]} (specs/validate-req-params params)
         jobs (mapv utils/decode-from-str encoded-jobs)]
     (apply scheduled-jobs/delete (:redis-conn broker) jobs)
+    (response/redirect (prefix-route "/scheduled"))))
+
+(defn get-job [{:keys                          [prefix-route]
+                {:keys                [app-name]
+                 {:keys [redis-conn]} :broker} :console-opts
+                params                         :params}]
+  (let [view (console/layout c/header job-page-view)
+        {:keys [id]} (specs/validate-req-params params)
+        base-response {:job-type     :scheduled
+                       :base-path    (prefix-route "/scheduled")
+                       :app-name     app-name
+                       :prefix-route prefix-route}]
+    (if id
+      (if-let [job (scheduled-jobs/find-by-id redis-conn id)]
+        (response/response (view "Scheduled" (assoc base-response :job job)))
+        (response/not-found (view "Scheduled" base-response)))
+      (response/redirect (prefix-route "/scheduled")))))
+
+(defn prioritise-job [{:keys                          [prefix-route]
+                       {{:keys [redis-conn]} :broker} :console-opts
+                       params                         :params}]
+  (let [{:keys [encoded-job]} (specs/validate-req-params params)
+        job (utils/decode-from-str encoded-job)]
+    (scheduled-jobs/prioritise-execution redis-conn job)
+    (response/redirect (prefix-route "/scheduled"))))
+
+(defn delete-job [{:keys                          [prefix-route]
+                   {{:keys [redis-conn]} :broker} :console-opts
+                   params                         :params}]
+  (let [{:keys [encoded-job]} (specs/validate-req-params params)
+        job (utils/decode-from-str encoded-job)]
+    (scheduled-jobs/delete redis-conn job)
     (response/redirect (prefix-route "/scheduled"))))
