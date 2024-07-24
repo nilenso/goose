@@ -254,7 +254,23 @@
                                                        :body    ""
                                                        :headers {"Location" "/scheduled"}})]
       (console/handler tu/redis-producer (mock/request :post "/scheduled/jobs"))
-      (is (true? (spy/called-once? scheduled/prioritise-jobs))))))
+      (is (true? (spy/called-once? scheduled/prioritise-jobs)))))
+  (testing "Main handler should invoke get job handler"
+    (with-redefs [scheduled/get-job (spy/stub {:status 200 :body "<html> Scheduled Jobs page </html>"})]
+      (console/handler tu/redis-producer (mock/request :get (str "/scheduled/job/" (str (random-uuid)))))
+      (is (true? (spy/called-once? scheduled/get-job)))))
+  (testing "Main handler should invoke prioritise job"
+    (with-redefs [scheduled/prioritise-job (spy/stub {:status  302
+                                                      :body    ""
+                                                      :headers {"Location" "/scheduled"}})]
+      (console/handler tu/redis-producer (mock/request :post (str "/scheduled/job/" (str (random-uuid)))))
+      (is (true? (spy/called-once? scheduled/prioritise-job)))))
+  (testing "Main handler should invoke delete job"
+    (with-redefs [scheduled/delete-job (spy/stub {:status  302
+                                                  :body    ""
+                                                  :headers {"Location" "/scheduled"}})]
+      (console/handler tu/redis-producer (mock/request :delete (str "/scheduled/job/" (str (random-uuid)))))
+      (is (true? (spy/called-once? scheduled/delete-job))))))
 
 (deftest enqueued-purge-queue-test
   (testing "Should purge a queue"
@@ -520,3 +536,55 @@
                                                     :params       {:jobs ten-encoded-jobs}
                                                     :prefix-route str})))
       (is (= 2 (scheduled-jobs/size tu/redis-conn))))))
+
+(deftest scheduled-get-job-test
+  (testing "Should return html view of dead-job page if job-exist"
+    (f/create-jobs-in-redis {:scheduled 1})
+    (let [id (:id (first (scheduled-jobs/get-by-range tu/redis-conn 0 0)))
+          response (scheduled/get-job {:console-opts tu/redis-console-opts
+                                       :params       {:id id}
+                                       :prefix-route str})]
+      (is (= 200 (:status response)))
+      (is (str/starts-with? (:body response) "<!DOCTYPE html>"))))
+  (testing "Should return html view of scheduled page with 400 response if job doesn't exist"
+    (f/create-jobs-in-redis {:scheduled 10})
+    (let [id (:id (first (scheduled-jobs/get-by-range tu/redis-conn 0 0)))
+          response (dead/get-job {:console-opts tu/redis-console-opts
+                                  :params       {:id id}
+                                  :prefix-route str})]
+      (is (= 404 (:status response)))
+      (is (str/starts-with? (:body response) "<!DOCTYPE html>"))))
+  (testing "Should redirect to scheduled jobs page given invalid type of job-id"
+    (let [response (scheduled/get-job {:console-opts tu/redis-console-opts
+                                       :params       {:id "not-uuid"}
+                                       :prefix-route str})]
+      (is (= {:body    ""
+              :headers {"Location" "/scheduled"}
+              :status  302} response)))))
+
+(deftest scheduled-prioritise-job-test
+  (testing "Should prioritise a scheduled job given a scheduled-job's encoded form in req params"
+    (f/create-jobs-in-redis {:scheduled 2})
+    (let [[j1 j2] (scheduled-jobs/get-by-range tu/redis-conn 0 1)
+          encoded-job (u/encode-to-str j2)]
+      (is (= {:body    ""
+              :headers {"Location" "/scheduled"}
+              :status  302} (scheduled/prioritise-job {:console-opts tu/redis-console-opts
+                                                       :params       {:job encoded-job}
+                                                       :prefix-route str})))
+      (is (= 1 (enqueued-jobs/size tu/redis-conn tu/queue)))
+      (is (= 1 (scheduled-jobs/size tu/redis-conn)))
+      (is (= [j1] (scheduled-jobs/get-by-range tu/redis-conn 0 1))))))
+
+(deftest scheduled-delete-job-test
+  (testing "Should delete a schedule job given a dead-job's encode form in delete req params"
+    (f/create-jobs-in-redis {:scheduled 2})
+    (let [[j1 j2] (scheduled-jobs/get-by-range tu/redis-conn 0 1)
+          encoded-job (u/encode-to-str j2)]
+      (is (= {:body    ""
+              :headers {"Location" "/scheduled"}
+              :status  302} (scheduled/delete-job {:console-opts tu/redis-console-opts
+                                                   :params       {:job encoded-job}
+                                                   :prefix-route str})))
+      (is (= 1 (scheduled-jobs/size tu/redis-conn)))
+      (is (= [j1] (scheduled-jobs/get-by-range tu/redis-conn 0 1))))))
