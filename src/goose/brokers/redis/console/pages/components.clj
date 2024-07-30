@@ -8,6 +8,7 @@
 (def header
   (partial console/header [{:route "/enqueued" :label "Enqueued" :job-type :enqueued}
                            {:route "/scheduled" :label "Scheduled" :job-type :scheduled}
+                           {:route "/batch" :label "Batch" :job-type :batch}
                            {:route "/dead" :label "Dead" :job-type :dead}]))
 
 (defn replay-btn [& {:keys [disabled] :or {disabled true}}]

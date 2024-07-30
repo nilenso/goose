@@ -50,7 +50,9 @@ table th, td {
 }
 
 /* Common classes */
-
+.padding-top {
+  padding-top: 2em;
+}
 .underline:hover {
   text-decoration: underline;
 }
