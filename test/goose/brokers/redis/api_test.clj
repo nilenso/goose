@@ -177,7 +177,7 @@
 (deftest scheduled-jobs-get-by-range
   (testing "Should get jobs in increasing order of schedule-run-at given a range"
     (let [future-scheduled-job-id (f/create-schedule-job-in-redis {:schedule-run-at (+ (u/epoch-time-ms)
-                                                                                       1000)})
+                                                                                       100000)})
           now-scheduled-job-id (f/create-schedule-job-in-redis {:schedule-run-at (+ (u/epoch-time-ms))})
 
           future-scheduled-job (redis-scheduled-jobs/find-by-id tu/redis-conn future-scheduled-job-id)
