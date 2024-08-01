@@ -72,7 +72,7 @@
               :value (utils/encode-to-str job)}]
      (c/action-btns [(c/delete-btn
                        [:div "Are you sure you want to delete "
-                        [:span.highlight (get job :total)]s " job/s?"]
+                        [:span.highlight (get job :total)] " job/s?"]
                        {:disabled false})])
      (batch-job-table job)]]])
 
