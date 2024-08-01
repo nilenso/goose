@@ -1,10 +1,13 @@
 (ns goose.brokers.redis.console.page-test
   (:require [clojure.string :as str]
+            [goose.client :as client]
             [clojure.test :refer [deftest is testing use-fixtures]]
+            [goose.brokers.redis.api.batch :as batch-jobs]
             [goose.brokers.redis.api.dead-jobs :as dead-jobs]
             [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
             [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
             [goose.brokers.redis.console :as console]
+            [goose.brokers.redis.console.pages.batch :as batch]
             [goose.brokers.redis.console.pages.dead :as dead]
             [goose.brokers.redis.console.pages.enqueued :as enqueued]
             [goose.brokers.redis.console.pages.home :as home]
@@ -255,22 +258,33 @@
                                                        :headers {"Location" "/scheduled"}})]
       (console/handler tu/redis-producer (mock/request :post "/scheduled/jobs"))
       (is (true? (spy/called-once? scheduled/prioritise-jobs)))))
-  (testing "Main handler should invoke get job handler"
+  (testing "Main handler should invoke scheduled jobs get job handler"
     (with-redefs [scheduled/get-job (spy/stub {:status 200 :body "<html> Scheduled Jobs page </html>"})]
       (console/handler tu/redis-producer (mock/request :get (str "/scheduled/job/" (str (random-uuid)))))
       (is (true? (spy/called-once? scheduled/get-job)))))
-  (testing "Main handler should invoke prioritise job"
+  (testing "Main handler should invoke scheduled jobs prioritise handler"
     (with-redefs [scheduled/prioritise-job (spy/stub {:status  302
                                                       :body    ""
                                                       :headers {"Location" "/scheduled"}})]
       (console/handler tu/redis-producer (mock/request :post (str "/scheduled/job/" (str (random-uuid)))))
       (is (true? (spy/called-once? scheduled/prioritise-job)))))
-  (testing "Main handler should invoke delete job"
+  (testing "Main handler should invoke scheduled jobs delete handler"
     (with-redefs [scheduled/delete-job (spy/stub {:status  302
                                                   :body    ""
                                                   :headers {"Location" "/scheduled"}})]
       (console/handler tu/redis-producer (mock/request :delete (str "/scheduled/job/" (str (random-uuid)))))
-      (is (true? (spy/called-once? scheduled/delete-job))))))
+      (is (true? (spy/called-once? scheduled/delete-job)))))
+
+  (testing "Main handler should invoke get-job handler for batch jobs"
+    (with-redefs [batch/get-job (spy/stub {:status 200 :body "<html> Batch Job page </html>"})]
+      (console/handler tu/redis-producer (mock/request :get "/batch"))
+      (is (true? (spy/called-once? batch/get-job)))))
+  (testing "Main handler should invoke batch jobs delete handler"
+    (with-redefs [batch/delete-job (spy/stub {:status  302
+                                              :body    ""
+                                              :headers {"Location" "/batch"}})]
+      (console/handler tu/redis-producer (mock/request :delete (str "/batch/job/" (str (random-uuid)))))
+      (is (true? (spy/called-once? batch/delete-job))))))
 
 (deftest enqueued-purge-queue-test
   (testing "Should purge a queue"
@@ -588,3 +602,36 @@
                                                    :prefix-route str})))
       (is (= 1 (scheduled-jobs/size tu/redis-conn)))
       (is (= [j1] (scheduled-jobs/get-by-range tu/redis-conn 0 1))))))
+
+(deftest batch-get-job-test
+  (testing "Should return view of batch metadata"
+    (let [response (batch/get-job {:console-opts tu/redis-console-opts
+                                   :prefix-route str})]
+      (is (= 200 (:status response)))
+      (is (str/includes? (:body response) "Batch Job"))))
+  (testing "Should given 404 response with view non existent batch job's id"
+    (let [response (batch/get-job {:console-opts tu/redis-console-opts
+                                   :params       {:filter-type  "id"
+                                                  :filter-value (str (random-uuid))}
+                                   :prefix-route str})]
+      (is (= 404 (:status response)))
+      (is (= {} (:headers response)))
+      (is (str/includes? (:body response) "Batch Job")))))
+
+(deftest batch-delete-job-test
+  (testing "Should delete all the jobs from the batch"
+    (let [arg "foo"
+          batch-opts {:linger-sec      1
+                      :callback-fn-sym `prn}
+          batch-args (map list [arg])
+          batch-id (:id (client/perform-batch tu/redis-client-opts batch-opts `tu/my-fn batch-args))]
+      (is ((comp not nil?) (batch-jobs/status tu/redis-conn batch-id)))
+      (batch/delete-job {:console-opts tu/redis-console-opts
+                         :params       {:id batch-id}
+                         :prefix-route str})
+      (is (nil? (batch-jobs/status tu/redis-conn batch-id)))))
+  (testing "Should redirect view given no batch job with id exist"
+    (let [response (batch/delete-job {:console-opts tu/redis-console-opts
+                                      :params       {:id (str (random-uuid))}
+                                      :prefix-route str})]
+      (is (= 302 (:status response))))))

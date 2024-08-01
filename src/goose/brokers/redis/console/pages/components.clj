@@ -8,6 +8,7 @@
 (def header
   (partial console/header [{:route "/enqueued" :label "Enqueued" :job-type :enqueued}
                            {:route "/scheduled" :label "Scheduled" :job-type :scheduled}
+                           {:route "/batch" :label "Batch" :job-type :batch}
                            {:route "/dead" :label "Dead" :job-type :dead}]))
 
 (defn replay-btn [& {:keys [disabled] :or {disabled true}}]
@@ -80,6 +81,7 @@
                 :min   "0"
                 :max   "10000"}]]
       [:div.filter-opts-items
-       [:button.btn.btn-cancel
-        [:a. {:href base-path :class "cursor-default"} "Clear"]]
+       (when filter-value
+         [:button.btn.btn-cancel
+          [:a. {:href base-path :class "cursor-default"} "Clear"]])
        [:button.btn {:type "submit"} "Apply"]]]]))
