@@ -81,6 +81,7 @@
                 :min   "0"
                 :max   "10000"}]]
       [:div.filter-opts-items
-       [:button.btn.btn-cancel
-        [:a. {:href base-path :class "cursor-default"} "Clear"]]
+       (when filter-value
+         [:button.btn.btn-cancel
+          [:a. {:href base-path :class "cursor-default"} "Clear"]])
        [:button.btn {:type "submit"} "Apply"]]]]))
