@@ -90,7 +90,7 @@
 
 (defn ^:no-doc purge-confirmation-dialog [{:keys [total-jobs base-path]}]
   [:dialog {:class "purge-dialog"}
-   [:div "Are you sure, you want to remove " [:span.highlight total-jobs] " jobs ?"]
+   [:div "Are you sure, you want to remove " [:span.highlight total-jobs] " job/s ?"]
    [:form {:action base-path
            :method "post"
            :class  "dialog-btns"}

@@ -70,6 +70,10 @@
      [:input {:name  "job"
               :type  "hidden"
               :value (utils/encode-to-str job)}]
+     (c/action-btns [(c/delete-btn
+                       [:div "Are you sure you want to delete "
+                        [:span.highlight (get job :total)]s " job/s?"]
+                       {:disabled false})])
      (batch-job-table job)]]])
 
 (defn- filter-header [{:keys                  [base-path job-type]
@@ -125,3 +129,11 @@
         (response/response (view "Batch" (assoc base-response :job job)))
         (response/not-found (view "Batch" base-response)))
       (response/response (view "Batch" base-response)))))
+
+(defn delete-job [{:keys                          [prefix-route]
+                   {{:keys [redis-conn]} :broker} :console-opts
+                   params                         :params}]
+  (let [{:keys [id]} (specs/validate-req-params params)]
+    (when id
+      (batch-jobs/delete redis-conn id))
+    (response/redirect (prefix-route "/batch"))))
