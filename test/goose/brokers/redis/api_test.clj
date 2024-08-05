@@ -193,7 +193,7 @@
       (is (= (set jobs-from-match) (set jobs-from-range)))
       (is (= 3 (count jobs-from-range))))))
 
-(deftest periodic-jobs-get-all
+(deftest cron-get-all
   (testing "Should not get any jobs if no periodic job exist"
     (is (= [] (redis-periodic-jobs/get-all tu/redis-conn))))
   (testing "Should get all the periodic jobs"
@@ -201,6 +201,34 @@
     (let [jobs (redis-periodic-jobs/get-all tu/redis-conn)]
       (is (= 1 (count jobs)))
       (is (every? true? (map #(contains? % :cron-name) jobs))))))
+
+(deftest cron-delete
+  (testing "Should delete one periodic job"
+    (f/create-jobs-in-redis {:periodic 1}
+                            {:periodic {:cron-opts {:cron-name "foo-job"}}})
+    (is (= 1 (redis-periodic-jobs/size tu/redis-conn)))
+    (is (true? (redis-periodic-jobs/delete tu/redis-conn "foo-job")))
+    (is (= 0 (redis-periodic-jobs/size tu/redis-conn))))
+  (tu/clear-redis)
+  (testing "Should delete multiple periodic jobs"
+    (f/create-jobs-in-redis {:periodic 1}
+                            {:periodic {:cron-opts {:cron-name "foo-job-1"}}})
+    (f/create-jobs-in-redis {:periodic 1}
+                            {:periodic {:cron-opts {:cron-name "foo-job-2"}}})
+    (f/create-jobs-in-redis {:periodic 1}
+                            {:periodic {:cron-opts {:cron-name "foo-job-3"}}})
+    (is (= 3 (redis-periodic-jobs/size tu/redis-conn)))
+    (is (true? (redis-periodic-jobs/delete tu/redis-conn "foo-job-1" "foo-job-3")))
+    (is (= 1 (redis-periodic-jobs/size tu/redis-conn))))
+  (tu/clear-redis)
+  (testing "Should remove only valid periodic jobs"
+    (f/create-jobs-in-redis {:periodic 1}
+                            {:periodic {:cron-opts {:cron-name "barjob1"}}})
+    (f/create-jobs-in-redis {:periodic 1}
+                            {:periodic {:cron-opts {:cron-name "barjob2"}}})
+    (is (= 2 (redis-periodic-jobs/size tu/redis-conn)))
+    (is (false? (redis-periodic-jobs/delete tu/redis-conn "invalid-cron-name" "barjob2")))
+    (is (= 1 (redis-periodic-jobs/size tu/redis-conn)))))
 
 (deftest dead-jobs-delete-test
   (testing "Should delete a single job and return true"

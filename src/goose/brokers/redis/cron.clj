@@ -103,13 +103,14 @@
       true)))
 
 (defn delete
-  [redis-conn entry-name]
-  (let [[_ atomic-results] (redis-cmds/atomic
+  [redis-conn & entry-names]
+  (let [count-entry-names (count entry-names)
+        [_ atomic-results] (redis-cmds/atomic
                              redis-conn
                              (car/multi)
-                             (car/zrem d/prefixed-cron-queue entry-name)
-                             (car/hdel d/prefixed-cron-entries entry-name))]
-    (= [1 1] atomic-results)))
+                             (apply car/zrem d/prefixed-cron-queue entry-names)
+                             (apply car/hdel d/prefixed-cron-entries entry-names))]
+    (= [count-entry-names count-entry-names] atomic-results)))
 
 (defn get-all [redis-conn]
   (redis-cmds/get-all-values redis-conn d/prefixed-cron-entries))
