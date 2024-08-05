@@ -11,6 +11,7 @@
     [goose.brokers.redis.api.enqueued-jobs :as redis-enqueued-jobs]
     [goose.brokers.redis.api.scheduled-jobs :as redis-scheduled-jobs]
     [goose.brokers.redis.commands :as redis-cmds]
+    [goose.brokers.redis.cron :as redis-periodic-jobs]
     [goose.client :as c]
     [goose.defaults :as d]
     [goose.factories :as f]
@@ -191,6 +192,15 @@
           jobs-from-range (redis-scheduled-jobs/get-by-range tu/redis-conn 0 100)]
       (is (= (set jobs-from-match) (set jobs-from-range)))
       (is (= 3 (count jobs-from-range))))))
+
+(deftest periodic-jobs-get-all
+  (testing "Should not get any jobs if no periodic job exist"
+    (is (= [] (redis-periodic-jobs/get-all tu/redis-conn))))
+  (testing "Should get all the periodic jobs"
+    (f/create-jobs-in-redis {:periodic 1})
+    (let [jobs (redis-periodic-jobs/get-all tu/redis-conn)]
+      (is (= 1 (count jobs)))
+      (is (every? true? (map #(contains? % :cron-name) jobs))))))
 
 (deftest dead-jobs-delete-test
   (testing "Should delete a single job and return true"

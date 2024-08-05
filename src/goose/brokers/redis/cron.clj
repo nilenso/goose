@@ -111,5 +111,8 @@
                              (car/hdel d/prefixed-cron-entries entry-name))]
     (= [1 1] atomic-results)))
 
+(defn get-all [redis-conn]
+  (redis-cmds/get-all-values redis-conn d/prefixed-cron-entries))
+
 (defn purge [redis-conn]
   (= 2 (redis-cmds/del-keys redis-conn d/prefixed-cron-entries d/prefixed-cron-queue)))
