@@ -11,6 +11,7 @@
             [goose.brokers.redis.console.pages.dead :as dead]
             [goose.brokers.redis.console.pages.enqueued :as enqueued]
             [goose.brokers.redis.console.pages.home :as home]
+            [goose.brokers.redis.console.pages.periodic :as periodic]
             [goose.brokers.redis.console.pages.scheduled :as scheduled]
             [goose.brokers.redis.console.specs :as specs]
             [goose.defaults :as d]
@@ -131,6 +132,18 @@
                                                                    :filter-value "failed"}))))
       (is (nil? (:filter-value (scheduled/validate-get-jobs {:filter-type  "type"
                                                              :filter-value ["any-string" :failed]})))))))
+
+(deftest validate-get-periodic-jobs-test
+  (testing "Should set the req params to default values if values do not conform specs"
+    (is (= {:filter-type  "name"
+            :filter-value "string-value"} (periodic/validate-get-jobs {:filter-type  "name"
+                                                                       :filter-value "string-value"})))
+    (is (= {:filter-type  "name"
+            :filter-value nil} (periodic/validate-get-jobs {:filter-type  "name"
+                                                            :filter-value :non-string-value})))
+    (is (= {:filter-type  "name"
+            :filter-value nil} (periodic/validate-get-jobs {:filter-type  "name"
+                                                            :filter-value 1})))))
 
 (deftest validate-req-params-test
   (testing "Should set req params of job to default value if do not conform spec"
@@ -284,7 +297,12 @@
                                               :body    ""
                                               :headers {"Location" "/batch"}})]
       (console/handler tu/redis-producer (mock/request :delete (str "/batch/job/" (str (random-uuid)))))
-      (is (true? (spy/called-once? batch/delete-job))))))
+      (is (true? (spy/called-once? batch/delete-job)))))
+
+  (testing "Main handler should invoke get-jobs handler for periodic jobs"
+    (with-redefs [periodic/get-jobs (spy/stub {:status 200 :body "<html> Periodic jobs </html>"})]
+      (console/handler tu/redis-producer (mock/request :get "/periodic"))
+      (is (true? (spy/called-once? periodic/get-jobs))))))
 
 (deftest enqueued-purge-queue-test
   (testing "Should purge a queue"

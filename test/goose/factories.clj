@@ -35,8 +35,7 @@
 (defn create-periodic-job-in-redis [& [overrides]]
   (let [job-desc (job-description (:job-description overrides))
         cron-opts (cron-opts (:cron-opts overrides))]
-    (cron/register tu/redis-conn cron-opts job-desc)
-    cron-opts))
+    (cron/register tu/redis-conn cron-opts job-desc)))
 
 (defn create-dead-job-in-redis [& [overrides]]
   (let [now (u/epoch-time-ms)

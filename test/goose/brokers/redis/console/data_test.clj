@@ -3,6 +3,7 @@
             [goose.brokers.redis.api.dead-jobs :as dead-jobs]
             [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
             [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
+            [goose.brokers.redis.console.data :as data]
             [goose.brokers.redis.console.data :as console]
             [goose.defaults :as d]
             [goose.factories :as f]
@@ -289,3 +290,29 @@
                                                                   :filter-type  "type"
                                                                   :filter-value nil
                                                                   :limit        10})))))
+
+(deftest periodic-page-data-test
+  (testing "Should return no jobs given no jobs exist"
+    (is (= {:total-jobs 0
+            :jobs       []} (data/periodic-page-data tu/redis-conn {}))))
+  (testing "Should get all cron entries"
+    (let [job (f/create-periodic-job-in-redis)
+          response (data/periodic-page-data tu/redis-conn {})]
+      (is (= 1 (:total-jobs response)))
+      (is (= [job] (:jobs response)))))
+  (tu/clear-redis)
+  (testing "Should filter jobs given name"
+    (let [_ (f/create-jobs-in-redis {:periodic 4})
+          foobar-job (f/create-periodic-job-in-redis {:cron-opts {:cron-name "foo-bar"}})
+          response (data/periodic-page-data tu/redis-conn {:filter-type  "name"
+                                                           :filter-value "foo-bar"})]
+      (is (= [foobar-job] (:jobs response)))))
+  (tu/clear-redis)
+  (testing "Should return no jobs given filter does not match any job"
+    (let [_ (f/create-jobs-in-redis {:periodic 5})
+          response (data/periodic-page-data tu/redis-conn {:filter-type  "name"
+                                                           :filter-value "non-existent-cron-name"})]
+      (is (= {:jobs []} response))))
+  (testing "Should return no jobs given invalid filter params"
+    (is (= {:jobs []} (data/periodic-page-data tu/redis-conn {:filter-type  "name"
+                                                              :filter-value nil})))))
