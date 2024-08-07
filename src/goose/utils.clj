@@ -135,3 +135,36 @@
       (> seconds 1) (str pre-text seconds " seconds")
       (= seconds 1) (str pre-text seconds " second")
       :else "just now")))
+
+(defn describe-cron
+  "Describe cron schedule string in english"
+  [cron-string]
+  (let [[minute hour day-of-month month day-of-week] (str/split cron-string #"\s+")]
+    (str "Runs "
+         (cond
+           (= minute "*") "every minute"
+           (re-matches #"\*/\d+" minute) (str "every " (subs minute 2) " minutes")
+           (= minute "0") ""
+           :else (str "at minute " minute))
+         (cond
+           (= hour "*") " of every hour"
+           (re-matches #"\*/\d+" hour) (str " every " (subs hour 2) " hours")
+           (not= hour "0") (str " at hour " hour)
+           :else "")
+         (cond
+           (= day-of-month "*") " every day"
+           (re-matches #"\*/\d+" day-of-month) (str " every " (subs day-of-month 2) " days")
+           :else (str " on day " day-of-month))
+         (cond
+           (= month "*") " of every month"
+           (re-matches #"\*/\d+" month) (str " every " (subs month 2) " months")
+           :else (str " in " ({"1" "January", "2" "February", "3" "March", "4" "April",
+                               "5" "May", "6" "June", "7" "July", "8" "August",
+                               "9" "September", "10" "October", "11" "November", "12" "December"}
+                              month month)))
+         (cond
+           (= day-of-week "*") ""
+           (re-matches #"\*/\d+" day-of-week) (str " every " (subs day-of-week 2) " days of the week")
+           :else (str " on " ({"0" "Sunday", "1" "Monday", "2" "Tuesday", "3" "Wednesday",
+                               "4" "Thursday", "5" "Friday", "6" "Saturday"} day-of-week day-of-week)))
+         "")))

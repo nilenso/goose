@@ -5,6 +5,7 @@
             [goose.brokers.redis.console.pages.enqueued :as enqueued]
             [goose.brokers.redis.console.pages.home :as home]
             [goose.brokers.redis.console.pages.scheduled :as scheduled]
+            [goose.brokers.redis.console.pages.periodic :as periodic]
             [goose.console :as console]))
 
 (defn routes [route-prefix]
@@ -34,6 +35,7 @@
                                                [:delete scheduled/delete-job]]}]
                  ["/batch" {""            [[:get batch/get-job]]
                             ["/job/" :id] [[:delete batch/delete-job]]}]
+                 ["/periodic" {"" [[:get periodic/get-jobs]]}]
                  ["/css/style.css" console/load-css]
                  ["/img/goose-logo.png" console/load-img]
                  ["/js/index.js" console/load-js]

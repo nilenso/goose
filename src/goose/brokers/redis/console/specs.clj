@@ -10,8 +10,10 @@
 (s/def ::dead-filter-type #{"id" "execute-fn-sym" "queue"})
 (s/def ::scheduled-filter-type #{"id" "execute-fn-sym" "type" "queue"})
 (s/def ::batch-filter-type #{"id"})
+(s/def ::periodic-filter-type #{"name"})
 
 (s/def ::job-id uuid?)
+(s/def ::cron-name string?)
 (s/def ::filter-value-sym string?)
 (s/def ::filter-value-type #{"unexecuted" "failed" "scheduled"})
 (s/def ::limit nat-int?)
