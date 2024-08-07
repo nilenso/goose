@@ -2,7 +2,7 @@
   (:require [clojure.test :refer [deftest is testing use-fixtures]]
             [goose.brokers.redis.api.dead-jobs :as dead-jobs]
             [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
-            [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
+            [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs] 
             [goose.brokers.redis.console.data :as console]
             [goose.defaults :as d]
             [goose.factories :as f]

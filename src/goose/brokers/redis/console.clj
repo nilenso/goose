@@ -50,9 +50,9 @@
          route-params :route-params} (-> route-prefix
                                          routes
                                          (bidi/match-route
-                                           uri
-                                           {:request-method
-                                            request-method}))]
+                                          uri
+                                          {:request-method
+                                           request-method}))]
     (-> req
         (update :params merge route-params)
         page-handler)))
