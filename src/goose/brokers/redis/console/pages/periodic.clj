@@ -1,10 +1,10 @@
 (ns goose.brokers.redis.console.pages.periodic
-  (:require [goose.brokers.redis.console.pages.components :as c]
-            [goose.brokers.redis.console.specs :as specs]
+  (:require [clojure.string :as str]
             [goose.brokers.redis.console.data :as data]
-            [clojure.string :as str]
-            [goose.console :as console]
-            [goose.utils :as utils]
+            [goose.brokers.redis.console.pages.components :as c]
+            [goose.brokers.redis.console.specs :as specs]
+            [goose.brokers.redis.cron :as periodic]
+            [goose.console :as console] 
             [ring.util.response :as response])
   (:import [it.burning.cron CronExpressionDescriptor]))
 
@@ -24,9 +24,9 @@
      [:th.args-h "Args"]
      [:th.checkbox-h [:input {:type "checkbox" :id "checkbox-h"}]]]
     [:tbody
-     (for [{:keys                          [cron-name timezone cron-schedule]
+     (for [{:keys                               [cron-name timezone cron-schedule]
             {:keys [args queue execute-fn-sym]} :job-description
-            :as                            j} jobs]
+            :as                                 j} jobs]
        [:tr
         [:td [:div.name cron-name]]
         [:td [:div.schedule.blue.tooltip
@@ -39,10 +39,10 @@
         [:td [:div.execute-fn-sym (str execute-fn-sym)]]
         [:td [:div.args (str/join ", " (mapv console/format-arg args))]]
         [:td [:div.checkbox-div
-              [:input {:name  "jobs"
+              [:input {:name  "cron-names"
                        :type  "checkbox"
                        :class "checkbox"
-                       :value (utils/encode-to-str j)}]]]])]]])
+                       :value cron-name}]]]])]]])
 
 (defn- filter-header [{:keys                  [base-path job-type]
                        {:keys [filter-value]} :params}]
@@ -85,3 +85,10 @@
                                                     :base-path (prefix-route "/periodic")
                                                     :prefix-route prefix-route
                                                     :params params)))))
+
+(defn delete-jobs [{{{:keys [redis-conn]} :broker} :console-opts
+                    :keys                          [prefix-route]
+                    params                         :params}]
+  (let [{:keys [cron-names]} (specs/validate-req-params params)]
+    (apply periodic/delete redis-conn cron-names)
+    (response/redirect (prefix-route "/periodic"))))

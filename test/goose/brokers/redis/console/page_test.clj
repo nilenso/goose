@@ -1,6 +1,5 @@
 (ns goose.brokers.redis.console.page-test
   (:require [clojure.string :as str]
-            [goose.client :as client]
             [clojure.test :refer [deftest is testing use-fixtures]]
             [goose.brokers.redis.api.batch :as batch-jobs]
             [goose.brokers.redis.api.dead-jobs :as dead-jobs]
@@ -14,6 +13,8 @@
             [goose.brokers.redis.console.pages.periodic :as periodic]
             [goose.brokers.redis.console.pages.scheduled :as scheduled]
             [goose.brokers.redis.console.specs :as specs]
+            [goose.brokers.redis.cron :as periodic-jobs]
+            [goose.client :as client]
             [goose.defaults :as d]
             [goose.factories :as f]
             [goose.test-utils :as tu]
@@ -302,7 +303,13 @@
   (testing "Main handler should invoke get-jobs handler for periodic jobs"
     (with-redefs [periodic/get-jobs (spy/stub {:status 200 :body "<html> Periodic jobs </html>"})]
       (console/handler tu/redis-producer (mock/request :get "/periodic"))
-      (is (true? (spy/called-once? periodic/get-jobs))))))
+      (is (true? (spy/called-once? periodic/get-jobs)))))
+  (testing "Main handler should invoke delete periodic jobs"
+    (with-redefs [periodic/delete-jobs (spy/stub {:status  302
+                                                  :body    ""
+                                                  :headers {"Location" "/periodic"}})]
+      (console/handler tu/redis-producer (mock/request :delete "/periodic/jobs"))
+      (is (true? (spy/called-once? periodic/delete-jobs))))))
 
 (deftest enqueued-purge-queue-test
   (testing "Should purge a queue"
@@ -653,3 +660,28 @@
                                       :params       {:id (str (random-uuid))}
                                       :prefix-route str})]
       (is (= 302 (:status response))))))
+
+(deftest periodic-delete-jobs-test
+  (testing "Should delete 1 periodic job"
+    (let [job (f/create-periodic-job-in-redis)
+          cron-name (:cron-name job)]
+      (is (= 1 (periodic-jobs/size tu/redis-conn)))
+      (is (= {:body    ""
+              :headers {"Location" "/periodic"}
+              :status  302} (periodic/delete-jobs {:console-opts tu/redis-console-opts
+                                                   :params       {:cron-names cron-name}
+                                                   :prefix-route str})))
+      (is (= 0 (periodic-jobs/size tu/redis-conn)))))
+  (tu/clear-redis)
+  (testing "Should delete >1 periodic job"
+    (let [cron-names (mapv (fn [_]
+                             (-> (f/create-periodic-job-in-redis)
+                                 (get :cron-name)))
+                           (range 3))]
+      (is (= 3 (periodic-jobs/size tu/redis-conn)))
+      (is (= {:body    ""
+              :headers {"Location" "/periodic"}
+              :status  302} (periodic/delete-jobs {:console-opts tu/redis-console-opts
+                                                   :params       {:cron-names cron-names}
+                                                   :prefix-route str})))
+      (is (= 0 (periodic-jobs/size tu/redis-conn))))))
