@@ -165,7 +165,15 @@
     (is (= ["some-encoded-job1"
             "some-encoded-job2"] (:encoded-jobs (specs/validate-req-params
                                                   {:jobs ["some-encoded-job1"
-                                                          "some-encoded-job2"]}))))))
+                                                          "some-encoded-job2"]}))))
+
+    (is (= "some-string-value" (:cron-name (specs/validate-req-params
+                                             {:cron-name "some-string-value"}))))
+    (is (= nil (:cron-name (specs/validate-req-params {:cron-name :non-string-val}))))
+    (is (= ["string1" "string2"] (:cron-names (specs/validate-req-params
+                                                {:cron-names ["string1" "string2"]}))))
+    (is (= nil (:cron-names (specs/validate-req-params
+                              {:cron-names [1 2 :non-string "string2"]}))))))
 
 (deftest page-handler-test
   (testing "Main handler should invoke home-page handler"
@@ -315,7 +323,17 @@
                                                   :body    ""
                                                   :headers {"Location" "/periodic"}})]
       (console/handler tu/redis-producer (mock/request :delete "/periodic"))
-      (is (true? (spy/called-once? periodic/purge-queue))))))
+      (is (true? (spy/called-once? periodic/purge-queue)))))
+  (testing "Main handler should invoke get periodic job handler"
+    (with-redefs [periodic/get-job (spy/stub {:status 200 :body "<html> Periodic job </html>"})]
+      (console/handler tu/redis-producer (mock/request :get "/periodic/job/cron-name"))
+      (is (true? (spy/called-once? periodic/get-job)))))
+  (testing "Main handler should invoke delete periodic job handler"
+    (with-redefs [periodic/delete-job (spy/stub {:status  302
+                                                 :body    ""
+                                                 :headers {"Location" "/periodic"}})]
+      (console/handler tu/redis-producer (mock/request :delete "/periodic/job/cron-name"))
+      (is (true? (spy/called-once? periodic/delete-job))))))
 
 (deftest enqueued-purge-queue-test
   (testing "Should purge a queue"
@@ -622,7 +640,7 @@
       (is (= [j1] (scheduled-jobs/get-by-range tu/redis-conn 0 1))))))
 
 (deftest scheduled-delete-job-test
-  (testing "Should delete a schedule job given a dead-job's encode form in delete req params"
+  (testing "Should delete a schedule job given it's encode form in delete req params"
     (f/create-jobs-in-redis {:scheduled 2})
     (let [[j1 j2] (scheduled-jobs/get-by-range tu/redis-conn 0 1)
           encoded-job (u/encode-to-str j2)]
@@ -692,7 +710,7 @@
                                                    :prefix-route str})))
       (is (= 0 (periodic-jobs/size tu/redis-conn))))))
 
-(deftest periodic-purge-queue
+(deftest periodic-purge-queue-test
   (testing "Should purge periodic queue"
     (f/create-jobs-in-redis {:periodic 13})
     (is (= 13 (periodic-jobs/size tu/redis-conn)))
@@ -701,3 +719,34 @@
             :status  302} (periodic/purge-queue {:console-opts tu/redis-console-opts
                                                  :prefix-route str})))
     (is (= 0 (periodic-jobs/size tu/redis-conn)))))
+
+(deftest periodic-get-job-test
+  (testing "Should get job periodic"
+    (f/create-periodic-job-in-redis {:cron-opts {:cron-name "foobar"}})
+    (let [response (periodic/get-job {:console-opts tu/redis-console-opts
+                                      :params       {:cron-name "foobar"}
+                                      :prefix-route str})]
+      (is (= 200 (:status response)))
+      (is (str/includes? (:body response) "Periodic Job"))
+      (is (str/includes? (:body response) "Delete"))))      ;;Should have delete button if job is present
+  (testing "Should return 400 if job is not present"
+    (let [response (periodic/get-job {:console-opts tu/redis-console-opts
+                                      :params       {:cron-name "non-existent-name"}
+                                      :prefix-route str})]
+      (is (= 404 (:status response)))
+      (is (= {} (:headers response)))
+      (is (str/includes? (:body response) "Periodic Job")))))
+
+(deftest periodic-delete-job-test
+  (testing "Should delete a valid periodic job"
+    (let [job (f/create-periodic-job-in-redis {:cron-opts {:cron-name "howdy"}})]
+      (is (= job (periodic-jobs/find-by-name tu/redis-conn "howdy")))
+      (periodic/delete-job {:console-opts tu/redis-console-opts
+                            :params       {:cron-name "howdy"}
+                            :prefix-route str})
+      (is (nil? (periodic-jobs/find-by-name tu/redis-conn "howdy")))))
+  (testing "Should redirect view given no batch job with id exist"
+    (let [response (periodic/delete-job {:console-opts tu/redis-console-opts
+                                         :params       {:cron-name "non-existent-cron-name"}
+                                         :prefix-route str})]
+      (is (= 302 (:status response))))))
