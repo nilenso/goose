@@ -5,7 +5,6 @@
             [goose.brokers.redis.console.specs :as specs]
             [goose.brokers.redis.cron :as periodic]
             [goose.console :as console]
-            [goose.utils :as utils]
             [ring.util.response :as response]))
 
 (defn jobs-table [{:keys [base-path jobs]}]
@@ -25,15 +24,10 @@
      [:th.checkbox-h [:input {:type "checkbox" :id "checkbox-h"}]]]
     [:tbody
      (for [{:keys                               [cron-name timezone cron-schedule]
-            {:keys [args queue execute-fn-sym]} :job-description
-            :as                                 j} jobs]
+            {:keys [args queue execute-fn-sym]} :job-description} jobs]
        [:tr
         [:td [:div.name cron-name]]
-        [:td [:div.schedule.blue.tooltip
-              cron-schedule
-              [:span.tooltip-text
-               [:div.tooltip-content
-                (utils/describe-cron cron-schedule)]]]]
+        [:td [:div.schedule.blue cron-schedule]]
         [:td [:div.timezone timezone]]
         [:td [:div.queue] queue]
         [:td [:div.execute-fn-sym (str execute-fn-sym)]]
