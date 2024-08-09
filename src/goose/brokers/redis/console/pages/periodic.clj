@@ -16,8 +16,8 @@
                       [:div "Are you sure you want to delete selected jobs?"])])]
    [:table.jobs-table
     [:thead
-     [:th.name "Name"]
-     [:th.schedule-h "Schedule"]
+     [:th.name "Cron name"]
+     [:th.schedule-h "Cron schedule"]
      [:th.timezone "Timezone"]
      [:th.queue-h "Queue"]
      [:th.execute-fn-sym-h "Execute fn symbol"]
@@ -27,12 +27,14 @@
      (for [{:keys                               [cron-name timezone cron-schedule]
             {:keys [args queue execute-fn-sym]} :job-description} jobs]
        [:tr
-        [:td [:div.name cron-name]]
+        [:td [:a {:href  (str base-path "/job/" cron-name)
+                  :class "underline"}
+              [:div.name cron-name]]]
         [:td [:div.schedule.blue.tooltip
               cron-schedule
               [:span.tooltip-text
                [:div.tooltip-content
-                (CronExpressionDescriptor/getDescription cron-schedule)]]]]
+                (CronExpressionDescriptor/getDescription cron-schedule)]]]] 
         [:td [:div.timezone timezone]]
         [:td [:div.queue] queue]
         [:td [:div.execute-fn-sym (str execute-fn-sym)]]
@@ -72,6 +74,71 @@
        (console/purge-confirmation-dialog data)
        [:button {:class "btn btn-danger btn-lg purge-dialog-show"} "Purge"]])]])
 
+(defn job-table [{:keys                                   [cron-name
+                                                           cron-schedule
+                                                           timezone]
+                  {:keys                     [execute-fn-sym
+                                              queue
+                                              args
+                                              ready-queue]
+                   {:keys [max-retries
+                           retry-delay-sec-fn-sym
+                           retry-queue error-handler-fn-sym
+                           death-handler-fn-sym
+                           skip-dead-queue]} :retry-opts} :job-description}]
+  [:table.job-table.table-stripped
+   [:tr [:td "Cron name"]
+    [:td cron-name]]
+   [:tr [:td "Cron schedule"]
+    [:td [:div.schedule.blue.tooltip
+          cron-schedule
+          [:span.tooltip-text
+           [:div.tooltip-content
+            (CronExpressionDescriptor/getDescription cron-schedule)]]]]]
+   [:tr [:td "Timezone"]
+    [:td timezone]]
+   [:tr [:td "Execute fn symbol"]
+    [:td.execute-fn-sym
+     (str execute-fn-sym)]]
+   [:tr [:td "Args"]
+    [:td.args (str/join ", " (mapv console/format-arg args))]]
+   [:tr [:td "Ready queue"]
+    [:td ready-queue]]
+   [:tr [:td "Queue"]
+    [:td queue]]
+   [:tr [:td "Max retries"]
+    [:td max-retries]]
+   [:tr [:td "Retry delay sec fn symbol"]
+    [:td (str retry-delay-sec-fn-sym)]]
+   [:tr [:td "Retry queue"]
+    [:td retry-queue]]
+   [:tr [:td "Error handler fn symbol"]
+    [:td (str error-handler-fn-sym)]]
+   [:tr [:td "Death handler fn symbol"]
+    [:td (str death-handler-fn-sym)]]
+   [:tr [:td "Skip dead queue"]
+    [:td skip-dead-queue]]])
+
+(defn- job-page-view [{:keys       [base-path]
+                       {:keys [cron-name]
+                        :as   job} :job}]
+  [:div.redis.redis-enqueued
+   [:h1 "Periodic Job"]
+   (if job
+     [:div
+      [:form {:action (str base-path "/job/" cron-name)
+              :method "post"}
+       [:div
+        (c/action-btns [(c/delete-btn
+                          "Are you sure you want to delete the job?"
+                          {:disabled false})])
+        [:input {:name  "cron-name"
+                 :type  "hidden"
+                 :value cron-name}]
+        (job-table job)]]]
+     (console/flash-msg {:type    :error
+                         :message "No job found"}))])
+
 (defn validate-get-jobs [{:keys [filter-type filter-value]}]
   {:filter-type  (specs/validate-or-default ::specs/periodic-filter-type filter-type)
    :filter-value (specs/validate-or-default ::specs/cron-name filter-value)})
@@ -100,3 +167,25 @@
                     :keys                          [prefix-route]}]
   (periodic/purge redis-conn)
   (response/redirect (prefix-route "/periodic")))
+
+(defn get-job [{:keys                          [prefix-route]
+                {:keys                [app-name]
+                 {:keys [redis-conn]} :broker} :console-opts
+                params                         :params}]
+  (let [view (console/layout c/header job-page-view)
+        {:keys [cron-name]} (specs/validate-req-params params)
+        job (periodic/find-by-name redis-conn cron-name)
+        base-response {:job-type     :periodic
+                       :base-path    (prefix-route "/periodic")
+                       :app-name     app-name
+                       :prefix-route prefix-route}]
+    (if job
+      (response/response (view "Periodic" (assoc base-response :job job)))
+      (response/not-found (view "Periodic" base-response)))))
+
+(defn delete-job [{:keys                          [prefix-route]
+                   {{:keys [redis-conn]} :broker} :console-opts
+                   params                         :params}]
+  (let [{:keys [cron-name]} (specs/validate-req-params params)]
+    (periodic/delete redis-conn cron-name)
+    (response/redirect (prefix-route "/periodic"))))
