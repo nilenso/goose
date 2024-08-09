@@ -6,9 +6,9 @@
             [goose.brokers.redis.console.data :as console]
             [goose.defaults :as d]
             [goose.factories :as f]
-            [goose.test-utils :as tu]))
+            [goose.test-utils :as tu])
 
-(use-fixtures :each tu/redis-fixture)
+  (use-fixtures :each tu/redis-fixture))
 
 (deftest jobs-size-test
   (testing "Should return job size for enqueued, scheduled, periodic and dead jobs"
