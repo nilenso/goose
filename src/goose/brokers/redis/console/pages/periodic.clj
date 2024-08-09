@@ -25,8 +25,7 @@
      [:th.checkbox-h [:input {:type "checkbox" :id "checkbox-h"}]]]
     [:tbody
      (for [{:keys                               [cron-name timezone cron-schedule]
-            {:keys [args queue execute-fn-sym]} :job-description
-            :as                                 j} jobs]
+            {:keys [args queue execute-fn-sym]} :job-description} jobs]
        [:tr
         [:td [:div.name cron-name]]
         [:td [:div.schedule.blue.tooltip
@@ -62,18 +61,22 @@
         [:a. {:href base-path :class "cursor-default"} "Clear"]])
      [:button.btn {:type "submit"} "Apply"]]]])
 
-(defn- jobs-page-view [data]
+(defn- jobs-page-view [{:keys [total-jobs] :as data}]
   [:div.redis
    [:h1 "Periodic Jobs"]
    [:div.content.redis-jobs-page
     (filter-header data)
-    (jobs-table data)]])
+    (jobs-table data)
+    (when (and total-jobs (> total-jobs 0))
+      [:div.bottom
+       (console/purge-confirmation-dialog data)
+       [:button {:class "btn btn-danger btn-lg purge-dialog-show"} "Purge"]])]])
 
 (defn validate-get-jobs [{:keys [filter-type filter-value]}]
-  {:filter-type (specs/validate-or-default ::specs/periodic-filter-type filter-type)
+  {:filter-type  (specs/validate-or-default ::specs/periodic-filter-type filter-type)
    :filter-value (specs/validate-or-default ::specs/cron-name filter-value)})
 
-(defn get-jobs [{:keys                                           [prefix-route]
+(defn get-jobs [{:keys                          [prefix-route]
                  {:keys                [app-name]
                   {:keys [redis-conn]} :broker} :console-opts
                  params                         :params}]
@@ -92,3 +95,8 @@
   (let [{:keys [cron-names]} (specs/validate-req-params params)]
     (apply periodic/delete redis-conn cron-names)
     (response/redirect (prefix-route "/periodic"))))
+
+(defn purge-queue [{{{:keys [redis-conn]} :broker} :console-opts
+                    :keys                          [prefix-route]}]
+  (periodic/purge redis-conn)
+  (response/redirect (prefix-route "/periodic")))

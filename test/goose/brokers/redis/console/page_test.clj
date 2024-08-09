@@ -304,12 +304,18 @@
     (with-redefs [periodic/get-jobs (spy/stub {:status 200 :body "<html> Periodic jobs </html>"})]
       (console/handler tu/redis-producer (mock/request :get "/periodic"))
       (is (true? (spy/called-once? periodic/get-jobs)))))
-  (testing "Main handler should invoke delete periodic jobs"
+  (testing "Main handler should invoke delete periodic jobs handler"
     (with-redefs [periodic/delete-jobs (spy/stub {:status  302
                                                   :body    ""
                                                   :headers {"Location" "/periodic"}})]
       (console/handler tu/redis-producer (mock/request :delete "/periodic/jobs"))
-      (is (true? (spy/called-once? periodic/delete-jobs))))))
+      (is (true? (spy/called-once? periodic/delete-jobs)))))
+  (testing "Main handler should invoke purge periodic jobs handler"
+    (with-redefs [periodic/purge-queue (spy/stub {:status  302
+                                                  :body    ""
+                                                  :headers {"Location" "/periodic"}})]
+      (console/handler tu/redis-producer (mock/request :delete "/periodic"))
+      (is (true? (spy/called-once? periodic/purge-queue))))))
 
 (deftest enqueued-purge-queue-test
   (testing "Should purge a queue"
@@ -685,3 +691,13 @@
                                                    :params       {:cron-names cron-names}
                                                    :prefix-route str})))
       (is (= 0 (periodic-jobs/size tu/redis-conn))))))
+
+(deftest periodic-purge-queue
+  (testing "Should purge periodic queue"
+    (f/create-jobs-in-redis {:periodic 13})
+    (is (= 13 (periodic-jobs/size tu/redis-conn)))
+    (is (= {:body    ""
+            :headers {"Location" "/periodic"}
+            :status  302} (periodic/purge-queue {:console-opts tu/redis-console-opts
+                                                 :prefix-route str})))
+    (is (= 0 (periodic-jobs/size tu/redis-conn)))))
