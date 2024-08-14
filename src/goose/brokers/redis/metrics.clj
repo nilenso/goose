@@ -28,7 +28,7 @@
   [redis-conn]
   {m/schedule-jobs-count (redis-cmds/sorted-set-size redis-conn d/prefixed-schedule-queue)
    m/dead-jobs-count     (redis-cmds/sorted-set-size redis-conn d/prefixed-dead-queue)
-   m/periodic-jobs-count (cron/size redis-conn)})
+   m/cron-count (cron/size redis-conn)})
 
 (defn- batches->count
   [redis-conn]

@@ -11,18 +11,18 @@
 (use-fixtures :each tu/redis-fixture)
 
 (deftest jobs-size-test
-  (testing "Should return job size for enqueued, scheduled, periodic and dead jobs"
+  (testing "Should return job size for enqueued, scheduled, cron and dead jobs"
     (is (= (console/jobs-size tu/redis-conn) {:enqueued 0 :scheduled 0
-                                              :periodic 0 :dead 0}))
-    (f/create-jobs-in-redis {:enqueued 2 :scheduled 3 :periodic 2 :dead 3})
+                                              :cron     0 :dead 0}))
+    (f/create-jobs-in-redis {:enqueued 2 :scheduled 3 :cron 2 :dead 3})
     (is (= (console/jobs-size tu/redis-conn) {:enqueued 2 :scheduled 3
-                                              :periodic 2 :dead 3})))
+                                              :cron     2 :dead 3})))
   (tu/clear-redis)
   (testing "Should return jobs size given jobs exist in multiple queues"
-    (f/create-jobs-in-redis {:enqueued 3 :scheduled 3 :periodic 1 :dead 1}
+    (f/create-jobs-in-redis {:enqueued 3 :scheduled 3 :cron 1 :dead 1}
                             {:enqueued {:queue       "queue1"
                                         :ready-queue "goose/queue:queue1"}})
-    (is (= (console/jobs-size tu/redis-conn) {:enqueued 3 :scheduled 3 :periodic 1 :dead 1}))))
+    (is (= (console/jobs-size tu/redis-conn) {:enqueued 3 :scheduled 3 :cron 1 :dead 1}))))
 
 (deftest enqueued-page-data-test
   (testing "Should get enqueued-jobs page data i.e all jobs, total-jobs count, all queues, current queue and page"
@@ -290,28 +290,28 @@
                                                                   :filter-value nil
                                                                   :limit        10})))))
 
-(deftest periodic-page-data-test
+(deftest cron-page-data-test
   (testing "Should return no jobs given no jobs exist"
     (is (= {:total-jobs 0
-            :jobs       []} (console/periodic-page-data tu/redis-conn {}))))
+            :jobs       []} (console/cron-page-data tu/redis-conn {}))))
   (testing "Should get all cron entries"
-    (let [job (f/create-periodic-job-in-redis)
-          response (console/periodic-page-data tu/redis-conn {})]
+    (let [job (f/create-cron-in-redis)
+          response (console/cron-page-data tu/redis-conn {})]
       (is (= 1 (:total-jobs response)))
       (is (= [job] (:jobs response)))))
   (tu/clear-redis)
   (testing "Should filter jobs given name"
-    (let [_ (f/create-jobs-in-redis {:periodic 4})
-          foobar-job (f/create-periodic-job-in-redis {:cron-opts {:cron-name "foo-bar"}})
-          response (console/periodic-page-data tu/redis-conn {:filter-type  "name"
-                                                              :filter-value "foo-bar"})]
+    (let [_ (f/create-jobs-in-redis {:cron 4})
+          foobar-job (f/create-cron-in-redis {:cron-opts {:cron-name "foo-bar"}})
+          response (console/cron-page-data tu/redis-conn {:filter-type  "name"
+                                                          :filter-value "foo-bar"})]
       (is (= [foobar-job] (:jobs response)))))
   (tu/clear-redis)
   (testing "Should return no jobs given filter does not match any job"
-    (let [_ (f/create-jobs-in-redis {:periodic 5})
-          response (console/periodic-page-data tu/redis-conn {:filter-type  "name"
-                                                              :filter-value "non-existent-cron-name"})]
+    (let [_ (f/create-jobs-in-redis {:cron 5})
+          response (console/cron-page-data tu/redis-conn {:filter-type  "name"
+                                                          :filter-value "non-existent-cron-name"})]
       (is (= {:jobs []} response))))
   (testing "Should return no jobs given invalid filter params"
-    (is (= {:jobs []} (console/periodic-page-data tu/redis-conn {:filter-type  "name"
-                                                                 :filter-value nil})))))
+    (is (= {:jobs []} (console/cron-page-data tu/redis-conn {:filter-type  "name"
+                                                             :filter-value nil})))))

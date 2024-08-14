@@ -139,7 +139,7 @@
 
   `cron-opts`      : Map of `:cron-name`, `:cron-schedule`, `:timezone`.
   - `:cron-name` (Mandatory)
-    - Unique identifier of a periodic job
+    - Unique identifier of a cron job
   - `:cron-schedule` (Mandatory)
     - Unix-style schedule
   - `:timezone` (Optional)
@@ -161,7 +161,7 @@
     (perform-every client-opts cron-opts `send-emails \"subject\" \"body\" [:user-1 :user-2]))
   ```
 
-  - [Periodic Jobs wiki](https://github.com/nilenso/goose/wiki/Periodic-Jobs)"
+  - [Cron wiki](https://github.com/nilenso/goose/wiki/Cron)"
   [opts cron-opts execute-fn-sym & args]
   (let [internal-opts (prefix-queues-inside-opts opts)]
     (register-cron-schedule internal-opts cron-opts execute-fn-sym args)))

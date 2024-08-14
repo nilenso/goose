@@ -1,10 +1,10 @@
-(ns goose.brokers.redis.console.pages.periodic
+(ns goose.brokers.redis.console.pages.cron
   (:require [clojure.string :as str]
             [goose.brokers.redis.console.data :as data]
             [goose.brokers.redis.console.pages.components :as c]
             [goose.brokers.redis.console.specs :as specs]
-            [goose.brokers.redis.cron :as periodic]
-            [goose.console :as console] 
+            [goose.brokers.redis.cron :as cron]
+            [goose.console :as console]
             [ring.util.response :as response])
   (:import [it.burning.cron CronExpressionDescriptor]))
 
@@ -65,7 +65,7 @@
 
 (defn- jobs-page-view [{:keys [total-jobs] :as data}]
   [:div.redis
-   [:h1 "Periodic Jobs"]
+   [:h1 "Cron Jobs"]
    [:div.content.redis-jobs-page
     (filter-header data)
     (jobs-table data)
@@ -123,7 +123,7 @@
                        {:keys [cron-name]
                         :as   job} :job}]
   [:div.redis.redis-enqueued
-   [:h1 "Periodic Job"]
+   [:h1 "Cron Job"]
    (if job
      [:div
       [:form {:action (str base-path "/job/" cron-name)
@@ -140,7 +140,7 @@
                          :message "No job found"}))])
 
 (defn validate-get-jobs [{:keys [filter-type filter-value]}]
-  {:filter-type  (specs/validate-or-default ::specs/periodic-filter-type filter-type)
+  {:filter-type  (specs/validate-or-default ::specs/cron-filter-type filter-type)
    :filter-value (specs/validate-or-default ::specs/cron-name filter-value)})
 
 (defn get-jobs [{:keys                          [prefix-route]
@@ -149,10 +149,10 @@
                  params                         :params}]
   (let [view (console/layout c/header jobs-page-view)
         validated-params (validate-get-jobs params)
-        data (data/periodic-page-data redis-conn validated-params)]
-    (response/response (view "Periodic" (assoc data :app-name app-name
-                                                    :job-type :periodic
-                                                    :base-path (prefix-route "/periodic")
+        data (data/cron-page-data redis-conn validated-params)]
+    (response/response (view "Cron" (assoc data :app-name app-name
+                                                    :job-type :cron
+                                                    :base-path (prefix-route "/cron")
                                                     :prefix-route prefix-route
                                                     :params params)))))
 
@@ -160,13 +160,13 @@
                     :keys                          [prefix-route]
                     params                         :params}]
   (let [{:keys [cron-names]} (specs/validate-req-params params)]
-    (apply periodic/delete redis-conn cron-names)
-    (response/redirect (prefix-route "/periodic"))))
+    (apply cron/delete redis-conn cron-names)
+    (response/redirect (prefix-route "/cron"))))
 
 (defn purge-queue [{{{:keys [redis-conn]} :broker} :console-opts
                     :keys                          [prefix-route]}]
-  (periodic/purge redis-conn)
-  (response/redirect (prefix-route "/periodic")))
+  (cron/purge redis-conn)
+  (response/redirect (prefix-route "/cron")))
 
 (defn get-job [{:keys                          [prefix-route]
                 {:keys                [app-name]
@@ -174,18 +174,18 @@
                 params                         :params}]
   (let [view (console/layout c/header job-page-view)
         {:keys [cron-name]} (specs/validate-req-params params)
-        job (periodic/find-by-name redis-conn cron-name)
-        base-response {:job-type     :periodic
-                       :base-path    (prefix-route "/periodic")
+        job (cron/find-by-name redis-conn cron-name)
+        base-response {:job-type     :cron
+                       :base-path    (prefix-route "/cron")
                        :app-name     app-name
                        :prefix-route prefix-route}]
     (if job
-      (response/response (view "Periodic" (assoc base-response :job job)))
-      (response/not-found (view "Periodic" base-response)))))
+      (response/response (view "Cron" (assoc base-response :job job)))
+      (response/not-found (view "Cron" base-response)))))
 
 (defn delete-job [{:keys                          [prefix-route]
                    {{:keys [redis-conn]} :broker} :console-opts
                    params                         :params}]
   (let [{:keys [cron-name]} (specs/validate-req-params params)]
-    (periodic/delete redis-conn cron-name)
-    (response/redirect (prefix-route "/periodic"))))
+    (cron/delete redis-conn cron-name)
+    (response/redirect (prefix-route "/cron"))))

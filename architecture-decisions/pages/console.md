@@ -1,7 +1,7 @@
 ADR: Console
 ============
 
-The Goose Console is a web interface that provides visual representation and control over Goose's job management features for async, scheduled, batch, periodic, and dead jobs.
+The Goose Console is a web interface that provides visual representation and control over Goose's job management features for async, scheduled, batch, cron, and dead jobs.
 
 Design
 -------
