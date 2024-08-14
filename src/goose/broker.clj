@@ -43,7 +43,7 @@
   (scheduled-jobs-purge [this] "Purges all the Scheduled Jobs.")
 
   ;; cron jobs API
-  (cron-jobs-size [this] "Returns count of Periodic Jobs.")
+  (cron-jobs-size [this] "Returns count of Cron entries.")
   (cron-jobs-find-by-name [this entry-name] "Finds a Cron Entry by `:name`.")
   (cron-jobs-delete [this entry-name] "Deletes Cron Entry & Cron-Scheduled Job of given `:name`.")
   (cron-jobs-purge [this] "Purges all the Cron Entries & Cron-Scheduled Jobs.")
