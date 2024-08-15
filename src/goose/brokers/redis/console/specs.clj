@@ -9,6 +9,8 @@
 (s/def ::enqueued-filter-type #{"id" "execute-fn-sym" "type"})
 (s/def ::dead-filter-type #{"id" "execute-fn-sym" "queue"})
 (s/def ::scheduled-filter-type #{"id" "execute-fn-sym" "type" "queue"})
+(s/def ::batch-filter-type #{"id"})
+
 (s/def ::job-id uuid?)
 (s/def ::filter-value-sym string?)
 (s/def ::filter-value-type #{"unexecuted" "failed" "scheduled"})
