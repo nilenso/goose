@@ -18,7 +18,7 @@ Features
 - Pluggable [Message Broker](https://github.com/nilenso/goose/wiki/Guide-to-Message-Broker-Integration) & [Metrics Backend](https://github.com/nilenso/goose/wiki/Guide-to-Custom-Metrics-Backend)
 - [Scheduled Jobs](https://github.com/nilenso/goose/wiki/Scheduled-Jobs)
 - [Batch Jobs](https://github.com/nilenso/goose/wiki/Batch-Jobs)
-- [Periodic Jobs](https://github.com/nilenso/goose/wiki/Periodic-Jobs)
+- [Cron Jobs](https://github.com/nilenso/goose/wiki/Cron)
 - [Error Handling & Retries](https://github.com/nilenso/goose/wiki/Error-Handling-&-Retries)
 - [Console](https://github.com/nilenso/goose/wiki/Console)
 - Extensible using [Middlewares](https://github.com/nilenso/goose/wiki/Middlewares)
@@ -76,7 +76,7 @@ com.nilenso/goose {:mvn/version "0.5.2"}
   (w/stop worker) ; Performs graceful shutsdown.
   (rmq/close rmq-consumer))
 ```
-Refer to wiki for [Redis](https://github.com/nilenso/goose/wiki/Redis), [Periodic Jobs](https://github.com/nilenso/goose/wiki/Periodic-Jobs), [Error Handling](https://github.com/nilenso/goose/wiki/Error-Handling-&-Retries), [Monitoring](https://github.com/nilenso/goose/wiki/Monitoring-&-Alerting), [Production Readiness](https://github.com/nilenso/goose/wiki/Production-Readiness), etc.
+Refer to wiki for [Redis](https://github.com/nilenso/goose/wiki/Redis), [Cron](https://github.com/nilenso/goose/wiki/Cron), [Error Handling](https://github.com/nilenso/goose/wiki/Error-Handling-&-Retries), [Monitoring](https://github.com/nilenso/goose/wiki/Monitoring-&-Alerting), [Production Readiness](https://github.com/nilenso/goose/wiki/Production-Readiness), etc.
 
 Getting Help
 ---------

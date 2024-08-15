@@ -2,7 +2,7 @@
   (:require [goose.brokers.redis.api.dead-jobs :as dead-jobs]
             [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
             [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
-            [goose.brokers.redis.cron :as periodic-jobs]
+            [goose.brokers.redis.cron :as cron]
             [goose.defaults :as d]
             [goose.job :as job]))
 
@@ -20,11 +20,11 @@
         enqueued (reduce (fn [total queue]
                            (+ total (enqueued-jobs/size redis-conn queue))) 0 queues)
         scheduled (scheduled-jobs/size redis-conn)
-        periodic (periodic-jobs/size redis-conn)
+        cron (cron/size redis-conn)
         dead (dead-jobs/size redis-conn)]
     {:enqueued  enqueued
      :scheduled scheduled
-     :periodic  periodic
+     :cron      cron
      :dead      dead}))
 
 (defn- filter-enqueued-jobs [redis-conn queue {:keys [filter-type filter-value limit]}]
@@ -115,8 +115,8 @@
                                                           (symbol filter-value)))
                                                      limit)
     "queue" (scheduled-jobs/find-by-pattern redis-conn (fn [j]
-                                                    (= (:queue j) filter-value))
-                                       limit)
+                                                         (= (:queue j) filter-value))
+                                            limit)
     "type" (case filter-value
              "failed"
              (scheduled-jobs/find-by-pattern redis-conn job/retried? limit)
@@ -145,3 +145,19 @@
 
       (invalid-filter-value? validated-filter-value)
       (assoc base-result :jobs []))))
+
+(defn cron-page-data
+  [redis-conn {validated-filter-type  :filter-type
+               validated-filter-value :filter-value}]
+  (cond
+    (filter-jobs-request? validated-filter-type validated-filter-value)
+    {:jobs (if-let [job (cron/find-by-name redis-conn validated-filter-value)]
+             [job]
+             [])}
+
+    (get-all-jobs-request? validated-filter-type validated-filter-value)
+    {:total-jobs (cron/size redis-conn)
+     :jobs       (cron/get-all redis-conn)}
+
+    (invalid-filter-value? validated-filter-value)
+    {:jobs []}))

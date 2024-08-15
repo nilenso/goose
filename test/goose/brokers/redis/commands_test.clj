@@ -146,6 +146,18 @@
           rev-range-members (redis-cmds/rev-range-in-sorted-set tu/redis-conn "my-zset" 4 9)]
       (is (true? (apply > (redis-cmds/sorted-set-scores tu/redis-conn "my-zset" rev-range-members)))))))
 
+(deftest get-all-values-in-hash
+  (testing "get-all-values function"
+    (let [_ (redis-cmds/wcar* tu/redis-conn (car/hmset "test-key"
+                                                       "field1" "value1"
+                                                       "field2" "value2"
+                                                       "field3" "value3"))])
+    (testing "return empty list for non-existent key"
+      (is (= [] (redis-cmds/get-all-values tu/redis-conn "non-existent-key"))))
+    (testing "return all values for existing key"
+      (is (= #{"value1" "value2" "value3"}
+             (set (redis-cmds/get-all-values tu/redis-conn "test-key")))))))
+
 (deftest find-in-sorted-set-test
   (testing "finding sorted set members that match the given predicate"
     (let [foo-members (set (map #(str "foo" %) (range 1000)))

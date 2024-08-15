@@ -90,7 +90,7 @@
 
 (defn ^:no-doc purge-confirmation-dialog [{:keys [total-jobs base-path]}]
   [:dialog {:class "purge-dialog"}
-   [:div "Are you sure, you want to remove " [:span.highlight total-jobs] " jobs ?"]
+   [:div "Are you sure, you want to remove " [:span.highlight total-jobs] " job/s ?"]
    [:form {:action base-path
            :method "post"
            :class  "dialog-btns"}
@@ -144,13 +144,13 @@
    [:tr [:td "Max retries"]
     [:td max-retries]]
    [:tr [:td "Retry delay sec fn symbol"]
-    [:td retry-delay-sec-fn-sym]]
+    [:td (str retry-delay-sec-fn-sym)]]
    [:tr [:td "Retry queue"]
     [:td retry-queue]]
    [:tr [:td "Error handler fn symbol"]
-    [:td error-handler-fn-sym]]
+    [:td (str error-handler-fn-sym)]]
    [:tr [:td "Death handler fn symbol"]
-    [:td death-handler-fn-sym]]
+    [:td (str death-handler-fn-sym)]]
    [:tr [:td "Skip dead queue"]
     [:td skip-dead-queue]]
    (when (job/retried? job)

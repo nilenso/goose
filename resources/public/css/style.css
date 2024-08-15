@@ -50,7 +50,9 @@ table th, td {
 }
 
 /* Common classes */
-
+.padding-top {
+  padding-top: 2em;
+}
 .underline:hover {
   text-decoration: underline;
 }
@@ -531,4 +533,48 @@ select {
 
 .when {
   width: 20%
+}
+
+.tooltip {
+  position: relative;
+  display: inline-block;
+  cursor: default;
+}
+
+.tooltip .tooltip-text {
+  visibility: hidden;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.tooltip:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
+.tooltip-content {
+  background-color: #5881D8;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 10px 15px;
+  min-width: 200px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+  position: relative;
+}
+
+.tooltip-content::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -10px;
+  border-width: 10px;
+  border-style: solid;
+  border-color: #34495e transparent transparent transparent;
 }

@@ -32,11 +32,10 @@
     (scheduler/run-at tu/redis-conn schedule-run-at j)
     (:id j)))
 
-(defn create-periodic-job-in-redis [& [overrides]]
+(defn create-cron-in-redis [& [overrides]]
   (let [job-desc (job-description (:job-description overrides))
         cron-opts (cron-opts (:cron-opts overrides))]
-    (cron/register tu/redis-conn cron-opts job-desc)
-    cron-opts))
+    (cron/register tu/redis-conn cron-opts job-desc)))
 
 (defn create-dead-job-in-redis [& [overrides]]
   (let [now (u/epoch-time-ms)
@@ -51,13 +50,13 @@
                                    (get-in j [:state :died-at]) j)
     (:id j)))
 
-(defn create-jobs-in-redis [{:keys [enqueued scheduled periodic dead]
-                    :or   {enqueued 0 scheduled 0 periodic 0 dead 0}} & [overrides]]
+(defn create-jobs-in-redis [{:keys [enqueued scheduled cron dead]
+                    :or   {enqueued 0 scheduled 0 cron 0 dead 0}} & [overrides]]
   (let [apply-fn-n-times (fn [n f & args]
                            (dotimes [_ n] (apply f args)))]
     (apply-fn-n-times enqueued create-async-job-in-redis (:enqueued overrides))
     (apply-fn-n-times scheduled create-schedule-job-in-redis (:scheduled overrides))
-    (apply-fn-n-times periodic create-periodic-job-in-redis (:periodic overrides))
+    (apply-fn-n-times cron create-cron-in-redis (:cron overrides))
     (apply-fn-n-times dead create-dead-job-in-redis (:dead overrides))))
 
 ;; Rmq
