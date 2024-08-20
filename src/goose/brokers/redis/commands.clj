@@ -292,3 +292,7 @@
                   (let [count 1]
                     (scan-for-hashes conn cursor match-str count)))]
     (doall (scan-seq conn scan-fn))))
+
+(defn get-all-values
+  [conn key]
+  (wcar* conn (car/hvals key)))
