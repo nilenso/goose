@@ -1,538 +1,299 @@
 body {
-  font-family: sans-serif, Arial;
-  margin: 0;
-  padding: 0;
-  background-color: #F2F4FD;
-  color: #585454;
-}
-
-header nav {
-  background-color: #ffffff;
-  display: flex;
-  justify-content: space-between;
-  padding: 1rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-family: sans-serif, Arial;
+    margin: 0;
+    padding: 0;
+    display: none;
 }
 
 main {
-  height: 50vh;
-  display: flex;
-  align-items: center;
+    height: 50vh;
+    display: flex;
+    align-items: center;
 }
 
 a:hover {
-  color: #5881D8 !important;
+    color: #5881D8 !important;
 }
 
 a {
-  text-decoration: none;
-  color: #5881D8;
+    text-decoration: none;
+    color: #5881D8;
 }
+
 
 dialog {
-  border: none;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-}
-
-table th, td {
-  padding: 8px;
-  border: 1px solid #ddd;
-  line-height: 1.4;
+    border: none;
 }
 
 ::backdrop {
-  opacity: 0.75;
+    opacity: 0.75;
 }
 
-/* Common classes */
 .padding-top {
-  padding-top: 2em;
+    padding-top: 2em;
 }
+
 .underline:hover {
-  text-decoration: underline;
+    text-decoration: underline;
 }
 
 #menu a {
-  text-decoration: none;
-  color: #333;
-  margin-left: 1em;
-  font-size: 1em;
+    text-decoration: none;
+    margin-left: 1em;
+    font-size: 1em;
 }
 
 #menu .app-name {
-  font-size: 1.3rem;
-  color: #585454;
-  margin-left: 15px;
+    font-size: 1.3rem;
+    margin-left: 15px;
 }
 
 .goose-logo a img {
-  margin-left: 15px;
-  height: 35px;
-  float: left;
-  overflow: auto;
+    margin-left: 15px;
+    height: 35px;
+    float: left;
+    overflow: auto;
 }
 
 .nav-start {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+    display: flex;
+    padding: 1em;
+    align-items: center;
 }
 
 .disabled {
-  pointer-events: none;
-  color: #b2a9a9 !important;
+    pointer-events: none;
+    color: #b2a9a9 !important;
 }
 
 .highlight {
-  color: #c8702A !important;
-  font-weight: bold;
+    color: #c8702A !important;
+    font-weight: bold;
 }
 
 .cursor-default {
-  cursor: default;
+    cursor: default;
 }
 
 .blue {
-  color: #5881D8;
-}
-
-.args, .execute-fn-sym {
-  overflow-y: auto;
-  max-height: 100px;
-  word-break: break-all;
-}
-
-.checkbox-div {
-  text-align: center;
-}
-
-.table-stripped tbody tr:nth-of-type(odd) {
-  background-color: #fff;
-}
-
-.flash-info {
-  background-color: #5881d824;
-  color: #5881D8;
-  padding: 1em;
-  font-weight: bold;
-}
-
-.flash-error {
-  background-color: #db460f29;
-  color: #DB460F;
-  padding: 1em;
-  font-weight: bold;
-}
-
-.flash-success {
-  background-color: #d7e7d7;
-  color: #68b43a;
-  padding: 1em;
-  font-weight: bold;
-}
-
-/* Pagination */
-
-.pagination div {
-  margin: auto;
-  padding-top: 1em;
-}
-
-/* Buttons */
-
-.btn {
-  padding: 7px 10px;
-  margin: 0 5px;
-  border-radius: 4px;
-  background-color: #5881D8;
-  color: #fff;
-  border: none;
-  font-weight: bold;
-  transition: box-shadow 0.3s ease;
-}
-
-.btn-sm {
-  padding: 5px 10px;
-  font-size: 12px;
-  line-height: 1.5;
-  border-radius: 3px
-}
-
-.btn-lg {
-  padding: 10px 16px;
-  font-size: 16px;
-  line-height: 1.3333;
-  border-radius: 6px;
-}
-
-.btn-action {
-  background-color: #fff;
-  color: #5881D8;
-  border: #5881D8 solid 1px;
-}
-
-.btn-danger {
-  background-color: #fff;
-  color: #DB460F;
-  border: #DB460F solid 1px;
-}
-
-.btn-cancel {
-  color: #5881D8;
-  background-color: #d9d9d9;
-}
-
-button:active {
-  opacity: 0.8;
-}
-
-input:disabled, input[disabled], button[disabled], button:disabled {
-  opacity: 0.6;
-}
-
-.dialog-btns {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 20px;
-}
-
-/* Job Table */
-
-.job-table td:nth-of-type(1) {
-  font-weight: bold;
-  width: 25%;
-}
-
-/* Jobs table */
-
-.jobs-table th {
-  background-color: #fff;
+    color: #5881D8;
 }
 
 /* Homepage */
 
 .statistics {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  background: white;
-  margin: 2rem;
-  padding: 1rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  width: -webkit-fill-available;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin: 2rem;
+    padding: 1rem;
+    border-radius: 8px;
+    width: -webkit-fill-available;
 }
 
 .stat {
-  text-align: center;
-  display: grid;
+    text-align: center;
+    display: grid;
 }
 
 .stat .number {
-  color: #C87021;
-  /* or any other color you prefer */
-  font-size: 36px;
-  font-weight: bold;
-  margin-bottom: 5px;
+    color: #C87021;
+    /* or any other color you prefer */
+    font-size: 36px;
+    font-weight: bold;
+    margin-bottom: 5px;
 }
 
 .stat a:hover .label {
-  color: #5881D8 !important;
+    color: #5881D8 !important;
 }
 
 .stat .label {
-  color: #333;
-  font-size: 18px;
+    font-size: 18px;
 }
 
-/* Redis */
-.redis {
-  margin: 3em;
+#menu {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
 }
 
-.redis h1 {
-  color: #5881D8;
+.left {
+    display: flex;
+    align-items: center;
 }
 
-.redis-jobs-page {
-  margin: 5em;
-}
-
-.redis .pagination {
-  justify-content: center;
-  display: flex;
-  margin: 10px;
-  height: 2em;
-}
-
-.redis .pagination a {
-  padding: 10px;
-}
-
-.redis .jobs-table .when-h {
-  display: flex;
-  justify-content: space-between;
+.right {
+    margin-left: auto;
 }
 
 
-.redis .jobs-table th .id-h {
-  width: 40%;
-}
-
-.redis .jobs-table .execute-fn-symbol-h {
-  width: 10%;
-}
-
-.redis .jobs-table .args-h {
-  width: 20%;
-}
-
-.redis .jobs-table .died-at-h {
-  width: 17%;
-}
-
-.redis .jobs-table .enqueued-at-h {
-  width: 17%;
-}
-
-.redis .jobs-table .checkbox-h {
-  width: 13%;
-  text-align: center;
-}
-
-.redis .actions {
-  display: flex;
-  justify-content: flex-end;
-  padding-bottom: 1em;
-}
-
-.redis .action-btns {
-  margin: auto;
-}
-
-.redis .action-btns .delete-dialog-show {
-  margin: auto;
-  right: 7em;
-  position: relative;
-}
-
-/* Filter Header */
-
-.redis .header {
-  background-color: #9FACC5;
-  height: 50px;
-  display: flex;
-  border-radius: 6px;
-}
-
-.redis .header .filter-opts {
-  margin: auto;
-  display: flex;
-  width: 100%;
-}
-
-.redis .header .filter-opts input,
-select {
-  padding: 6px 8px;
-  margin: 2px 0;
-  display: inline-block;
-  border: none;
-}
-
-.redis .header .filter-opts-items {
-  margin: 0 10px;
-  display: flex;
-  justify-content: space-between;
-}
-
-.redis .header .filter-opts-items .filter-type {
-  background-color: #c4d0ec;
-  color: #585454;
-}
-
-.redis .header .filter-opts-items .filter-values {
-  display: flex;
-}
-
-.redis .header .filter-opts-items .limit {
-  background-color: #c4d0ec;
-  font-size: small;
-  margin: auto;
-  padding: 7px 20px;
-}
-
-/* Bottom Purge Button  */
-.redis .bottom {
-  margin-top: 50px;
-  justify-content: end;
-  display: flex;
-}
-
-
-/* Redis Enqueued Page  */
-
-.redis-enqueued .content {
-  display: grid;
-  grid-template-columns: 13% 87%;
-
-}
-
-.redis-enqueued .selected {
-  color: #C87021;
-}
-
-/* Sidebar */
-
-.redis-enqueued #sidebar {
-  padding-top: 30px;
-}
-
-.redis-enqueued .queue-list {
-  width: 100px;
-  box-sizing: border-box;
-  height: 60vh;
-  overflow-y: auto;
-  word-break: break-all;
-  padding-right: 3px;
-  scrollbar-width: thin;
-  scrollbar-color: #c4d0ec transparent;
-}
-
-.redis-enqueued .queue-list ul {
-  list-style: none;
-  padding: 0;
-}
-
-.redis-enqueued .queue-list ul a {
-  color: #5881D8;
-}
-
-.redis-enqueued .queue-list-item {
-  padding-bottom: 10px;
-  margin-bottom: 5px;
-}
-
-/* Right side sticky header and table content */
-
-.redis-enqueued .right-side {
-  padding-top: 30px;
-}
-
-/* Rmq */
-.rmq {
-  margin: 3em;
-}
-
-.rmq .top {
-  display: flex;
-  justify-content: space-between;
-}
-
-.rmq h1 {
-  color: #5881D8;
-}
-
-.rmq .right {
-  margin: 1.2rem;
-  justify-content: right;
-  display: flex;
-  flex-direction: row;
-}
-
-.rmq .right .btn-danger {
-  margin: 0 4px;
-}
-
-.rmq .right .input {
-  width: 6em;
-  height: 1.8em;
-  padding: 9px;
-  border-style: none;
-}
-
-.rmq .right .replay {
-  margin: 0 5px 0 0;
-  border-radius: 0 6px 6px 0;
-}
-
-.rmq .replay-jobs {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.invisible {
-  display: none
-}
-
-.when-h .when-label {
-  margin-top: 10px;
-}
-
-
-/* Scheduled job when toggle btn */
-
+/* Toggle switch */
 .toggle-switch {
-  display: inline-block;
-  position: relative;
-  width: 100px;
-  height: 34px;
-  background-color: #f0f0f0;
-  border-radius: 17px;
-  border: 1px solid #ccc;
-  overflow: hidden;
-  cursor: pointer;
+    display: inline-block;
+    position: relative;
+    width: 100px;
+    height: 34px;
+    border-radius: 17px;
+    border: 1px solid;
+    overflow: hidden;
+    cursor: pointer;
 }
 
 .toggle-switch input {
-  display: none;
+    display: none;
 }
 
 .toggle-switch-label {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  height: 100%;
-  font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 100%;
+    font-size: 14px;
 }
 
 .toggle-switch-label span {
-  flex: 1;
-  text-align: center;
-  transition: color 0.2s;
-  z-index: 1;
+    flex: 1;
+    text-align: center;
+    transition: color 0.2s;
+    z-index: 1;
 }
 
+/* Until above done */
+
 .toggle-switch-background {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: calc(50% - 2px);
-  height: calc(100% - 4px);
-  background-color: #4285f4;
-  border-radius: 15px;
-  transition: transform 0.2s;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: calc(50% - 2px);
+    height: calc(100% - 4px);
+    border-radius: 15px;
+    transition: transform 0.2s;
 }
 
 .toggle-switch input:checked+.toggle-switch-label .toggle-switch-background {
-  transform: translateX(100%);
+    transform: translateX(100%);
 }
 
 .toggle-switch input:checked+.toggle-switch-label .at {
-  color: #fff;
+    color: #fff;
 }
 
 .toggle-switch input:not(:checked)+.toggle-switch-label .in {
-  color: #fff;
+    color: #fff;
 }
 
-.when {
-  width: 20%
+.args, .execute-fn-sym {
+    overflow-y: auto;
+    max-height: 100px;
+    word-break: break-all;
+}
+
+.checkbox-div {
+    text-align: center;
+}
+
+.flash-info {
+    padding: 1em;
+    font-weight: bold;
+}
+
+.flash-error {
+    background-color: #db460f29;
+    color: #DB460F;
+    padding: 1em;
+    font-weight: bold;
+}
+
+.flash-success {
+    color: #68b43a;
+    padding: 1em;
+    font-weight: bold;
+}
+
+.pagination div {
+    margin: auto;
+    padding-top: 1em;
+}
+
+.btn {
+    padding: 7px 10px;
+    margin: 0 5px;
+    border-radius: 4px;
+    background-color: #5881D8;
+    color: #fff;
+    border: none;
+    font-weight: bold;
+    transition: box-shadow 0.3s ease;
+}
+
+.btn-sm {
+    padding: 5px 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    border-radius: 3px
+}
+
+.btn-lg {
+    padding: 10px 16px;
+    font-size: 16px;
+    line-height: 1.3333;
+    border-radius: 6px;
+}
+
+.btn-action {
+    background-color: #fff;
+    color: #5881D8;
+    border: #5881D8 solid 1px;
+}
+
+.btn-danger {
+    border: solid 1px;
+}
+
+.btn-cancel {
+    color: #5881D8;
+    background-color: #e3e3e3;
+}
+
+button:active {
+    opacity: 0.8;
+}
+
+input:disabled, input[disabled], button[disabled], button:disabled {
+    opacity: 0.6;
+}
+
+.dialog-btns {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+table th, td {
+    padding: 8px;
+    border: 1px solid #ddd;
+    line-height: 1.4;
+}
+
+.job-table td:nth-of-type(1) {
+    font-weight: bold;
+    width: 25%;
+}
+
+.table-stripped tbody tr:nth-of-type(odd) {
+    background-color: #fff;
+}
+
+.jobs-table th {
+    background-color: #fff;
 }
 
 .tooltip {
@@ -549,7 +310,6 @@ select {
   left: 50%;
   transform: translateX(-50%);
   opacity: 0;
-  transition: opacity 0.3s;
 }
 
 .tooltip:hover .tooltip-text {
@@ -577,4 +337,397 @@ select {
   border-width: 10px;
   border-style: solid;
   border-color: #34495e transparent transparent transparent;
+}
+
+/* Redis */
+.redis {
+    margin: 3em;
+}
+
+.redis-jobs-page {
+    margin: 5em;
+}
+
+.redis .pagination {
+    justify-content: center;
+    display: flex;
+    margin: 10px;
+    height: 2em;
+}
+
+.redis .pagination a {
+    padding: 10px;
+}
+
+.redis .jobs-table .when-h {
+    display: flex;
+    justify-content: space-between;
+}
+
+.when {
+  width: 20%
+}
+
+/* Bottom Purge Button  */
+.redis .bottom {
+    margin-top: 50px;
+    justify-content: end;
+    display: flex;
+}
+
+/* Redis Enqueued Page  */
+
+.redis-enqueued .content {
+    display: grid;
+    grid-template-columns: 13% 87%;
+
+}
+
+.redis-enqueued .selected {
+    color: #C87021;
+}
+
+/* Sidebar */
+
+.redis-enqueued #sidebar {
+    padding-top: 30px;
+}
+
+.redis-enqueued .queue-list {
+    width: 100px;
+    box-sizing: border-box;
+    height: 60vh;
+    overflow-y: auto;
+    word-break: break-all;
+    padding-right: 3px;
+    scrollbar-width: thin;
+}
+
+.redis-enqueued .queue-list ul {
+    list-style: none;
+    padding: 0;
+}
+
+.redis-enqueued .queue-list ul a {
+    color: #5881D8;
+}
+
+.redis-enqueued .queue-list-item {
+    padding-bottom: 10px;
+    margin-bottom: 5px;
+}
+
+/* Right side sticky header and table content */
+
+.redis-enqueued .right-side {
+    padding-top: 30px;
+}
+
+.invisible {
+    display: none
+}
+
+.when-h .when-label {
+    margin-top: 10px;
+}
+
+.redis .jobs-table th .id-h {
+    width: 40%;
+}
+
+.redis .jobs-table .execute-fn-symbol-h {
+    width: 10%;
+}
+
+.redis .jobs-table .args-h {
+    width: 20%;
+}
+
+.redis .jobs-table .died-at-h {
+    width: 17%;
+}
+
+.redis .jobs-table .enqueued-at-h {
+    width: 17%;
+}
+
+.redis .jobs-table .checkbox-h {
+    width: 13%;
+    text-align: center;
+}
+
+.redis .actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-bottom: 1em;
+}
+
+.redis .action-btns {
+    margin: auto;
+}
+
+.redis .action-btns .delete-dialog-show {
+    margin: auto;
+    right: 7em;
+    position: relative;
+}
+
+.redis .header {
+    background-color: #9FACC5;
+    height: 50px;
+    display: flex;
+    border-radius: 6px;
+}
+
+.redis .header .filter-opts {
+    margin: auto;
+    display: flex;
+    width: 100%;
+}
+
+.redis .header .filter-opts input,
+select {
+    padding: 6px 8px;
+    margin: 2px 0;
+    display: inline-block;
+    border: none;
+}
+
+.redis .header .filter-opts-items {
+    margin: 0 10px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.redis .header .filter-opts-items .filter-values {
+    display: flex;
+}
+
+.redis .header .filter-opts-items .limit {
+    background-color: #c4d0ec;
+    font-size: small;
+    margin: auto;
+    padding: 7px 20px;
+}
+
+/* Rmq */
+
+.rmq {
+    margin: 3em;
+}
+
+.rmq .top {
+    display: flex;
+    justify-content: space-between;
+}
+
+.rmq h1 {
+    color: #5881D8;
+}
+
+.rmq .right {
+    margin: 1.2rem;
+    justify-content: right;
+    display: flex;
+    flex-direction: row;
+}
+
+.rmq .right .btn-danger {
+    margin: 0 4px;
+}
+
+.rmq .right .input {
+    width: 6em;
+    height: 1.8em;
+    padding: 9px;
+    border-style: none;
+}
+
+.rmq .right .replay {
+    margin: 0 5px 0 0;
+    border-radius: 0 6px 6px 0;
+}
+
+.rmq .replay-jobs {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Light Theme */
+.light {
+    background-color: #F2F4FD;
+    color: #585454;
+}
+.light header nav {
+    background-color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.light #menu a{
+    color: #333;
+}
+
+.light #menu .app-name {
+    color: #585454;
+}
+
+.light .statistics{
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.light .stat .label {
+    color: #333;
+}
+
+.light .toggle-switch {
+    background-color: #f0f0f0;
+    border-color: #ccc;
+}
+
+.light .toggle-switch-background {
+    background-color: #4285f4;
+}
+
+.light .redis h1 {
+    color: #5881D8;
+}
+
+.light .redis-enqueued .queue-list {
+    scrollbar-color: #c4d0ec transparent;
+}
+
+.light .redis .header .filter-opts-items .filter-type {
+    background-color: #c4d0ec;
+    color: #585454;
+}
+
+.light .redis .header .filter-opts-items .limit {
+    background-color: #c4d0ec;
+}
+
+.light .btn-danger {
+    background-color: #fff;
+    color: #DB460F;
+    border-color: #DB460F;
+}
+
+.light .flash-info {
+    background-color: #5881d824;
+    color: #5881D8;
+}
+
+.light th, td {
+    border-color: #ddd;
+}
+
+.light .flash-success {
+    background-color: #d7e7d7;
+}
+
+.light .flash-error {
+    background-color: #db460f29;
+}
+
+/* Dark theme */
+
+.dark {
+    background-color: #2d333b;
+    color: #929eb7;
+}
+
+.dark header nav {
+    background-color: #21262d;
+    box-shadow: 0 2px 4px rgba(249, 248, 248, 0.1);
+}
+
+.dark #menu a {
+    color: #929eb7;
+}
+
+.dark #menu .app-name {
+    color: #bfcdee;
+}
+
+.dark .statistics {
+    border: #3a4356 solid 1px;
+    box-shadow: 0 2px 4px #383d4389;
+}
+
+.dark .stat .label {
+    color: #929eb7;
+    font-size: 18px;
+}
+
+.dark .toggle-switch {
+    background-color: #383d43;
+    border-color: #929eb7;
+}
+
+.dark .toggle-switch-background {
+    background-color: #7AA2FF;
+}
+
+.dark .redis h1 {
+    color: #7AA2FF;
+}
+
+.dark .redis-enqueued .queue-list {
+    scrollbar-color: #383d43 transparent;
+}
+
+.dark .redis .header .filter-opts-items .filter-type {
+    background-color: #929eb7;
+    color: #000;
+}
+
+.dark .redis .header .filter-opts input, select {
+    background-color: #fff;
+    color: #000;
+}
+
+.dark .redis .header .filter-opts-items .limit {
+    background-color: #929eb7;
+    color: #000;
+}
+
+.dark .btn-danger {
+    background-color: #21262d;
+    color: #DB460F;
+    border: #db450f5a solid 1px;
+}
+
+.dark .flash-info {
+    background-color: #e3e3e3;
+    color: #5881D8;
+}
+
+.dark .jobs-table th {
+    background-color: #9FACC5;
+    color: #21262d;
+}
+
+.dark table th, td{
+    border-color: #929eb737 !important;
+}
+
+.dark .flash-info {
+    background-color: #929eb742;
+}
+
+.dark .table-stripped tbody tr:nth-of-type(odd) {
+    background-color: #21262d;
+}
+
+.dark .flash-success {
+    background-color: #b0dcb549;
+}
+
+.dark .flash-error {
+    background-color: #b3533129;
+}
+
+.dark .toggle-switch-label span {
+  color: #929eb7;
 }

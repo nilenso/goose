@@ -78,7 +78,7 @@
             [:title title]
             (include-css (prefix-route "/css/style.css"))
             (include-js (prefix-route "/js/index.js"))]
-           [:body
+           [:body {:class "light"}
             (map (fn [c] (c data)) components)])))
 
 (defn ^:no-doc delete-confirm-dialog [question]
@@ -192,11 +192,19 @@
         [:a {:href (prefix-route "/")}
          [:img {:src (prefix-route "/img/goose-logo.png") :alt "goose-logo"}]]]
        [:div#menu
-        [:a {:href (prefix-route "/") :class "app-name"} short-app-name]
-        (for [{:keys [route label]
-               type  :job-type} header-items]
-          [:a {:href  (prefix-route route)
-               :class (when (= job-type type) "highlight")} label])]]]]))
+        [:div.left
+         [:a {:href (prefix-route "/") :class "app-name"} short-app-name]
+         (for [{:keys [route label]
+                type  :job-type} header-items]
+           [:a {:href  (prefix-route route)
+                :class (when (= job-type type) "highlight")} label])]
+        [:div.right
+         [:label.toggle-switch
+          [:input {:type "checkbox" :id "isThemeDark"}]
+          [:div.toggle-switch-label
+           [:span.in "☀\uFE0F"]
+           [:span.at "\uD83C\uDF19"]
+           [:div.toggle-switch-background]]]]]]]]))
 
 (defn ^:no-doc wrap-prefix-route
   "Middleware that injects a `prefix-route` function into the request,
