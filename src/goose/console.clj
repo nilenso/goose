@@ -202,8 +202,8 @@
          [:label.toggle-switch
           [:input {:type "checkbox" :id "isThemeDark"}]
           [:div.toggle-switch-label
-           [:span.in "light"]
-           [:span.at "dark"]
+           [:span.in "☀\uFE0F"]
+           [:span.at "\uD83C\uDF19"]
            [:div.toggle-switch-background]]]]]]]]))
 
 (defn ^:no-doc wrap-prefix-route
