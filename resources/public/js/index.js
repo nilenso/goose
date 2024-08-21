@@ -159,10 +159,34 @@ window.onload = () => {
     }
   }
 
+function saveTheme(theme) {
+  document.body.className = theme;
+  document.body.style.display = 'block';
+  console.log("Theme");
+  const themeToggle = document.getElementById('isThemeDark');
+  themeToggle.checked = theme === 'dark';
+  localStorage.setItem("theme", theme);
+}
+
+function setTheme(isDark = null) {
+  const theme = isDark === null
+    ? localStorage.getItem("theme") || 'light'
+    : isDark ? 'dark' : 'light';
+
+  saveTheme(theme);
+}
+
+function attachThemeToggleEventListener() {
+  const themeToggle = document.getElementById('isThemeDark');
+  themeToggle.addEventListener('change', (event) => setTheme(event.target.checked));
+}
+
   attachSelectAllCheckboxEventListener();
   attachPurgeDialogEventListener();
   attachFilterTypeEventListener();
   attachDeleteDialogEventListener();
   attachCheckboxListeners();
   attachWhenCheckboxEventListener();
+  attachThemeToggleEventListener();
+  setTheme();
 }
