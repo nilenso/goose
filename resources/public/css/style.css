@@ -88,7 +88,7 @@ dialog {
     margin: 2rem;
     padding: 1rem;
     border-radius: 8px;
-    width: -webkit-fill-available;
+    width: 100%;
 }
 
 .stat {
@@ -226,6 +226,7 @@ dialog {
     border: none;
     font-weight: bold;
     transition: box-shadow 0.3s ease;
+    cursor: pointer;
 }
 
 .btn-sm {
@@ -491,6 +492,7 @@ select {
     margin: 2px 0;
     display: inline-block;
     border: none;
+    cursor: pointer;
 }
 
 .redis .header .filter-opts-items {
