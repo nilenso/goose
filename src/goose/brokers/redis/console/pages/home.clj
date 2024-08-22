@@ -9,7 +9,7 @@
    [:section.statistics
     (for [{:keys [id label route]} [{:id :enqueued :label "Enqueued" :route "/enqueued"}
                                     {:id :scheduled :label "Scheduled" :route "/scheduled"}
-                                    {:id :periodic :label "Periodic" :route "/"}  ;; Routed to homepage since pages are non-existent
+                                    {:id :periodic :label "Periodic" :route "/periodic"}
                                     {:id :dead :label "Dead" :route "/dead"}]]
       [:div.stat {:id id}
        [:span.number (str (get page-data id))]

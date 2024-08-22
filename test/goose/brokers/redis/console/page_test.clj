@@ -1,6 +1,5 @@
 (ns goose.brokers.redis.console.page-test
   (:require [clojure.string :as str]
-            [goose.client :as client]
             [clojure.test :refer [deftest is testing use-fixtures]]
             [goose.brokers.redis.api.batch :as batch-jobs]
             [goose.brokers.redis.api.dead-jobs :as dead-jobs]
@@ -11,8 +10,11 @@
             [goose.brokers.redis.console.pages.dead :as dead]
             [goose.brokers.redis.console.pages.enqueued :as enqueued]
             [goose.brokers.redis.console.pages.home :as home]
+            [goose.brokers.redis.console.pages.periodic :as periodic]
             [goose.brokers.redis.console.pages.scheduled :as scheduled]
             [goose.brokers.redis.console.specs :as specs]
+            [goose.brokers.redis.cron :as periodic-jobs]
+            [goose.client :as client]
             [goose.defaults :as d]
             [goose.factories :as f]
             [goose.test-utils :as tu]
@@ -131,6 +133,18 @@
                                                                    :filter-value "failed"}))))
       (is (nil? (:filter-value (scheduled/validate-get-jobs {:filter-type  "type"
                                                              :filter-value ["any-string" :failed]})))))))
+
+(deftest validate-get-periodic-jobs-test
+  (testing "Should set the req params to default values if values do not conform specs"
+    (is (= {:filter-type  "name"
+            :filter-value "string-value"} (periodic/validate-get-jobs {:filter-type  "name"
+                                                                       :filter-value "string-value"})))
+    (is (= {:filter-type  "name"
+            :filter-value nil} (periodic/validate-get-jobs {:filter-type  "name"
+                                                            :filter-value :non-string-value})))
+    (is (= {:filter-type  "name"
+            :filter-value nil} (periodic/validate-get-jobs {:filter-type  "name"
+                                                            :filter-value 1})))))
 
 (deftest validate-req-params-test
   (testing "Should set req params of job to default value if do not conform spec"
@@ -284,7 +298,24 @@
                                               :body    ""
                                               :headers {"Location" "/batch"}})]
       (console/handler tu/redis-producer (mock/request :delete (str "/batch/job/" (str (random-uuid)))))
-      (is (true? (spy/called-once? batch/delete-job))))))
+      (is (true? (spy/called-once? batch/delete-job)))))
+
+  (testing "Main handler should invoke get-jobs handler for periodic jobs"
+    (with-redefs [periodic/get-jobs (spy/stub {:status 200 :body "<html> Periodic jobs </html>"})]
+      (console/handler tu/redis-producer (mock/request :get "/periodic"))
+      (is (true? (spy/called-once? periodic/get-jobs)))))
+  (testing "Main handler should invoke delete periodic jobs handler"
+    (with-redefs [periodic/delete-jobs (spy/stub {:status  302
+                                                  :body    ""
+                                                  :headers {"Location" "/periodic"}})]
+      (console/handler tu/redis-producer (mock/request :delete "/periodic/jobs"))
+      (is (true? (spy/called-once? periodic/delete-jobs)))))
+  (testing "Main handler should invoke purge periodic jobs handler"
+    (with-redefs [periodic/purge-queue (spy/stub {:status  302
+                                                  :body    ""
+                                                  :headers {"Location" "/periodic"}})]
+      (console/handler tu/redis-producer (mock/request :delete "/periodic"))
+      (is (true? (spy/called-once? periodic/purge-queue))))))
 
 (deftest enqueued-purge-queue-test
   (testing "Should purge a queue"
@@ -635,3 +666,38 @@
                                       :params       {:id (str (random-uuid))}
                                       :prefix-route str})]
       (is (= 302 (:status response))))))
+
+(deftest periodic-delete-jobs-test
+  (testing "Should delete 1 periodic job"
+    (let [job (f/create-periodic-job-in-redis)
+          cron-name (:cron-name job)]
+      (is (= 1 (periodic-jobs/size tu/redis-conn)))
+      (is (= {:body    ""
+              :headers {"Location" "/periodic"}
+              :status  302} (periodic/delete-jobs {:console-opts tu/redis-console-opts
+                                                   :params       {:cron-names cron-name}
+                                                   :prefix-route str})))
+      (is (= 0 (periodic-jobs/size tu/redis-conn)))))
+  (tu/clear-redis)
+  (testing "Should delete >1 periodic job"
+    (let [cron-names (mapv (fn [_]
+                             (-> (f/create-periodic-job-in-redis)
+                                 (get :cron-name)))
+                           (range 3))]
+      (is (= 3 (periodic-jobs/size tu/redis-conn)))
+      (is (= {:body    ""
+              :headers {"Location" "/periodic"}
+              :status  302} (periodic/delete-jobs {:console-opts tu/redis-console-opts
+                                                   :params       {:cron-names cron-names}
+                                                   :prefix-route str})))
+      (is (= 0 (periodic-jobs/size tu/redis-conn))))))
+
+(deftest periodic-purge-queue
+  (testing "Should purge periodic queue"
+    (f/create-jobs-in-redis {:periodic 13})
+    (is (= 13 (periodic-jobs/size tu/redis-conn)))
+    (is (= {:body    ""
+            :headers {"Location" "/periodic"}
+            :status  302} (periodic/purge-queue {:console-opts tu/redis-console-opts
+                                                 :prefix-route str})))
+    (is (= 0 (periodic-jobs/size tu/redis-conn)))))

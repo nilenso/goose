@@ -115,8 +115,8 @@
                                                           (symbol filter-value)))
                                                      limit)
     "queue" (scheduled-jobs/find-by-pattern redis-conn (fn [j]
-                                                    (= (:queue j) filter-value))
-                                       limit)
+                                                         (= (:queue j) filter-value))
+                                            limit)
     "type" (case filter-value
              "failed"
              (scheduled-jobs/find-by-pattern redis-conn job/retried? limit)
@@ -145,3 +145,19 @@
 
       (invalid-filter-value? validated-filter-value)
       (assoc base-result :jobs []))))
+
+(defn periodic-page-data
+  [redis-conn {validated-filter-type  :filter-type
+               validated-filter-value :filter-value}]
+  (cond
+    (filter-jobs-request? validated-filter-type validated-filter-value)
+    {:jobs       (if-let [job (periodic-jobs/find-by-name redis-conn validated-filter-value)]
+                   [job]
+                   [])}
+
+    (get-all-jobs-request? validated-filter-type validated-filter-value)
+    {:total-jobs (periodic-jobs/size redis-conn)
+     :jobs       (periodic-jobs/get-all redis-conn)}
+
+    (invalid-filter-value? validated-filter-value)
+    {:jobs []}))
