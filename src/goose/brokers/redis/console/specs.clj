@@ -40,9 +40,10 @@
      op
      default)))
 
-(defn validate-req-params [{:keys [id queue job jobs cron-names]}]
+(defn validate-req-params [{:keys [id queue job jobs cron-name cron-names]}]
   {:id           (validate-or-default ::job-id (-> id str parse-uuid) id)
    :queue        (validate-or-default ::queue queue)
    :encoded-job  (validate-or-default ::encoded-job job job)
    :encoded-jobs (validate-or-default ::encoded-jobs (->coll jobs) (->coll jobs))
-   :cron-names   (validate-or-default ::cron-names (->coll cron-names) (->coll cron-names))})
+   :cron-names   (validate-or-default ::cron-names (->coll cron-names) (->coll cron-names))
+   :cron-name    (validate-or-default ::cron-name cron-name cron-name)})
