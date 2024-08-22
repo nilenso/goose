@@ -1,10 +1,10 @@
 (ns ^:no-doc goose.brokers.redis.console
   (:require [bidi.bidi :as bidi]
             [goose.brokers.redis.console.pages.batch :as batch]
+            [goose.brokers.redis.console.pages.cron :as cron]
             [goose.brokers.redis.console.pages.dead :as dead]
             [goose.brokers.redis.console.pages.enqueued :as enqueued]
             [goose.brokers.redis.console.pages.home :as home]
-            [goose.brokers.redis.console.pages.periodic :as periodic]
             [goose.brokers.redis.console.pages.scheduled :as scheduled]
             [goose.console :as console]))
 
@@ -35,11 +35,11 @@
                                                [:delete scheduled/delete-job]]}]
                  ["/batch" {""            [[:get batch/get-job]]
                             ["/job/" :id] [[:delete batch/delete-job]]}]
-                 ["/periodic" {""                   [[:get periodic/get-jobs]
-                                                     [:delete periodic/purge-queue]]
-                               "/jobs"              [[:delete periodic/delete-jobs]]
-                               ["/job/" :cron-name] [[:get periodic/get-job]
-                                                     [:delete periodic/delete-job]]}]
+                 ["/cron" {""                   [[:get cron/get-jobs]
+                                                 [:delete cron/purge-queue]]
+                           "/jobs"              [[:delete cron/delete-jobs]]
+                           ["/job/" :cron-name] [[:get cron/get-job]
+                                                 [:delete cron/delete-job]]}]
                  ["/css/style.css" console/load-css]
                  ["/img/goose-logo.png" console/load-img]
                  ["/js/index.js" console/load-js]
@@ -52,9 +52,9 @@
          route-params :route-params} (-> route-prefix
                                          routes
                                          (bidi/match-route
-                                           uri
-                                           {:request-method
-                                            request-method}))]
+                                          uri
+                                          {:request-method
+                                           request-method}))]
     (-> req
         (update :params merge route-params)
         page-handler)))

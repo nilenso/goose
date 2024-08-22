@@ -9,7 +9,7 @@
   (partial console/header [{:route "/enqueued" :label "Enqueued" :job-type :enqueued}
                            {:route "/scheduled" :label "Scheduled" :job-type :scheduled}
                            {:route "/batch" :label "Batch" :job-type :batch}
-                           {:route "/periodic" :label "Periodic" :job-type :periodic}
+                           {:route "/cron" :label "Cron" :job-type :cron}
                            {:route "/dead" :label "Dead" :job-type :dead}]))
 
 (defn replay-btn [& {:keys [disabled] :or {disabled true}}]
