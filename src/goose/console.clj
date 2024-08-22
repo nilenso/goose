@@ -112,17 +112,21 @@
                                                       queue
                                                       ready-queue
                                                       enqueued-at
-                                                      schedule-run-at]
+                                                      schedule-run-at
+                                                      cron-run-at]
                            {:keys [max-retries
                                    retry-delay-sec-fn-sym
-                                   retry-queue error-handler-fn-sym
+                                   retry-queue
+                                   ready-retry-queue
+                                   error-handler-fn-sym
                                    death-handler-fn-sym
                                    skip-dead-queue]} :retry-opts
                            {:keys [error
                                    last-retried-at
                                    first-failed-at
                                    retry-count
-                                   retry-at]}        :state
+                                   retry-at
+                                   died-at]}         :state
                            :as                       job}]
   [:table.job-table.table-stripped
    [:tr [:td "Id"]
@@ -139,6 +143,9 @@
    (when schedule-run-at
      [:tr [:td "Schedule run at"]
       [:td (Date. ^Long schedule-run-at)]])
+   (when cron-run-at
+     [:tr [:td "Cron run at"]
+      [:td (Date. ^Long cron-run-at)]])
    [:tr [:td "Enqueued at"]
     [:td (Date. ^Long enqueued-at)]]
    [:tr [:td "Max retries"]
@@ -147,6 +154,9 @@
     [:td (str retry-delay-sec-fn-sym)]]
    [:tr [:td "Retry queue"]
     [:td retry-queue]]
+   (when ready-retry-queue
+     [:tr [:td "Ready retry queue"]
+      [:td ready-retry-queue]])
    [:tr [:td "Error handler fn symbol"]
     [:td (str error-handler-fn-sym)]]
    [:tr [:td "Death handler fn symbol"]
@@ -164,7 +174,10 @@
       [:tr [:td "Retry count"]
        [:td retry-count]]
       [:tr [:td "Retry at"]
-       [:td (when retry-at (Date. ^Long retry-at))]]])])
+       [:td (when retry-at (Date. ^Long retry-at))]]
+      (when died-at
+        [:tr [:td "Died at"]
+         [:td (Date. ^Long died-at)]])])])
 
 (defn ^:no-doc header
   "Creates a navbar header in hiccup syntax consisting of goose logo and app name
