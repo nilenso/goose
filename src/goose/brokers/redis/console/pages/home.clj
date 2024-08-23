@@ -5,7 +5,7 @@
             [ring.util.response :as response]))
 
 (defn- stats-bar [{:keys [prefix-route] :as page-data}]
-  [:main
+  [:main {:id "page"}
    [:section.statistics
     (for [{:keys [id label route]} [{:id :enqueued :label "Enqueued" :route "/enqueued"}
                                     {:id :scheduled :label "Scheduled" :route "/scheduled"}

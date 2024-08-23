@@ -53,7 +53,7 @@
 (defn- job-page-view [{:keys       [base-path]
                        {:keys [id]
                         :as   job} :job}]
-  [:div.redis.redis-enqueued
+  [:div.redis.redis-enqueued {:id "page"}
    [:h1 "Enqueued Job"]
    (if job
      [:div
@@ -72,7 +72,7 @@
                          :message "No job found"}))])
 
 (defn- jobs-page-view [{:keys [total-jobs] :as data}]
-  [:div.redis.redis-enqueued
+  [:div.redis.redis-enqueued {:id "page"}
    [:h1 "Enqueued Jobs"]
    [:div.content
     (sidebar data)
