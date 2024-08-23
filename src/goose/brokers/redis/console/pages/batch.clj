@@ -95,7 +95,7 @@
 
 (defn job-page-view [{:keys [job]
                       :as   data}]
-  [:div.redis
+  [:div.redis {:id "page"}
    [:h1 "Batch Job"]
    [:div.content.redis-jobs-page
     [:div.header

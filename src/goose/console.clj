@@ -212,6 +212,14 @@
            [:a {:href  (prefix-route route)
                 :class (when (= job-type type) "highlight")} label])]
         [:div.right
+         [:div#sliderContainer
+          [:span "Polling interval: "
+           [:span#intervalValue.blue "2"]
+           [:span.blue "sec"]]
+          [:input#intervalSlider {:type  "range" :min  2 :max   10 :step  2 :value 2}]]
+         [:button#pollButton.btn.btn-danger "Live poll"]
+         [:button#stopButton.btn.btn-success.stopButton
+          {:style {:display "none"}}"Stop poll"]
          [:label.toggle-switch
           [:input {:type "checkbox" :id "isThemeDark"}]
           [:div.toggle-switch-label
