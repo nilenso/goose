@@ -52,7 +52,7 @@
                          :value (utils/encode-to-str j)}]]]]))]]])
 
 (defn- jobs-page-view [{:keys [total-jobs] :as data}]
-  [:div.redis
+  [:div.redis {:id "page"}
    [:h1 "Scheduled Jobs"]
    [:div.content.redis-jobs-page
     (c/filter-header ["id" "execute-fn-sym" "queue" "type"] data)
@@ -68,7 +68,7 @@
 (defn- job-page-view [{:keys       [base-path]
                        {:keys [id]
                         :as   job} :job}]
-  [:div.redis.redis-enqueued
+  [:div.redis.redis-enqueued {:id "page"}
    [:h1 "Scheduled Job"]
    (if job
      [:div
