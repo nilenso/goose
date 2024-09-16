@@ -10,6 +10,15 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Changed
 ### Fixed
 
+## [0.5.3] - 16th-Sept-2024
+
+### Added
+- View schedule and periodic jobs in console
+- Add dark theme
+- Poll jobs
+### Changed
+### Fixed
+
 ## [0.5.2] - 4th-July-2024
 
 ### Added
