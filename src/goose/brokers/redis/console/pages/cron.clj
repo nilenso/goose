@@ -64,7 +64,7 @@
      [:button.btn {:type "submit"} "Apply"]]]])
 
 (defn- jobs-page-view [{:keys [total-jobs] :as data}]
-  [:div.redis
+  [:div.redis {:id "page"}
    [:h1 "Cron Jobs"]
    [:div.content.redis-jobs-page
     (filter-header data)
@@ -122,7 +122,7 @@
 (defn- job-page-view [{:keys       [base-path]
                        {:keys [cron-name]
                         :as   job} :job}]
-  [:div.redis.redis-enqueued
+  [:div.redis.redis-enqueued {:id "page"}
    [:h1 "Cron Job"]
    (if job
      [:div

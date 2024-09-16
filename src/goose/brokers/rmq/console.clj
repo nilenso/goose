@@ -11,7 +11,7 @@
 (def header (partial console/header [{:route "/dead" :label "Dead" :job-type :dead}]))
 
 (defn- stats-bar [{:keys [prefix-route] :as page-data}]
-  [:main
+  [:main {:id "page"}
    [:section.statistics
     (for [{:keys [id label route]} [{:id :dead :label "Dead" :route "/dead"}]]
       [:div.stat {:id id}
@@ -35,7 +35,7 @@
                                                 :prefix-route prefix-route)))))
 
 (defn job-page [{:keys [base-path total-jobs job replay-job-count] :as data}]
-  [:div.rmq
+  [:div.rmq {:id "page"}
    [:div.top
     [:h1 "Dead Job"]
     (when (and total-jobs (> total-jobs 0))
