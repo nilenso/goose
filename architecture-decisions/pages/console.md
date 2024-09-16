@@ -12,8 +12,8 @@ The console's design and mockups can be found [here](https://docs.google.com/doc
 Web View Update
 ----------------
 
-The console's web view is updated by refreshing the page to fetch the latest job data.
-If jobs are missing since the last refresh, it is likely because they have moved to a different queue (checkout job [lifecyle](https://github.com/nilenso/goose/wiki/Job-Lifecycle))
+Console by default is static, but views can be auto updated(by page reloads) if "Live poll" is enabled.
+If jobs are missing since the last page load, it is likely because they have moved to a different queue (checkout job [lifecyle](https://github.com/nilenso/goose/wiki/Job-Lifecycle))
 or have been executed by a worker.
 
 API Design
@@ -40,7 +40,6 @@ The `console-opts` map consists of three required parameters:
     - Name of the application using Goose to be displayed in Navbar of UI.
     - Example: "Goose client"
 
-
 Avoided Designs
 ----------------
 
@@ -50,6 +49,3 @@ Avoided Designs
 
 2. **No Dedicated Server for the Console**:
    Goose does not require a dedicated server to run the console. Instead, the console functionality is exposed through the client application's server, reducing the overhead of managing an additional server.
-
-3. **No Support for Automatic Polling**:
-   The console does not support automatic polling for updates. Instead, users are expected to manually refresh the page to fetch the latest job data. This design decision was made to keep the console simple.
