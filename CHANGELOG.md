@@ -62,7 +62,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### [Goose 0.3.0 Project Board](https://github.com/orgs/nilenso/projects/6)
 
 ### Added
-- Periodic jobs for Redis
+- Cron jobs for Redis
 - Pluggable Message Brokers
 - Native support for RabbitMQ
     - Replication, Clustering & Quorum queues

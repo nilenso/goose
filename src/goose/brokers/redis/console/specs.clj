@@ -8,9 +8,15 @@
 
 (s/def ::enqueued-filter-type #{"id" "execute-fn-sym" "type"})
 (s/def ::dead-filter-type #{"id" "execute-fn-sym" "queue"})
+(s/def ::scheduled-filter-type #{"id" "execute-fn-sym" "type" "queue"})
+(s/def ::batch-filter-type #{"id"})
+(s/def ::cron-filter-type #{"name"})
+
 (s/def ::job-id uuid?)
+(s/def ::cron-name string?)
+(s/def ::cron-names (s/coll-of ::cron-name))
 (s/def ::filter-value-sym string?)
-(s/def ::filter-value-type #{"unexecuted" "failed"})
+(s/def ::filter-value-type #{"unexecuted" "failed" "scheduled"})
 (s/def ::limit nat-int?)
 (s/def ::encoded-job string?)
 (s/def ::encoded-jobs (s/coll-of ::encoded-job))
@@ -34,8 +40,10 @@
      op
      default)))
 
-(defn validate-req-params [{:keys [id queue job jobs]}]
+(defn validate-req-params [{:keys [id queue job jobs cron-name cron-names]}]
   {:id           (validate-or-default ::job-id (-> id str parse-uuid) id)
    :queue        (validate-or-default ::queue queue)
    :encoded-job  (validate-or-default ::encoded-job job job)
-   :encoded-jobs (validate-or-default ::encoded-jobs (->coll jobs) (->coll jobs))})
+   :encoded-jobs (validate-or-default ::encoded-jobs (->coll jobs) (->coll jobs))
+   :cron-names   (validate-or-default ::cron-names (->coll cron-names) (->coll cron-names))
+   :cron-name    (validate-or-default ::cron-name cron-name cron-name)})

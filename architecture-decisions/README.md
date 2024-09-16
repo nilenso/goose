@@ -23,7 +23,7 @@ Index
 1. [Enqueue-Dequeue](https://github.com/nilenso/goose/blob/main/architecture-decisions/pages/enqueue-dequeue.md)
 1. [Priority/Customized Queues](https://github.com/nilenso/goose/blob/main/architecture-decisions/pages/priority-queues.md)
 1. [Scheduled Jobs](https://github.com/nilenso/goose/blob/main/architecture-decisions/pages/scheduled-jobs.md)
-1. [Periodic Jobs](https://github.com/nilenso/goose/blob/main/architecture-decisions/pages/periodic-jobs.md)
+1. [Cron Jobs](https://github.com/nilenso/goose/blob/main/architecture-decisions/pages/periodic-jobs.md)
 1. [Batch Jobs](https://github.com/nilenso/goose/blob/main/architecture-decisions/pages/batch-jobs.md)
 1. [Error-handling & Retrying](https://github.com/nilenso/goose/blob/main/architecture-decisions/pages/error-handling.md)
 1. [API](https://github.com/nilenso/goose/blob/main/architecture-decisions/pages/api.md)

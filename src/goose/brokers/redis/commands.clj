@@ -265,6 +265,10 @@
   [conn sorted-set start stop]
   (wcar* conn (car/zrevrange sorted-set start stop)))
 
+(defn range-in-sorted-set
+  [conn sorted-set start stop]
+  (wcar* conn (car/zrange sorted-set start stop)))
+
 (defn find-in-sorted-set
   [conn sorted-set match? limit]
   (->> (sorted-set-seq conn sorted-set)
@@ -288,3 +292,7 @@
                   (let [count 1]
                     (scan-for-hashes conn cursor match-str count)))]
     (doall (scan-seq conn scan-fn))))
+
+(defn get-all-values
+  [conn key]
+  (wcar* conn (car/hvals key)))

@@ -74,7 +74,7 @@
       (is (= [0] (redis-cmds/list-position tu/redis-conn "my-list" "foo0")))
       (is (= [2 1] (redis-cmds/list-position tu/redis-conn "my-list" "foo2" "foo1"))))))
 
-(deftest range-from-front-test
+(deftest range-from-front-of-list-test
   (testing "should get the range from the front of the queue"
     (doseq [member ["foo0" "foo1" "foo2" "foo3" "foo4"]]
       (redis-cmds/enqueue-back tu/redis-conn "my-list" member))
@@ -130,12 +130,33 @@
   (testing "Should return the nil if element isn't present"
     (is (= [nil "4" nil] (redis-cmds/sorted-set-scores tu/redis-conn "my-set" "foo100" "foo4" "foo22")))))
 
+(deftest range-in-sorted-set
+  (testing "Should get the range given start and stop ordered from lowest to highest score"
+    (doseq [score (range 0 10)]
+      (redis-cmds/enqueue-sorted-set tu/redis-conn "my-set" score (str "foo" score)))
+    (is (= ["foo0" "foo1" "foo2" "foo3" "foo4" "foo5"] (redis-cmds/range-in-sorted-set tu/redis-conn "my-set" 0 5)))
+    (is (= ["foo9"] (redis-cmds/range-in-sorted-set tu/redis-conn "my-set" 9 9)))
+    (is (= [] (redis-cmds/range-in-sorted-set tu/redis-conn "my-set" 100 113)))
+    (is (= ["foo7" "foo8" "foo9"] (redis-cmds/range-in-sorted-set tu/redis-conn "my-set" -3 -1)))))
+
 (deftest rev-range-in-sorted-set-test
   (testing "Should get the members in decreasing order of priority"
     (let [_ (doseq [member (set (map #(str "foo" %) (range 10)))]
               (redis-cmds/wcar* tu/redis-conn (car/zadd "my-zset" (rand-int 100) member)))
           rev-range-members (redis-cmds/rev-range-in-sorted-set tu/redis-conn "my-zset" 4 9)]
       (is (true? (apply > (redis-cmds/sorted-set-scores tu/redis-conn "my-zset" rev-range-members)))))))
+
+(deftest get-all-values-in-hash
+  (testing "get-all-values function"
+    (let [_ (redis-cmds/wcar* tu/redis-conn (car/hmset "test-key"
+                                                       "field1" "value1"
+                                                       "field2" "value2"
+                                                       "field3" "value3"))])
+    (testing "return empty list for non-existent key"
+      (is (= [] (redis-cmds/get-all-values tu/redis-conn "non-existent-key"))))
+    (testing "return all values for existing key"
+      (is (= #{"value1" "value2" "value3"}
+             (set (redis-cmds/get-all-values tu/redis-conn "test-key")))))))
 
 (deftest find-in-sorted-set-test
   (testing "finding sorted set members that match the given predicate"

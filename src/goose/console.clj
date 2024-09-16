@@ -12,7 +12,7 @@
     (java.lang Character String)
     (java.util Date)))
 
-(defn format-arg [arg]
+(defn ^:no-doc format-arg [arg]
   (condp = (type arg)
     String (str "\"" arg "\"")
     nil "nil"
@@ -78,19 +78,19 @@
             [:title title]
             (include-css (prefix-route "/css/style.css"))
             (include-js (prefix-route "/js/index.js"))]
-           [:body
+           [:body {:class "light"}
             (map (fn [c] (c data)) components)])))
 
-(defn delete-confirm-dialog [question]
+(defn ^:no-doc delete-confirm-dialog [question]
   [:dialog {:class "delete-dialog"}
    [:div question]
    [:div.dialog-btns
     [:input.btn.btn-md.btn-cancel {:type "button" :value "cancel" :class "cancel"}]
     [:input.btn.btn-md.btn-danger {:type "submit" :name "_method" :value "delete"}]]])
 
-(defn purge-confirmation-dialog [{:keys [total-jobs base-path]}]
+(defn ^:no-doc purge-confirmation-dialog [{:keys [total-jobs base-path]}]
   [:dialog {:class "purge-dialog"}
-   [:div "Are you sure, you want to remove " [:span.highlight total-jobs] " jobs ?"]
+   [:div "Are you sure, you want to remove " [:span.highlight total-jobs] " job/s ?"]
    [:form {:action base-path
            :method "post"
            :class  "dialog-btns"}
@@ -98,7 +98,7 @@
     [:input {:type "button" :value "Cancel" :class "btn btn-md btn-cancel cancel"}]
     [:input {:type "submit" :value "Confirm" :class "btn btn-danger btn-md"}]]])
 
-(defn flash-msg [{:keys [type message class]}]
+(defn ^:no-doc flash-msg [{:keys [type message class]}]
   (let [append-class #(str/join " " %)]
     (case type
       :success [:div.flash-success {:class (append-class class)} message]
@@ -106,18 +106,28 @@
       :info [:div.flash-info {:class (append-class class)} message]
       [:div {:class (append-class class)} message])))
 
-(defn job-table [{:keys                     [id execute-fn-sym args queue ready-queue enqueued-at]
-                  {:keys [max-retries
-                          retry-delay-sec-fn-sym
-                          retry-queue error-handler-fn-sym
-                          death-handler-fn-sym
-                          skip-dead-queue]} :retry-opts
-                  {:keys [error
-                          last-retried-at
-                          first-failed-at
-                          retry-count
-                          retry-at]}        :state
-                  :as                       job}]
+(defn ^:no-doc job-table [{:keys                     [id
+                                                      execute-fn-sym
+                                                      args
+                                                      queue
+                                                      ready-queue
+                                                      enqueued-at
+                                                      schedule-run-at
+                                                      cron-run-at]
+                           {:keys [max-retries
+                                   retry-delay-sec-fn-sym
+                                   retry-queue
+                                   ready-retry-queue
+                                   error-handler-fn-sym
+                                   death-handler-fn-sym
+                                   skip-dead-queue]} :retry-opts
+                           {:keys [error
+                                   last-retried-at
+                                   first-failed-at
+                                   retry-count
+                                   retry-at
+                                   died-at]}         :state
+                           :as                       job}]
   [:table.job-table.table-stripped
    [:tr [:td "Id"]
     [:td id]]
@@ -130,18 +140,27 @@
     [:td queue]]
    [:tr [:td "Ready queue"]
     [:td ready-queue]]
+   (when schedule-run-at
+     [:tr [:td "Schedule run at"]
+      [:td (Date. ^Long schedule-run-at)]])
+   (when cron-run-at
+     [:tr [:td "Cron run at"]
+      [:td (Date. ^Long cron-run-at)]])
    [:tr [:td "Enqueued at"]
     [:td (Date. ^Long enqueued-at)]]
    [:tr [:td "Max retries"]
     [:td max-retries]]
    [:tr [:td "Retry delay sec fn symbol"]
-    [:td retry-delay-sec-fn-sym]]
+    [:td (str retry-delay-sec-fn-sym)]]
    [:tr [:td "Retry queue"]
     [:td retry-queue]]
+   (when ready-retry-queue
+     [:tr [:td "Ready retry queue"]
+      [:td ready-retry-queue]])
    [:tr [:td "Error handler fn symbol"]
-    [:td error-handler-fn-sym]]
+    [:td (str error-handler-fn-sym)]]
    [:tr [:td "Death handler fn symbol"]
-    [:td death-handler-fn-sym]]
+    [:td (str death-handler-fn-sym)]]
    [:tr [:td "Skip dead queue"]
     [:td skip-dead-queue]]
    (when (job/retried? job)
@@ -155,7 +174,10 @@
       [:tr [:td "Retry count"]
        [:td retry-count]]
       [:tr [:td "Retry at"]
-       [:td (when retry-at (Date. ^Long retry-at))]]])])
+       [:td (when retry-at (Date. ^Long retry-at))]]
+      (when died-at
+        [:tr [:td "Died at"]
+         [:td (Date. ^Long died-at)]])])])
 
 (defn ^:no-doc header
   "Creates a navbar header in hiccup syntax consisting of goose logo and app name
@@ -183,11 +205,27 @@
         [:a {:href (prefix-route "/")}
          [:img {:src (prefix-route "/img/goose-logo.png") :alt "goose-logo"}]]]
        [:div#menu
-        [:a {:href (prefix-route "/") :class "app-name"} short-app-name]
-        (for [{:keys [route label]
-               type  :job-type} header-items]
-          [:a {:href  (prefix-route route)
-               :class (when (= job-type type) "highlight")} label])]]]]))
+        [:div.left
+         [:a {:href (prefix-route "/") :class "app-name"} short-app-name]
+         (for [{:keys [route label]
+                type  :job-type} header-items]
+           [:a {:href  (prefix-route route)
+                :class (when (= job-type type) "highlight")} label])]
+        [:div.right
+         [:div#sliderContainer
+          [:span "Polling interval: "
+           [:span#intervalValue.blue "2"]
+           [:span.blue "sec"]]
+          [:input#intervalSlider {:type  "range" :min  2 :max   10 :step  2 :value 2}]]
+         [:button#pollButton.btn.btn-danger "Live poll"]
+         [:button#stopButton.btn.btn-success.stopButton
+          {:style {:display "none"}}"Stop poll"]
+         [:label.toggle-switch
+          [:input {:type "checkbox" :id "isThemeDark"}]
+          [:div.toggle-switch-label
+           [:span.in "☀\uFE0F"]
+           [:span.at "\uD83C\uDF19"]
+           [:div.toggle-switch-background]]]]]]]]))
 
 (defn ^:no-doc wrap-prefix-route
   "Middleware that injects a `prefix-route` function into the request,

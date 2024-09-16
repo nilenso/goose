@@ -5,12 +5,12 @@
             [ring.util.response :as response]))
 
 (defn- stats-bar [{:keys [prefix-route] :as page-data}]
-  [:main
+  [:main {:id "page"}
    [:section.statistics
     (for [{:keys [id label route]} [{:id :enqueued :label "Enqueued" :route "/enqueued"}
-                                    {:id :scheduled :label "Scheduled" :route "/"} ;; Routed to homepage since pages are non-existent
-                                    {:id :periodic :label "Periodic" :route "/"}
-                                    {:id :dead :label "Dead" :route "/"}]]
+                                    {:id :scheduled :label "Scheduled" :route "/scheduled"}
+                                    {:id :cron :label "Cron" :route "/cron"}
+                                    {:id :dead :label "Dead" :route "/dead"}]]
       [:div.stat {:id id}
        [:span.number (str (get page-data id))]
        [:a {:href (prefix-route route)}
