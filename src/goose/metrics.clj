@@ -28,7 +28,7 @@
   (format "enqueued_jobs.%s.count" (d/affix-queue queue)))
 (defonce ^:no-doc total-enqueued-jobs-count "total_enqueued_jobs.count")
 (defonce ^:no-doc schedule-jobs-count "scheduled_jobs.count")
-(defonce ^:no-doc cron-count "cron.count")
+(defonce ^:no-doc cron-jobs-count "cron_jobs.count")
 (defonce ^:no-doc dead-jobs-count "dead_jobs.count")
 (defonce ^:no-doc batches-count "batches.count")
 
