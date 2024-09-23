@@ -3,7 +3,7 @@ name: ci
 on: [ push ]
 
 jobs:
-  test:
+  fmt_test:
     runs-on: ubuntu-20.04
     container: clojure:openjdk-19-tools-deps-1.11.1.1113-bullseye
     services:
@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Check formatting
-        run: clj -M:cljfmt check
+        run: clojure -M:cljfmt check
       - name: Run tests
         run: clj -X:test
         env:
