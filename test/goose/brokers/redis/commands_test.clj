@@ -1,11 +1,11 @@
 (ns goose.brokers.redis.commands-test
   (:require
-    [goose.brokers.redis.commands :as redis-cmds]
-    [goose.test-utils :as tu]
+   [goose.brokers.redis.commands :as redis-cmds]
+   [goose.test-utils :as tu]
 
-    [clojure.string :as str]
-    [clojure.test :refer [deftest is testing use-fixtures]]
-    [taoensso.carmine :as car]))
+   [clojure.string :as str]
+   [clojure.test :refer [deftest is testing use-fixtures]]
+   [taoensso.carmine :as car]))
 
 (use-fixtures :each tu/redis-fixture)
 
@@ -14,7 +14,7 @@
     (let [ks (map #(str "foo" %) (range 5000))]
       (doseq [k ks]
         (redis-cmds/wcar* tu/redis-conn
-          (car/set k 42)))
+                          (car/set k 42)))
       (is (= (set ks)
              (set (redis-cmds/scan-seq tu/redis-conn))))))
 
@@ -23,25 +23,25 @@
           bar-keys (map #(str "bar" %) (range 5000))]
       (doseq [k (concat foo-keys bar-keys)]
         (redis-cmds/wcar* tu/redis-conn
-          (car/set k 42)))
+                          (car/set k 42)))
 
       (is (= (set foo-keys)
              (set (redis-cmds/scan-seq tu/redis-conn
                                        (fn [conn _ cursor]
                                          (redis-cmds/wcar* conn
-                                           (car/scan cursor "MATCH" "foo*" "COUNT" 1)))))))))
+                                                           (car/scan cursor "MATCH" "foo*" "COUNT" 1)))))))))
 
   (testing "scanning a data structure at a particular key"
     (let [set-members (set (map #(str "foo" %) (range 5000)))]
       (doseq [member set-members]
         (redis-cmds/wcar* tu/redis-conn
-          (car/sadd "my-set" member)))
+                          (car/sadd "my-set" member)))
 
       (is (= set-members
              (set (redis-cmds/scan-seq tu/redis-conn
                                        (fn [conn redis-key cursor]
                                          (redis-cmds/wcar* conn
-                                           (car/sscan redis-key cursor "MATCH" "*" "COUNT" 1)))
+                                                           (car/sscan redis-key cursor "MATCH" "*" "COUNT" 1)))
                                        "my-set")))))))
 
 (deftest find-in-set-test
@@ -50,7 +50,7 @@
           bar-members (map #(str "bar" %) (range 1000))]
       (doseq [member (concat foo-members bar-members)]
         (redis-cmds/wcar* tu/redis-conn
-          (car/sadd "my-set" member)))
+                          (car/sadd "my-set" member)))
 
       (is (= (set foo-members)
              (set (redis-cmds/find-in-set tu/redis-conn
@@ -105,7 +105,7 @@
            (redis-cmds/del-from-list-and-enqueue-front tu/redis-conn "my-list" "foo2" "foo0")))
     (is (= ["foo0" "foo2" "foo1" "foo3" "foo4"] (redis-cmds/range-from-front tu/redis-conn "my-list" 0 4)))
 
-    (is (= [[["OK" "QUEUED" "QUEUED"] [1 5]]](redis-cmds/del-from-list-and-enqueue-front tu/redis-conn "my-list" "foo3")))
+    (is (= [[["OK" "QUEUED" "QUEUED"] [1 5]]] (redis-cmds/del-from-list-and-enqueue-front tu/redis-conn "my-list" "foo3")))
     (is (= ["foo3" "foo0" "foo2" "foo1" "foo4"] (redis-cmds/range-from-front tu/redis-conn "my-list" 0 4)))))
 
 (deftest find-in-list-test
@@ -164,7 +164,7 @@
           bar-members (set (map #(str "bar" %) (range 1000)))]
       (doseq [member (concat foo-members bar-members)]
         (redis-cmds/wcar* tu/redis-conn
-          (car/zadd "my-zset" (rand-int 100) member)))
+                          (car/zadd "my-zset" (rand-int 100) member)))
 
       (is (= bar-members
              (set (redis-cmds/find-in-sorted-set tu/redis-conn
@@ -176,7 +176,7 @@
     (let [foo-members (set (map #(str "foo" %) (range 1000)))]
       (doseq [member foo-members]
         (redis-cmds/wcar* tu/redis-conn
-          (car/zadd "my-other-zset" (rand-int 100) member)))
+                          (car/zadd "my-other-zset" (rand-int 100) member)))
 
       (is (= 500
              (count (redis-cmds/find-in-sorted-set tu/redis-conn

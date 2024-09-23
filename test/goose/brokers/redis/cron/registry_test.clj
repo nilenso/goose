@@ -1,32 +1,32 @@
 (ns goose.brokers.redis.cron.registry-test
   (:require
 
-    [goose.api.enqueued-jobs :as enqueued-jobs]
-    [goose.brokers.redis.cron :as cron]
-    [goose.cron.parsing :as cron-parsing]
-    [goose.defaults :as d]
-    [goose.job :as j]
-    [goose.retry :as retry]
-    [goose.test-utils :as tu]
-    [goose.utils :as u]
+   [goose.api.enqueued-jobs :as enqueued-jobs]
+   [goose.brokers.redis.cron :as cron]
+   [goose.cron.parsing :as cron-parsing]
+   [goose.defaults :as d]
+   [goose.job :as j]
+   [goose.retry :as retry]
+   [goose.test-utils :as tu]
+   [goose.utils :as u]
 
-    [clojure.test :refer [deftest is testing use-fixtures]])
+   [clojure.test :refer [deftest is testing use-fixtures]])
   (:import
-    (java.time ZoneId)))
+   (java.time ZoneId)))
 
 (use-fixtures :each tu/redis-fixture)
 
 (defn- after-due-time
   [cron-schedule timezone]
   (inc
-    (cron-parsing/next-run-epoch-ms
-      cron-schedule timezone)))
+   (cron-parsing/next-run-epoch-ms
+    cron-schedule timezone)))
 
 (defn- before-due-time
   [cron-schedule timezone]
   (dec
-    (cron-parsing/next-run-epoch-ms
-      cron-schedule timezone)))
+   (cron-parsing/next-run-epoch-ms
+    cron-schedule timezone)))
 
 (deftest cron-registration-test
   (testing "Registering two cron entries with the same name"
@@ -72,7 +72,7 @@
                                                     retry/default-opts))]
 
       (with-redefs [u/epoch-time-ms (constantly
-                                      (after-due-time cron-schedule timezone))]
+                                     (after-due-time cron-schedule timezone))]
         (is (= [{:cron-name       "my-cron-name"
                  :cron-schedule   cron-schedule
                  :timezone        timezone
@@ -85,7 +85,7 @@
             "The cron entry is due after the scheduled cron time"))
 
       (with-redefs [u/epoch-time-ms (constantly
-                                      (before-due-time cron-schedule timezone))]
+                                     (before-due-time cron-schedule timezone))]
         (is (empty? (cron/due-cron-entries tu/redis-conn))
             "The cron entry is not due before the scheduled cron time")))))
 
@@ -105,17 +105,17 @@
                                     (d/prefix-queue "foo-queue")
                                     retry/default-opts))
       (with-redefs [u/epoch-time-ms (constantly
-                                      (after-due-time cron-schedule timezone))
+                                     (after-due-time cron-schedule timezone))
                     cron-parsing/next-run-epoch-ms (constantly
-                                                     (inc
-                                                       (after-due-time cron-schedule timezone)))]
+                                                    (inc
+                                                     (after-due-time cron-schedule timezone)))]
         (is (cron/enqueue-due-cron-entries tu/redis-conn)
             "find-and-enqueue-cron-entries returns truthy if due cron entries were found"))
 
       (is (empty?
-            (with-redefs [u/epoch-time-ms (constantly
-                                            (after-due-time cron-schedule timezone))]
-              (cron/due-cron-entries tu/redis-conn)))
+           (with-redefs [u/epoch-time-ms (constantly
+                                          (after-due-time cron-schedule timezone))]
+             (cron/due-cron-entries tu/redis-conn)))
           "The cron entry is not immediately due after enqueueing")
 
       (is (= {:args           [:a "b" 3]

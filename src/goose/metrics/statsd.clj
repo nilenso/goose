@@ -2,10 +2,10 @@
   "StatsD is a specimen Metrics Backend for Goose.
   Plugins can be customized by implementing [[goose.metrics/Metrics]] protocol."
   (:require
-    [goose.metrics :as m]
-    [goose.specs :as specs]
+   [goose.metrics :as m]
+   [goose.specs :as specs]
 
-    [clj-statsd]))
+   [clj-statsd]))
 
 (defn- build-tags
   [tags]

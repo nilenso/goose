@@ -22,6 +22,8 @@ jobs:
           RABBITMQ_DEFAULT_PASS: top-gun
     steps:
       - uses: actions/checkout@v3
+      - name: Check formatting
+        run: clj -M:cljfmt check
       - name: Run tests
         run: clj -X:test
         env:

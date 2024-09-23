@@ -1,14 +1,14 @@
 (ns goose.utils
   (:refer-clojure :exclude [list])
   (:require
-    [clojure.string :as str]
-    [clojure.tools.logging :as log]
-    [com.climate.claypoole :as cp]
-    [taoensso.nippy :as nippy])
+   [clojure.string :as str]
+   [clojure.tools.logging :as log]
+   [com.climate.claypoole :as cp]
+   [taoensso.nippy :as nippy])
   (:import
-    (java.net InetAddress)
-    (java.time Instant)
-    (java.lang Math)))
+   (java.net InetAddress)
+   (java.time Instant)
+   (java.lang Math)))
 
 (defn encode
   "Serializes input to a byte array using `taoensso.nippy/freeze`.\\

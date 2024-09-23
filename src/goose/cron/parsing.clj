@@ -1,10 +1,10 @@
 (ns ^:no-doc goose.cron.parsing
   (:import
-    (com.cronutils.model CronType)
-    (com.cronutils.model.definition CronDefinitionBuilder)
-    (com.cronutils.model.time ExecutionTime)
-    (com.cronutils.parser CronParser)
-    (java.time ZonedDateTime ZoneId)))
+   (com.cronutils.model CronType)
+   (com.cronutils.model.definition CronDefinitionBuilder)
+   (com.cronutils.model.time ExecutionTime)
+   (com.cronutils.parser CronParser)
+   (java.time ZonedDateTime ZoneId)))
 
 (defn parse-cron
   [cron-schedule]
@@ -19,7 +19,6 @@
     true
     (catch IllegalArgumentException _
       false)))
-
 
 (defn next-run-epoch-ms
   [cron-schedule timezone]

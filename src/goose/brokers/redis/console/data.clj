@@ -69,7 +69,7 @@
                                                            queue
                                                            (* (dec page) d/page-size)
                                                            (dec (* page d/page-size)))
-                         :total-jobs (enqueued-jobs/size redis-conn queue))
+             :total-jobs (enqueued-jobs/size redis-conn queue))
 
       (invalid-filter-value? validated-filter-value) no-jobs-response)))
 
@@ -101,7 +101,7 @@
       (assoc base-result :jobs (dead-jobs/get-by-range redis-conn
                                                        (* d/page-size (dec page))
                                                        (dec (* d/page-size page)))
-                         :total-jobs (dead-jobs/size redis-conn))
+             :total-jobs (dead-jobs/size redis-conn))
 
       (invalid-filter-value? validated-filter-value)
       (assoc base-result :jobs []))))
@@ -139,9 +139,9 @@
 
       (get-all-jobs-request? validated-filter-type validated-filter-value)
       (assoc base-result :total-jobs (scheduled-jobs/size redis-conn)
-                         :jobs (scheduled-jobs/get-by-range redis-conn
-                                                            (* (dec page) d/page-size)
-                                                            (dec (* page d/page-size))))
+             :jobs (scheduled-jobs/get-by-range redis-conn
+                                                (* (dec page) d/page-size)
+                                                (dec (* page d/page-size))))
 
       (invalid-filter-value? validated-filter-value)
       (assoc base-result :jobs []))))

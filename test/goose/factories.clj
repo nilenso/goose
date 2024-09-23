@@ -51,7 +51,7 @@
     (:id j)))
 
 (defn create-jobs-in-redis [{:keys [enqueued scheduled cron dead]
-                    :or   {enqueued 0 scheduled 0 cron 0 dead 0}} & [overrides]]
+                             :or   {enqueued 0 scheduled 0 cron 0 dead 0}} & [overrides]]
   (let [apply-fn-n-times (fn [n f & args]
                            (dotimes [_ n] (apply f args)))]
     (apply-fn-n-times enqueued create-async-job-in-redis (:enqueued overrides))

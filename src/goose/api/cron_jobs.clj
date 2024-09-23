@@ -3,7 +3,7 @@
   To update a cron entry, call [[goose.client/perform-every]] since it is idempotent.
   - [API wiki](https://github.com/nilenso/goose/wiki/API)"
   (:require
-    [goose.broker :as b]))
+   [goose.broker :as b]))
 
 (defn size
   "Returns count of Cron entries."

@@ -1,19 +1,19 @@
 (ns goose.brokers.redis.broker
   (:require
-    [goose.broker :as b]
-    [goose.brokers.redis.api.batch :as batch-api]
-    [goose.brokers.redis.api.dead-jobs :as dead-jobs]
-    [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
-    [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
-    [goose.brokers.redis.batch :as batch]
-    [goose.brokers.redis.commands :as redis-cmds]
-    [goose.brokers.redis.connection :as redis-connection]
-    [goose.brokers.redis.cron :as cron]
-    [goose.brokers.redis.scheduler :as redis-scheduler]
-    [goose.brokers.redis.worker :as redis-worker]
-    [goose.brokers.redis.console :as redis-console]
-    [goose.defaults :as d]
-    [goose.specs :as specs]))
+   [goose.broker :as b]
+   [goose.brokers.redis.api.batch :as batch-api]
+   [goose.brokers.redis.api.dead-jobs :as dead-jobs]
+   [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
+   [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
+   [goose.brokers.redis.batch :as batch]
+   [goose.brokers.redis.commands :as redis-cmds]
+   [goose.brokers.redis.connection :as redis-connection]
+   [goose.brokers.redis.cron :as cron]
+   [goose.brokers.redis.scheduler :as redis-scheduler]
+   [goose.brokers.redis.worker :as redis-worker]
+   [goose.brokers.redis.console :as redis-console]
+   [goose.defaults :as d]
+   [goose.specs :as specs]))
 
 (defrecord Redis [redis-conn opts]
   b/Broker
@@ -97,7 +97,7 @@
     (batch-api/status (:redis-conn this) id))
   (batch-delete [this id]
     (batch-api/delete (:redis-conn this) id))
-  
+
   ;; console API
   (handler [this req]
     (redis-console/handler this req)))
@@ -154,7 +154,7 @@
   ([conn-opts scheduler-polling-interval-sec]
    (specs/assert-redis-consumer conn-opts scheduler-polling-interval-sec)
    (let [opts (assoc conn-opts
-                :scheduler-polling-interval-sec scheduler-polling-interval-sec)]
+                     :scheduler-polling-interval-sec scheduler-polling-interval-sec)]
      ;; Connection to Redis is opened/closed from start/stop functions of worker.
      ;; This was done to avoid duplication of code & mis-match in `threads` config.
      (->Redis nil opts))))

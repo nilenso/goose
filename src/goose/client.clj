@@ -1,14 +1,14 @@
 (ns goose.client
   "Functions for executing job in async, scheduled or periodic manner."
   (:require
-    [goose.batch :as batch]
-    [goose.broker :as b]
-    [goose.defaults :as d]
-    [goose.job :as j]
-    [goose.retry :as retry]
-    [goose.utils :as u])
+   [goose.batch :as batch]
+   [goose.broker :as b]
+   [goose.defaults :as d]
+   [goose.job :as j]
+   [goose.retry :as retry]
+   [goose.utils :as u])
   (:import
-    (java.time Instant)))
+   (java.time Instant)))
 
 (def default-opts
   "Map of sample configs for producing jobs.
@@ -30,8 +30,8 @@
 (defn- prefix-queues-inside-opts
   [{:keys [queue retry-opts] :as opts}]
   (assoc opts
-    :ready-queue (d/prefix-queue queue)
-    :retry-opts (retry/prefix-queue-if-present retry-opts)))
+         :ready-queue (d/prefix-queue queue)
+         :retry-opts (retry/prefix-queue-if-present retry-opts)))
 
 (defn- register-cron-schedule
   [{:keys [broker queue ready-queue retry-opts] :as _opts}

@@ -1,8 +1,8 @@
 (ns ^:no-doc goose.brokers.redis.api.enqueued-jobs
   (:require
-    [goose.brokers.redis.commands :as redis-cmds]
-    [goose.defaults :as d]
-    [goose.job :as job]))
+   [goose.brokers.redis.commands :as redis-cmds]
+   [goose.defaults :as d]
+   [goose.job :as job]))
 
 (defn list-all-queues
   "Lists all the queues"

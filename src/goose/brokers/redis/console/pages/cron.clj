@@ -13,7 +13,7 @@
           :method "post"}
    [:div.padding-top
     (c/action-btns [(c/delete-btn
-                      [:div "Are you sure you want to delete selected jobs?"])])]
+                     [:div "Are you sure you want to delete selected jobs?"])])]
    [:table.jobs-table
     [:thead
      [:th.name "Cron name"]
@@ -34,7 +34,7 @@
               cron-schedule
               [:span.tooltip-text
                [:div.tooltip-content
-                (CronExpressionDescriptor/getDescription cron-schedule)]]]] 
+                (CronExpressionDescriptor/getDescription cron-schedule)]]]]
         [:td [:div.timezone timezone]]
         [:td [:div.queue] queue]
         [:td [:div.execute-fn-sym (str execute-fn-sym)]]
@@ -130,8 +130,8 @@
               :method "post"}
        [:div
         (c/action-btns [(c/delete-btn
-                          "Are you sure you want to delete the job?"
-                          {:disabled false})])
+                         "Are you sure you want to delete the job?"
+                         {:disabled false})])
         [:input {:name  "cron-name"
                  :type  "hidden"
                  :value cron-name}]
@@ -151,10 +151,10 @@
         validated-params (validate-get-jobs params)
         data (data/cron-page-data redis-conn validated-params)]
     (response/response (view "Cron" (assoc data :app-name app-name
-                                                    :job-type :cron
-                                                    :base-path (prefix-route "/cron")
-                                                    :prefix-route prefix-route
-                                                    :params params)))))
+                                           :job-type :cron
+                                           :base-path (prefix-route "/cron")
+                                           :prefix-route prefix-route
+                                           :params params)))))
 
 (defn delete-jobs [{{{:keys [redis-conn]} :broker} :console-opts
                     :keys                          [prefix-route]

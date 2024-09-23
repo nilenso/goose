@@ -1,15 +1,15 @@
 (ns goose.brokers.rmq.api-test
   (:require
-    [goose.api.dead-jobs :as dead-jobs]
-    [goose.api.enqueued-jobs :as enqueued-jobs]
-    [goose.client :as c]
-    [goose.retry :as retry]
-    [goose.test-utils :as tu]
-    [goose.worker :as w]
+   [goose.api.dead-jobs :as dead-jobs]
+   [goose.api.enqueued-jobs :as enqueued-jobs]
+   [goose.client :as c]
+   [goose.retry :as retry]
+   [goose.test-utils :as tu]
+   [goose.worker :as w]
 
-    [clojure.test :refer [deftest is testing use-fixtures]])
+   [clojure.test :refer [deftest is testing use-fixtures]])
   (:import
-    [java.util UUID]))
+   [java.util UUID]))
 
 ;;; ======= Setup & Teardown ==========
 (use-fixtures :each tu/rmq-fixture)
@@ -31,8 +31,8 @@
   (testing "[rmq] dead-jobs API"
     (let [worker (w/start (assoc tu/rmq-worker-opts :threads 1))
           retry-opts (assoc retry/default-opts
-                       :max-retries 0
-                       :death-handler-fn-sym `death-handler)
+                            :max-retries 0
+                            :death-handler-fn-sym `death-handler)
           job-opts (assoc tu/rmq-client-opts :retry-opts retry-opts)
           _ (doseq [id (range 4)]
               (c/perform-async job-opts `dead-fn id)

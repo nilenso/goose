@@ -1,8 +1,8 @@
 (ns goose.worker
   (:require
-    [goose.broker :as b]
-    [goose.defaults :as d]
-    [goose.specs :as specs]))
+   [goose.broker :as b]
+   [goose.defaults :as d]
+   [goose.specs :as specs]))
 
 (defprotocol Shutdown
   ;; We're extending a protocol via metadata because reloading REPL

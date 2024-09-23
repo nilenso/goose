@@ -1,21 +1,21 @@
 (ns goose.brokers.rmq.broker
   (:require
-    [goose.broker :as b]
-    [goose.brokers.rmq.api.dead-jobs :as dead-jobs]
-    [goose.brokers.rmq.api.enqueued-jobs :as enqueued-jobs]
-    [goose.brokers.rmq.commands :as rmq-cmds]
-    [goose.brokers.rmq.connection :as rmq-connection]
-    [goose.brokers.rmq.publisher-confirms :as publisher-confirms]
-    [goose.brokers.rmq.queue :as rmq-queue]
-    [goose.brokers.rmq.return-listener :as return-listener]
-    [goose.brokers.rmq.scheduler :as rmq-scheduler]
-    [goose.brokers.rmq.shutdown-listener :as shutdown-listener]
-    [goose.brokers.rmq.worker :as rmq-worker]
-    [goose.brokers.rmq.console :as console]
-    [goose.defaults :as d]
-    [goose.job :as job]
-    [goose.specs :as specs]
-    [goose.utils :as u]))
+   [goose.broker :as b]
+   [goose.brokers.rmq.api.dead-jobs :as dead-jobs]
+   [goose.brokers.rmq.api.enqueued-jobs :as enqueued-jobs]
+   [goose.brokers.rmq.commands :as rmq-cmds]
+   [goose.brokers.rmq.connection :as rmq-connection]
+   [goose.brokers.rmq.publisher-confirms :as publisher-confirms]
+   [goose.brokers.rmq.queue :as rmq-queue]
+   [goose.brokers.rmq.return-listener :as return-listener]
+   [goose.brokers.rmq.scheduler :as rmq-scheduler]
+   [goose.brokers.rmq.shutdown-listener :as shutdown-listener]
+   [goose.brokers.rmq.worker :as rmq-worker]
+   [goose.brokers.rmq.console :as console]
+   [goose.defaults :as d]
+   [goose.job :as job]
+   [goose.specs :as specs]
+   [goose.utils :as u]))
 
 (defprotocol Close
   "Closes connection to RabbitMQ Message Broker."

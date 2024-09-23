@@ -1,9 +1,9 @@
 (ns goose.retry
   (:require
-    [goose.defaults :as d]
-    [goose.utils :as u]
+   [goose.defaults :as d]
+   [goose.utils :as u]
 
-    [clojure.tools.logging :as log]))
+   [clojure.tools.logging :as log]))
 
 (defn default-error-handler
   "Sample error handler of a Job.\\

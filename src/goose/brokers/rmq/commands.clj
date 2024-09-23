@@ -1,15 +1,15 @@
 (ns ^:no-doc goose.brokers.rmq.commands
   (:require
-    [goose.brokers.rmq.queue :as rmq-queue]
-    [goose.defaults :as d]
-    [goose.job :as job]
-    [goose.utils :as u]
+   [goose.brokers.rmq.queue :as rmq-queue]
+   [goose.defaults :as d]
+   [goose.job :as job]
+   [goose.utils :as u]
 
-    [clojure.tools.logging :as log]
-    [langohr.basic :as lb]
-    [langohr.confirm :as lcnf])
+   [clojure.tools.logging :as log]
+   [langohr.basic :as lb]
+   [langohr.confirm :as lcnf])
   (:import
-    (java.io IOException)))
+   (java.io IOException)))
 
 (defn- publish
   [ch exch queue job {:keys [mandatory priority headers]}]

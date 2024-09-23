@@ -1,7 +1,7 @@
 (ns goose.defaults
   "All default configurations for Goose are defined here."
   (:require
-    [clojure.string :as str]))
+   [clojure.string :as str]))
 
 (def worker-threads 5)
 (def graceful-shutdown-sec 30)

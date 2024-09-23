@@ -1,24 +1,24 @@
 (ns goose.specs-test
   (:require
-    [clojure.spec.alpha :as s]
-    [clojure.test :refer [are deftest is]]
-    [goose.batch :as batch]
-    [goose.brokers.redis.broker :as redis]
-    [goose.brokers.rmq.broker :as rmq]
-    [goose.client :as c]
-    [goose.console :as console]
-    [goose.defaults :as d]
-    [goose.metrics.statsd :as statsd]
-    [goose.specs :as specs]
-    [goose.test-utils :as tu]
-    [goose.utils :as u]
+   [clojure.spec.alpha :as s]
+   [clojure.test :refer [are deftest is]]
+   [goose.batch :as batch]
+   [goose.brokers.redis.broker :as redis]
+   [goose.brokers.rmq.broker :as rmq]
+   [goose.client :as c]
+   [goose.console :as console]
+   [goose.defaults :as d]
+   [goose.metrics.statsd :as statsd]
+   [goose.specs :as specs]
+   [goose.test-utils :as tu]
+   [goose.utils :as u]
 
-    [goose.worker :as w])
+   [goose.worker :as w])
   (:import
-    (clojure.lang ExceptionInfo)
-    (java.time Instant)
-    (java.util HashMap)
-    (tech.v3.datatype FastStruct)))
+   (clojure.lang ExceptionInfo)
+   (java.time Instant)
+   (java.util HashMap)
+   (tech.v3.datatype FastStruct)))
 
 (defn single-arity-fn [_] "dummy")
 (def now (Instant/now))
@@ -41,12 +41,12 @@
 (deftest specs-test
   (specs/instrument)
   (are [sut]
-    (is
+       (is
       ;; When specs are instrumented, expect exceptions for incorrect parameters.
-      (thrown-with-msg?
-        ExceptionInfo
-        #"Call to goose.* did not conform to spec."
-        (sut)))
+        (thrown-with-msg?
+         ExceptionInfo
+         #"Call to goose.* did not conform to spec."
+         (sut)))
 
     ;; Client specs
     ;; :execute-fn-sym

@@ -2,10 +2,10 @@
   "Defines protocol for Metrics Backend.
   - [Monitoring & Alerting wiki](https://github.com/nilenso/goose/wiki/Monitoring-&-Alerting)"
   (:require
-    [goose.defaults :as d]
-    [goose.utils :as u]
+   [goose.defaults :as d]
+   [goose.utils :as u]
 
-    [clojure.tools.logging :as log]))
+   [clojure.tools.logging :as log]))
 
 (defonce ^:no-doc jobs-processed "jobs.processed")
 (defonce ^:no-doc jobs-success "jobs.succeeded")

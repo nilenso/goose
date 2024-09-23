@@ -1,8 +1,8 @@
 (ns ^:no-doc goose.brokers.rmq.connection
   (:require
-    [goose.brokers.rmq.channel :as rmq-channel]
+   [goose.brokers.rmq.channel :as rmq-channel]
 
-    [langohr.core :as lcore]))
+   [langohr.core :as lcore]))
 
 (defn open
   [{:keys [settings publisher-confirms return-listener shutdown-listener]}

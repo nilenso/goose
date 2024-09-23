@@ -1,10 +1,10 @@
 (ns goose.worker-test
   (:require
-    [goose.client :as c]
-    [goose.test-utils :as tu]
-    [goose.worker :as w]
+   [goose.client :as c]
+   [goose.test-utils :as tu]
+   [goose.worker :as w]
 
-    [clojure.test :refer [deftest is testing use-fixtures]]))
+   [clojure.test :refer [deftest is testing use-fixtures]]))
 
 ;;; ======= Setup & Teardown ==========
 (use-fixtures :each tu/redis-fixture)

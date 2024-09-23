@@ -1,20 +1,20 @@
 (ns goose.specs
   (:require
-    [goose.broker :as b]
-    [goose.client :as c]
-    [goose.cron.parsing :as cron-parsing]
-    [goose.defaults :as d]
-    [goose.metrics :as m]
-    [goose.utils :as u]
-    [goose.console :as console]
+   [goose.broker :as b]
+   [goose.client :as c]
+   [goose.cron.parsing :as cron-parsing]
+   [goose.defaults :as d]
+   [goose.metrics :as m]
+   [goose.utils :as u]
+   [goose.console :as console]
 
-    [clojure.spec.alpha :as s]
-    [clojure.spec.test.alpha :as st]
-    [clojure.string :as str]
-    [taoensso.carmine.connections :refer [IConnectionPool]])
+   [clojure.spec.alpha :as s]
+   [clojure.spec.test.alpha :as st]
+   [clojure.string :as str]
+   [taoensso.carmine.connections :refer [IConnectionPool]])
   (:import
-    (java.time Instant ZoneId)
-    (java.util Arrays)))
+   (java.time Instant ZoneId)
+   (java.util Arrays)))
 
 ;;; ========== Qualified Function Symbols ==============
 (s/def ::fn-sym (s/and qualified-symbol? resolve #(fn? @(resolve %))))
@@ -128,19 +128,19 @@
 (s/def ::skip-dead-queue boolean?)
 (s/def ::retry-opts
   (s/and
-    (s/map-of #{:max-retries
-                :retry-delay-sec-fn-sym
-                :retry-queue
-                :error-handler-fn-sym
-                :death-handler-fn-sym
-                :skip-dead-queue}
-              any?)
-    (s/keys :req-un [::max-retries
-                     ::retry-delay-sec-fn-sym
-                     ::error-handler-fn-sym
-                     ::death-handler-fn-sym
-                     ::skip-dead-queue]
-            :opt-un [::retry-queue])))
+   (s/map-of #{:max-retries
+               :retry-delay-sec-fn-sym
+               :retry-queue
+               :error-handler-fn-sym
+               :death-handler-fn-sym
+               :skip-dead-queue}
+             any?)
+   (s/keys :req-un [::max-retries
+                    ::retry-delay-sec-fn-sym
+                    ::error-handler-fn-sym
+                    ::death-handler-fn-sym
+                    ::skip-dead-queue]
+           :opt-un [::retry-queue])))
 
 ;;; ============== StatsD Metrics ==============
 (s/def :goose.specs.statsd/enabled? boolean?)
@@ -193,42 +193,42 @@
 
 ;;; ============== FDEFs ==============
 (s/fdef c/perform-async
-        :args (s/cat :opts ::client-opts
-                     :execute-fn-sym ::fn-sym
-                     :args (s/* ::args-serializable?))
-        :ret map?)
+  :args (s/cat :opts ::client-opts
+               :execute-fn-sym ::fn-sym
+               :args (s/* ::args-serializable?))
+  :ret map?)
 
 (s/fdef c/perform-at
-        :args (s/cat :opts ::client-opts
-                     :instant ::instant
-                     :execute-fn-sym ::fn-sym
-                     :args (s/* ::args-serializable?))
-        :ret map?)
+  :args (s/cat :opts ::client-opts
+               :instant ::instant
+               :execute-fn-sym ::fn-sym
+               :args (s/* ::args-serializable?))
+  :ret map?)
 
 (s/fdef c/perform-in-sec
-        :args (s/cat :opts ::client-opts
-                     :sec int?
-                     :execute-fn-sym ::fn-sym
-                     :args (s/* ::args-serializable?))
-        :ret map?)
+  :args (s/cat :opts ::client-opts
+               :sec int?
+               :execute-fn-sym ::fn-sym
+               :args (s/* ::args-serializable?))
+  :ret map?)
 
 (s/fdef c/perform-every
-        :args (s/cat :opts ::client-opts
-                     :cron-opts ::cron-opts
-                     :execute-fn-sym ::fn-sym
-                     :args (s/* ::args-serializable?))
-        :ret map?)
+  :args (s/cat :opts ::client-opts
+               :cron-opts ::cron-opts
+               :execute-fn-sym ::fn-sym
+               :args (s/* ::args-serializable?))
+  :ret map?)
 
 (s/fdef c/perform-batch
-        :args (s/cat :opts ::client-opts
-                     :batch-opts ::batch-opts
-                     :execute-fn-sym ::fn-sym
-                     :args ::batch-args)
-        :ret map?)
+  :args (s/cat :opts ::client-opts
+               :batch-opts ::batch-opts
+               :execute-fn-sym ::fn-sym
+               :args ::batch-args)
+  :ret map?)
 
 (s/fdef console/app-handler
-        :args (s/cat :console-opts ::console-opts
-                     :req map?))
+  :args (s/cat :console-opts ::console-opts
+               :req map?))
 
 (def ^:private fns-with-specs
   [`c/perform-async
@@ -262,16 +262,16 @@
 ;;; the purpose of `clojure.repl/doc`.
 
 (s/fdef goose.brokers.redis.broker/new-producer
-        :args (s/cat :redis ::redis-conn-opts)
-        :ret ::broker)
+  :args (s/cat :redis ::redis-conn-opts)
+  :ret ::broker)
 (defn ^:no-doc assert-redis-producer [conn-opts]
   (assert-specs 'goose.brokers.redis.broker/new-producer ::redis-conn-opts conn-opts))
 
 (s/fdef goose.brokers.redis.broker/new-consumer
-        :args (s/alt :one (s/cat :redis ::redis-conn-opts)
-                     :two (s/cat :redis ::redis-conn-opts
-                                 :scheduler-polling-interval-sec ::redis-scheduler-polling-interval-sec))
-        :ret ::broker)
+  :args (s/alt :one (s/cat :redis ::redis-conn-opts)
+               :two (s/cat :redis ::redis-conn-opts
+                           :scheduler-polling-interval-sec ::redis-scheduler-polling-interval-sec))
+  :ret ::broker)
 (defn ^:no-doc assert-redis-consumer
   [conn-opts scheduler-polling-interval-sec]
   (assert-specs 'goose.brokers.redis.broker/new-consumer ::redis-conn-opts conn-opts)
@@ -280,28 +280,28 @@
                 scheduler-polling-interval-sec))
 
 (s/fdef goose.brokers.rmq.broker/new-producer
-        :args (s/alt :one (s/cat :opts ::rmq)
-                     :two (s/cat :opts ::rmq
-                                 :channels pos-int?))
-        :ret ::broker)
+  :args (s/alt :one (s/cat :opts ::rmq)
+               :two (s/cat :opts ::rmq
+                           :channels pos-int?))
+  :ret ::broker)
 (defn ^:no-doc assert-rmq-producer
   [opts channels]
   (assert-specs 'goose.brokers.rmq.broker/new-producer ::rmq opts)
   (assert-specs 'goose.brokers.rmq.broker/new-producer pos-int? channels))
 
 (s/fdef goose.brokers.rmq.broker/new-consumer
-        :args (s/cat :opts ::rmq)
-        :ret ::broker)
+  :args (s/cat :opts ::rmq)
+  :ret ::broker)
 (defn ^:no-doc assert-rmq-consumer [opts]
   (assert-specs 'goose.brokers.rmq.broker/new-consumer ::rmq opts))
 
 (s/fdef goose.metrics.statsd/new
-        :args (s/cat :opts ::statsd-opts)
-        :ret ::metrics-plugin)
+  :args (s/cat :opts ::statsd-opts)
+  :ret ::metrics-plugin)
 (defn ^:no-doc assert-statsd [opts]
   (assert-specs 'goose.metrics.statsd/new ::statsd-opts opts))
 
 (s/fdef goose.worker/start
-        :args (s/cat :opts ::worker-opts))
+  :args (s/cat :opts ::worker-opts))
 (defn ^:no-doc assert-worker [opts]
   (assert-specs 'goose.worker/start ::worker-opts opts))

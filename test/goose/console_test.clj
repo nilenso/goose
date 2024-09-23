@@ -55,10 +55,10 @@
 
 (deftest handler-test
   (let [req-with-client-opts (assoc (mock/request :get "foo/")
-                               :console-opts {:broker       tu/redis-producer
-                                              :app-name     ""
-                                              :route-prefix "foo"}
-                               :prefix-route (partial str "foo"))]
+                                    :console-opts {:broker       tu/redis-producer
+                                                   :app-name     ""
+                                                   :route-prefix "foo"}
+                                    :prefix-route (partial str "foo"))]
     (testing "Should call redis-handler given redis-broker to broker/handler"
       (with-redefs [redis-console/handler (spy/spy redis-console/handler)]
         (is (true? (spy/not-called? redis-console/handler)))
@@ -68,8 +68,8 @@
       (with-redefs [rmq-console/handler (spy/spy rmq-console/handler)]
         (is (true? (spy/not-called? rmq-console/handler)))
         (broker/handler tu/rmq-producer (assoc-in req-with-client-opts
-                                                   [:console-opts
-                                                    :broker] tu/rmq-producer))
+                                                  [:console-opts
+                                                   :broker] tu/rmq-producer))
         (is (true? (spy/called? rmq-console/handler)))))
     (testing "Should throw IllegalArgumentException given invalid broker"
       (is (thrown? IllegalArgumentException (broker/handler {:broker :invalid-broker} req-with-client-opts))))))
