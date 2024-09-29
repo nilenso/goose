@@ -161,7 +161,7 @@
     (perform-every client-opts cron-opts `send-emails \"subject\" \"body\" [:user-1 :user-2]))
   ```
 
-  - [Cron wiki](https://github.com/nilenso/goose/wiki/Cron)"
+  - [Cron Jobs wiki](https://github.com/nilenso/goose/wiki/Cron-Jobs)"
   [opts cron-opts execute-fn-sym & args]
   (let [internal-opts (prefix-queues-inside-opts opts)]
     (register-cron-schedule internal-opts cron-opts execute-fn-sym args)))

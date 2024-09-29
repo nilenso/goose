@@ -1,7 +1,9 @@
 (ns ^:no-doc goose.brokers.redis.metrics
   (:require
+   [goose.brokers.redis.api.dead-jobs :as dead-jobs]
+   [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
    [goose.brokers.redis.commands :as redis-cmds]
-   [goose.brokers.redis.cron :as cron]
+   [goose.brokers.redis.cron :as cron-jobs]
    [goose.brokers.redis.heartbeat :as heartbeat]
    [goose.defaults :as d]
    [goose.metrics :as m]
@@ -26,9 +28,9 @@
 
 (defn- protected-queue-jobs->count
   [redis-conn]
-  {m/schedule-jobs-count (redis-cmds/sorted-set-size redis-conn d/prefixed-schedule-queue)
-   m/dead-jobs-count     (redis-cmds/sorted-set-size redis-conn d/prefixed-dead-queue)
-   m/cron-count (cron/size redis-conn)})
+  {m/schedule-jobs-count (scheduled-jobs/size redis-conn)
+   m/dead-jobs-count     (dead-jobs/size redis-conn)
+   m/cron-jobs-count     (cron-jobs/size redis-conn)})
 
 (defn- batches->count
   [redis-conn]

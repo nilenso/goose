@@ -8,7 +8,7 @@
    [goose.brokers.redis.batch :as batch]
    [goose.brokers.redis.commands :as redis-cmds]
    [goose.brokers.redis.connection :as redis-connection]
-   [goose.brokers.redis.cron :as cron]
+   [goose.brokers.redis.cron :as cron-jobs]
    [goose.brokers.redis.scheduler :as redis-scheduler]
    [goose.brokers.redis.worker :as redis-worker]
    [goose.brokers.redis.console :as redis-console]
@@ -24,7 +24,7 @@
   (schedule [this schedule-epoch-ms job]
     (redis-scheduler/run-at (:redis-conn this) schedule-epoch-ms job))
   (register-cron [this cron-opts job-description]
-    (cron/register (:redis-conn this) cron-opts job-description))
+    (cron-jobs/register (:redis-conn this) cron-opts job-description))
   (enqueue-batch
     [this batch]
     (batch/enqueue (:redis-conn this) batch)
@@ -64,13 +64,13 @@
 
   ;; cron entries API
   (cron-jobs-size [this]
-    (cron/size (:redis-conn this)))
+    (cron-jobs/size (:redis-conn this)))
   (cron-jobs-find-by-name [this entry-name]
-    (cron/find-by-name (:redis-conn this) entry-name))
+    (cron-jobs/find-by-name (:redis-conn this) entry-name))
   (cron-jobs-delete [this entry-name]
-    (cron/delete (:redis-conn this) entry-name))
+    (cron-jobs/delete (:redis-conn this) entry-name))
   (cron-jobs-purge [this]
-    (cron/purge (:redis-conn this)))
+    (cron-jobs/purge (:redis-conn this)))
 
   ;; dead-jobs API
   (dead-jobs-size [this]
