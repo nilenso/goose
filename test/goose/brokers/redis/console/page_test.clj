@@ -156,24 +156,24 @@
     (is (nil? (:queue (specs/validate-req-params {:queue :not-string}))))
 
     (is (= "some-encoded-job" (:encoded-job (specs/validate-req-params
-                                              {:job "some-encoded-job"}))))
+                                             {:job "some-encoded-job"}))))
     (is (nil? (:encoded-job (specs/validate-req-params
-                              {:job {:id "123"}}))))
+                             {:job {:id "123"}}))))
 
     (is (= ["some-encoded-job"] (:encoded-jobs (specs/validate-req-params
-                                                 {:jobs "some-encoded-job"}))))
+                                                {:jobs "some-encoded-job"}))))
     (is (= ["some-encoded-job1"
             "some-encoded-job2"] (:encoded-jobs (specs/validate-req-params
-                                                  {:jobs ["some-encoded-job1"
-                                                          "some-encoded-job2"]}))))
+                                                 {:jobs ["some-encoded-job1"
+                                                         "some-encoded-job2"]}))))
 
     (is (= "some-string-value" (:cron-name (specs/validate-req-params
-                                             {:cron-name "some-string-value"}))))
+                                            {:cron-name "some-string-value"}))))
     (is (= nil (:cron-name (specs/validate-req-params {:cron-name :non-string-val}))))
     (is (= ["string1" "string2"] (:cron-names (specs/validate-req-params
-                                                {:cron-names ["string1" "string2"]}))))
+                                               {:cron-names ["string1" "string2"]}))))
     (is (= nil (:cron-names (specs/validate-req-params
-                              {:cron-names [1 2 :non-string "string2"]}))))))
+                             {:cron-names [1 2 :non-string "string2"]}))))))
 
 (deftest page-handler-test
   (testing "Main handler should invoke home-page handler"
@@ -213,21 +213,21 @@
     (with-redefs [enqueued/get-job (spy/stub {:status 200
                                               :body   "<html> Enqueue job UI </html>"})]
       (console/handler tu/redis-producer (mock/request
-                                           :get (str "/enqueued/queue/default/job/" (random-uuid))))
+                                          :get (str "/enqueued/queue/default/job/" (random-uuid))))
       (is (true? (spy/called-once? enqueued/get-job)))))
   (testing "Main handler should invoke prioritise job handler for enqueued jobs page"
     (with-redefs [enqueued/prioritise-job (spy/stub {:status  302
                                                      :body    ""
                                                      :headers {"Location" "/enqueued/queue/test"}})]
       (console/handler tu/redis-producer (mock/request
-                                           :post (str "/enqueued/queue/default/job/" (random-uuid))))
+                                          :post (str "/enqueued/queue/default/job/" (random-uuid))))
       (is (true? (spy/called-once? enqueued/prioritise-job)))))
   (testing "Main handler should invoke delete job handler for enqueued jobs page"
     (with-redefs [enqueued/delete-job (spy/stub {:status  302
                                                  :body    ""
                                                  :headers {"Location" "/enqueued/queue/test"}})]
       (console/handler tu/redis-producer (mock/request
-                                           :delete (str "/enqueued/queue/default/job/" (random-uuid))))
+                                          :delete (str "/enqueued/queue/default/job/" (random-uuid))))
       (is (true? (spy/called-once? enqueued/delete-job)))))
 
   (testing "Main handler should invoke get-jobs handler for dead jobs page"

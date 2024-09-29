@@ -6,7 +6,7 @@
             [goose.utils :as utils]
             [ring.util.response :as response])
   (:import
-    (java.util Date)))
+   (java.util Date)))
 (defn- batch-job-table
   [{:keys                     [id
                                callback-fn-sym
@@ -71,9 +71,9 @@
               :type  "hidden"
               :value (utils/encode-to-str job)}]
      (c/action-btns [(c/delete-btn
-                       [:div "Are you sure you want to delete "
-                        [:span.highlight (get job :total)] " job/s?"]
-                       {:disabled false})])
+                      [:div "Are you sure you want to delete "
+                       [:span.highlight (get job :total)] " job/s?"]
+                      {:disabled false})])
      (batch-job-table job)]]])
 
 (defn- filter-header [{:keys                  [base-path job-type]

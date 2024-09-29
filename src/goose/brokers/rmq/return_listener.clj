@@ -1,8 +1,8 @@
 (ns goose.brokers.rmq.return-listener
   (:require
-    [goose.utils :as u]
+   [goose.utils :as u]
 
-    [clojure.tools.logging :as log]))
+   [clojure.tools.logging :as log]))
 
 (defn default
   "Sample handler for unroutable messages."

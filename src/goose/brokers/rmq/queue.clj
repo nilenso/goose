@@ -1,10 +1,10 @@
 (ns goose.brokers.rmq.queue
   (:refer-clojure :exclude [declare])
   (:require
-    [goose.defaults :as d]
+   [goose.defaults :as d]
 
-    [langohr.exchange :as lex]
-    [langohr.queue :as lq]))
+   [langohr.exchange :as lex]
+   [langohr.queue :as lq]))
 
 (def classic
   {:type d/rmq-classic-queue})

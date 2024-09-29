@@ -55,7 +55,7 @@
 (defn filter-header [filter-types {:keys                                    [job-type base-path]
                                    {:keys [filter-type filter-value limit]} :params}]
   (let [filter-values-for-type {:enqueued ["unexecuted" "failed"]
-                                :scheduled ["scheduled" "failed"]} ]
+                                :scheduled ["scheduled" "failed"]}]
     [:div.header
      [:form.filter-opts {:action base-path
                          :method "get"}

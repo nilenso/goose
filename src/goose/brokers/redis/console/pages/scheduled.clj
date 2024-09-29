@@ -9,14 +9,14 @@
             [goose.utils :as utils]
             [ring.util.response :as response])
   (:import
-    (java.util Date)))
+   (java.util Date)))
 
 (defn jobs-table [{:keys [base-path jobs]}]
   [:form {:action (str base-path "/jobs")
           :method "post"}
    (c/action-btns [(c/prioritise-btn)
                    (c/delete-btn
-                     [:div "Are you sure you want to delete selected jobs?"])])
+                    [:div "Are you sure you want to delete selected jobs?"])])
    [:table.jobs-table
     [:thead
      [:th.when-h [:div.when-label "When"]
@@ -77,8 +77,8 @@
        [:div
         (c/action-btns [(c/prioritise-btn {:disabled false})
                         (c/delete-btn
-                          "Are you sure you want to delete the job?"
-                          {:disabled false})])
+                         "Are you sure you want to delete the job?"
+                         {:disabled false})])
         [:input {:name  "job"
                  :type  "hidden"
                  :value (utils/encode-to-str job)}]
@@ -115,10 +115,10 @@
         validated-params (validate-get-jobs params)
         data (data/scheduled-page-data redis-conn validated-params)]
     (response/response (view "Scheduled" (assoc data :app-name app-name
-                                                     :job-type :scheduled
-                                                     :base-path (prefix-route "/scheduled")
-                                                     :prefix-route prefix-route
-                                                     :params params)))))
+                                                :job-type :scheduled
+                                                :base-path (prefix-route "/scheduled")
+                                                :prefix-route prefix-route
+                                                :params params)))))
 
 (defn purge-queue [{{{:keys [redis-conn]} :broker} :console-opts
                     :keys                          [prefix-route]}]

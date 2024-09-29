@@ -1,12 +1,12 @@
 (ns ^:no-doc goose.brokers.rmq.consumer
   (:require
-    [goose.defaults :as d]
-    [goose.metrics :as m]
-    [goose.utils :as u]
+   [goose.defaults :as d]
+   [goose.metrics :as m]
+   [goose.utils :as u]
 
-    [clojure.tools.logging :as log]
-    [langohr.basic :as lb]
-    [langohr.consumers :as lc]))
+   [clojure.tools.logging :as log]
+   [langohr.basic :as lb]
+   [langohr.consumers :as lc]))
 
 (defn wrap-recovery-and-acks
   [next]
@@ -49,12 +49,12 @@
 (defn run
   [{:keys [channels ready-queue] :as opts}]
   (doall ; Using `doall` to immediately start a consumer.
-    (for [ch channels]
-      (do
-        (lb/qos ch d/rmq-prefetch-limit) ; Set prefetch-limit to 1.
-        (let [subscriber-opts {:auto-ack               false
-                               :handle-cancel-ok       #(cancel-ok ready-queue %)
-                               :handle-consume-ok      #(consume-ok ready-queue %)
-                               :handle-recover-ok      #(recover-ok ready-queue)
-                               :handle-shutdown-signal shutdown-signal}]
-          [ch (lc/subscribe ch ready-queue #(handler opts %1 %2 %3) subscriber-opts)])))))
+   (for [ch channels]
+     (do
+       (lb/qos ch d/rmq-prefetch-limit) ; Set prefetch-limit to 1.
+       (let [subscriber-opts {:auto-ack               false
+                              :handle-cancel-ok       #(cancel-ok ready-queue %)
+                              :handle-consume-ok      #(consume-ok ready-queue %)
+                              :handle-recover-ok      #(recover-ok ready-queue)
+                              :handle-shutdown-signal shutdown-signal}]
+         [ch (lc/subscribe ch ready-queue #(handler opts %1 %2 %3) subscriber-opts)])))))

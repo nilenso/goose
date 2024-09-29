@@ -2,7 +2,7 @@
   "API to manage enqueued jobs.
   - [API wiki](https://github.com/nilenso/goose/wiki/API)"
   (:require
-    [goose.broker :as b]))
+   [goose.broker :as b]))
 
 (defn list-all-queues
   "Lists all the queues."

@@ -1,21 +1,20 @@
 (ns goose.brokers.rmq.integration-test
   (:require
-    [goose.api.enqueued-jobs :as enqueued-jobs]
-    [goose.brokers.rmq.broker :as rmq]
-    [goose.brokers.rmq.queue :as rmq-queue]
-    [goose.client :as c]
-    [goose.defaults :as d]
-    [goose.retry :as retry]
-    [goose.test-utils :as tu]
-    [goose.worker :as w]
+   [goose.api.enqueued-jobs :as enqueued-jobs]
+   [goose.brokers.rmq.broker :as rmq]
+   [goose.brokers.rmq.queue :as rmq-queue]
+   [goose.client :as c]
+   [goose.defaults :as d]
+   [goose.retry :as retry]
+   [goose.test-utils :as tu]
+   [goose.worker :as w]
 
-    [clojure.test :refer [deftest is testing use-fixtures]])
+   [clojure.test :refer [deftest is testing use-fixtures]])
   (:import
-    (clojure.lang ExceptionInfo)
-    [java.util UUID]
-    (java.util.concurrent TimeoutException)
-    (java.time Instant)))
-
+   (clojure.lang ExceptionInfo)
+   [java.util UUID]
+   (java.util.concurrent TimeoutException)
+   (java.time Instant)))
 
 ;;; ======= Setup & Teardown ==========
 (use-fixtures :each tu/rmq-fixture)
@@ -55,8 +54,8 @@
 
           consumer (rmq/new-consumer opts)
           worker-opts (assoc tu/worker-opts
-                        :broker consumer
-                        :queue queue)
+                             :broker consumer
+                             :queue queue)
 
           _ (is (uuid? (UUID/fromString (:id (c/perform-async client-opts `quorum-fn arg)))))
           worker (w/start worker-opts)]
@@ -95,10 +94,10 @@
 
   (testing "[rmq] Scheduling beyond max_delay limit"
     (is
-      (thrown-with-msg?
-        ExceptionInfo
-        #"MAX_DELAY limit breached*"
-        (c/perform-in-sec tu/rmq-client-opts 4294968 `perform-in-sec-fn)))))
+     (thrown-with-msg?
+      ExceptionInfo
+      #"MAX_DELAY limit breached*"
+      (c/perform-in-sec tu/rmq-client-opts 4294968 `perform-in-sec-fn)))))
 
 ;;; ======= TEST: Publisher Confirms =======
 (def ack-channel-number (atom (promise)))
@@ -113,24 +112,24 @@
   ;; Remove this test if it happens often.
   (testing "[rmq][sync-confirms] Publish timed out"
     (let [opts (assoc tu/rmq-opts
-                 :publisher-confirms {:strategy d/sync-confirms :timeout-ms 1})
+                      :publisher-confirms {:strategy d/sync-confirms :timeout-ms 1})
           producer (rmq/new-producer opts 1)
           client-opts {:queue      "sync-publisher-confirms-test"
                        :retry-opts retry/default-opts
                        :broker     producer}]
       (is
-        (thrown?
-          TimeoutException
-          (c/perform-async client-opts `tu/my-fn)))
+       (thrown?
+        TimeoutException
+        (c/perform-async client-opts `tu/my-fn)))
       (rmq/close producer)))
 
   (testing "[rmq][async-confirms] Ack handler called"
     (reset! ack-channel-number (promise))
     (reset! ack-delivery-tag (promise))
     (let [opts (assoc tu/rmq-opts
-                 :publisher-confirms {:strategy     d/async-confirms
-                                      :ack-handler  test-ack-handler
-                                      :nack-handler test-nack-handler})
+                      :publisher-confirms {:strategy     d/async-confirms
+                                           :ack-handler  test-ack-handler
+                                           :nack-handler test-nack-handler})
           ;; Create multiple channels to test correctness of delivery-tag & channel-number.
           producer (rmq/new-producer opts 5)
           client-opts {:queue      "async-publisher-confirms-test"
@@ -173,7 +172,7 @@
   (testing "[rmq] Goose calls middleware & attaches RMQ metadata to opts"
     (reset! middleware-called (promise))
     (let [worker (w/start (assoc tu/rmq-worker-opts
-                            :middlewares test-middleware))
+                                 :middlewares test-middleware))
           _ (c/perform-async tu/rmq-client-opts `tu/my-fn :arg1)]
       (is (= d/content-type (:content-type (deref @middleware-called 100 :middleware-test-timed-out))))
       (w/stop worker))))
@@ -209,10 +208,10 @@
 
     (let [arg "retry-test"
           retry-opts (assoc retry/default-opts
-                       :max-retries 2
-                       :retry-delay-sec-fn-sym `immediate-retry
-                       :retry-queue retry-queue
-                       :error-handler-fn-sym `retry-test-error-handler)
+                            :max-retries 2
+                            :retry-delay-sec-fn-sym `immediate-retry
+                            :retry-queue retry-queue
+                            :error-handler-fn-sym `retry-test-error-handler)
           _ (c/perform-async (assoc tu/rmq-client-opts :retry-opts retry-opts) `erroneous-fn arg)
           error-svc-cfg :my-retry-test-config
           worker-opts (assoc tu/rmq-worker-opts :error-service-config error-svc-cfg)
@@ -249,10 +248,10 @@
     (reset! death-error-service (promise))
     (reset! dead-job-run-count 0)
     (let [dead-job-opts (assoc retry/default-opts
-                          :max-retries 1
-                          :retry-delay-sec-fn-sym `immediate-retry
-                          :error-handler-fn-sym `dead-test-error-handler
-                          :death-handler-fn-sym `dead-test-death-handler)
+                               :max-retries 1
+                               :retry-delay-sec-fn-sym `immediate-retry
+                               :error-handler-fn-sym `dead-test-error-handler
+                               :death-handler-fn-sym `dead-test-death-handler)
           _ (c/perform-async (assoc tu/rmq-client-opts :retry-opts dead-job-opts) `dead-fn)
           error-svc-cfg :my-death-test-config
           worker-opts (assoc tu/rmq-worker-opts :error-service-config error-svc-cfg)

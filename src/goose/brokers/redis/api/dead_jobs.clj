@@ -1,9 +1,9 @@
 (ns ^:no-doc goose.brokers.redis.api.dead-jobs
   (:refer-clojure :exclude [pop])
   (:require
-    [goose.brokers.redis.commands :as redis-cmds]
-    [goose.defaults :as d]
-    [goose.job :as job]))
+   [goose.brokers.redis.commands :as redis-cmds]
+   [goose.defaults :as d]
+   [goose.job :as job]))
 
 (defn size [redis-conn]
   (redis-cmds/sorted-set-size redis-conn d/prefixed-dead-queue))
@@ -51,7 +51,7 @@
 
 (defn delete-older-than [redis-conn epoch-ms]
   (< 0 (redis-cmds/del-from-sorted-set-until
-         redis-conn d/prefixed-dead-queue epoch-ms)))
+        redis-conn d/prefixed-dead-queue epoch-ms)))
 
 (defn purge [redis-conn]
   (= 1 (redis-cmds/del-keys redis-conn d/prefixed-dead-queue)))

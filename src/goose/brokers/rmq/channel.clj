@@ -1,12 +1,11 @@
 (ns ^:no-doc goose.brokers.rmq.channel
   (:require
-    [goose.brokers.rmq.return-listener :as return-listener]
-    [goose.defaults :as d]
+   [goose.brokers.rmq.return-listener :as return-listener]
+   [goose.defaults :as d]
 
-    [langohr.basic :as lb]
-    [langohr.channel :as lch]
-    [langohr.confirm :as lcnf]))
-
+   [langohr.basic :as lb]
+   [langohr.channel :as lch]
+   [langohr.confirm :as lcnf]))
 
 (defn open
   [conn

@@ -28,6 +28,16 @@ $ clj -X:test                            # Running all tests.
 $ docker-compose down                    # ...when you're done.
 ```
 
+Formatting
+--------
+- Goose adheres to the [weavejester/cljfmt](https://clojars.org/dev.weavejester/cljfmt) library to maintain consistent code formatting.
+- Install the appropriate plugin for your IDE to ensure compliance.
+
+```shell
+$ clj -M:cljfmt fix                      # Automatically fix formatting issues.
+$ clj -M:cljfmt check                    # Check any formatting inconsistencies.
+```
+
 Linting
 --------
 - Install [clj-kondo v2022.10.05](https://github.com/clj-kondo/clj-kondo/blob/master/doc/install.md#installation-script-macos-and-linux)

@@ -1,8 +1,8 @@
 (ns ^:no-doc goose.brokers.redis.heartbeat
   (:require
-    [goose.brokers.redis.commands :as redis-cmds]
-    [goose.defaults :as d]
-    [goose.utils :as u]))
+   [goose.brokers.redis.commands :as redis-cmds]
+   [goose.defaults :as d]
+   [goose.utils :as u]))
 
 (defn heartbeat-id [id]
   (str d/heartbeat-prefix id))
@@ -23,14 +23,14 @@
   [{:keys [internal-thread-pool id redis-conn process-set graceful-shutdown-sec]}]
   (redis-cmds/add-to-set redis-conn process-set id)
   (u/log-on-exceptions
-    (u/while-pool
-      internal-thread-pool
+   (u/while-pool
+    internal-thread-pool
       ;; Goose stops sending heartbeat when shutdown is initialized.
       ;; Set expiry beyond graceful-shutdown time so in-progress jobs
       ;; aren't considered abandoned and double executions are avoided.
-      (let [expiry (max d/redis-heartbeat-expire-sec graceful-shutdown-sec)]
-        (redis-cmds/set-key-val redis-conn (heartbeat-id id) "alive" expiry))
-      (u/sleep d/redis-heartbeat-sleep-sec))))
+    (let [expiry (max d/redis-heartbeat-expire-sec graceful-shutdown-sec)]
+      (redis-cmds/set-key-val redis-conn (heartbeat-id id) "alive" expiry))
+    (u/sleep d/redis-heartbeat-sleep-sec))))
 
 (defn stop
   [{:keys [id redis-conn process-set in-progress-queue]}]

@@ -9,7 +9,7 @@
             [goose.utils :as utils]
             [ring.util.response :as response])
   (:import
-    (java.util Date)))
+   (java.util Date)))
 
 (defn validate-get-jobs [{:keys [page filter-type limit filter-value]}]
   (let [page (specs/validate-or-default ::specs/page
@@ -38,7 +38,7 @@
           :method "post"}
    (c/action-btns [(c/replay-btn)
                    (c/delete-btn
-                     [:div "Are you sure you want to delete selected jobs?"])])
+                    [:div "Are you sure you want to delete selected jobs?"])])
    [:table.jobs-table
     [:thead
      [:tr
@@ -91,8 +91,8 @@
        [:div
         (c/action-btns [(c/replay-btn {:disabled false})
                         (c/delete-btn
-                          "Are you sure you want to delete the job?"
-                          {:disabled false})])
+                         "Are you sure you want to delete the job?"
+                         {:disabled false})])
         [:input {:name  "job"
                  :type  "hidden"
                  :value (utils/encode-to-str job)}]
@@ -107,10 +107,10 @@
         validated-params (validate-get-jobs params)
         data (data/dead-page-data (:redis-conn broker) validated-params)]
     (response/response (view "Dead" (assoc data :params params
-                                                :job-type :dead
-                                                :base-path (prefix-route "/dead")
-                                                :app-name app-name
-                                                :prefix-route prefix-route)))))
+                                           :job-type :dead
+                                           :base-path (prefix-route "/dead")
+                                           :app-name app-name
+                                           :prefix-route prefix-route)))))
 
 (defn purge-queue [{{{:keys [redis-conn]} :broker} :console-opts
                     :keys                          [prefix-route]}]

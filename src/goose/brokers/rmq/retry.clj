@@ -1,10 +1,10 @@
 (ns ^:no-doc goose.brokers.rmq.retry
   (:require
-    [goose.brokers.rmq.commands :as rmq-cmds]
-    [goose.defaults :as d]
-    [goose.retry]
-    [goose.job :as job]
-    [goose.utils :as u]))
+   [goose.brokers.rmq.commands :as rmq-cmds]
+   [goose.defaults :as d]
+   [goose.retry]
+   [goose.job :as job]
+   [goose.utils :as u]))
 
 (defn- retry-job
   [{:keys [ch queue-type publisher-confirms error-service-config]

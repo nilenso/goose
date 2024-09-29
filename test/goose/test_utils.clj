@@ -1,28 +1,28 @@
 (ns goose.test-utils
   (:require
-    [goose.brokers.redis.broker :as redis]
-    [goose.brokers.redis.commands :as redis-cmds]
-    [goose.brokers.rmq.broker :as rmq]
-    [goose.brokers.rmq.publisher-confirms :as rmq-publisher-confirms]
-    [goose.brokers.rmq.queue :as rmq-queue]
-    [goose.brokers.rmq.return-listener :as return-listener]
-    [goose.brokers.rmq.shutdown-listener :as shutdown-listener]
-    [goose.defaults :as d]
-    [goose.metrics.statsd :as statsd]
-    [goose.retry :as retry]
-    [goose.specs :as specs]
-    [goose.utils :as u]
+   [goose.brokers.redis.broker :as redis]
+   [goose.brokers.redis.commands :as redis-cmds]
+   [goose.brokers.rmq.broker :as rmq]
+   [goose.brokers.rmq.publisher-confirms :as rmq-publisher-confirms]
+   [goose.brokers.rmq.queue :as rmq-queue]
+   [goose.brokers.rmq.return-listener :as return-listener]
+   [goose.brokers.rmq.shutdown-listener :as shutdown-listener]
+   [goose.defaults :as d]
+   [goose.metrics.statsd :as statsd]
+   [goose.retry :as retry]
+   [goose.specs :as specs]
+   [goose.utils :as u]
 
-    [langohr.queue :as lq]
-    [taoensso.carmine :as car]))
+   [langohr.queue :as lq]
+   [taoensso.carmine :as car]))
 
 (defn my-fn [arg & _]
   arg)
 (def queue "test")
 (defn no-op-error-handler [_ _ _])
 (def retry-opts (assoc retry/default-opts
-                  :error-handler-fn-sym `no-op-error-handler
-                  :death-handler-fn-sym `no-op-error-handler))
+                       :error-handler-fn-sym `no-op-error-handler
+                       :death-handler-fn-sym `no-op-error-handler))
 (def client-opts
   {:queue      queue
    :retry-opts retry-opts})
@@ -59,7 +59,6 @@
                          :app-name     ""
                          :route-prefix ""})
 
-
 ;; RMQ ---------
 (def rmq-url
   (let [host (or (System/getenv "GOOSE_TEST_RABBITMQ_HOST") "localhost")
@@ -80,7 +79,7 @@
 
 (def rmq-console-opts {:broker rmq-producer
                        :app-name     ""
-                       :route-prefix "" })
+                       :route-prefix ""})
 
 (defn rmq-delete-test-queues
   []

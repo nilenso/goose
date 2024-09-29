@@ -1,9 +1,9 @@
 (ns ^:no-doc goose.brokers.redis.api.batch
   (:require
-    [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
-    [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
-    [goose.brokers.redis.batch :as batch]
-    [goose.brokers.redis.commands :as redis-cmds]))
+   [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
+   [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
+   [goose.brokers.redis.batch :as batch]
+   [goose.brokers.redis.commands :as redis-cmds]))
 
 (defn status [redis-conn id]
   (batch/get-batch redis-conn id))

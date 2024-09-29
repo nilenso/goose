@@ -1,20 +1,22 @@
 (ns ^:no-doc goose.brokers.redis.metrics
   (:require
-    [goose.brokers.redis.commands :as redis-cmds]
-    [goose.brokers.redis.cron :as cron]
-    [goose.brokers.redis.heartbeat :as heartbeat]
-    [goose.defaults :as d]
-    [goose.metrics :as m]
-    [goose.utils :as u]
+   [goose.brokers.redis.api.dead-jobs :as dead-jobs]
+   [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
+   [goose.brokers.redis.commands :as redis-cmds]
+   [goose.brokers.redis.cron :as cron-jobs]
+   [goose.brokers.redis.heartbeat :as heartbeat]
+   [goose.defaults :as d]
+   [goose.metrics :as m]
+   [goose.utils :as u]
 
-    [clj-statsd]))
+   [clj-statsd]))
 
 (defn- queue->count
   [redis-conn queues]
   (map
-    (fn [queue]
-      [(m/format-queue-count queue) (redis-cmds/list-size redis-conn queue)])
-    queues))
+   (fn [queue]
+     [(m/format-queue-count queue) (redis-cmds/list-size redis-conn queue)])
+   queues))
 
 (defn- enqueued-jobs->count
   [redis-conn]
@@ -26,9 +28,9 @@
 
 (defn- protected-queue-jobs->count
   [redis-conn]
-  {m/schedule-jobs-count (redis-cmds/sorted-set-size redis-conn d/prefixed-schedule-queue)
-   m/dead-jobs-count     (redis-cmds/sorted-set-size redis-conn d/prefixed-dead-queue)
-   m/cron-count (cron/size redis-conn)})
+  {m/schedule-jobs-count (scheduled-jobs/size redis-conn)
+   m/dead-jobs-count     (dead-jobs/size redis-conn)
+   m/cron-jobs-count     (cron-jobs/size redis-conn)})
 
 (defn- batches->count
   [redis-conn]
@@ -44,13 +46,13 @@
 (defn run
   [{:keys [internal-thread-pool redis-conn metrics-plugin]}]
   (u/log-on-exceptions
-    (when (m/enabled? metrics-plugin)
-      (u/while-pool
-        internal-thread-pool
+   (when (m/enabled? metrics-plugin)
+     (u/while-pool
+      internal-thread-pool
         ;; Using doseq instead of map, because map is lazy.
-        (doseq [[k v] (all-jobs->count redis-conn)]
-          (m/gauge metrics-plugin k v {}))
-        (let [global-workers-count (heartbeat/global-workers-count redis-conn)]
+      (doseq [[k v] (all-jobs->count redis-conn)]
+        (m/gauge metrics-plugin k v {}))
+      (let [global-workers-count (heartbeat/global-workers-count redis-conn)]
           ;; Sleep for (global-workers-count) minutes + jitters.
           ;; On average, Goose sends queue level stats every 1 minute.
-          (u/sleep 60 global-workers-count))))))
+        (u/sleep 60 global-workers-count))))))

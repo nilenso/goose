@@ -1,14 +1,14 @@
 (ns ^:no-doc goose.brokers.redis.cron
   (:require
-    [goose.brokers.redis.commands :as redis-cmds]
-    [goose.cron.parsing :as cron-parsing]
-    [goose.defaults :as d]
-    [goose.job :as j]
-    [goose.utils :as u]
+   [goose.brokers.redis.commands :as redis-cmds]
+   [goose.cron.parsing :as cron-parsing]
+   [goose.defaults :as d]
+   [goose.job :as j]
+   [goose.utils :as u]
 
-    [taoensso.carmine :as car])
+   [taoensso.carmine :as car])
   (:import
-    (java.time ZoneId)))
+   (java.time ZoneId)))
 
 (defn registry-entry
   [{:keys [cron-name cron-schedule timezone]
@@ -57,12 +57,12 @@
 (defn- due-cron-names
   [redis-conn]
   (redis-cmds/wcar* redis-conn
-    (car/zrangebyscore d/prefixed-cron-queue
-                       redis-cmds/sorted-set-min
-                       (u/epoch-time-ms)
-                       "limit"
-                       0
-                       d/redis-cron-names-pop-limit)))
+                    (car/zrangebyscore d/prefixed-cron-queue
+                                       redis-cmds/sorted-set-min
+                                       (u/epoch-time-ms)
+                                       "limit"
+                                       0
+                                       d/redis-cron-names-pop-limit)))
 
 (defn- ensure-sequential
   [thing]
@@ -77,8 +77,8 @@
     ;; ensure-sequential is necessary because if there's only one cron name,
     ;; wcar* will return nil or a single item instead of an empty/singleton list.
     (ensure-sequential
-      (redis-cmds/wcar* redis-conn
-        (doall (map #(car/hget d/prefixed-cron-entries %) cron-names))))))
+     (redis-cmds/wcar* redis-conn
+                       (doall (map #(car/hget d/prefixed-cron-entries %) cron-names))))))
 
 (defn- create-job
   [{:keys [cron-schedule timezone job-description]
@@ -106,10 +106,10 @@
   [redis-conn & entry-names]
   (let [count-entry-names (count entry-names)
         [_ atomic-results] (redis-cmds/atomic
-                             redis-conn
-                             (car/multi)
-                             (apply car/zrem d/prefixed-cron-queue entry-names)
-                             (apply car/hdel d/prefixed-cron-entries entry-names))]
+                            redis-conn
+                            (car/multi)
+                            (apply car/zrem d/prefixed-cron-queue entry-names)
+                            (apply car/hdel d/prefixed-cron-entries entry-names))]
     (= [count-entry-names count-entry-names] atomic-results)))
 
 (defn get-all [redis-conn]

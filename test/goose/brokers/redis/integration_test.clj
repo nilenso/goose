@@ -1,23 +1,23 @@
 (ns goose.brokers.redis.integration-test
   (:require
-    [goose.batch :as batch]
-    [goose.brokers.redis.batch :as redis-batch]
-    [goose.brokers.redis.commands :as redis-cmds]
-    [goose.brokers.redis.consumer :as redis-consumer]
-    [goose.client :as c]
-    [goose.defaults :as d]
-    [goose.job :as j]
-    [goose.retry :as retry]
-    [goose.test-utils :as tu]
-    [goose.utils :as u]
-    [goose.worker :as w]
+   [goose.batch :as batch]
+   [goose.brokers.redis.batch :as redis-batch]
+   [goose.brokers.redis.commands :as redis-cmds]
+   [goose.brokers.redis.consumer :as redis-consumer]
+   [goose.client :as c]
+   [goose.defaults :as d]
+   [goose.job :as j]
+   [goose.retry :as retry]
+   [goose.test-utils :as tu]
+   [goose.utils :as u]
+   [goose.worker :as w]
 
-    [clojure.test :refer [deftest is testing use-fixtures]]
-    [taoensso.carmine :as car])
+   [clojure.test :refer [deftest is testing use-fixtures]]
+   [taoensso.carmine :as car])
   (:import
-    [clojure.lang ExceptionInfo]
-    [java.time Instant]
-    [java.util UUID]))
+   [clojure.lang ExceptionInfo]
+   [java.time Instant]
+   [java.util UUID]))
 
 ;;; ======= Setup & Teardown ==========
 (use-fixtures :each tu/redis-fixture)
@@ -98,7 +98,7 @@
   (testing "[redis] Goose calls middleware"
     (reset! middleware-called (promise))
     (let [worker (w/start (assoc tu/redis-worker-opts
-                            :middlewares test-middleware))
+                                 :middlewares test-middleware))
           _ (c/perform-async tu/redis-client-opts `add-five 5)]
       (is (= 10 (deref @middleware-called 100 :middleware-test-timed-out)))
       (w/stop worker))))
@@ -135,10 +135,10 @@
 
     (let [arg "retry-test"
           retry-opts (assoc retry/default-opts
-                       :max-retries 2
-                       :retry-delay-sec-fn-sym `immediate-retry
-                       :retry-queue retry-queue
-                       :error-handler-fn-sym `retry-test-error-handler)
+                            :max-retries 2
+                            :retry-delay-sec-fn-sym `immediate-retry
+                            :retry-queue retry-queue
+                            :error-handler-fn-sym `retry-test-error-handler)
           _ (c/perform-async (assoc tu/redis-client-opts :retry-opts retry-opts) `erroneous-fn arg)
           error-svc-cfg :my-retry-test-config
           worker-opts (assoc tu/redis-worker-opts :error-service-config error-svc-cfg)
@@ -174,10 +174,10 @@
     (reset! death-error-service (promise))
     (reset! dead-job-run-count 0)
     (let [dead-job-opts (assoc retry/default-opts
-                          :max-retries 1
-                          :retry-delay-sec-fn-sym `immediate-retry
-                          :error-handler-fn-sym `dead-test-error-handler
-                          :death-handler-fn-sym `dead-test-death-handler)
+                               :max-retries 1
+                               :retry-delay-sec-fn-sym `immediate-retry
+                               :error-handler-fn-sym `dead-test-error-handler
+                               :death-handler-fn-sym `dead-test-death-handler)
           _ (c/perform-async (assoc tu/redis-client-opts :retry-opts dead-job-opts) `dead-fn :foo)
           error-svc-cfg :my-death-test-config
           worker-opts (assoc tu/redis-worker-opts :error-service-config error-svc-cfg)

@@ -1,23 +1,23 @@
 (ns ^:no-doc goose.brokers.redis.worker
   (:require
-    [goose.brokers.redis.connection :as redis-connection]
-    [goose.brokers.redis.consumer :as redis-consumer]
-    [goose.brokers.redis.heartbeat :as redis-heartbeat]
-    [goose.brokers.redis.metrics :as redis-metrics]
-    [goose.brokers.redis.orphan-checker :as redis-orphan-checker]
-    [goose.brokers.redis.retry :as redis-retry]
-    [goose.brokers.redis.scheduler :as redis-scheduler]
-    [goose.consumer :as consumer]
-    [goose.defaults :as d]
-    [goose.job :as job]
-    [goose.metrics :as m]
-    [goose.utils :as u]
-    [goose.brokers.redis.batch :as batch]
+   [goose.brokers.redis.connection :as redis-connection]
+   [goose.brokers.redis.consumer :as redis-consumer]
+   [goose.brokers.redis.heartbeat :as redis-heartbeat]
+   [goose.brokers.redis.metrics :as redis-metrics]
+   [goose.brokers.redis.orphan-checker :as redis-orphan-checker]
+   [goose.brokers.redis.retry :as redis-retry]
+   [goose.brokers.redis.scheduler :as redis-scheduler]
+   [goose.consumer :as consumer]
+   [goose.defaults :as d]
+   [goose.job :as job]
+   [goose.metrics :as m]
+   [goose.utils :as u]
+   [goose.brokers.redis.batch :as batch]
 
-    [clojure.tools.logging :as log]
-    [com.climate.claypoole :as cp])
+   [clojure.tools.logging :as log]
+   [com.climate.claypoole :as cp])
   (:import
-    [java.util.concurrent TimeUnit]))
+   [java.util.concurrent TimeUnit]))
 
 (defn- internal-stop
   "Gracefully shuts down the worker threadpool."

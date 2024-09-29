@@ -1,8 +1,8 @@
 (ns test-runner
   (:require
-    [goose.test-utils :as tu]
+   [goose.test-utils :as tu]
 
-    [cognitect.test-runner.api :as test-runner]))
+   [cognitect.test-runner.api :as test-runner]))
 
 (defn test-and-shutdown
   [args]

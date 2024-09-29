@@ -1,8 +1,8 @@
 (ns ^:no-doc goose.brokers.redis.api.scheduled-jobs
   (:require
-    [goose.brokers.redis.commands :as redis-cmds]
-    [goose.defaults :as d]
-    [goose.job :as job]))
+   [goose.brokers.redis.commands :as redis-cmds]
+   [goose.defaults :as d]
+   [goose.job :as job]))
 
 (defn size [redis-conn]
   (redis-cmds/sorted-set-size redis-conn d/prefixed-schedule-queue))

@@ -1,7 +1,7 @@
 (ns goose.api.batch
   (:require
-    [goose.broker :as b]
-    [goose.client]))
+   [goose.broker :as b]
+   [goose.client]))
 
 (defn status
   "For given `:batch-id`, reports progress of a batch.

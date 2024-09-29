@@ -1,9 +1,9 @@
 (ns goose.brokers.rmq.publisher-confirms
   (:refer-clojure :exclude [sync])
   (:require
-    [goose.defaults :as d]
+   [goose.defaults :as d]
 
-    [clojure.tools.logging :as log]))
+   [clojure.tools.logging :as log]))
 
 (defn default-ack-handler
   [ch-number delivery-tag multiple]

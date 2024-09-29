@@ -1,13 +1,13 @@
 (ns ^:no-doc goose.brokers.redis.scheduler
   (:require
-    [goose.brokers.redis.commands :as redis-cmds]
-    [goose.brokers.redis.cron :as cron]
-    [goose.brokers.redis.heartbeat :as heartbeat]
-    [goose.defaults :as d]
-    [goose.job :as job]
-    [goose.utils :as u]
+   [goose.brokers.redis.commands :as redis-cmds]
+   [goose.brokers.redis.cron :as cron]
+   [goose.brokers.redis.heartbeat :as heartbeat]
+   [goose.defaults :as d]
+   [goose.job :as job]
+   [goose.utils :as u]
 
-    [clojure.tools.logging :as log]))
+   [clojure.tools.logging :as log]))
 
 (defn run-at
   [redis-conn
@@ -24,25 +24,25 @@
   [redis-conn]
   (when-let [due-scheduled-jobs (redis-cmds/scheduled-jobs-due-now redis-conn d/prefixed-schedule-queue)]
     (redis-cmds/sorted-set->ready-queue
-      redis-conn
-      d/prefixed-schedule-queue
-      due-scheduled-jobs
-      job/ready-or-retry-queue)
+     redis-conn
+     d/prefixed-schedule-queue
+     due-scheduled-jobs
+     job/ready-or-retry-queue)
     true))
 
 (defn run
   [{:keys [internal-thread-pool redis-conn scheduler-polling-interval-sec]}]
   (log/info "Polling scheduled jobs...")
   (u/log-on-exceptions
-    (u/while-pool
-      internal-thread-pool
-      (let [scheduled-jobs-found? (enqueue-due-scheduled-jobs redis-conn)
-            cron-entries-found? (cron/enqueue-due-cron-entries redis-conn)]
-        (when-not (or scheduled-jobs-found?
-                      cron-entries-found?)
+   (u/while-pool
+    internal-thread-pool
+    (let [scheduled-jobs-found? (enqueue-due-scheduled-jobs redis-conn)
+          cron-entries-found? (cron/enqueue-due-cron-entries redis-conn)]
+      (when-not (or scheduled-jobs-found?
+                    cron-entries-found?)
           ;; Goose only sleeps if no due jobs or cron entries are found.
           ;; If they are found, then Goose immediately polls to check
           ;; if more jobs are due.
-          (let [global-workers-count (heartbeat/global-workers-count redis-conn)]
-            (u/sleep scheduler-polling-interval-sec global-workers-count))))))
+        (let [global-workers-count (heartbeat/global-workers-count redis-conn)]
+          (u/sleep scheduler-polling-interval-sec global-workers-count))))))
   (log/info "Stopped scheduler. Exiting gracefully..."))

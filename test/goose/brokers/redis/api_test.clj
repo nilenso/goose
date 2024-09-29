@@ -1,26 +1,26 @@
 (ns goose.brokers.redis.api-test
   (:require
-    [clojure.test :refer [deftest is testing use-fixtures]]
-    [goose.api.batch :as batch]
-    [goose.api.cron-jobs :as cron-jobs]
-    [goose.api.dead-jobs :as dead-jobs]
-    [goose.api.enqueued-jobs :as enqueued-jobs]
-    [goose.api.scheduled-jobs :as scheduled-jobs]
-    [goose.batch]
-    [goose.brokers.redis.api.dead-jobs :as redis-dead-jobs]
-    [goose.brokers.redis.api.enqueued-jobs :as redis-enqueued-jobs]
-    [goose.brokers.redis.api.scheduled-jobs :as redis-scheduled-jobs]
-    [goose.brokers.redis.commands :as redis-cmds]
-    [goose.brokers.redis.cron :as redis-cron]
-    [goose.client :as c]
-    [goose.defaults :as d]
-    [goose.factories :as f]
-    [goose.test-utils :as tu]
-    [goose.utils :as u]
+   [clojure.test :refer [deftest is testing use-fixtures]]
+   [goose.api.batch :as batch]
+   [goose.api.cron-jobs :as cron-jobs]
+   [goose.api.dead-jobs :as dead-jobs]
+   [goose.api.enqueued-jobs :as enqueued-jobs]
+   [goose.api.scheduled-jobs :as scheduled-jobs]
+   [goose.batch]
+   [goose.brokers.redis.api.dead-jobs :as redis-dead-jobs]
+   [goose.brokers.redis.api.enqueued-jobs :as redis-enqueued-jobs]
+   [goose.brokers.redis.api.scheduled-jobs :as redis-scheduled-jobs]
+   [goose.brokers.redis.commands :as redis-cmds]
+   [goose.brokers.redis.cron :as redis-cron-jobs]
+   [goose.client :as c]
+   [goose.defaults :as d]
+   [goose.factories :as f]
+   [goose.test-utils :as tu]
+   [goose.utils :as u]
 
-    [goose.worker :as w])
+   [goose.worker :as w])
   (:import
-    (java.time ZoneId)))
+   (java.time ZoneId)))
 
 ;;; ======= Setup & Teardown ==========
 (use-fixtures :each tu/redis-fixture)
@@ -45,14 +45,14 @@
 
   (testing "[redis] enqueued-jobs API over empty list"
     (let [queues (tu/with-timeout default-timeout-ms
-                                  (enqueued-jobs/list-all-queues tu/redis-producer))]
+                   (enqueued-jobs/list-all-queues tu/redis-producer))]
       (is (and (not= :timed-out queues) (empty? queues))))
     (let [jobs (tu/with-timeout default-timeout-ms
-                                (enqueued-jobs/find-by-pattern tu/redis-producer tu/queue (constantly true)))]
+                 (enqueued-jobs/find-by-pattern tu/redis-producer tu/queue (constantly true)))]
       (is (and (not= :timed-out jobs) (empty? jobs))))
     (let [job-id (str (random-uuid))]
       (is (nil? (tu/with-timeout default-timeout-ms
-                                 (enqueued-jobs/find-by-id tu/redis-producer tu/queue job-id)))))))
+                  (enqueued-jobs/find-by-id tu/redis-producer tu/queue job-id)))))))
 
 (deftest enqueued-jobs-get-by-range-test
   (let [[id1 id2 id3] (doall (for [arg [1 2 3]]
@@ -122,11 +122,11 @@
 
   (testing "[redis] scheduled-jobs API over empty list"
     (let [jobs (tu/with-timeout default-timeout-ms
-                                (scheduled-jobs/find-by-pattern tu/redis-producer (constantly true)))]
+                 (scheduled-jobs/find-by-pattern tu/redis-producer (constantly true)))]
       (is (and (not= :timed-out jobs) (empty? jobs))))
     (let [job-id (str (random-uuid))]
       (is (nil? (tu/with-timeout default-timeout-ms
-                                 (scheduled-jobs/find-by-id tu/redis-producer job-id)))))))
+                  (scheduled-jobs/find-by-id tu/redis-producer job-id)))))))
 
 (deftest scheduled-jobs-prioritise-test
   (testing "Should prioritise only one job"
@@ -195,10 +195,10 @@
 
 (deftest cron-get-all
   (testing "Should not get any jobs if no cron exist"
-    (is (= [] (redis-cron/get-all tu/redis-conn))))
+    (is (= [] (redis-cron-jobs/get-all tu/redis-conn))))
   (testing "Should get all the crons"
     (f/create-jobs-in-redis {:cron 1})
-    (let [jobs (redis-cron/get-all tu/redis-conn)]
+    (let [jobs (redis-cron-jobs/get-all tu/redis-conn)]
       (is (= 1 (count jobs)))
       (is (every? true? (map #(contains? % :cron-name) jobs))))))
 
@@ -206,9 +206,9 @@
   (testing "Should delete one cron job"
     (f/create-jobs-in-redis {:cron 1}
                             {:cron {:cron-opts {:cron-name "foo-job"}}})
-    (is (= 1 (redis-cron/size tu/redis-conn)))
-    (is (true? (redis-cron/delete tu/redis-conn "foo-job")))
-    (is (= 0 (redis-cron/size tu/redis-conn))))
+    (is (= 1 (redis-cron-jobs/size tu/redis-conn)))
+    (is (true? (redis-cron-jobs/delete tu/redis-conn "foo-job")))
+    (is (= 0 (redis-cron-jobs/size tu/redis-conn))))
   (tu/clear-redis)
   (testing "Should delete multiple cron jobs"
     (f/create-jobs-in-redis {:cron 1}
@@ -217,18 +217,18 @@
                             {:cron {:cron-opts {:cron-name "foo-job-2"}}})
     (f/create-jobs-in-redis {:cron 1}
                             {:cron {:cron-opts {:cron-name "foo-job-3"}}})
-    (is (= 3 (redis-cron/size tu/redis-conn)))
-    (is (true? (redis-cron/delete tu/redis-conn "foo-job-1" "foo-job-3")))
-    (is (= 1 (redis-cron/size tu/redis-conn))))
+    (is (= 3 (redis-cron-jobs/size tu/redis-conn)))
+    (is (true? (redis-cron-jobs/delete tu/redis-conn "foo-job-1" "foo-job-3")))
+    (is (= 1 (redis-cron-jobs/size tu/redis-conn))))
   (tu/clear-redis)
   (testing "Should remove only valid cron jobs"
     (f/create-jobs-in-redis {:cron 1}
                             {:cron {:cron-opts {:cron-name "barjob1"}}})
     (f/create-jobs-in-redis {:cron 1}
                             {:cron {:cron-opts {:cron-name "barjob2"}}})
-    (is (= 2 (redis-cron/size tu/redis-conn)))
-    (is (false? (redis-cron/delete tu/redis-conn "invalid-cron-name" "barjob2")))
-    (is (= 1 (redis-cron/size tu/redis-conn)))))
+    (is (= 2 (redis-cron-jobs/size tu/redis-conn)))
+    (is (false? (redis-cron-jobs/delete tu/redis-conn "invalid-cron-name" "barjob2")))
+    (is (= 1 (redis-cron-jobs/size tu/redis-conn)))))
 
 (deftest dead-jobs-delete-test
   (testing "Should delete a single job and return true"
@@ -335,11 +335,11 @@
 
   (testing "[redis] dead-jobs API over empty list"
     (let [jobs (tu/with-timeout default-timeout-ms
-                                (dead-jobs/find-by-pattern tu/redis-producer (constantly true)))]
+                 (dead-jobs/find-by-pattern tu/redis-producer (constantly true)))]
       (is (and (not= :timed-out jobs) (empty? jobs))))
     (let [job-id (str (random-uuid))]
       (is (nil? (tu/with-timeout default-timeout-ms
-                                 (dead-jobs/find-by-id tu/redis-producer job-id)))))))
+                  (dead-jobs/find-by-id tu/redis-producer job-id)))))))
 
 (deftest cron-entries-test
   (testing "cron entries API"
@@ -354,7 +354,6 @@
       (is (= "my-cron-entry" (:cron-name recurring-job)))
       (is (= "* * * * *" (:cron-schedule recurring-job)))
       (is (= "US/Pacific" (:timezone recurring-job))))
-
 
     (is (= "my-cron-entry"
            (:cron-name (cron-jobs/find-by-name tu/redis-producer "my-cron-entry"))))

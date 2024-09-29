@@ -1,9 +1,9 @@
 (ns goose.batch
   (:require
-    [goose.job :as job]
-    [goose.utils :as u]
+   [goose.job :as job]
+   [goose.utils :as u]
 
-    [clojure.tools.logging :as log]))
+   [clojure.tools.logging :as log]))
 
 (defn construct-args
   "A utility function to construct a collection of args for batch-jobs."

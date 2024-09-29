@@ -1,9 +1,9 @@
 (ns ^:no-doc goose.brokers.redis.commands
   (:require
-    [goose.defaults :as d]
-    [goose.utils :as u]
+   [goose.defaults :as d]
+   [goose.utils :as u]
 
-    [taoensso.carmine :as car]))
+   [taoensso.carmine :as car]))
 
 (def atomic-lock-attempts 100)
 (def ^:private initial-scan-cursor 0)
@@ -40,11 +40,11 @@
    (scan-seq conn scan-fn redis-key initial-scan-cursor))
   ([conn scan-fn redis-key cursor]
    (lazy-seq
-     (let [[next-cursor-string items] (scan-fn conn redis-key cursor)
-           next-cursor (ensure-int next-cursor-string)]
-       (concat items
-               (when (pos? next-cursor)
-                 (scan-seq conn scan-fn redis-key next-cursor)))))))
+    (let [[next-cursor-string items] (scan-fn conn redis-key cursor)
+          next-cursor (ensure-int next-cursor-string)]
+      (concat items
+              (when (pos? next-cursor)
+                (scan-seq conn scan-fn redis-key next-cursor)))))))
 
 (defmacro atomic
   "A simple wrapper over Carmine's `atomic` macro.
@@ -52,8 +52,8 @@
   need values returned by redis, and not surrounding function."
   [conn & body]
   `(car/atomic ~conn
-     atomic-lock-attempts
-     ~@body))
+               atomic-lock-attempts
+               ~@body))
 
 (defn run-with-transaction
   "Runs fn inside a Carmine atomic block, and returns
@@ -63,7 +63,7 @@
     (car/atomic conn atomic-lock-attempts
       ;; This ugliness is necessary because car/atomic does not
       ;; return the value of the last expression inside it.
-      (reset! return-value (f)))
+                (reset! return-value (f)))
     @return-value))
 
 (defmacro with-transaction
@@ -221,20 +221,20 @@
   (let [limit "limit"
         offset 0]
     (not-empty
-      (wcar*
-        conn
-        (car/zrangebyscore
-          sorted-set sorted-set-min (u/epoch-time-ms)
-          limit offset d/redis-scheduled-jobs-pop-limit)))))
+     (wcar*
+      conn
+      (car/zrangebyscore
+       sorted-set sorted-set-min (u/epoch-time-ms)
+       limit offset d/redis-scheduled-jobs-pop-limit)))))
 
 (defn sorted-set->ready-queue
   [conn sorted-set jobs grouping-fn]
   (car/atomic
-    conn atomic-lock-attempts
-    (car/multi)
-    (doseq [[queue jobs] (group-by grouping-fn jobs)]
-      (apply car/rpush queue jobs))
-    (apply car/zrem sorted-set jobs)))
+   conn atomic-lock-attempts
+   (car/multi)
+   (doseq [[queue jobs] (group-by grouping-fn jobs)]
+     (apply car/rpush queue jobs))
+   (apply car/zrem sorted-set jobs)))
 
 (defn sorted-set-scores [conn sorted-set & elements]
   (wcar* conn (apply car/zmscore sorted-set elements)))

@@ -9,8 +9,8 @@
             [ring.middleware.params :as ring-params]
             [ring.util.response :as response])
   (:import
-    (java.lang Character String)
-    (java.util Date)))
+   (java.lang Character String)
+   (java.util Date)))
 
 (defn ^:no-doc format-arg [arg]
   (condp = (type arg)
@@ -219,7 +219,7 @@
           [:input#intervalSlider {:type  "range" :min  2 :max   10 :step  2 :value 2}]]
          [:button#pollButton.btn.btn-danger "Live poll"]
          [:button#stopButton.btn.btn-success.stopButton
-          {:style {:display "none"}}"Stop poll"]
+          {:style {:display "none"}} "Stop poll"]
          [:label.toggle-switch
           [:input {:type "checkbox" :id "isThemeDark"}]
           [:div.toggle-switch-label

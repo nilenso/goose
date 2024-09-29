@@ -1,12 +1,12 @@
 (ns ^:no-doc goose.brokers.rmq.api.dead-jobs
   (:refer-clojure :exclude [pop])
   (:require
-    [goose.brokers.rmq.commands :as rmq-cmds]
-    [goose.defaults :as d]
-    [goose.utils :as u]
+   [goose.brokers.rmq.commands :as rmq-cmds]
+   [goose.defaults :as d]
+   [goose.utils :as u]
 
-    [langohr.basic :as lb]
-    [langohr.queue :as lq]))
+   [langohr.basic :as lb]
+   [langohr.queue :as lq]))
 
 (defn size [ch]
   (lq/message-count ch d/prefixed-dead-queue))

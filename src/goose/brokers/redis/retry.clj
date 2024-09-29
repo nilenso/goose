@@ -1,9 +1,9 @@
 (ns ^:no-doc goose.brokers.redis.retry
   (:require
-    [goose.brokers.redis.commands :as redis-cmds]
-    [goose.defaults :as d]
-    [goose.retry]
-    [goose.utils :as u]))
+   [goose.brokers.redis.commands :as redis-cmds]
+   [goose.defaults :as d]
+   [goose.retry]
+   [goose.utils :as u]))
 
 (defn- retry-job
   [{:keys [redis-conn error-service-config]

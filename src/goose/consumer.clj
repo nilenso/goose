@@ -1,6 +1,6 @@
 (ns ^:no-doc goose.consumer
   (:require
-    [goose.utils :as u]))
+   [goose.utils :as u]))
 
 (defn execute-job
   [_opts {:keys [execute-fn-sym args]}]

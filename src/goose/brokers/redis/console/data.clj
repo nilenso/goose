@@ -2,7 +2,7 @@
   (:require [goose.brokers.redis.api.dead-jobs :as dead-jobs]
             [goose.brokers.redis.api.enqueued-jobs :as enqueued-jobs]
             [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
-            [goose.brokers.redis.cron :as cron]
+            [goose.brokers.redis.cron :as cron-jobs]
             [goose.defaults :as d]
             [goose.job :as job]))
 
@@ -20,7 +20,7 @@
         enqueued (reduce (fn [total queue]
                            (+ total (enqueued-jobs/size redis-conn queue))) 0 queues)
         scheduled (scheduled-jobs/size redis-conn)
-        cron (cron/size redis-conn)
+        cron (cron-jobs/size redis-conn)
         dead (dead-jobs/size redis-conn)]
     {:enqueued  enqueued
      :scheduled scheduled
@@ -69,7 +69,7 @@
                                                            queue
                                                            (* (dec page) d/page-size)
                                                            (dec (* page d/page-size)))
-                         :total-jobs (enqueued-jobs/size redis-conn queue))
+             :total-jobs (enqueued-jobs/size redis-conn queue))
 
       (invalid-filter-value? validated-filter-value) no-jobs-response)))
 
@@ -101,7 +101,7 @@
       (assoc base-result :jobs (dead-jobs/get-by-range redis-conn
                                                        (* d/page-size (dec page))
                                                        (dec (* d/page-size page)))
-                         :total-jobs (dead-jobs/size redis-conn))
+             :total-jobs (dead-jobs/size redis-conn))
 
       (invalid-filter-value? validated-filter-value)
       (assoc base-result :jobs []))))
@@ -139,9 +139,9 @@
 
       (get-all-jobs-request? validated-filter-type validated-filter-value)
       (assoc base-result :total-jobs (scheduled-jobs/size redis-conn)
-                         :jobs (scheduled-jobs/get-by-range redis-conn
-                                                            (* (dec page) d/page-size)
-                                                            (dec (* page d/page-size))))
+             :jobs (scheduled-jobs/get-by-range redis-conn
+                                                (* (dec page) d/page-size)
+                                                (dec (* page d/page-size))))
 
       (invalid-filter-value? validated-filter-value)
       (assoc base-result :jobs []))))
@@ -151,13 +151,13 @@
                validated-filter-value :filter-value}]
   (cond
     (filter-jobs-request? validated-filter-type validated-filter-value)
-    {:jobs (if-let [job (cron/find-by-name redis-conn validated-filter-value)]
+    {:jobs (if-let [job (cron-jobs/find-by-name redis-conn validated-filter-value)]
              [job]
              [])}
 
     (get-all-jobs-request? validated-filter-type validated-filter-value)
-    {:total-jobs (cron/size redis-conn)
-     :jobs       (cron/get-all redis-conn)}
+    {:total-jobs (cron-jobs/size redis-conn)
+     :jobs       (cron-jobs/get-all redis-conn)}
 
     (invalid-filter-value? validated-filter-value)
     {:jobs []}))

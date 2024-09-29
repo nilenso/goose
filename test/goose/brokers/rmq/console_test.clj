@@ -1,15 +1,15 @@
 (ns goose.brokers.rmq.console-test
   (:require
-    [clojure.string :as str]
-    [clojure.test :refer [deftest is testing use-fixtures]]
-    [goose.brokers.rmq.api.dead-jobs :as dead-jobs]
-    [goose.brokers.rmq.api.enqueued-jobs :as enqueued-jobs]
-    [goose.brokers.rmq.console :as console]
-    [goose.factories :as f]
-    [goose.test-utils :as tu]
-    [goose.utils :as u]
-    [ring.mock.request :as mock]
-    [spy.core :as spy]))
+   [clojure.string :as str]
+   [clojure.test :refer [deftest is testing use-fixtures]]
+   [goose.brokers.rmq.api.dead-jobs :as dead-jobs]
+   [goose.brokers.rmq.api.enqueued-jobs :as enqueued-jobs]
+   [goose.brokers.rmq.console :as console]
+   [goose.factories :as f]
+   [goose.test-utils :as tu]
+   [goose.utils :as u]
+   [ring.mock.request :as mock]
+   [spy.core :as spy]))
 
 (use-fixtures :each tu/rmq-fixture)
 

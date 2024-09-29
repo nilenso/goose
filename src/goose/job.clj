@@ -1,7 +1,7 @@
 (ns ^:no-doc goose.job
   (:require
-    [goose.metrics :as m]
-    [goose.utils :as u]))
+   [goose.metrics :as m]
+   [goose.utils :as u]))
 
 (defn new
   [execute-fn-sym args queue ready-queue retry-opts]
@@ -39,8 +39,8 @@
 (defn from-description
   [job-description]
   (assoc job-description
-    :id (str (random-uuid))
-    :enqueued-at (u/epoch-time-ms)))
+         :id (str (random-uuid))
+         :enqueued-at (u/epoch-time-ms)))
 
 (defn- calculate-latency
   [job]

@@ -21,5 +21,5 @@
   (let [view (console/layout c/header stats-bar)
         data (data/jobs-size (:redis-conn broker))]
     (response/response (view "Home" (assoc data :uri uri
-                                                :app-name app-name
-                                                :prefix-route prefix-route)))))
+                                           :app-name app-name
+                                           :prefix-route prefix-route)))))

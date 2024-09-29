@@ -1,18 +1,18 @@
 (ns ^:no-doc goose.brokers.rmq.worker
   (:require
-    [goose.brokers.rmq.connection :as rmq-connection]
-    [goose.brokers.rmq.consumer :as rmq-consumer]
-    [goose.brokers.rmq.queue :as rmq-queue]
-    [goose.brokers.rmq.retry :as rmq-retry]
-    [goose.consumer :as consumer]
-    [goose.defaults :as d]
-    [goose.job :as job]
-    [goose.metrics :as m]
-    [goose.utils :as u]
+   [goose.brokers.rmq.connection :as rmq-connection]
+   [goose.brokers.rmq.consumer :as rmq-consumer]
+   [goose.brokers.rmq.queue :as rmq-queue]
+   [goose.brokers.rmq.retry :as rmq-retry]
+   [goose.consumer :as consumer]
+   [goose.defaults :as d]
+   [goose.job :as job]
+   [goose.metrics :as m]
+   [goose.utils :as u]
 
-    [clojure.tools.logging :as log]
-    [com.climate.claypoole :as cp]
-    [langohr.basic :as lb]))
+   [clojure.tools.logging :as log]
+   [com.climate.claypoole :as cp]
+   [langohr.basic :as lb]))
 
 (defn- await-execution
   [thread-pool graceful-shutdown-sec]

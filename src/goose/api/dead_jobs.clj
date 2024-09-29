@@ -3,7 +3,7 @@
   - [API wiki](https://github.com/nilenso/goose/wiki/API)"
   (:refer-clojure :exclude [pop])
   (:require
-    [goose.broker :as b]))
+   [goose.broker :as b]))
 
 (defn size
   "Returns count of Dead Jobs."

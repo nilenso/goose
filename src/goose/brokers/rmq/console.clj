@@ -32,7 +32,7 @@
         _ (declare-dead-queue broker)
         data {:dead (dead-jobs/size (u/random-element (:channels broker)))}]
     (response/response (view "Home" (assoc data :app-name app-name
-                                                :prefix-route prefix-route)))))
+                                           :prefix-route prefix-route)))))
 
 (defn job-page [{:keys [base-path total-jobs job replay-job-count] :as data}]
   [:div.rmq {:id "page"}
@@ -108,9 +108,9 @@
                     :job        (dead-jobs/pop (u/random-element (:channels broker)))}
                    {:total-jobs 0})]
     (response/response (view "Dead" (assoc response :job-type :dead
-                                                    :base-path (prefix-route "/dead")
-                                                    :app-name app-name
-                                                    :prefix-route prefix-route)))))
+                                           :base-path (prefix-route "/dead")
+                                           :app-name app-name
+                                           :prefix-route prefix-route)))))
 
 (defn- routes [route-prefix]
   [route-prefix [["" console/redirect-to-home-page]
@@ -131,9 +131,9 @@
          route-params :route-params} (-> route-prefix
                                          routes
                                          (bidi/match-route
-                                           uri
-                                           {:request-method
-                                            request-method}))]
+                                          uri
+                                          {:request-method
+                                           request-method}))]
     (-> req
         (update :params merge route-params)
         page-handler)))

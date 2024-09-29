@@ -9,7 +9,7 @@
             [goose.utils :as utils]
             [ring.util.response :as response])
   (:import
-    (java.util Date)))
+   (java.util Date)))
 
 (defn- sidebar [{:keys [prefix-route queues queue]}]
   [:div#sidebar
@@ -26,7 +26,7 @@
           :method "post"}
    (c/action-btns [(c/prioritise-btn)
                    (c/delete-btn
-                     [:div "Are you sure you want to delete selected jobs in " [:span.highlight queue] " queue?"])])
+                    [:div "Are you sure you want to delete selected jobs in " [:span.highlight queue] " queue?"])])
    [:table.jobs-table
     [:thead
      [:tr
@@ -62,8 +62,8 @@
        [:div
         (c/action-btns [(c/prioritise-btn {:disabled false})
                         (c/delete-btn
-                          "Are you sure you want to delete the job?"
-                          {:disabled false})])
+                         "Are you sure you want to delete the job?"
+                         {:disabled false})])
         [:input {:name  "job"
                  :type  "hidden"
                  :value (utils/encode-to-str job)}]
@@ -121,9 +121,9 @@
         {:keys [id queue]} (specs/validate-req-params params)]
     (if id
       (response/response (view "Enqueued" (-> {:job (enqueued-jobs/find-by-id
-                                                      redis-conn
-                                                      queue
-                                                      id)}
+                                                     redis-conn
+                                                     queue
+                                                     id)}
                                               (assoc :job-type :enqueued
                                                      :base-path (prefix-route "/enqueued/queue/" queue)
                                                      :app-name app-name
@@ -137,12 +137,12 @@
         validated-params (validate-get-jobs params)
         {:keys [queue] :as data} (data/enqueued-page-data (:redis-conn broker) validated-params)]
     (response/response (view "Enqueued" (assoc data :job-type :enqueued
-                                                    :base-path (if-let [q queue]
-                                                                 (prefix-route "/enqueued/queue/" q)
-                                                                 (prefix-route "/enqueued"))
-                                                    :params params
-                                                    :app-name app-name
-                                                    :prefix-route prefix-route)))))
+                                               :base-path (if-let [q queue]
+                                                            (prefix-route "/enqueued/queue/" q)
+                                                            (prefix-route "/enqueued"))
+                                               :params params
+                                               :app-name app-name
+                                               :prefix-route prefix-route)))))
 
 (defn purge-queue [{{:keys [broker]} :console-opts
                     params           :params
