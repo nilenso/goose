@@ -1,4 +1,4 @@
-ADR: Periodic Jobs
+ADR: RabbitMQ
 =============
 
 Rationale
