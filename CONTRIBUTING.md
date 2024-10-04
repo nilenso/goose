@@ -5,6 +5,13 @@ Thank you for investing your time in contributing to our project!
 
 Before you start contributing, we're presuming you've gone through all the [architecture-decisions](https://github.com/nilenso/goose/tree/main/architecture-decisions) & had a discussion with the maintainers.
 
+Request for feedback
+--------
+
+We plan to release **Goose 1.0.0** on **February 1st, 2025**, marking API stability and ensuring backward-compatibility, with no downtime during upgrades.
+
+**We welcome feedback from current and new users**, especially if you’d like to request features or suggest changes to the API or implementation before the 1.0.0 release. Please share your thoughts via [GitHub Issues](https://github.com/nilenso/goose/issues/new) or the [Clojurians Slack](https://clojurians.slack.com/channels/goose).
+
 Installation
 --------
 

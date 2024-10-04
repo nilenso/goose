@@ -7,6 +7,14 @@ Goose
 The Next-Level background job processing library for Clojure.
 > **Simple. Pluggable. Reliable. Extensible. Scalable.**
 
+Announcement 🔈
+---------
+We are excited to announce that **5 companies** are using Goose successfully and reliably in production environments. With the release of the [Jobs Management Console](https://github.com/nilenso/goose/wiki/Console), Goose has reached a level of maturity, offering a feature-rich, stable, and production-ready background job processing solution.
+
+We plan to release **Goose 1.0.0** on **February 1st, 2025**, marking API stability and ensuring backward-compatibility, with no downtime during upgrades.
+
+We welcome feedback from current and new users, especially if you’d like to request features or suggest changes to the API or implementation before the 1.0.0 release. Please review our [Architecture Decisions](https://github.com/nilenso/goose/tree/main/architecture-decisions) and [Wiki](https://github.com/nilenso/goose/wiki) for more context, and share your thoughts via [GitHub Issues](https://github.com/nilenso/goose/issues/new) or the [Clojurians Slack](https://clojurians.slack.com/channels/goose).
+
 Performance
 ---------
 Please refer to the [Benchmarking section](https://github.com/nilenso/goose/tree/main/perf).
@@ -32,10 +40,10 @@ Getting Started
 ### Add Goose as a dependency
 ```Clojure
 ;;; Clojure CLI/deps.edn
-com.nilenso/goose {:mvn/version "0.5.3"}
+com.nilenso/goose {:mvn/version "0.6.0"}
 
 ;;; Leiningen/Boot
-[com.nilenso/goose "0.5.3"]
+[com.nilenso/goose "0.6.0"]
 ```
 
 ### Client

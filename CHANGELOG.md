@@ -10,6 +10,16 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Changed
 ### Fixed
 
+## [0.6.0] - 4th-Oct-2024
+
+### Added
+- Formatting check in CI and guidelines
+
+### Changed
+- References of Periodic jobs to Cron jobs
+
+### Fixed
+
 ## [0.5.3] - 16th-Sept-2024
 
 ### Added
