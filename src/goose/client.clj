@@ -1,5 +1,5 @@
 (ns goose.client
-  "Functions for executing job in async, scheduled or periodic manner."
+  "Functions for executing jobs in async, scheduled, batches or cron fashion."
   (:require
    [goose.batch :as batch]
    [goose.broker :as b]
@@ -129,7 +129,7 @@
   (enqueue opts (u/sec+current-epoch-ms sec) execute-fn-sym args))
 
 (defn perform-every
-  "Registers a function for periodic execution in cron-jobs style.\\
+  "Registers a function for recurring execution in cron-jobs style.\\
   `perform-every` is idempotent.\\
   If a cron entry already exists with the same name, it will be overwritten with new data.
 
@@ -155,7 +155,7 @@
 
   ### Usage
   ```Clojure
-  (let [cron-opts {:cron-name     \"my-periodic-job\"
+  (let [cron-opts {:cron-name     \"my-cron-job\"
                    :cron-schedule \"0 10 15 * *\"
                    :timezone      \"US/Pacific\"}]
     (perform-every client-opts cron-opts `send-emails \"subject\" \"body\" [:user-1 :user-2]))

@@ -1,6 +1,6 @@
 Goose
 =========
-[![Test & Lint Workflow](https://github.com/nilenso/goose/actions/workflows/test_lint.yml/badge.svg)](https://github.com/nilenso/goose/actions/workflows/test_lint.yml)
+[![Test & Lint Workflow](https://github.com/nilenso/goose/actions/workflows/fmt_test_lint.yml/badge.svg)](https://github.com/nilenso/goose/actions/workflows/fmt_test_lint.yml)
 [![Clojars Project](https://img.shields.io/clojars/v/com.nilenso/goose.svg)](https://clojars.org/com.nilenso/goose)
 [![cljdoc badge](https://cljdoc.org/badge/com.nilenso/goose)](https://cljdoc.org/d/com.nilenso/goose)
 
@@ -20,7 +20,7 @@ Features
 - [Batch Jobs](https://github.com/nilenso/goose/wiki/Batch-Jobs)
 - [Cron Jobs](https://github.com/nilenso/goose/wiki/Cron-Jobs)
 - [Error Handling & Retries](https://github.com/nilenso/goose/wiki/Error-Handling-&-Retries)
-- [Console](https://github.com/nilenso/goose/wiki/Console)
+- [Jobs management Console](https://github.com/nilenso/goose/wiki/Console)
 - Extensible using [Middlewares](https://github.com/nilenso/goose/wiki/Middlewares)
 - Concurrency & Parallelism friendly
 - ... more details in [Goose Wiki](https://github.com/nilenso/goose/wiki)
