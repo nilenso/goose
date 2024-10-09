@@ -1,6 +1,8 @@
 Goose Architecture Decisions
 ==========
 
+The architecture and design philosophy of Goose are elaborated in [this IN/Clojure 2024 talk](https://youtu.be/GQ1It09DLM0). 
+
 Vision & Philosophy
 ----------
 
