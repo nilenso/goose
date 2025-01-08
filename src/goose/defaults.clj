@@ -77,7 +77,6 @@
 (def ^:no-doc rmq-high-priority 1)
 
 ;;; ======== Console ========
-
 (def route-prefix "/goose")
 (def app-name "Goose Console")
 (def page-size 10)

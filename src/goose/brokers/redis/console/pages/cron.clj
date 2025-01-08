@@ -1,4 +1,4 @@
-(ns goose.brokers.redis.console.pages.cron
+(ns ^:no-doc goose.brokers.redis.console.pages.cron
   (:require [clojure.string :as str]
             [goose.brokers.redis.console.data :as data]
             [goose.brokers.redis.console.pages.components :as c]

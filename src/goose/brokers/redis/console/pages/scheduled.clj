@@ -1,4 +1,4 @@
-(ns goose.brokers.redis.console.pages.scheduled
+(ns ^:no-doc goose.brokers.redis.console.pages.scheduled
   (:require [goose.brokers.redis.api.scheduled-jobs :as scheduled-jobs]
             [goose.brokers.redis.console.data :as data]
             [goose.brokers.redis.console.pages.components :as c]

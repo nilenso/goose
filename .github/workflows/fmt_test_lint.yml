@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Check formatting
-        run: clojure -M:cljfmt check
+        run: clj -M:cljfmt check
       - name: Run tests
         run: clj -X:test
         env:
