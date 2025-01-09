@@ -1,4 +1,4 @@
-(ns goose.brokers.redis.console.pages.batch
+(ns ^:no-doc goose.brokers.redis.console.pages.batch
   (:require [goose.brokers.redis.api.batch :as batch-jobs]
             [goose.brokers.redis.console.pages.components :as c]
             [goose.brokers.redis.console.specs :as specs]

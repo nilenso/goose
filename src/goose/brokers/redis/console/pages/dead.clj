@@ -1,4 +1,4 @@
-(ns goose.brokers.redis.console.pages.dead
+(ns ^:no-doc goose.brokers.redis.console.pages.dead
   (:require [clojure.string :as string]
             [goose.brokers.redis.api.dead-jobs :as dead-jobs]
             [goose.brokers.redis.console.data :as data]

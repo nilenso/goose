@@ -42,6 +42,9 @@ Companies using Goose in Production
 <a href="https://beecastle.com/">
   <img src="logo/beecastle.png" title="BeeCastle" width="150" height="150" />
 </a>
+<a href="https://consolidate.health/">
+  <img src="logo/consolidate-health.png" title="Consolidate Health" width="150" height="150" />
+</a>
 
 Getting Started
 ---------
