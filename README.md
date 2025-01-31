@@ -15,7 +15,7 @@ Announcement 🔈
 ---------
 We are excited to announce that **five companies** are successfully and reliably using Goose in production environments. With the release of a [Jobs Management Console](https://github.com/nilenso/goose/wiki/Console), Goose has reached a level of maturity, offering a feature-rich, stable, and production-ready background job processing solution.
 
-We plan to release **Goose 1.0.0** on **February 1st, 2025**, marking API stability and ensuring backward-compatibility, with no downtime during upgrades.
+As we continue addressing user feedback, we are *rescheduling* the **1.0.0 release to February 1st, 2026**. In the meantime, we will ensure API stability, backward compatibility and zero-downtime upgrades.
 
 We welcome feedback from current and new users, especially if you’d like to request features or suggest changes to the API or implementation before the 1.0.0 release. Please review our [Architecture Decisions](https://github.com/nilenso/goose/tree/main/architecture-decisions) and [Wiki](https://github.com/nilenso/goose/wiki) for more context, and share your thoughts via [GitHub Issues](https://github.com/nilenso/goose/issues/new) or the [Clojurians Slack](https://clojurians.slack.com/channels/goose).
 
