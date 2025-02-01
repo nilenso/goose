@@ -10,7 +10,10 @@
            ring/ring-core                        {:mvn/version "1.11.0"}
            hiccup/hiccup                         {:mvn/version "2.0.0-RC2"}
            bidi/bidi                             {:mvn/version "2.1.6"}
-           it.burning/cron-expression-descriptor {:mvn/version "1.2.10"}}
+           it.burning/cron-expression-descriptor {:mvn/version "1.2.10"}
+           com.cognitect.aws/api       {:mvn/version "0.8.710-beta01"}
+           com.cognitect.aws/endpoints {:mvn/version "1.1.12.772"}
+           com.cognitect.aws/sqs       {:mvn/version "869.2.1687.0"}}
  :paths   ["src" "resources/public"]
 
  :aliases {:test       {:extra-paths ["test"]
