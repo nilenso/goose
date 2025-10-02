@@ -35,9 +35,9 @@
      (for [{:keys [id queue execute-fn-sym schedule-run-at]
             {:keys [retry-at]} :state
             :as j} jobs]
-       (let [when-at       (if (job/retried? j) retry-at schedule-run-at)
-             relative-time (when when-at (utils/relative-time when-at))
-             absolute-time (when when-at (Date. ^Long when-at))]
+       (let [run-at       (if (job/retried? j) retry-at schedule-run-at)
+             relative-time (when run-at (utils/relative-time run-at))
+             absolute-time (when run-at (Date. ^Long run-at))]
          [:tr
           [:td.when
            [:div.schedule-run-at-rel-time relative-time]
