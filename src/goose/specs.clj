@@ -95,7 +95,7 @@
 
 ;;; ============== Queue ==============
 (defn- unprefixed? [queue] (not (str/starts-with? queue d/queue-prefix)))
-(defn- not-protected? [queue] (not (str/includes? d/protected-queues queue)))
+(defn- not-protected? [queue] (not (contains? (set d/protected-queues) queue)))
 ;;; RMQ queue names cannot be longer than 255 bytes.
 (s/def ::queue (s/and string? #(< (count %) 200) unprefixed? not-protected?))
 
