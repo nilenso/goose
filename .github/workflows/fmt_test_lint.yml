@@ -4,7 +4,7 @@ on: [ push ]
 
 jobs:
   fmt_test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     container: clojure:openjdk-19-tools-deps-1.11.1.1113-bullseye
     services:
       redis:
