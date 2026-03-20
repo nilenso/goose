@@ -121,6 +121,7 @@
                            "/jobs" [[:post replay-jobs]]}]
                  ["/css/style.css" console/load-css]
                  ["/img/goose-logo.png" console/load-img]
+                 ["/img/favicon.ico" console/load-favicon-icon]
                  ["/js/index.js" console/load-js]
                  [true console/not-found]]])
 

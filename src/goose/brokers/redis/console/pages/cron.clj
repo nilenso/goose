@@ -5,8 +5,8 @@
             [goose.brokers.redis.console.specs :as specs]
             [goose.brokers.redis.cron :as cron]
             [goose.console :as console]
-            [ring.util.response :as response])
-  (:import [it.burning.cron CronExpressionDescriptor]))
+            [goose.cron.parsing :as cron-parsing]
+            [ring.util.response :as response]))
 
 (defn jobs-table [{:keys [base-path jobs]}]
   [:form {:action (str base-path "/jobs")
@@ -32,9 +32,10 @@
               [:div.name cron-name]]]
         [:td [:div.schedule.blue.tooltip
               cron-schedule
-              [:span.tooltip-text
-               [:div.tooltip-content
-                (CronExpressionDescriptor/getDescription cron-schedule)]]]]
+              (when-let [cron-desc (cron-parsing/describe-cron cron-schedule)]
+                [:span.tooltip-text
+                 [:div.tooltip-content
+                  cron-desc]])]]
         [:td [:div.timezone timezone]]
         [:td [:div.queue] queue]
         [:td [:div.execute-fn-sym (str execute-fn-sym)]]
@@ -92,9 +93,10 @@
    [:tr [:td "Cron schedule"]
     [:td [:div.schedule.blue.tooltip
           cron-schedule
-          [:span.tooltip-text
-           [:div.tooltip-content
-            (CronExpressionDescriptor/getDescription cron-schedule)]]]]]
+          (when-let [cron-desc (cron-parsing/describe-cron cron-schedule)]
+            [:span.tooltip-text
+             [:div.tooltip-content
+              cron-desc]])]]]
    [:tr [:td "Timezone"]
     [:td timezone]]
    [:tr [:td "Execute fn symbol"]
@@ -147,9 +149,9 @@
                  {:keys                [app-name]
                   {:keys [redis-conn]} :broker} :console-opts
                  params                         :params}]
-  (let [view (console/layout c/header jobs-page-view)
+  (let [view             (console/layout c/header jobs-page-view)
         validated-params (validate-get-jobs params)
-        data (data/cron-page-data redis-conn validated-params)]
+        data             (data/cron-page-data redis-conn validated-params)]
     (response/response (view "Cron" (assoc data :app-name app-name
                                            :job-type :cron
                                            :base-path (prefix-route "/cron")
@@ -172,9 +174,9 @@
                 {:keys                [app-name]
                  {:keys [redis-conn]} :broker} :console-opts
                 params                         :params}]
-  (let [view (console/layout c/header job-page-view)
+  (let [view          (console/layout c/header job-page-view)
         {:keys [cron-name]} (specs/validate-req-params params)
-        job (cron/find-by-name redis-conn cron-name)
+        job           (cron/find-by-name redis-conn cron-name)
         base-response {:job-type     :cron
                        :base-path    (prefix-route "/cron")
                        :app-name     app-name

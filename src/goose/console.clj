@@ -34,6 +34,13 @@
       response/resource-response
       (response/header "Content-Type" "image/png")))
 
+(defn ^:no-doc load-favicon-icon
+  "Load favicon icon"
+  [_]
+  (-> "img/favicon.ico"
+      response/resource-response
+      (response/header "Content-Type" "image/png")))
+
 (defn ^:no-doc load-js
   "Load goose console's javascript file"
   [_]
@@ -76,6 +83,7 @@
             [:meta {:charset "UTF-8"}]
             [:meta {:name "viewport" :content "width=device-width, initial-scale=1.0"}]
             [:title title]
+            [:link {:rel "icon" :href (prefix-route "/img/favicon.ico") :type "image/x-icon"}]
             (include-css (prefix-route "/css/style.css"))
             (include-js (prefix-route "/js/index.js"))]
            [:body {:class "light"}
