@@ -34,7 +34,7 @@ jobs:
           GOOSE_TEST_RABBITMQ_USERNAME: goose
           GOOSE_TEST_RABBITMQ_PASSWORD: top-gun
   lint:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     container: cljkondo/clj-kondo:2022.10.05-alpine
     steps:
       - uses: actions/checkout@v3
