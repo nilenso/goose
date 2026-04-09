@@ -13,6 +13,8 @@
                   (finally
                     (println "stopping brokers")
                     (shell "docker compose down"))))}
+  gauge-capability {:doc "evaluate broker implementations"
+                    :task (shell "clj -X:broker-caps")}
   fmt-fix {:doc "fix formatting issues"
            :task (shell "clj -M:cljfmt fix")}
   fmt-check {:doc "check formatting issues"
