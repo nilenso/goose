@@ -5,9 +5,14 @@
                 (println "initializing brokers ..")
                 (shell "docker compose up -d")
                 (println "running tests ..")
-                (shell "clj -X:test")
-                (println "stopping brokers")
-                (shell "docker compose down"))}
+                (try 
+                  (shell "clj -X:test")
+                  (catch Exception e
+                    (println "Tests failed with exception:" (.getMessage e))
+                    (throw e))
+                  (finally
+                    (println "stopping brokers")
+                    (shell "docker compose down"))))}
   fmt-fix {:doc "fix formatting issues"
            :task (shell "clj -M:cljfmt fix")}
   fmt-check {:doc "check formatting issues"
