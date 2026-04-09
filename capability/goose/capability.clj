@@ -33,7 +33,6 @@
     (try
       (->> implementations
            (mapv evaluate-broker)
-           (reduce conj [])
            (pr-str)
            (spit "capability/goose/capability.edn"))
       (catch Exception e
