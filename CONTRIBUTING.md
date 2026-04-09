@@ -54,6 +54,15 @@ $ clj-kondo --lint src                   # Linting src dir.
 $ clj-kondo --lint test                  # Linting test dir.
 ```
 
+Babaska Tasks
+--------
+- the above tasks can be run through [babashka](https://book.babashka.org/#tasks) as well
+
+```
+$ bb tasks                               # list available tasks
+$ bb <task>                              # run <task> (lint, fmt, test ..)
+```
+
 Gotchas
 --------
 

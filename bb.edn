@@ -1,0 +1,18 @@
+{:min-bb-version "0.4.0"
+ :tasks
+ {test {:doc "run test suite"
+        :task (do
+                (println "initializing brokers ..")
+                (shell "docker compose up -d")
+                (println "running tests ..")
+                (shell "clj -X:test")
+                (println "stopping brokers")
+                (shell "docker compose down"))}
+  fmt-fix {:doc "fix formatting issues"
+           :task (shell "clj -M:cljfmt fix")}
+  fmt-check {:doc "check formatting issues"
+             :task (shell "clj -M:cljfmt check")}
+  lint {:doc "lint src and test directories"
+        :task (do
+                (println "linting with clj-kondo")
+                (shell "clj-kondo --lint bb.edn deps.edn src test --fail-level error"))}}}
