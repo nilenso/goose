@@ -4,9 +4,6 @@
    [clojure.edn :as e])
   (:import [java.lang.reflect Modifier]))
 
-(defn- broker-name [implementation]
-  (.getName implementation))
-
 (defn- extract-methods [class]
   (mapv first
         (remove #(Modifier/isAbstract (second %))
