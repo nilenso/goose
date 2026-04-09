@@ -5,7 +5,8 @@ on: [ push ]
 jobs:
   fmt_test:
     runs-on: ubuntu-24.04
-    container: clojure:openjdk-19-tools-deps-1.11.1.1113-bullseye
+    # clojure:temurin-25-tools-deps-trixie-slim
+    container: clojure@sha256:65d7be594a9181d6891ada27fa4b0563e77a3c6d640d653c8d4010e011d622e2
     services:
       redis:
         image: redis:7.0
