@@ -12,13 +12,15 @@
            bidi/bidi                             {:mvn/version "2.1.6"}}
  :paths   ["src" "resources/public"]
 
- :aliases {:test       {:extra-paths ["test"] ; post TODO update: ["test" "capability"]
-                        ;; TODO : chain broker-cap exec before this
+ :aliases {:test       {:extra-paths ["test"]
                         :extra-deps {io.github.cognitect-labs/test-runner {:git/tag "v0.5.0" :git/sha "b3fd0d2"}
                                      cnuernber/dtype-next {:mvn/version "10.102"}
                                      ring/ring-mock {:mvn/version "0.3.2"}
                                      tortue/spy {:mvn/version "2.14.0"}}
                         :exec-fn test-runner/test-and-shutdown}
+           :integration {:extra-deps {lambdaisland/kaocha {:mvn/version "1.91.1392"}}
+                         :exec-fn kaocha.runner/exec-fn
+                         :exec-args {}}
            :repl       {:extra-deps {vvvvalvalval/scope-capture  {:mvn/version "0.3.2"}
                                      org.clojure/tools.namespace {:mvn/version "1.3.0"}}}
            :cljfmt     {:deps      {dev.weavejester/cljfmt {:mvn/version "0.12.0"}}
