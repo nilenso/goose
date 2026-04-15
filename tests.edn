@@ -5,4 +5,4 @@
                                        :kaocha/test-paths    ["integration"]}]
  :kaocha/fail-fast?                  false
  :kaocha/color?                      true
- :kaocha/reporter                    [kaocha.report/dots]}
+ :kaocha/reporter                    [kaocha.report.progress/report]}
