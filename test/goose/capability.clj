@@ -39,9 +39,14 @@
 
 (defonce capabilities (gauge))
 
-(defn fetch-capabilities [broker]
-  (first (filter #(= (:Broker %) broker)
-                 capabilities)))
+(def fetch-capabilities
+  (memoize
+   (fn [broker]
+     (->> capabilities
+          (filter #(= (:Broker %) broker))
+          (first)
+          (:implemented)
+          (set)))))
 
 (comment
   (type (first (.getMethods goose.brokers.redis.broker.Redis)))
