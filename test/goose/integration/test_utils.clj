@@ -52,6 +52,13 @@
   `(do (switch-ns ~broker ~test-type)
        (register-fixtures ~broker)))
 
+
+(defmacro gen-test-suite [test-type test-generator]
+  `(do
+     ~@(for [broker (keys broker-utils)]
+         (when (broker-testable? broker test-type)
+           (test-generator broker)))))
+
 (comment
   (setup-test-environment "redis" "async-execution-test")
   )
@@ -62,6 +69,7 @@
   [broker test-type]
   (s/subset? (get test-reqs test-type)
              (c/fetch-capabilities broker)))
+
 
 (comment
   (broker-testable? "Redis" :async-execution-test))
