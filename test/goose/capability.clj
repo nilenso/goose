@@ -1,7 +1,6 @@
 (ns goose.capability
   (:require
-   [clojure.set :refer [intersection difference]]
-   [clojure.edn :as e])
+   [clojure.set :refer [intersection difference]])
   (:import [java.lang.reflect Modifier]))
 
 (defn- extract-methods [class]
@@ -10,12 +9,12 @@
                 (mapv (juxt #(.getName %) #(.getModifiers %))
                       (.getMethods class)))))
 
-(def capabilities (mapv #(.getName %)
-                        (.getMethods goose.broker.Broker)))
+;; capabilities of the broker protocol
+(def cap-set (set (mapv #(.getName %)
+                        (.getMethods goose.broker.Broker))))
 
 (defn- evaluate-broker [implementation]
   (let [all-methods (set (extract-methods implementation))
-        cap-set     (set capabilities)
         implemented (intersection cap-set all-methods)
         lacking     (difference cap-set all-methods)]
     {:Broker (.getSimpleName implementation)
@@ -31,10 +30,7 @@
   (let [implementations [goose.brokers.redis.broker.Redis
                          goose.brokers.rmq.broker.RabbitMQ]]
     (try
-      (->> implementations
-           (mapv evaluate-broker)
-           (pr-str)
-           (spit "capability/goose/capability.edn"))
+      (mapv evaluate-broker implementations)
       (catch Exception e
         (println "Error evaluating broker capabilities:" (.getMessage e))))))
 
@@ -58,6 +54,4 @@
 
   (evaluate-broker goose.brokers.rmq.broker.RabbitMQ)
 
-  (gauge [])
-
-  )
+  (gauge []))
