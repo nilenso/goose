@@ -18,9 +18,6 @@
                                      ring/ring-mock {:mvn/version "0.3.2"}
                                      tortue/spy {:mvn/version "2.14.0"}}
                         :exec-fn test-runner/test-and-shutdown}
-           :integration {:extra-deps {lambdaisland/kaocha {:mvn/version "1.91.1392"}}
-                         :exec-fn kaocha.runner/exec-fn
-                         :exec-args {}}
            :repl       {:extra-deps {vvvvalvalval/scope-capture  {:mvn/version "0.3.2"}
                                      org.clojure/tools.namespace {:mvn/version "1.3.0"}}}
            :cljfmt     {:deps      {dev.weavejester/cljfmt {:mvn/version "0.12.0"}}
