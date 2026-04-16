@@ -10,29 +10,38 @@
                       (.getMethods class)))))
 
 ;; capabilities of the broker protocol
-(def cap-set (set (mapv #(.getName %)
-                        (.getMethods goose.broker.Broker))))
+(def potential (set (mapv #(.getName %)
+                          (.getMethods goose.broker.Broker))))
+
+(def implementations
+  [goose.brokers.redis.broker.Redis
+   goose.brokers.rmq.broker.RabbitMQ])
 
 (defn- evaluate-broker [implementation]
   (let [all-methods (set (extract-methods implementation))
-        implemented (intersection cap-set all-methods)
-        lacking     (difference cap-set all-methods)]
+        implemented (intersection potential all-methods)
+        lacking     (difference potential all-methods)] 
     {:Broker (.getSimpleName implementation)
      :implemented    (vec implemented)
      :lacking        (vec lacking)
      :coverage       (str (format "%.2f"  (* 100
                                              (float (/ (count implemented)
-                                                       (count cap-set)))))
+                                                       (count potential)))))
                           " %")}))
 
-(defn gauge [opts]
+(defn- gauge 
   "evaluates capabilities of broker implementations"
-  (let [implementations [goose.brokers.redis.broker.Redis
-                         goose.brokers.rmq.broker.RabbitMQ]]
-    (try
-      (mapv evaluate-broker implementations)
-      (catch Exception e
-        (println "Error evaluating broker capabilities:" (.getMessage e))))))
+  []
+  (try
+    (mapv evaluate-broker implementations)
+    (catch Exception e
+      (println "Error evaluating broker capabilities:" (.getMessage e)))))
+
+(defonce capabilities (gauge))
+
+(defn fetch-capabilities [broker]
+  (first (filter #(= (:Broker %) broker)
+                 capabilities)))
 
 (comment
   (type (first (.getMethods goose.brokers.redis.broker.Redis)))
