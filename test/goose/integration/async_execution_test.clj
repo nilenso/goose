@@ -27,4 +27,4 @@
              (is (= arg (deref @perform-async-fn-executed 100 :e2e-test-timed-out)))
              (w/stop-worker)))))))  
 
-(tu/gen-test-suite gen-async-execution-test)
+(tu/gen-test-suite  "async-execution-test" gen-async-execution-test)

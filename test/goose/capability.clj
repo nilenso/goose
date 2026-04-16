@@ -69,4 +69,4 @@
 
   (evaluate-broker goose.brokers.rmq.broker.RabbitMQ)
 
-  (gauge []))
+  (gauge))

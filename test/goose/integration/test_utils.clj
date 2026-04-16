@@ -52,6 +52,14 @@
   `(do (switch-ns ~broker ~test-type)
        (register-fixtures ~broker)))
 
+(defn broker-testable?
+  "predicate on whether the broker implementation
+  is capable enough to execute test-type"
+  [broker test-type]
+  true
+  (comment
+    (s/subset? (get test-reqs test-type)
+               (c/fetch-capabilities broker))))
 
 (defmacro gen-test-suite [test-type test-generator]
   `(do
@@ -63,12 +71,6 @@
   (setup-test-environment "redis" "async-execution-test")
   )
 
-(defn broker-testable?
-  "predicate on whether the broker implementation
-  is capable enough to execute test-type"
-  [broker test-type]
-  (s/subset? (get test-reqs test-type)
-             (c/fetch-capabilities broker)))
 
 
 (comment
