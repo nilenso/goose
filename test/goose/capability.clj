@@ -1,5 +1,6 @@
 (ns goose.capability
   (:require
+   [clojure.string :as s]
    [clojure.set :refer [intersection difference]])
   (:import [java.lang.reflect Modifier]))
 
@@ -21,7 +22,7 @@
   (let [all-methods (set (extract-methods implementation))
         implemented (intersection potential all-methods)
         lacking     (difference potential all-methods)] 
-    {:Broker (.getSimpleName implementation)
+    {:broker (s/lower-case (.getSimpleName implementation))
      :implemented    (vec implemented)
      :lacking        (vec lacking)
      :coverage       (str (format "%.2f"  (* 100
@@ -37,13 +38,13 @@
     (catch Exception e
       (println "Error evaluating broker capabilities:" (.getMessage e)))))
 
-(defonce capabilities (gauge))
+(def capabilities (gauge))
 
 (def fetch-capabilities
   (memoize
    (fn [broker]
      (->> capabilities
-          (filter #(= (:Broker %) broker))
+          (filter #(= (:broker %) broker))
           (first)
           (:implemented)
           (set)))))
