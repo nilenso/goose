@@ -24,42 +24,15 @@
               :client-opts tu/rmq-client-opts
               :worker-opts tu/rmq-worker-opts}})
 
-(defmacro switch-ns [broker test-type]
-  `(ns ~(symbol  (str broker "-" test-type))
-     (:require [~(symbol (str  "goose.integration." test-type)) :refer :all])))
-
-(comment
-  (switch-ns "redis" "async-execution-test")
-  )
-
-(defmacro register-fixtures
-  "registers :each and :once fixtures in the current test namespace"
-  [broker]
-  (letfn [(fetch-fixtures  [type]
-            (->> broker
-                 (keyword)
-                 (get broker-utils)
-                 (:fixtures)
-                 (type)))]
-    `(do
-       ~@(for [type [:each :once]]
-           `(use-fixtures ~type ~@(fetch-fixtures type))))))
-
-(comment
-  (register-fixtures "redis"))
-
-(defmacro  setup-test-environment [broker test-type]
-  `(do (switch-ns ~broker ~test-type)
-       (register-fixtures ~broker)))
 
 (defn broker-testable?
   "predicate on whether the broker implementation
   is capable enough to execute test-type"
   [broker test-type]
-  true
   (comment
     (s/subset? (get test-reqs test-type)
-               (c/fetch-capabilities broker))))
+               (c/fetch-capabilities broker)))
+  true)
 
 (defmacro gen-test-suite [test-type test-generator]
   `(do
@@ -68,10 +41,36 @@
            (test-generator broker)))))
 
 (comment
-  (setup-test-environment "redis" "async-execution-test")
-  )
-
-
+  (setup-test-environment "redis" "async-execution-test"))
 
 (comment
-  (broker-testable? "Redis" :async-execution-test))
+  (broker-testable? "redis" :async-execution-test))
+
+(comment
+  (defmacro switch-ns [broker test-type]
+    `(ns ~(symbol  (str broker "-" test-type))
+                                                                                                                                                 (:require [~(symbol (str  "goose.integration." test-type)) :refer :all])))
+
+  (comment
+    (switch-ns "redis" "async-execution-test")
+    )
+
+  (defmacro register-fixtures
+    "registers :each and :once fixtures in the current test namespace"
+    [broker]
+    (letfn [(fetch-fixtures  [type]
+              (->> broker
+                                                                                                                             (keyword)
+                         (get broker-utils)
+                         (:fixtures)
+                         (type)))]
+      `(do
+         ~@(for [type [:each :once]]
+             `(use-fixtures ~type ~@(fetch-fixtures type))))))
+
+  (comment
+    (register-fixtures "redis"))
+
+  (defmacro  setup-test-environment [broker test-type]
+    `(do (switch-ns ~broker ~test-type)
+         (register-fixtures ~broker))))
