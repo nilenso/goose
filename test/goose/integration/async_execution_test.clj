@@ -7,7 +7,14 @@
    [clojure.test :refer [deftest is testing]]))
 
 
-
+;; test reqs here itself as meta data
+(deftest  async-execution-test
+  (doseq [broker (keys tu/broker-utils)]
+    (alter-meta! #'async-execution-test assoc :name (str broker "-async-execution-test"))
+    ;; alter meta helps out with reporting for different brokers
+    ;; fixtures needs to be manually handled -> clojure.test semantics too broad for the custom
+    ;; behaviour we need here
+    (is false)))
 
 (comment 
   (defmacro gen-async-execution-test [broker]
@@ -36,7 +43,3 @@
                (w/stop-worker)))))))
 
   (tu/gen-test-suite  "async-execution-test" gen-async-execution-test))
-
-(deftest sentinel-test
-  (testing "sentinel test")
-  (is true))

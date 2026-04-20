@@ -6,9 +6,10 @@
    [clojure.test :refer [deftest use-fixtures testing is]]))
 
 ;; map of test-types and capabilities required
+;; distribute into the test type functions themselves
 (def test-reqs
-  {:async-execution-test
-   #{}})
+  {"async-execution-test"
+   #{""}})
 
 ;; TODO : direct index leveraging older boilerplate rn
 ;; refactor potential unexplored yet
@@ -24,7 +25,6 @@
               :client-opts tu/rmq-client-opts
               :worker-opts tu/rmq-worker-opts}})
 
-
 (defn broker-testable?
   "predicate on whether the broker implementation
   is capable enough to execute test-type"
@@ -34,14 +34,17 @@
                (c/fetch-capabilities broker)))
   true)
 
-(defmacro gen-test-suite [test-type test-generator]
-  `(do
-     ~@(for [broker (keys broker-utils)]
-         (when (broker-testable? broker test-type)
-           (test-generator broker)))))
+
 
 (comment
   (setup-test-environment "redis" "async-execution-test"))
+
+(comment 
+  (defmacro gen-test-suite [test-type test-generator]
+    `(do
+       ~@(for [broker (keys broker-utils)]
+           (when (broker-testable? broker test-type)
+             (test-generator broker))))))
 
 (comment
   (broker-testable? "redis" :async-execution-test))
@@ -49,7 +52,7 @@
 (comment
   (defmacro switch-ns [broker test-type]
     `(ns ~(symbol  (str broker "-" test-type))
-                                                                                                                                                 (:require [~(symbol (str  "goose.integration." test-type)) :refer :all])))
+                                                                                                                                                                 (:require [~(symbol (str  "goose.integration." test-type)) :refer :all])))
 
   (comment
     (switch-ns "redis" "async-execution-test")
@@ -60,7 +63,7 @@
     [broker]
     (letfn [(fetch-fixtures  [type]
               (->> broker
-                                                                                                                             (keyword)
+                                                                                                                                             (keyword)
                          (get broker-utils)
                          (:fixtures)
                          (type)))]
@@ -69,7 +72,9 @@
              `(use-fixtures ~type ~@(fetch-fixtures type))))))
 
   (comment
-    (register-fixtures "redis"))
+    (register-fixtures "redis")
+
+    )
 
   (defmacro  setup-test-environment [broker test-type]
     `(do (switch-ns ~broker ~test-type)

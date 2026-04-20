@@ -18,6 +18,8 @@
   [goose.brokers.redis.broker.Redis
    goose.brokers.rmq.broker.RabbitMQ])
 
+;; granularity of capabilities being presented from a user perspective : refer comments in the protocol
+;; testing utitities can continue with the functionality guarantees
 (defn- evaluate-broker [implementation]
   (let [all-methods (set (extract-methods implementation))
         implemented (intersection potential all-methods)
