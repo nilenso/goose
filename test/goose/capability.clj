@@ -10,7 +10,6 @@
                 (mapv (juxt #(.getName %) #(.getModifiers %))
                       (.getMethods class)))))
 
-;; capabilities of the broker protocol
 (def potential (set (mapv #(.getName %)
                           (.getMethods goose.broker.Broker))))
 
@@ -22,9 +21,9 @@
   (let [all-methods (set (extract-methods implementation))
         implemented (intersection potential all-methods)
         lacking     (difference potential all-methods)]
-    {:broker (s/lower-case (.getSimpleName implementation))
-     :implemented    (vec implemented)
-     :lacking        (vec lacking)
+    {:broker (keyword (s/lower-case (.getSimpleName implementation)))
+     :implemented    (set (mapv keyword implemented))
+     :lacking        (set (mapv keyword lacking))
      :coverage       (str (format "%.2f"  (* 100
                                              (float (/ (count implemented)
                                                        (count potential)))))
@@ -46,5 +45,4 @@
      (->> capabilities
           (filter #(= (:broker %) broker))
           (first)
-          (:implemented)
-          (set)))))
+          (:implemented)))))
