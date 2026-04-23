@@ -28,11 +28,9 @@
 (defn broker-testable?
   "predicate on whether the broker implementation
   is capable enough to execute test-type"
-  [broker test-type]
-  (comment
-    (s/subset? (get test-reqs test-type)
-               (c/fetch-capabilities broker)))
-  true)
+  [broker requirements]
+  (s/subset? requirements 
+             (c/fetch-capabilities broker)))
 
 
 
