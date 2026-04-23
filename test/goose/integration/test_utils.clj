@@ -34,7 +34,22 @@
   (s/subset? requirements 
              (c/fetch-capabilities broker)))
 
+(defmacro with-fixtures [broker & body]
+  (letfn [(fetch-fixtures [broker pos]
+            (map list
+                 (get-in broker-utils
+                         [broker :fixtures pos])))]
+    `(do 
+       ~@(fetch-fixtures broker :pre)
+       ~@body
+       ~@(fetch-fixtures broker :post))))
 
+(comment
+  (with-fixtures :redis
+    (run some test stuff)
+    (run some more test stuff))
+
+  )
 
 (comment
   (setup-test-environment "redis" "async-execution-test"))
