@@ -7,13 +7,6 @@
    [goose.specs :as specs]
    [goose.brokers.rmq.queue :as rmq-queue]))
 
-(comment
-  (def broker-utils
-    {:test {:fixtures {:pre [#(println "calling pre 1")
-                             #(println "calling pre 2")]
-                       :post [#(println "calling post 1")
-                              #(println "calling post 2")]}}}))
-
 (def broker-utils
   {:redis {:fixtures {:pre [specs/instrument
                             tu/clear-redis]
@@ -51,9 +44,3 @@
            (throw ex#))
          (finally
            ~@(fetch-fixtures broker :post))))))
-
-(comment
-  (with-fixtures :redis
-    (run some test stuff)
-    (run some more test stuff))
-  )

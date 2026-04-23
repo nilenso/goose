@@ -29,31 +29,3 @@
             (is (= ::async-execution-test @perform-async-fn-executed))
             (w/stop worker))))
       (report :default (str "Async execution: " broker " is not testable")))))
-
-(comment 
-  (defmacro gen-async-execution-test [broker]
-    `(do
-       (comment
-         (tu/setup-test-environment ~broker "async-execution-test"))
-       ;; TODO : don't switch nses
-       ;; manual fixtures might be it
-       (let [perform-async-fn-executed (atom (promise))
-             perform-async-fn (fn [arg]
-                                (deliver @perform-async-fn-executed arg))]
-         (deftest ~(symbol (str "perform-" broker "-async-execution-test"))
-           (testing (str "Goose [" broker "] executes a function asynchronously")
-             (let [~'arg ::async-execute-test
-                   _ (c/perform-async (->> broker
-                                           (keyword)
-                                           (get tu/broker-utils)
-                                           (:client-opts))
-                                      ~`perform-async-fn
-                                      ~'arg)
-                   worker (w/start (->> broker
-                                        (keyword)
-                                        (get tu/broker-utils)
-                                        (:worker-opts)))]
-               (is (= arg (deref @perform-async-fn-executed 100 :e2e-test-timed-out)))
-               (w/stop-worker)))))))
-
-  (tu/gen-test-suite  "async-execution-test" gen-async-execution-test))
