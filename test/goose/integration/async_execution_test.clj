@@ -5,7 +5,7 @@
    [goose.worker :as w]
    [clojure.test :refer [deftest is testing report]]))
 
-(def requirements #{})
+(def requirements #{:enqueue})
 
 (def perform-async-fn-executed (atom nil))
 
