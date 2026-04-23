@@ -27,7 +27,6 @@
                                    ::async-execution-test)
                 worker (w/start (tu/get-opts broker :worker))]
             (Thread/sleep 100)
-            (/ 1 0)
             (is (= ::async-execution-test @perform-async-fn-executed))
             (w/stop worker))))
       (report {:type :default
