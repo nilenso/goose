@@ -3,7 +3,6 @@
    [goose.integration.test-utils :as tu]
    [goose.client :as c]
    [goose.worker :as w]
-   [clojure.string :as s]
    [clojure.test :refer [deftest is testing report]]))
 
 (def requirements #{})

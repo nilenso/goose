@@ -3,7 +3,6 @@
    [goose.test-utils :as tu]
    [goose.capability :as c]
    [clojure.set :as s]
-   [clojure.test :refer [deftest use-fixtures testing is report]]
    [goose.specs :as specs]
    [goose.brokers.rmq.queue :as rmq-queue]))
 
