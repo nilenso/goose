@@ -4,17 +4,31 @@
    [goose.client :as c]
    [goose.worker :as w]
    [clojure.string :as s]
-   [clojure.test :refer [deftest is testing]]))
+   [clojure.test :refer [deftest is testing report]]))
 
+(def requirements #{})
 
-;; test reqs here itself as meta data
+(def perform-async-fn-executed (atom nil))
+
+(defn perform-async-fn [arg]
+  (reset! perform-async-fn-executed arg))
+
 (deftest  async-execution-test
   (doseq [broker (keys tu/broker-utils)]
-    (alter-meta! #'async-execution-test assoc :name (str broker "-async-execution-test"))
-    ;; alter meta helps out with reporting for different brokers
-    ;; fixtures needs to be manually handled -> clojure.test semantics too broad for the custom
-    ;; behaviour we need here
-    (is false)))
+    (alter-meta! #'async-execution-test assoc :name (str (symbol broker) "-async-execution-test"))
+    (reset! perform-async-fn-executed nil)
+    (if (tu/broker-testable? broker requirements)
+      (tu/with-fixtures broker
+        (fn [ex] (report :default (ex-message ex)))
+        (testing (str "Async Execution: " broker) 
+          (let [_ (c/perform-async (tu/get-opts broker :client)
+                                   `perform-async-fn
+                                   ::async-execution-test)
+                worker (w/start (tu/get-opts broker :worker))]
+            (Thread/sleep 100)
+            (is (= ::async-execution-test @perform-async-fn-executed))
+            (w/stop worker))))
+      (report :default (str "Async execution: " broker " is not testable")))))
 
 (comment 
   (defmacro gen-async-execution-test [broker]
