@@ -14,9 +14,7 @@
                     (println "stopping brokers")
                     (shell "docker compose down"))))}
   int {:doc "run integration tests"
-       :task (shell "clj -X:test -nses '[goose.integration]'")}
-  gauge-capability {:doc "evaluate broker implementations"
-                    :task (shell "clj -X:broker-caps")}
+       :task (shell "clj -X:test :dirs '[\"test/goose/integration\"]'")}
   fmt-fix {:doc "fix formatting issues"
            :task (shell "clj -M:cljfmt fix")}
   fmt-check {:doc "check formatting issues"
