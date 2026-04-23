@@ -3,25 +3,27 @@
    [goose.test-utils :as tu]
    [goose.capability :as c]
    [clojure.set :as s]
-   [clojure.test :refer [deftest use-fixtures testing is]]))
+   [clojure.test :refer [deftest use-fixtures testing is]]
+   [goose.specs :as specs]
+   [goose.brokers.rmq.queue :as rmq-queue]))
 
-;; map of test-types and capabilities required
-;; distribute into the test type functions themselves
-(def test-reqs
-  {"async-execution-test"
-   #{""}})
+(comment
+  (def broker-utils
+    {:test {:fixtures {:pre [#(println "calling pre 1")
+                             #(println "calling pre 2")]
+                       :post [#(println "calling post 1")
+                              #(println "calling post 2")]}}}))
 
-;; TODO : direct index leveraging older boilerplate rn
-;; refactor potential unexplored yet
-
-;; per broker utilities
 (def broker-utils
-  {:redis {:fixtures {:each [tu/redis-fixture]
-                      :once []}
+  {:redis {:fixtures {:pre [specs/instrument
+                            tu/clear-redis]
+                      :post [tu/clear-redis]}
            :client-opts tu/redis-client-opts
            :worker-opts tu/redis-worker-opts}
-   :rabbitmq {:fixtures {:each [tu/rmq-fixture]
-                         :once []}
+   :rabbitmq {:fixtures {:pre [specs/instrument
+                               tu/rmq-delete-test-queues
+                               rmq-queue/clear-cache]
+                         :post [tu/rmq-delete-test-queues]}
               :client-opts tu/rmq-client-opts
               :worker-opts tu/rmq-worker-opts}})
 
