@@ -48,49 +48,4 @@
   (with-fixtures :redis
     (run some test stuff)
     (run some more test stuff))
-
   )
-
-(comment
-  (setup-test-environment "redis" "async-execution-test"))
-
-(comment 
-  (defmacro gen-test-suite [test-type test-generator]
-    `(do
-       ~@(for [broker (keys broker-utils)]
-           (when (broker-testable? broker test-type)
-             (test-generator broker))))))
-
-(comment
-  (broker-testable? "redis" :async-execution-test))
-
-(comment
-  (defmacro switch-ns [broker test-type]
-    `(ns ~(symbol  (str broker "-" test-type))
-                                                                                                                                                                 (:require [~(symbol (str  "goose.integration." test-type)) :refer :all])))
-
-  (comment
-    (switch-ns "redis" "async-execution-test")
-    )
-
-  (defmacro register-fixtures
-    "registers :each and :once fixtures in the current test namespace"
-    [broker]
-    (letfn [(fetch-fixtures  [type]
-              (->> broker
-                                                                                                                                             (keyword)
-                         (get broker-utils)
-                         (:fixtures)
-                         (type)))]
-      `(do
-         ~@(for [type [:each :once]]
-             `(use-fixtures ~type ~@(fetch-fixtures type))))))
-
-  (comment
-    (register-fixtures "redis")
-
-    )
-
-  (defmacro  setup-test-environment [broker test-type]
-    `(do (switch-ns ~broker ~test-type)
-         (register-fixtures ~broker))))
