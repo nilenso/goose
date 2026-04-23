@@ -19,13 +19,16 @@
     (reset! perform-async-fn-executed nil)
     (if (tu/broker-testable? broker requirements)
       (tu/with-fixtures broker
-        (fn [ex] (report :default (ex-message ex)))
-        (testing (str "Async Execution: " broker) 
+        (fn [ex] (report {:type :default
+                         :message (ex-message ex)}))
+        (testing (str "Async Execution" broker) 
           (let [_ (c/perform-async (tu/get-opts broker :client)
                                    `perform-async-fn
                                    ::async-execution-test)
                 worker (w/start (tu/get-opts broker :worker))]
             (Thread/sleep 100)
+            (/ 1 0)
             (is (= ::async-execution-test @perform-async-fn-executed))
             (w/stop worker))))
-      (report :default (str "Async execution: " broker " is not testable")))))
+      (report {:type :default
+               :message (str "Async execution" broker " is not testable")}))))
