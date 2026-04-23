@@ -10,7 +10,7 @@
          (let [test-name (symbol (str broker "-" test-type))]
            `(deftest ~test-name
               (testing (str ~test-type " : " ~broker)
-                (let [~'broker ~broker] 
+                (let [~'broker ~broker]
                   ~@test-body)))))))
 
 ;; linter throws err on broker not being resolvable

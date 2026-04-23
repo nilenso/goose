@@ -20,8 +20,8 @@
     (if (tu/broker-testable? broker requirements)
       (tu/with-fixtures broker
         (fn [ex] (report {:type :default
-                         :message (ex-message ex)}))
-        (testing (str "Async Execution" broker) 
+                          :message (ex-message ex)}))
+        (testing (str "Async Execution" broker)
           (let [_ (c/perform-async (tu/get-opts broker :client)
                                    `perform-async-fn
                                    ::async-execution-test)

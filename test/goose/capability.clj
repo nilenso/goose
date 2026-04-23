@@ -23,7 +23,7 @@
 (defn- evaluate-broker [implementation]
   (let [all-methods (set (extract-methods implementation))
         implemented (intersection potential all-methods)
-        lacking     (difference potential all-methods)] 
+        lacking     (difference potential all-methods)]
     {:broker (s/lower-case (.getSimpleName implementation))
      :implemented    (vec implemented)
      :lacking        (vec lacking)
@@ -32,7 +32,7 @@
                                                        (count potential)))))
                           " %")}))
 
-(defn- gauge 
+(defn- gauge
   "evaluates capabilities of broker implementations"
   []
   (try

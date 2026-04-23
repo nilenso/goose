@@ -27,7 +27,7 @@
   "predicate on whether the broker implementation
   is capable enough to execute test-type"
   [broker requirements]
-  (s/subset? requirements 
+  (s/subset? requirements
              (c/fetch-capabilities broker)))
 
 (defmacro with-fixtures [broker failure-reporter & body]
@@ -35,7 +35,7 @@
             (map list
                  (get-in broker-utils
                          [broker :fixtures pos])))]
-    `(do 
+    `(do
        ~@(fetch-fixtures broker :pre)
        (try
          ~@body
