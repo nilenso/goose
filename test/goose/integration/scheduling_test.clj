@@ -7,7 +7,6 @@
   (:import
    [java.time Instant]))
 
-
 (def requirements #{:schedule})
 
 (def perform-scheduled-fn-executed (atom nil))
@@ -22,7 +21,7 @@
     (if (tu/broker-testable? broker requirements)
       (tu/with-fixtures broker
         (fn [ex] (report {:type :default
-                         :message (ex-message ex)}))
+                          :message (ex-message ex)}))
         (testing (str "Absolute Scheduling" broker)
           (let [_ (c/perform-at (tu/get-opts broker :client)
                                 (Instant/now)
@@ -35,7 +34,6 @@
       (report {:type :default
                :message (str "Absolute Scheduling" broker " is not testable")}))))
 
-
 (deftest  relative-scheduling-test
   (doseq [broker (keys tu/broker-utils)]
     (alter-meta! #'relative-scheduling-test assoc :name (str (symbol broker) "-relative-scheduling-test"))
@@ -43,7 +41,7 @@
     (if (tu/broker-testable? broker requirements)
       (tu/with-fixtures broker
         (fn [ex] (report {:type :default
-                         :message (ex-message ex)}))
+                          :message (ex-message ex)}))
         (testing (str "Relative Scheduling" broker)
           (let [_ (c/perform-in-sec (tu/get-opts broker :client)
                                     1
