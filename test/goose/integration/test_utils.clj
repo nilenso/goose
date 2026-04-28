@@ -6,7 +6,25 @@
    [goose.specs :as specs]
    [goose.brokers.rmq.queue :as rmq-queue]))
 
-(def timeout-ms 3000)
+(def broker-utils
+  {:commons {:execution-timeout-ms 3000}
+   :implementations {:redis {:fixtures {:pre [specs/instrument
+                                              tu/clear-redis]
+                                        :post [tu/clear-redis]}
+                             :opts {:client tu/redis-client-opts
+                                    :worker tu/redis-worker-opts}}
+                     :rabbitmq {:fixtures {:pre [specs/instrument
+                                                 tu/rmq-delete-test-queues
+                                                 rmq-queue/clear-cache]
+                                           :post [tu/rmq-delete-test-queues]}
+                                :opts {:client tu/rmq-client-opts
+                                       :worker tu/rmq-worker-opts}}}})
+
+(defn get-configs [& args]
+  (get-in broker-utils args))
+
+(defn get-opts [broker opts-type]
+  (get-configs :implementations broker :opts opts-type))
 
 (def executed-log (atom {}))
 
@@ -15,30 +33,13 @@
          assoc test-name (promise)))
 
 (defn executable [test-name executed-flag]
-  (deliver (get @executed-log test-name)
-           executed-flag))
+  (when-let [p (get @executed-log test-name)]
+    (deliver p executed-flag)))
 
 (defn delivered-execution [test-name]
   (deref (get @executed-log test-name)
-         timeout-ms
+         (get-configs :commons :execution-timeout-ms)
          ::timed-out))
-
-(def broker-utils
-  {:redis {:fixtures {:pre [specs/instrument
-                            tu/clear-redis]
-                      :post [tu/clear-redis]}
-           :opts {:client tu/redis-client-opts
-                  :worker tu/redis-worker-opts}}
-   :rabbitmq {:fixtures {:pre [specs/instrument
-                               tu/rmq-delete-test-queues
-                               rmq-queue/clear-cache]
-                         :post [tu/rmq-delete-test-queues]}
-              :opts {:client tu/rmq-client-opts
-                     :worker tu/rmq-worker-opts}}})
-
-
-(defn get-opts [broker opts-type]
-  (get-in broker-utils [broker :opts opts-type]))
 
 (defn broker-testable?
   "predicate on whether the broker implementation
@@ -50,8 +51,7 @@
 (defmacro with-fixtures [broker failure-reporter & body]
   (letfn [(fetch-fixtures [broker pos]
             (map list
-                 (get-in broker-utils
-                         [broker :fixtures pos])))]
+                 (get-configs :specifics broker :fixtures pos)))]
     `(do
        ~@(fetch-fixtures broker :pre)
        (try

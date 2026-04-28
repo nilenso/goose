@@ -10,7 +10,7 @@
 (def requirements #{:enqueue})
 
 (deftest  async-execution-test
-  (doseq [broker (keys tu/broker-utils)]
+  (doseq [broker (keys (tu/get-configs :implementations))]
     (let [test-name (str (symbol broker) "-async-execution-test")]
       (if (tu/broker-testable? broker requirements)
         (do

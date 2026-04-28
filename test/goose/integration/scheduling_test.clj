@@ -12,7 +12,7 @@
 (def requirements #{:schedule})
 
 (deftest  absolute-scheduling-test
-  (doseq [broker (keys tu/broker-utils)]
+  (doseq [broker (keys (tu/get-configs :implementations))]
     (let [test-name (str (symbol broker) "-absolute-scheduling-test")]
       (if (tu/broker-testable? broker requirements)
         (do 
@@ -34,7 +34,7 @@
                  :message (str "Absolute Scheduling" broker " is not testable")})))))
 
 (deftest  relative-scheduling-test
-  (doseq [broker (keys tu/broker-utils)]
+  (doseq [broker (keys (tu/get-configs :implementations))]
     (let [test-name (str (symbol broker) "-relative-scheduling-test")]
       (if (tu/broker-testable? broker requirements)
         (do 
