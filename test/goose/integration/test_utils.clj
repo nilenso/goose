@@ -51,7 +51,7 @@
 (defmacro with-fixtures [broker failure-reporter & body]
   (letfn [(fetch-fixtures [broker pos]
             (map list
-                 (get-configs :specifics broker :fixtures pos)))]
+                 (get-configs :implementations broker :fixtures pos)))]
     `(do
        ~@(fetch-fixtures broker :pre)
        (try
