@@ -73,7 +73,7 @@
              (do
                (setup-test-promise ~'test-name)
                (with-fixture ~'broker
-                   (fn [ex#] (report {:type :default :message (ex-message ex#)}))
+                 (fn [ex#] (report {:type :default :message (ex-message ex#)}))
                  (testing (str ~base-test-name " [" ~'broker "]")
                    ~@body)))
              (report {:type :default
