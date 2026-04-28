@@ -41,23 +41,12 @@
          (get-configs :commons :execution-timeout-ms)
          ::timed-out))
 
-(defn broker-testable?
-  "predicate on whether the broker implementation
-  is capable enough to execute test-type"
-  [broker requirements]
+(defn broker-testable? [broker requirements]
   (s/subset? requirements
              (c/fetch-capabilities broker)))
 
-(defmacro with-fixtures [broker failure-reporter & body]
-  (letfn [(fetch-fixtures [broker pos]
-            (map list
-                 (get-configs :implementations broker :fixtures pos)))]
-    `(do
-       ~@(fetch-fixtures broker :pre)
-       (try
-         ~@body
-         (catch Throwable ex#
-           (~failure-reporter ex#)
-           (throw ex#))
-         (finally
-           ~@(fetch-fixtures broker :post))))))
+(defmacro with-fixture [broker failure-reporter & body]
+  `(let [fixture-fn# (get-configs :implementations ~broker :fixture)]
+     (fixture-fn#
+      (fn [] ~@body)
+      ~failure-reporter)))
