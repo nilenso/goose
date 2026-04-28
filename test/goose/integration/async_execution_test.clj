@@ -17,7 +17,7 @@
           (setup-test-promise test-name)
           (tu/with-fixture broker
             (fn [ex] (report {:type :default
-                             :message (ex-message ex)}))
+                              :message (ex-message ex)}))
             (testing (str "Async Execution" broker)
               (let [_ (c/perform-async (tu/get-opts broker :client)
                                        `executable
