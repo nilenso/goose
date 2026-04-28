@@ -6,6 +6,23 @@
    [goose.specs :as specs]
    [goose.brokers.rmq.queue :as rmq-queue]))
 
+(def timeout-ms 3000)
+
+(def executed-log (atom {}))
+
+(defn setup-test-promise [test-name]
+  (swap! executed-log
+         assoc test-name (promise)))
+
+(defn executable [test-name executed-flag]
+  (deliver (get @executed-log test-name)
+           executed-flag))
+
+(defn delivered-execution [test-name]
+  (deref (get @executed-log test-name)
+         timeout-ms
+         ::timed-out))
+
 (def broker-utils
   {:redis {:fixtures {:pre [specs/instrument
                             tu/clear-redis]
@@ -18,6 +35,7 @@
                          :post [tu/rmq-delete-test-queues]}
               :opts {:client tu/rmq-client-opts
                      :worker tu/rmq-worker-opts}}})
+
 
 (defn get-opts [broker opts-type]
   (get-in broker-utils [broker :opts opts-type]))
