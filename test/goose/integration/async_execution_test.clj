@@ -15,7 +15,7 @@
       (if (tu/broker-testable? broker requirements)
         (do
           (setup-test-promise test-name)
-          (tu/with-fixtures broker
+          (tu/with-fixture broker
             (fn [ex] (report {:type :default
                              :message (ex-message ex)}))
             (testing (str "Async Execution" broker)

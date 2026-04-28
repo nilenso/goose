@@ -8,15 +8,27 @@
 
 (def broker-utils
   {:commons {:execution-timeout-ms 3000}
-   :implementations {:redis {:fixtures {:pre [specs/instrument
-                                              tu/clear-redis]
-                                        :post [tu/clear-redis]}
+   :implementations {:redis {:fixture (fn [test-fn failure-reporter]
+                                        (specs/instrument)
+                                        (tu/clear-redis)
+                                        (try
+                                          (test-fn)
+                                          (catch Exception ex
+                                            (failure-reporter ex)
+                                            (throw ex))
+                                          (finally (tu/clear-redis))))
                              :opts {:client tu/redis-client-opts
                                     :worker tu/redis-worker-opts}}
-                     :rabbitmq {:fixtures {:pre [specs/instrument
-                                                 tu/rmq-delete-test-queues
-                                                 rmq-queue/clear-cache]
-                                           :post [tu/rmq-delete-test-queues]}
+                     :rabbitmq {:fixture (fn [test-fn failure-reporter]
+                                           (specs/instrument)
+                                           (tu/rmq-delete-test-queues)
+                                           (rmq-queue/clear-cache)
+                                           (try
+                                             (test-fn)
+                                             (catch Exception ex
+                                               (failure-reporter ex)
+                                               (throw ex))
+                                             (finally (tu/rmq-delete-test-queues))))
                                 :opts {:client tu/rmq-client-opts
                                        :worker tu/rmq-worker-opts}}}})
 

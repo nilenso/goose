@@ -17,9 +17,9 @@
       (if (tu/broker-testable? broker requirements)
         (do 
           (setup-test-promise test-name)
-          (tu/with-fixtures broker
-            (fn [ex] (report {:type :default
-                             :message (ex-message ex)}))
+          (tu/with-fixture broker
+              (fn [ex] (report {:type :default
+                                :message (ex-message ex)}))
             (testing (str "Absolute Scheduling" broker)
               (let [_ (c/perform-at (tu/get-opts broker :client)
                                     (Instant/now)
@@ -39,9 +39,9 @@
       (if (tu/broker-testable? broker requirements)
         (do 
           (setup-test-promise test-name)
-          (tu/with-fixtures broker
-            (fn [ex] (report {:type :default
-                             :message (ex-message ex)}))
+          (tu/with-fixture broker
+              (fn [ex] (report {:type :default
+                                :message (ex-message ex)}))
             (testing (str "Relative Scheduling" broker)
               (let [_ (c/perform-in-sec (tu/get-opts broker :client)
                                         1
@@ -53,4 +53,4 @@
                        (delivered-execution test-name)))
                 (w/stop scheduler)))))
         (report {:type :default
-                 :message (str "Relative Scheduling" broker " is not testable")})))))
+                 :message (str "Relative Scheduling" broker " is not testable")}))))) 
