@@ -4,18 +4,18 @@
    [clojure.set :refer [intersection difference]])
   (:import [java.lang.reflect Modifier]))
 
-(defn- extract-methods [class]
-  (mapv first
-        (remove #(Modifier/isAbstract (second %))
-                (mapv (juxt #(.getName %) #(.getModifiers %))
-                      (.getMethods class)))))
-
-(def potential (set (mapv #(.getName %)
-                          (.getMethods goose.broker.Broker))))
-
 (def implementations
   [goose.brokers.redis.broker.Redis
    goose.brokers.rmq.broker.RabbitMQ])
+
+(defn- extract-methods [class]
+  (->> class
+       (.getMethods)
+       (remove #(Modifier/isAbstract (.getModifiers %)))
+       (mapv #(.getName %))))
+
+(def potential (set (mapv #(.getName %)
+                          (.getMethods goose.broker.Broker))))
 
 (defn- evaluate-broker [implementation]
   (let [all-methods (set (extract-methods implementation))
@@ -29,9 +29,7 @@
                                                        (count potential)))))
                           " %")}))
 
-(defn- gauge
-  "evaluates capabilities of broker implementations"
-  []
+(defn- gauge []
   (try
     (mapv evaluate-broker implementations)
     (catch Exception e

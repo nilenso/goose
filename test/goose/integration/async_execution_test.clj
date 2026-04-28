@@ -5,7 +5,7 @@
                                                 def-integration-test]]
    [goose.client :as c]
    [goose.worker :as w]
-   [clojure.test :refer [deftest is testing report]]))
+   [clojure.test :refer [is]]))
 
 (def requirements #{:enqueue})
 
