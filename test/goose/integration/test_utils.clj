@@ -4,7 +4,8 @@
    [goose.capability :as c]
    [clojure.set :as s]
    [goose.specs :as specs]
-   [goose.brokers.rmq.queue :as rmq-queue]))
+   [goose.brokers.rmq.queue :as rmq-queue]
+   [clojure.test :refer [testing report deftest]]))
 
 (def broker-utils
   {:commons {:execution-timeout-ms 3000}
@@ -62,3 +63,18 @@
      (fixture-fn#
       (fn [] ~@body)
       ~failure-reporter)))
+
+(defmacro def-integration-test [base-test-name requirements & body]
+  `(let [implementations# (keys (get-configs :implementations))]
+     (deftest ~base-test-name
+       (doseq [~'broker implementations#]
+         (let [~'test-name (str (symbol ~'broker) "-" ~base-test-name)]
+           (if (broker-testable? ~'broker ~requirements)
+             (do
+               (setup-test-promise ~'test-name)
+               (with-fixture ~'broker
+                   (fn [ex#] (report {:type :default :message (ex-message ex#)}))
+                 (testing (str ~base-test-name " [" ~'broker "]")
+                   ~@body)))
+             (report {:type :default
+                      :message (str ~base-test-name " [" ~'broker " is not testable]")})))))))
