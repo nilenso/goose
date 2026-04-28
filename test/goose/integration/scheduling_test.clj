@@ -17,7 +17,6 @@
 (deftest  absolute-scheduling-test
   (doseq [broker (keys tu/broker-utils)]
     (let [test-name (str (symbol broker) "-absolute-scheduling-test")]
-      (alter-meta! #'absolute-scheduling-test assoc :name test-name)
       (if (tu/broker-testable? broker requirements)
         (tu/with-fixtures broker
           (fn [ex] (report {:type :default

@@ -14,7 +14,6 @@
 
 (deftest  async-execution-test
   (doseq [broker (keys tu/broker-utils)]
-    (alter-meta! #'async-execution-test assoc :name (str (symbol broker) "-async-execution-test"))
     (reset! perform-async-fn-executed nil)
     (if (tu/broker-testable? broker requirements)
       (tu/with-fixtures broker
