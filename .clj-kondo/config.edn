@@ -1,0 +1,10 @@
+{:lint-as
+ {goose.integration.test-utils/def-integration-test clojure.test/deftest}
+
+ :ns-groups
+ [{:name integration-tests
+   :pattern "^goose\\.integration\\..*"}]
+
+ :config-in-ns
+ {integration-tests
+  {:linters {:unresolved-symbol {:exclude [broker test-name]}}}}}

@@ -13,6 +13,7 @@
 .cpcache/
 .idea/
 goose.iml
-.clj-kondo/
+.clj-kondo/imports
+.clj-kondo/.cache
 .lsp/
 output.calva-repl
