@@ -177,14 +177,15 @@
 
 (deftest scheduled-jobs-get-by-range
   (testing "Should get jobs in increasing order of schedule-run-at given a range"
-    (let [future-scheduled-job-id (f/create-schedule-job-in-redis {:schedule-run-at (+ (u/epoch-time-ms)
-                                                                                       100000)})
-          now-scheduled-job-id (f/create-schedule-job-in-redis {:schedule-run-at (+ (u/epoch-time-ms))})
+    (let [base-schedule-run-at (+ (u/epoch-time-ms) 100000)
+          later-scheduled-job-id (f/create-schedule-job-in-redis {:schedule-run-at (+ base-schedule-run-at
+                                                                                      100000)})
+          earlier-scheduled-job-id (f/create-schedule-job-in-redis {:schedule-run-at base-schedule-run-at})
 
-          future-scheduled-job (redis-scheduled-jobs/find-by-id tu/redis-conn future-scheduled-job-id)
-          now-scheduled-job (redis-scheduled-jobs/find-by-id tu/redis-conn now-scheduled-job-id)]
-      (is (true? (>= (get-in future-scheduled-job [:schedule-run-at]) (get-in now-scheduled-job [:schedule-run-at]))))
-      (is (= [now-scheduled-job future-scheduled-job] (redis-scheduled-jobs/get-by-range tu/redis-conn 0 1)))))
+          later-scheduled-job (redis-scheduled-jobs/find-by-id tu/redis-conn later-scheduled-job-id)
+          earlier-scheduled-job (redis-scheduled-jobs/find-by-id tu/redis-conn earlier-scheduled-job-id)]
+      (is (true? (>= (get-in later-scheduled-job [:schedule-run-at]) (get-in earlier-scheduled-job [:schedule-run-at]))))
+      (is (= [earlier-scheduled-job later-scheduled-job] (redis-scheduled-jobs/get-by-range tu/redis-conn 0 1)))))
   (tu/clear-redis)
   (testing "Should get max of (size scheduled-jobs) given higher stop value in range"
     (let [_ (f/create-jobs-in-redis {:scheduled 3})
