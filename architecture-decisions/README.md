@@ -35,4 +35,5 @@ Index
 1. [Metrics](https://github.com/nilenso/goose/blob/main/architecture-decisions/pages/metrics.md)
 1. [Specs](https://github.com/nilenso/goose/blob/main/architecture-decisions/pages/specs.md)
 1. [Logging](https://github.com/nilenso/goose/blob/main/architecture-decisions/pages/logging.md)
+1. [Integration Test DSL](https://github.com/nilenso/goose/blob/main/architecture-decisions/pages/integration-test-dsl.md)
 1. [Wiki / Documentation](https://github.com/nilenso/goose/blob/main/architecture-decisions/pages/wiki.md)
