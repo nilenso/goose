@@ -11,28 +11,26 @@
 
    [clojure.test :refer [deftest is testing use-fixtures]])
   (:import
-   (clojure.lang ExceptionInfo)
+   [clojure.lang ExceptionInfo]
    [java.util UUID]
-   (java.util.concurrent TimeoutException)
-   (java.time Instant)))
+   (java.util.concurrent TimeoutException)))
 
 ;;; ======= Setup & Teardown ==========
 (use-fixtures :each tu/rmq-fixture)
 
-;;; ======= TEST: Async execution (classic queue) ==========
-(def perform-async-fn-executed (atom (promise)))
-(defn perform-async-fn [arg]
-  (deliver @perform-async-fn-executed arg))
+;;; ======= TEST: Async execution ACK ==========
+(def async-ack-fn-executed (atom (promise)))
+(defn async-ack-fn [arg]
+  (deliver @async-ack-fn-executed arg))
 
-(deftest perform-async-test
-  (testing "[rmq] Goose executes a function asynchronously"
-    (reset! perform-async-fn-executed (promise))
-    (let [arg "async-execute-test"
-          _ (is (uuid? (UUID/fromString (:id (c/perform-async tu/rmq-client-opts `perform-async-fn arg)))))
+(deftest async-execution-ack-test
+  (testing "[rmq] Goose ACKs a message upon successful completion"
+    (reset! async-ack-fn-executed (promise))
+    (let [arg "async-ack-test"
+          _ (c/perform-async tu/rmq-client-opts `async-ack-fn arg)
           worker (w/start tu/rmq-worker-opts)]
-      (is (= arg (deref @perform-async-fn-executed 100 :e2e-test-timed-out)))
+      (is (= arg (deref @async-ack-fn-executed 100 :async-ack-test-timed-out)))
       (w/stop worker)
-      ; This tests if msg was ACK'd upon successful completion.
       (is (zero? (enqueued-jobs/size tu/rmq-producer (:queue tu/rmq-client-opts)))))))
 
 ;;; ======= TEST: Async execution (quorum queue) ==========
@@ -64,40 +62,14 @@
       (rmq/close producer)
       (rmq/close consumer))))
 
-;;; ======= TEST: Absolute Scheduling (in-past) ==========
-(def perform-at-fn-executed (atom (promise)))
-(defn perform-at-fn [arg]
-  (deliver @perform-at-fn-executed arg))
-
-(deftest perform-at-test
-  (testing "[rmq] Goose executes a function scheduled in past"
-    (reset! perform-at-fn-executed (promise))
-    (let [arg "scheduling-test"
-          _ (is (uuid? (UUID/fromString (:id (c/perform-at tu/rmq-client-opts (Instant/now) `perform-at-fn arg)))))
-          scheduler (w/start tu/rmq-worker-opts)]
-      (is (= arg (deref @perform-at-fn-executed 100 :scheduler-test-timed-out)))
-      (w/stop scheduler))))
-
-;;; ======= TEST: Relative Scheduling ==========
-(def perform-in-sec-fn-executed (atom (promise)))
-(defn perform-in-sec-fn [arg]
-  (deliver @perform-in-sec-fn-executed arg))
-
-(deftest perform-in-sec-test
-  (testing "[rmq] Goose executes a function scheduled in future"
-    (reset! perform-in-sec-fn-executed (promise))
-    (let [arg "scheduling-test"
-          _ (is (uuid? (UUID/fromString (:id (c/perform-in-sec tu/rmq-client-opts 1 `perform-in-sec-fn arg)))))
-          worker (w/start tu/rmq-worker-opts)]
-      (is (= arg (deref @perform-in-sec-fn-executed 1100 :scheduler-test-timed-out)))
-      (w/stop worker)))
-
+;;; ======= TEST: Scheduling MAX_DELAY limit =======
+(deftest scheduling-max-delay-test
   (testing "[rmq] Scheduling beyond max_delay limit"
     (is
      (thrown-with-msg?
       ExceptionInfo
       #"MAX_DELAY limit breached*"
-      (c/perform-in-sec tu/rmq-client-opts 4294968 `perform-in-sec-fn)))))
+      (c/perform-in-sec tu/rmq-client-opts 4294968 `tu/my-fn)))))
 
 ;;; ======= TEST: Publisher Confirms =======
 (def ack-channel-number (atom (promise)))
@@ -140,6 +112,28 @@
       (is (= (:delivery-tag enqueued-job) (deref @ack-delivery-tag 1 :async-publisher-confirm-test-timed-out)))
       (rmq/close producer))))
 
+;;; ======= TEST: Middleware RMQ Metadata ==========
+(def middleware-called (atom (promise)))
+(defn test-middleware
+  [next]
+  (fn [{:keys [metadata] :as opts} job]
+    (deliver @middleware-called metadata)
+    (next opts job)))
+
+(deftest middleware-metadata-test
+  (testing "[rmq] Goose attaches RMQ metadata to middleware opts"
+    (reset! middleware-called (promise))
+    (let [worker (w/start (assoc tu/rmq-worker-opts
+                                 :middlewares test-middleware))]
+      (try
+        (c/perform-async tu/rmq-client-opts `tu/my-fn :arg1)
+        (is (= d/content-type
+               (:content-type (deref @middleware-called
+                                     100
+                                     :middleware-test-timed-out))))
+        (finally
+          (w/stop worker))))))
+
 ;;; ======= TEST: Graceful shutdown ==========
 (def sleepy-fn-called (atom (promise)))
 (def sleepy-fn-completed (atom (promise)))
@@ -160,103 +154,3 @@
       (w/stop worker)
       (is (= arg (deref @sleepy-fn-completed 100 :non-graceful-shutdown))))))
 
-;;; ======= TEST: Middleware & RMQ Metadata ==========
-(def middleware-called (atom (promise)))
-(defn test-middleware
-  [next]
-  (fn [{:keys [metadata] :as opts} job]
-    (deliver @middleware-called metadata)
-    (next opts job)))
-
-(deftest middleware-test
-  (testing "[rmq] Goose calls middleware & attaches RMQ metadata to opts"
-    (reset! middleware-called (promise))
-    (let [worker (w/start (assoc tu/rmq-worker-opts
-                                 :middlewares test-middleware))
-          _ (c/perform-async tu/rmq-client-opts `tu/my-fn :arg1)]
-      (is (= d/content-type (:content-type (deref @middleware-called 100 :middleware-test-timed-out))))
-      (w/stop worker))))
-
-;;; ======= TEST: Error handling transient failure job using custom retry queue ==========
-(def retry-queue "test-retry")
-(defn immediate-retry [_] 1)
-
-(def failed-on-execute (atom (promise)))
-(def failed-on-1st-retry (atom (promise)))
-(def succeeded-on-2nd-retry (atom (promise)))
-(def retry-error-service (atom (promise)))
-
-(defn retry-test-error-handler
-  [config _ ex]
-  (deliver @retry-error-service config)
-  (if (realized? @failed-on-execute)
-    (deliver @failed-on-1st-retry ex)
-    (deliver @failed-on-execute ex)))
-
-(defn erroneous-fn [arg]
-  (when-not (realized? @failed-on-execute)
-    (/ 1 0))
-  (when-not (realized? @failed-on-1st-retry)
-    (throw (ex-info "error" {})))
-  (deliver @succeeded-on-2nd-retry arg))
-(deftest retry-test
-  (testing "[rmq] Goose retries an erroneous function"
-    (reset! failed-on-execute (promise))
-    (reset! failed-on-1st-retry (promise))
-    (reset! succeeded-on-2nd-retry (promise))
-    (reset! retry-error-service (promise))
-
-    (let [arg "retry-test"
-          retry-opts (assoc retry/default-opts
-                            :max-retries 2
-                            :retry-delay-sec-fn-sym `immediate-retry
-                            :retry-queue retry-queue
-                            :error-handler-fn-sym `retry-test-error-handler)
-          _ (c/perform-async (assoc tu/rmq-client-opts :retry-opts retry-opts) `erroneous-fn arg)
-          error-svc-cfg :my-retry-test-config
-          worker-opts (assoc tu/rmq-worker-opts :error-service-config error-svc-cfg)
-          worker (w/start worker-opts)
-          retry-worker (w/start (assoc worker-opts :queue retry-queue))]
-      (is (= ArithmeticException (type (deref @failed-on-execute 100 :retry-execute-timed-out))))
-      (is (= error-svc-cfg (deref @retry-error-service 1 :retry-error-svc-cfg-timed-out)))
-      (w/stop worker)
-
-      (is (= ExceptionInfo (type (deref @failed-on-1st-retry 1100 :1st-retry-timed-out))))
-
-      (is (= arg (deref @succeeded-on-2nd-retry 1100 :2nd-retry-timed-out)))
-      (w/stop retry-worker))))
-
-;;; ======= TEST: Error handling dead-job using job queue ==========
-(def job-dead (atom (promise)))
-(def death-error-service (atom (promise)))
-
-(defn dead-test-error-handler [_ _ _])
-(defn dead-test-death-handler
-  [config _ ex]
-  (deliver @death-error-service config)
-  (deliver @job-dead ex))
-
-(def dead-job-run-count (atom 0))
-(defn dead-fn
-  []
-  (swap! dead-job-run-count inc)
-  (/ 1 0))
-
-(deftest death-test
-  (testing "[rmq] Goose marks a job as dead upon reaching max retries"
-    (reset! job-dead (promise))
-    (reset! death-error-service (promise))
-    (reset! dead-job-run-count 0)
-    (let [dead-job-opts (assoc retry/default-opts
-                               :max-retries 1
-                               :retry-delay-sec-fn-sym `immediate-retry
-                               :error-handler-fn-sym `dead-test-error-handler
-                               :death-handler-fn-sym `dead-test-death-handler)
-          _ (c/perform-async (assoc tu/rmq-client-opts :retry-opts dead-job-opts) `dead-fn)
-          error-svc-cfg :my-death-test-config
-          worker-opts (assoc tu/rmq-worker-opts :error-service-config error-svc-cfg)
-          worker (w/start worker-opts)]
-      (is (= ArithmeticException (type (deref @job-dead 1100 :death-handler-timed-out))))
-      (is (= error-svc-cfg (deref @death-error-service 1 :death-error-svc-cfg-timed-out)))
-      (is (= 2 @dead-job-run-count))
-      (w/stop worker))))

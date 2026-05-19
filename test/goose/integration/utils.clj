@@ -54,6 +54,9 @@
          (get-configs :commons :execution-timeout-ms)
          ::timed-out))
 
+(defn delivered? [test-name]
+  (realized? (get @executed-log test-name)))
+
 (defn broker-testable? [broker requirements]
   (s/subset? requirements
              (c/fetch-capabilities broker)))
