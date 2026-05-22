@@ -9,7 +9,8 @@
    [goose.test-utils :as tu]
    [goose.worker :as w]
 
-   [clojure.test :refer [deftest is testing use-fixtures]])
+   [clojure.test :refer [deftest is testing use-fixtures]]
+   [langohr.confirm :as lcnf])
   (:import
    (clojure.lang ExceptionInfo)
    [java.util UUID]
@@ -107,21 +108,23 @@
   (deliver @ack-delivery-tag tag))
 (defn test-nack-handler [_ _ _])
 (deftest publisher-confirm-test
-  ;; This test fails quite rarely.
-  ;; RMQ confirms in 1ms too sometimes ¯\_(ツ)_/¯
-  ;; Remove this test if it happens often.
   (testing "[rmq][sync-confirms] Publish timed out"
     (let [opts (assoc tu/rmq-opts
-                      :publisher-confirms {:strategy d/sync-confirms :timeout-ms 1})
+                      :publisher-confirms {:strategy d/sync-confirms
+                                           :timeout-ms 1000})
           producer (rmq/new-producer opts 1)
           client-opts {:queue      "sync-publisher-confirms-test"
                        :retry-opts retry/default-opts
                        :broker     producer}]
-      (is
-       (thrown?
-        TimeoutException
-        (c/perform-async client-opts `tu/my-fn)))
-      (rmq/close producer)))
+      (try
+        (with-redefs [lcnf/wait-for-confirms (fn [_ ^long _]
+                                               (throw (TimeoutException.)))]
+          (is
+           (thrown?
+            TimeoutException
+            (c/perform-async client-opts `tu/my-fn))))
+        (finally
+          (rmq/close producer)))))
 
   (testing "[rmq][async-confirms] Ack handler called"
     (reset! ack-channel-number (promise))
