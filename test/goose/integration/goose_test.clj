@@ -9,8 +9,7 @@
    [clojure.test :refer [is]])
   (:import
    [clojure.lang ExceptionInfo]
-   [java.time Instant]
-   [java.util UUID]))
+   [java.time Instant]))
 
 (def-integration-test async-execution-test
   #{:enqueue}
@@ -19,7 +18,7 @@
                              test-name
                              ::async-execution-test)
         worker (w/start (u/get-opts broker :worker))]
-    (is (uuid? (UUID/fromString (:id job))))
+    (is (uuid? (parse-uuid (:id job))))
     (is (= ::async-execution-test
            (delivered-execution test-name)))
     (w/stop worker)))
@@ -32,7 +31,7 @@
                           test-name
                           ::absolute-scheduling-test)
         scheduler (w/start (u/get-opts broker :worker))]
-    (is (uuid? (UUID/fromString (:id job))))
+    (is (uuid? (parse-uuid (:id job))))
     (is (= ::absolute-scheduling-test
            (delivered-execution test-name)))
     (w/stop scheduler)))
@@ -45,7 +44,7 @@
                               test-name
                               ::relative-scheduling-test)
         scheduler (w/start (u/get-opts broker :worker))]
-    (is (uuid? (UUID/fromString (:id job))))
+    (is (uuid? (parse-uuid (:id job))))
     (is (= ::relative-scheduling-test
            (delivered-execution test-name)))
     (w/stop scheduler)))
