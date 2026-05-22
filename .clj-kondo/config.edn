@@ -1,5 +1,5 @@
 {:lint-as
- {goose.integration.test-utils/def-integration-test clojure.test/deftest}
+ {goose.integration.utils/def-integration-test clojure.test/deftest}
 
  :ns-groups
  [{:name integration-tests

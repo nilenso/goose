@@ -1,4 +1,4 @@
-(ns goose.integration.test-utils
+(ns goose.integration.utils
   (:require
    [goose.test-utils :as tu]
    [goose.capability :as c]
@@ -53,6 +53,9 @@
   (deref (get @executed-log test-name)
          (get-configs :commons :execution-timeout-ms)
          ::timed-out))
+
+(defn delivered? [test-name]
+  (realized? (get @executed-log test-name)))
 
 (defn broker-testable? [broker requirements]
   (s/subset? requirements
