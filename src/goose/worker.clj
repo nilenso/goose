@@ -52,7 +52,7 @@
 
   ### Args
   `opts`  : Map of `:threads`, `:queue`, `:graceful-shutdown-sec`,
-   `:metrics-plugin`, `:middleware` & `:error-service-config`.\\
+   `:metrics-plugin`, `:middlewares` & `:error-service-config`.\\
   Example : [[default-opts]]
 
   ### Usage
