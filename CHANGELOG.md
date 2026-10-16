@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Added
 ### Changed
 ### Fixed
+- Accept Vars that refer to middleware functions in worker options (#222).
 
 ## [0.6.1] - 16th-Oct-2026
 

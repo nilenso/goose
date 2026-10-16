@@ -68,6 +68,22 @@
       (finally
         (w/stop worker)))))
 
+(defn increment-job-arg [next]
+  (fn [opts job]
+    (next opts (update job :args
+                       (fn [[test-name arg]]
+                         [test-name (inc arg)])))))
+
+(def-integration-test middleware-var-test
+  #{:enqueue}
+  (let [worker (w/start (assoc (u/get-opts broker :worker)
+                               :middlewares #'increment-job-arg))]
+    (try
+      (c/perform-async (u/get-opts broker :client) `executable test-name 5)
+      (is (= 6 (delivered-execution test-name)))
+      (finally
+        (w/stop worker)))))
+
 (def retry-queue "test-retry")
 
 (defn immediate-retry [_]
