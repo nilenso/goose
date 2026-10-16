@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Changed
 ### Fixed
 
-## [0.6.1] - Unreleased
+## [0.6.1] - 16th-Oct-2026
 
 ### Added
 - Favicon for the jobs management console (#200).
