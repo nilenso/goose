@@ -173,7 +173,9 @@
 (s/def ::threads pos-int?)
 (s/def ::graceful-shutdown-sec pos-int?)
 (s/def ::metrics-plugin #(satisfies? m/Metrics %))
-(s/def ::middlewares fn?)
+(s/def ::middlewares
+  (s/or :fn fn?
+        :var (s/and var? bound? #(fn? @%))))
 (s/def ::error-service-config any?) ; This varies by error services.
 (s/def ::worker-opts
   (s/keys :req-un [::broker
