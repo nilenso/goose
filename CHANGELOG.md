@@ -10,6 +10,25 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Changed
 ### Fixed
 
+## [0.6.1] - Unreleased
+
+### Added
+- Favicon for the jobs management console (#200).
+- Babashka tasks for tests, formatting, and linting (#212).
+- Shared, capability-based integration test DSL for broker implementations (#214, #217).
+
+### Changed
+- Use cron-utils to describe cron schedules in the console and remove the cron-expression-descriptor dependency (#200).
+- Hide internal console namespaces from generated API documentation.
+- Update CI and publishing runners to Ubuntu 24.04 and update the CI Clojure image (#205, #206, #207, #213).
+
+### Fixed
+- Validate protected queue names with set membership instead of string matching (#204).
+- Display retry times for retried jobs in the scheduled jobs console (#200).
+- Document the worker middleware option as `:middlewares` (#220).
+- Fix timing-sensitive broker tests (#218).
+- Stop test containers when the Babashka test task fails (#212).
+
 ## [0.6.0] - 4th-Oct-2024
 
 ### Added
